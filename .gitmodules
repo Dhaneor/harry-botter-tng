@@ -1,0 +1,3 @@
+[submodule "src/fukujou"]
+	path = src/fukujou
+	url = https://github.com/dhaneor/fukujou
