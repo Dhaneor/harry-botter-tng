@@ -28,7 +28,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # --------------------------------------------------------------------------------------
 
-from src.zeromq import registration as reg  # noqa: E402
+from src.zmqbricks import registration as reg  # noqa: E402
 
 SEND_ADDR = "inproc://reg_test"
 RECV_ADDR = "inproc://reg_test"

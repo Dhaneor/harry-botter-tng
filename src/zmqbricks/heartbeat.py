@@ -66,7 +66,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # --------------------------------------------------------------------------------------
 
-from zeromq.building_blocks.async_timer_with_reset import create_timer  # noqa: F401, E402
+from zmqbricks.building_blocks.async_timer_with_reset import create_timer  # noqa: F401, E402
 
 logger = logging.getLogger("main.heartbeat")
 logger.setLevel(logging.INFO)

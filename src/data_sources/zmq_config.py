@@ -20,7 +20,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # --------------------------------------------------------------------------------------
 
-from zeromq.sockets import SockDef  # noqa: F401, E402
+from zmqbricks.sockets import SockDef  # noqa: F401, E402
 from data_sources.util.random_names import random_elven_name as rand_name  # noqa: E402
 
 # some default values that are (can) be shared between components

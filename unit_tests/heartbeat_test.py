@@ -33,8 +33,8 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # --------------------------------------------------------------------------------------
 
-from src.zeromq import heartbeat as hb  # noqa: F401, E402
-from src.zeromq import sockets  # noqa: F401, E402
+from src.zmqbricks import heartbeat as hb  # noqa: F401, E402
+from src.zmqbricks import sockets  # noqa: F401, E402
 
 
 # poller = zmq.Poller()

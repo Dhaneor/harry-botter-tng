@@ -44,9 +44,9 @@ sys.path.append(parent)
 
 import zmq_config as cnf  # noqa: F401, E402
 from data_sources.util.sequence import monitor_sequence  # noqa: F401, E402
-from zeromq.kinsfolk import Kinsfolk, Kinsman, KinsfolkT  # noqa: F401, E402
-from zeromq.registration import Scroll, monitor_registration  # noqa: F401, E402
-from zeromq import heartbeat as hb  # noqa: F401, E402
+from zmqbricks.kinsfolk import Kinsfolk, Kinsman, KinsfolkT  # noqa: F401, E402
+from zmqbricks.registration import Scroll, monitor_registration  # noqa: F401, E402
+from zmqbricks import heartbeat as hb  # noqa: F401, E402
 
 logger = logging.getLogger("main")
 logger.setLevel(logging.INFO)

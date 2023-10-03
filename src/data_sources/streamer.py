@@ -187,9 +187,9 @@ sys.path.append(parent)
 from data_sources import zmq_config as cnf  # noqa: F401, E402
 from .util.ws_kucoin import KucoinWebsocketPublic  # noqa: F401, E402
 from .util.sequence import sequence  # noqa: F401, E402
-from ..zeromq import registration as rgstr  # noqa: F401, E402
-from ..zeromq import heartbeat as hb  # noqa: F401, E402
-from ..zeromq.kinsfolk import Kinsfolk, Kinsman  # noqa: F401, E402
+from ..zmqbricks import registration as rgstr  # noqa: F401, E402
+from ..zmqbricks import heartbeat as hb  # noqa: F401, E402
+from ..zmqbricks.kinsfolk import Kinsfolk, Kinsman  # noqa: F401, E402
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
