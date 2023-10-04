@@ -33,7 +33,7 @@ from src.zmqbricks import registration as reg  # noqa: E402
 SEND_ADDR = "inproc://reg_test"
 RECV_ADDR = "inproc://reg_test"
 
-test_msg = reg.RegistrationRequest(
+test_msg = reg.Scroll(
     uid="jhfs-950746",
     name='streamer',
     service_name='test service name',
@@ -41,13 +41,13 @@ test_msg = reg.RegistrationRequest(
     endpoints={"publisher": SEND_ADDR, "management": "tcp://127.0.0.1:5600"},
     version='0.0.1',
     exchange='kucoin',
-    market='spot',
+    markets=['spot'],
     description='Kucoin OHLCV streamer',
 )
 
 
 # ======================================================================================
-async def callback(req: reg.RegistrationRequest) -> None:
+async def callback(req: reg.Scroll) -> None:
     logger.info("received request: %s", req)
 
 
