@@ -10,8 +10,8 @@ Created on Mon  Sep 18 19:17:23 2023
 import json
 import os
 import sys
-from random import choice
-from typing import Sequence, Optional
+from random import randint
+from typing import Sequence, Optional, TypeVar
 from uuid import uuid4
 
 # --------------------------------------------------------------------------------------
@@ -21,16 +21,24 @@ sys.path.append(parent)
 # --------------------------------------------------------------------------------------
 
 from zmqbricks.sockets import SockDef  # noqa: F401, E402
+from zmqbricks.fukujou.curve import generate_curve_key_pair  # noqa: F401, E402
 from data_sources.util.random_names import random_elven_name as rand_name  # noqa: E402
+
+ScrollT = TypeVar("ScrollT", bound=object)
 
 # some default values that are (can) be shared between components
 DEFAULT_ENCODING = "utf-8"
 DEFAULT_HB_INTERVAL = 1  # seconds
-DEFAULT_HB_LIVENESS = 5  # heartbeat liveness
+DEFAULT_HB_LIVENESS = 10  # heartbeat liveness
 DEFAULT_RGSTR_TIMEOUT = 10  # seconds
-DEFAULT_RGSTR_RESEND_AFTER = 900  # resend request after (secs)
+DEFAULT_RGSTR_LOG_INTERVAL = 900  # resend request after (secs)
 DEFAULT_RGSTR_MAX_ERRORS = 10  # maximum number of registration errors
+DEFAULT_COLLECTOR_KEYS = (
+    'L>&NKg9E/Cxv)nw]rXl<mgy!!w:9%s($@=Fk#DDP',
+    '5sIbhID73=!fbqYBeiipw)9p0?(ix#SG]SSN$KqJ'
+)
 STREAMER_BASE_PORT = 5500
+
 
 # endpoints
 #
@@ -52,7 +60,7 @@ class BaseConfig:
     hb_liveness: int = DEFAULT_HB_LIVENESS  # heartbeat liveness (max missed heartbeats)
     rgstr_timeout: int = DEFAULT_RGSTR_TIMEOUT  # registration timeout (seconds)
     rgstr_max_errors: int = DEFAULT_RGSTR_MAX_ERRORS  # max no of registration errors
-    rgstr_resend_after: int = DEFAULT_RGSTR_RESEND_AFTER  # resend request after (secs)
+    rgstr_log_interval: int = DEFAULT_RGSTR_LOG_INTERVAL  # resend request after (secs)
 
     def __init__(
         self,
@@ -80,6 +88,8 @@ class BaseConfig:
             "rgstr_max_errors", BaseConfig.rgstr_max_errors
         )
 
+        self.public_key, self.private_key = generate_curve_key_pair()
+
     @property
     def service_name(self) -> str:
         return (
@@ -99,7 +109,8 @@ class BaseConfig:
             "service_name": self.service_name,
             "endpoints": self.endpoints
         } | {
-            var: getattr(self, var) for var in vars(self) if not var.startswith("_")
+            var: getattr(self, var) for var in vars(self)
+            if not var.startswith("_") or var == "private_key"
         }
 
     def as_json(self) -> str:
@@ -125,17 +136,17 @@ class Streamer(BaseConfig):
     service_type: str = "streamer"
 
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
         self.name = rand_name(gender='male')
         self.register_at = kwargs.get("register_at", collector_mgmt)
-        self.port = choice(range(STREAMER_BASE_PORT, STREAMER_BASE_PORT + 50))
-        self.PUBLISHER_ADDR = f"tcp://127.0.0.1:{STREAMER_BASE_PORT + self.port}"
-        self.REGISTER_AT = collector_mgmt
+        self.publisher_addr = (
+            f"tcp://127.0.0.1:{randint(STREAMER_BASE_PORT, STREAMER_BASE_PORT + 50)}"
+        )
 
     @property
     def endpoints(self) -> dict[str, str]:
         return {
-            "publisher": self.PUBLISHER_ADDR,
+            "publisher": self.publisher_addr,
         }
 
 
@@ -148,19 +159,20 @@ class Collector(BaseConfig):
     kinsfolk_check_interval: int = 15  # seconds
 
     def __init__(self, *args, **kwargs) -> None:
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
         self.name = rand_name(gender='male')
         self.SUBSCRIBER_ADDR = collector_sub
         self.PUBLISHER_ADDR = collector_pub
-        self.MGMT_ADDR = collector_mgmt
+        self.RGSTR_ADDR = collector_mgmt
         self.HB_ADDR = collector_hb
+        self.public_key, self.private_key = DEFAULT_COLLECTOR_KEYS
 
     @property
     def endpoints(self) -> dict[str, str]:
         return {
             "publisher": self.PUBLISHER_ADDR,
             "subscriber": self.SUBSCRIBER_ADDR,
-            "management": self.MGMT_ADDR,
+            "registration": self.RGSTR_ADDR,
             "heartbeat": self.HB_ADDR,
         }
 
@@ -232,3 +244,28 @@ def get_config(
         sock_defs=sock_defs,
         **kwargs
     )
+
+
+def get_rgstr_info(service_type, exchange="kcuoin", market="spot") -> ScrollT | None:
+
+    markets = [market] if isinstance(market, str) else market
+
+    if service_type == "collector":
+        collector_conf = Collector(exchange, markets)
+
+        class C:
+            endpoint = collector_conf.endpoints.get("registration")
+            public_key = collector_conf.public_key
+
+            def __repr__(self):
+                return f"C(endpoint={self.endpoint}, public_key={self.public_key})"
+
+        return C()
+
+
+if __name__ == "__main__":
+    # c = get_config("collector", "kucoin", ["spot"], [])
+
+    # [print(f"{k} -> {v}") for k, v in vars(c).items()]
+
+    print(get_rgstr_info("collector", "kucoin", "spot"))

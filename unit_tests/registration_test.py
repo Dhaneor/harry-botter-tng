@@ -6,11 +6,15 @@ Created on Wed Dec 07 12:44:23 2022
 @author_ dhaneor
 """
 import asyncio
+import json
 import logging
 import os
 import sys
+import time
 import zmq
 import zmq.asyncio
+
+from pprint import pprint
 
 logger = logging.getLogger('main')
 logger.setLevel(logging.DEBUG)
@@ -29,6 +33,7 @@ sys.path.append(parent)
 # --------------------------------------------------------------------------------------
 
 from src.zmqbricks import registration as reg  # noqa: E402
+from src.data_sources import zmq_config as conf  # noqa E402
 
 SEND_ADDR = "inproc://reg_test"
 RECV_ADDR = "inproc://reg_test"
@@ -45,8 +50,46 @@ test_msg = reg.Scroll(
     description='Kucoin OHLCV streamer',
 )
 
+config = conf.Streamer("kucoin", ["spot"], [])
+
 
 # ======================================================================================
+def test_scroll_ttl() -> None:
+    s = test_msg
+
+    for _ in range(7):
+        logger.debug(
+            "scroll ttl left: %d --> expired: %s",
+            round(s.ttl - time.time(), 2),
+            s.expired
+        )
+        time.sleep(1)
+
+
+def test_scroll_from_config():
+    as_dict = config.as_dict()
+    pprint(as_dict)
+    print('-' * 80)
+    scroll_pre = reg.Scroll.from_dict(as_dict)
+    msg = scroll_pre.prepare_send_msg()
+    msg = json.dumps(as_dict).encode()
+    print(msg)
+    print("=" * 80)
+    scroll_post = reg.Scroll.from_msg([b"", msg])
+    print(scroll_post)
+
+    try:
+        assert scroll_pre == scroll_post
+    except AssertionError as e:
+        for attr in vars(scroll_pre):
+            prea = getattr(scroll_pre, attr)
+            posa = getattr(scroll_post, attr)
+            if not prea == posa:
+                print(f"{attr}: {prea} != {posa}")
+        print(e)
+
+
+# --------------------------------------------------------------------------------------
 async def callback(req: reg.Scroll) -> None:
     logger.info("received request: %s", req)
 
@@ -72,4 +115,6 @@ async def main() -> None:
     await asyncio.gather(monitor)
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    # asyncio.run(main())
+    # test_scroll_ttl()
+    test_scroll_from_config()

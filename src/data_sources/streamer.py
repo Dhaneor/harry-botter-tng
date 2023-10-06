@@ -190,6 +190,7 @@ from .util.sequence import sequence  # noqa: F401, E402
 from ..zmqbricks import registration as rgstr  # noqa: F401, E402
 from ..zmqbricks import heartbeat as hb  # noqa: F401, E402
 from ..zmqbricks.kinsfolk import Kinsfolk, Kinsman  # noqa: F401, E402
+from ..zmqbricks.fukujou.curve import generate_curve_key_pair  # noqa: F401, E402
 
 asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
 
@@ -216,6 +217,7 @@ SockT: TypeAlias = zmq.Socket
 
 sockets = {"tickers": None, "snapshots": None, "candles": None}
 
+RGSTR_LOG_INTERVAL = 300  # seconds
 SEQ_IDENTIFIER = "sequence"
 VERSION = "1.1.0"
 
@@ -463,17 +465,24 @@ async def confused(msg: dict):
 
 # --------------------------------------------------------------------------------------
 # basic helper functions for streamer
-async def get_publisher_socket(ctx: zmq.asyncio.Context, mode: str, publisher_addr: str):
+async def get_publisher_socket(ctx: zmq.asyncio.Context, config: ConfigT, mode: str):
     socket = ctx.socket(zmq.XPUB)
     socket.setsockopt(zmq.LINGER, 0)
-    socket.bind(publisher_addr)
+
+    if config.public_key and config.private_key:
+        socket.curve_secretkey = config.private_key.encode("ascii")
+        socket.curve_publickey = config.public_key.encode("ascii")
+        socket.curve_server = True
+
+    socket.bind(config.publisher_addr)
     sockets[mode] = socket
-    logger.info(f"bound {mode} to {publisher_addr}")
+    logger.info(f"bound {mode} to {config.publisher_addr}")
     return socket
 
 
 async def get_management_socket(ctx: zmq.asyncio.Context, management_address: str):
     management_socket = zmq.asyncio.Socket(ctx, zmq.DEALER)
+    management_socket.setsockopt(zmq.SNDHWM, 1)
     management_socket.connect(management_address)
     return management_socket
 
@@ -519,8 +528,8 @@ async def get_ws_client(uid: str, market: MarketT, mode: str, reset_timer: Corou
     return ws_client
 
 
-async def add_hb_sender(scroll: rgstr.RegistrationReply, hb_sock: SockT):
-    # we should have the information bout the endpoint for the socket
+async def add_hb_sender(scroll: rgstr.Scroll, hb_sock: SockT):
+    # we should have the information about the endpoint for the socket
     # where collector sends out heartbeats -> connect and start the
     # background task that listens for them
     if not (addr := scroll.endpoints.get("heartbeat", None)):
@@ -547,78 +556,27 @@ async def add_hb_sender(scroll: rgstr.RegistrationReply, hb_sock: SockT):
         return success
 
 
-# --------------------------------------------------------------------------------------
-# advanced helper functions for streamer
-async def register(config: ConfigT, socket: zmq.Socket, actions: Sequence[Coroutine]):
-    """Register wtih the collector."""
-    logger.info("... registering with collector at %s", config.PUBLISHER_ADDR)
-    # build formalized registration request
-    rgstr_req = rgstr.Scroll.from_dict(config.as_dict())
-    registered, send_it, errors, attempts = False, True, 0, 0
+async def remove_hb_sender(hb_sock: SockT, kinsman: Kinsman):
+    success = False
 
-    while not registered:
-        # exponential backoff for exceptions, not used if collector is
-        # just unreachable
-        time_out = config.rgstr_timeout + 2 ** errors
+    endpoint = kinsman.endpoints.get("heartbeat", None)
 
-        # send the registration request
-        if send_it:
-            logger.info("... sending registration request ...")
-            await rgstr_req.send(socket)
+    logger.info("removing heartbeat sender %s with %s", kinsman.name, endpoint)
 
-        # ... wait for reply
-        try:
-            msg_as_dict = await asyncio.wait_for(socket.recv_json(), time_out)
-        except asyncio.TimeoutError:
-            attempts += 1
-            send_it = False
-            if attempts == 1:
-                logger.warning("... collector unreachable ... waiting")
-            elif attempts * config.rgstr_timeout >= config.rgstr_resend_after:
-                attempts = 0
-                send_it = True
-        except zmq.ZMQError as e:
-            logger.error(f"ZMQ error: {e} for {rgstr_req}")
-            logger.info("waiting %s seconds for collector to respond ...", time_out)
-            await asyncio.sleep(time_out)
-            errors += 1
-            send_it = True
-        except Exception as e:
-            logger.error(f"unexpected error: {e} for: {rgstr_req}")
-            logger.info("waiting %s seconds for collector to respond ...", time_out)
-            await asyncio.sleep(time_out)
-            errors += 1
-            send_it = True
-        else:
-            logger.debug(f"received reply from collector: {msg_as_dict}")
-            registered = True
-        finally:
-            if errors > config.rgstr_max_errors:
-                raise Exception(
-                    "unable to register with collector after %s errors",
-                    config.rgstr_max_errors
-                )
-
-    # build formalized registration reply from dictionary response
     try:
-        scroll = rgstr.Scroll.from_dict(msg_as_dict)
-    except (KeyError, AttributeError) as e:
-        logger.critical("invalid reply from collector: %s", msg_as_dict, exc_info=1)
-        raise Exception() from e
-
-    # execute  provided actions with reply, if any
-    if actions:
-        for action in actions:
-            try:
-                logger.debug("executing action: %s", action)
-                await action(scroll)
-            except Exception as e:
-                logger.critical("action failed: %s", action, exc_info=1)
-                raise Exception() from e
-
-    logger.info("===================================================")
-    logger.info("registered with collector at %s", config.REGISTER_AT)
-    return scroll
+        hb_sock.unsubscribe(b"heartbeat")
+        hb_sock.disconnect(endpoint)
+    except zmq.ZMQError as e:
+        logger.error(f"ZMQ error: {e} for {kinsman}")
+    except Exception as e:
+        logger.error(
+            "unable to remove heartbeat sender: %s -> %s", kinsman.name, e, exc_info=1
+        )
+    else:
+        success = True
+        logger.info("disconnected from heartbeat endpoint %s", endpoint)
+    finally:
+        return success
 
 
 async def handle_hb(hb_msg: hb.HeartbeatMessage, actions: Sequence[Coroutine]) -> None:
@@ -678,52 +636,62 @@ async def streamer(
     if mode not in valid_modes:
         raise ValueError(f" mode {mode} is not a vald mode. Use one of {valid_modes}")
 
+    # get the ZMQ context
     ctx = context or zmq.asyncio.Context()
 
-    # initialize peer registry
-    kinsfolk = Kinsfolk(config.hb_interval, config.hb_liveness)
-
     # configure sockets
-    publisher = await get_publisher_socket(ctx, mode, config.PUBLISHER_ADDR)
-    management = await get_management_socket(ctx, config.REGISTER_AT)
+    publisher = await get_publisher_socket(ctx, config, mode)
+    management = await get_management_socket(ctx, config.register_at)
     heartbeat = zmq.asyncio.Socket(ctx, zmq.SUB)
-    # heartbeat.subscribe(b"")
     logger.debug("configured sockets: OK")
 
-    # register with collector so it knows where to subscribe to topics
-    add_hb_sender_fn = partial(add_hb_sender, hb_sock=heartbeat)
-    register_fn = partial(
-        register, config, management, [kinsfolk.accept, add_hb_sender_fn]
-    )
+    # prepare partial functions for use in steps below
+    remove_hb_sender_coro = partial(remove_hb_sender, hb_sock=heartbeat)
+    add_hb_sender_coro = partial(add_hb_sender, hb_sock=heartbeat)
+    rgstr_info_fn = partial(cnf.get_rgstr_info, "collector", "kucoin", "spot")
+    send_hb_coro = partial(hb.send_hb, publisher, config.uid, config.name)
 
+    # initialize peer registry
+    kinsfolk = Kinsfolk(config.hb_interval, config.hb_liveness, remove_hb_sender_coro)
+
+    # ..................................................................................
+    # do this after successful registrastion with collector
+    rgstr_actions = [kinsfolk.accept, add_hb_sender_coro]
+
+    # register with collector so it knows where to subscribe to topics
     try:
-        await register(config, management, [kinsfolk.accept, add_hb_sender_fn])
+        await rgstr.register(ctx, config, rgstr_info_fn, rgstr_actions)
     except Exception as e:
         logger.critical(e, exc_info=1)
         return
 
-    # start the background task that listens for heartbeats from the collector
+    # ..................................................................................
+    # start background tasks ...
+    #
+    # for listening for heartbeats
     recv_hb_task = await hb.start_hb_recv_task(heartbeat, [kinsfolk.update])
     logger.debug("started heartbeat recv task: OK")
 
-    # confgure the background task to send regular heartbeat messages
-    # over the publisher socket
-    send_fn = partial(hb.send_hb, publisher, config.uid, config.name)
-    send_hb_task, reset_fn = await hb.start_hb_send_task(send_fn, config.hb_interval)
+    # .. for sending heartbeats
+    send_hb_task, reset_fn = await hb.start_hb_send_task(
+        send_hb_coro, config.hb_interval
+    )
     logger.debug("started heartbeat send task: OK")
 
-    # start the background task that watches over our kinsfolk
-    kinsfolk_task = asyncio.create_task(kinsfolk.watch_out([register_fn]))
+    # ... for watching connected peers and their health
+    kinsfolk_task = asyncio.create_task(
+        kinsfolk.watch_out(
+            actions=[
+                partial(rgstr.register, ctx, config, rgstr_info_fn, rgstr_actions)
+            ]
+        )
+    )
 
+    # ..................................................................................
     # start the appropriate websocket client for streaming data for
     # the given market. we are using one dedicated instance per streamer
     # because this increases the number of topics we can subscribe to.
     ws_client = await get_ws_client(config.uid, market, mode, reset_fn)
-
-    # initialize poller & register sockets
-    poller = zmq.asyncio.Poller()
-    poller.register(publisher, zmq.POLLIN)
-    poller.register(management, zmq.POLLIN)
 
     # start websocket subscriptions for one of the two catch-all modes
     # if we are running in one of those. These function slightly
@@ -735,9 +703,14 @@ async def streamer(
         logger.info("starting stream for all snapshots ...")
         await ws_client.watch_snapshot()
 
+    # initialize poller & register sockets
+    poller = zmq.asyncio.Poller()
+    poller.register(publisher, zmq.POLLIN)
+    poller.register(management, zmq.POLLIN)
+
     topics = set()
 
-    logger.info(f"streaming service for {mode} started on {config.PUBLISHER_ADDR}")
+    logger.info(f"streaming service for {mode} started on {config.publisher_addr}")
 
     # ..................................................................................
     # main loop
@@ -768,6 +741,9 @@ async def streamer(
                 # first check for subscription to "heartbeat"
                 if topic == "heartbeat":
                     continue
+
+                elif topic == config.uid:
+                    await rgstr.register(ctx, config, rgstr_info_fn, rgstr_actions)
 
                 # handle subscribe/unsubscribe for mode 'candles'
                 elif mode == "candles":
@@ -870,7 +846,7 @@ async def streamer(
     #     ctx.term()
     #     logger.debug("context terminated: OK")
 
-    logger.info(f"streaming service for {mode} stopped on {config.PUBLISHER_ADDR}")
+    logger.info(f"streaming service for {mode} stopped on {config.publisher_addr}")
 
 
 # --------------------------------------------------------------------------------------
@@ -917,14 +893,19 @@ async def mock_streamer(ctx: zmq.Context, msg_per_sec: int = 10, repeat: int = 1
     ctx = ctx or zmq.asyncio.Context.instance()
 
     # configure sockets
-    publisher = await get_publisher_socket(ctx, "candles", config.PUBLISHER_ADDR)
-    management = await get_management_socket(ctx, config.REGISTER_AT)
+    publisher = await get_publisher_socket(ctx, "candles", config.publisher_addr)
+    management = await get_management_socket(ctx, config.register_at)
+
+    rgstr_info_fn = partial(cnf.get_rgstr_info, "collector", "kucoin", "spot")
+    register_fn = partial(  # noqa F841
+        rgstr.register, ctx, config, rgstr_info_fn, []
+    )
 
     logger.info("configured sockets: OK")
 
     # register with collector so it knows where to subscribe to topics
     try:
-        await register(management, [])
+        await rgstr.register(ctx, config, rgstr_info_fn, None)
     except Exception as e:
         logger.exception(e)
 
@@ -1010,7 +991,7 @@ async def mock_streamer(ctx: zmq.Context, msg_per_sec: int = 10, repeat: int = 1
 
     task.cancel()
 
-    logger.info(f"streaming service in 'mock' mode stopped on {config.PUBLISHER_ADDR}")
+    logger.info(f"streaming service in 'mock' mode stopped on {config.publisher_addr}")
 
     # log metrics
     logger.info(msgs)

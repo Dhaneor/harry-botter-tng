@@ -32,6 +32,7 @@ import zmq.asyncio
 
 from collections import deque
 from functools import partial
+from random import choice
 from statistics import mean
 from time import time
 from typing import Optional, Sequence, Mapping, TypeVar
@@ -113,20 +114,15 @@ async def get_streamers(kinsfolk: Kinsfolk) -> Sequence[Kinsman]:
     return [k for k in kinsfolk.values() if k.servie_type == "streamer"]
 
 
-async def connect_to_streamer(socket: SockT, endpoint: str) -> None:
-    logger.debug("... connect:%s", endpoint)
+async def connect_to_streamer(socket: SockT, config: ConfigT, req: Scroll) -> None:
+    if not (endpoint := req.endpoints.get("publisher", None)):
+        logger.error("unable to connect to publisher socket: %s", endpoint)
+        return
+
+    logger.debug("... connect: %s", endpoint)
+
+    socket.curve_serverkey = req.public_key.encode("ascii")
     socket.connect(endpoint)
-
-
-async def unsubscribe_from_all(socket: SockT, topics: TopicsT):
-    logger.debug("unsubscribing from all topics ...")
-
-    for topic in topics:
-        logger.debug("removing topic %s", topic)
-        socket.setsockopt(zmq.UNSUBSCRIBE, topic.encode("utf-8"))
-
-    logger.debug("unsubscribed from all topics")
-    topics = set()
 
 
 async def subscribe_to_all(socket: zmq.Socket, topics: TopicsT):
@@ -138,6 +134,22 @@ async def subscribe_to_all(socket: zmq.Socket, topics: TopicsT):
 async def subscribe_topic(socket: zmq.Socket, topic):
     socket.setsockopt(zmq.SUBSCRIBE, topic.encode("utf-8"))
     logger.debug("subscribed to topic: %s", topic)
+
+
+async def unsubscribe_topic(socket: zmq.Socket, topic):
+    socket.setsockopt(zmq.UNSUBSCRIBE, topic.encode("utf-8"))
+    logger.debug("unsubscribed from topic: %s", topic)
+
+
+async def unsubscribe_from_all(socket: SockT, topics: TopicsT):
+    logger.debug("unsubscribing from all topics ...")
+
+    for topic in topics:
+        logger.debug("removing topic %s", topic)
+        socket.setsockopt(zmq.UNSUBSCRIBE, topic.encode("utf-8"))
+
+    logger.debug("unsubscribed from all topics")
+    topics = set()
 
 
 async def handle_xpub_msg(
@@ -211,8 +223,10 @@ async def process_registration(
     await reply.send(socket=req._socket, routing_key=req._routing_key)
 
     if req.service_type == "streamer" and "publisher" in req.endpoints:
-        await connect_to_streamer(sub_sock, req.endpoints["publisher"])
+        await connect_to_streamer(sub_sock, config, req)
+
         logger.debug("... subscibe: 'heartbeat' ->  %s", req.endpoints["publisher"])
+
         await subscribe_topic(sub_sock, "heartbeat")
 
         for topic in topics:
@@ -220,6 +234,12 @@ async def process_registration(
 
     else:
         logger.error("service type or endpoints['publisher'] missing, got: %s", req)
+
+
+async def request_to_register(socket: zmq.Socket, uid: str) -> None:
+    """Request (re-)registration for a given uid."""
+    logger.info("request to register: %s", uid)
+    socket.setsockopt(zmq.SUBSCRIBE, uid.encode("utf-8"))
 
 
 @monitor_sequence(callback=handle_missing_seq_no)
@@ -307,6 +327,8 @@ async def collector(
 
     # configure the subscriber port
     subscriber = context.socket(zmq.SUB)
+    subscriber.curve_secretkey = config.private_key.encode("ascii")
+    subscriber.curve_publickey = config.public_key.encode("ascii")
 
     # configure the publisher port
     logger.info("configuring publisher socket at %s", config.PUBLISHER_ADDR)
@@ -314,9 +336,12 @@ async def collector(
     publisher.bind(config.PUBLISHER_ADDR)
 
     # configure the registration port
-    logger.info("configuring registration socket at %s", config.MGMT_ADDR)
+    logger.info("configuring registration socket at %s", config.RGSTR_ADDR)
     registration = context.socket(zmq.ROUTER)
-    registration.bind(config.MGMT_ADDR)
+    registration.curve_secretkey = config.private_key.encode("ascii")
+    registration.curve_publickey = config.public_key.encode("ascii")
+    registration.curve_server = True
+    registration.bind(config.RGSTR_ADDR)
 
     # configure the heartbeat port for the downstream clients
     logger.debug("configuring heartbeat socket at %s", config.HB_ADDR)
@@ -327,9 +352,9 @@ async def collector(
     for s in (publisher, subscriber, heartbeat):
         poller.register(s, zmq.POLLIN)
 
-    topics = set()  # {"XDC-USDT_1min"}
+    topics = {"XDC-USDT_1min"}
 
-    # prepare deduplicate & heartbeat functions for use in the loop
+    # prepare registration & heartbeat functions for use in the loop
     register_fn = partial(
         process_registration,
         config=config,
@@ -339,6 +364,8 @@ async def collector(
     )
 
     hb_send_fn = partial(hb.send_hb, heartbeat, config.uid, config.name)
+
+    req_rgstr_fn = partial(request_to_register, socket=registration)
 
     # start background tasks
     hb_task, _ = await hb.start_hb_send_task(hb_send_fn, config.hb_interval)
@@ -357,12 +384,18 @@ async def collector(
     msg_cache = deque(maxlen=config.max_cache_size)
     next_kinsfolk_check = time() + config.kinsfolk_check_interval
 
+    next_topic = time() + 10
+
     # ......................... .......................................................
     # start the main loop
     while True:
         epoch += 1
 
         try:
+            if time() > next_topic:
+                next_topic = time() + 10
+                await subscribe_topic(subscriber, choice(list(test_topics)))
+
             events = dict(await poller.poll())
             epoch_start = time()
 
@@ -389,7 +422,7 @@ async def collector(
                     )
 
                 # take everything as a heartbeat message
-                await kinsfolk.update(msg[2].decode("utf-8"))
+                await kinsfolk.update(msg[2].decode("utf-8"), on_missing=req_rgstr_fn)
 
                 # latencies.append((time() - float(data.get("ts"))) * 1000)
 
@@ -430,7 +463,6 @@ async def collector(
                     if topics and config.no_consumer_no_subs:
                         logger.debug("unsubscribing from all topics ...")
                         await unsubscribe_from_all(subscriber, topics)
-                        topics = set()
 
                     # logger.warning("[epoch %s] no consumers available", epoch)
 
