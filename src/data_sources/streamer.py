@@ -655,7 +655,7 @@ async def streamer(
     kinsfolk = Kinsfolk(config.hb_interval, config.hb_liveness, remove_hb_sender_coro)
 
     # ..................................................................................
-    # do this after successful registrastion with collector
+    # do this after successful registration with collector
     rgstr_actions = [kinsfolk.accept, add_hb_sender_coro]
 
     # register with collector so it knows where to subscribe to topics

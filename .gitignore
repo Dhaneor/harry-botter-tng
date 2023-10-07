@@ -8,6 +8,7 @@
 /research
 /config.py
 /*.ini
+**/keys
 .DS_Store
 .vscode
 playground.ipynb

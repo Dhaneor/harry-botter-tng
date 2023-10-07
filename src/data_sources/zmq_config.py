@@ -9,6 +9,7 @@ Created on Mon  Sep 18 19:17:23 2023
 """
 import json
 import os
+import requests
 import sys
 from random import randint
 from typing import Sequence, Optional, TypeVar
@@ -20,32 +21,21 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # --------------------------------------------------------------------------------------
 
+import config as cnf  # noqa: F401, E402
+
 from zmqbricks.sockets import SockDef  # noqa: F401, E402
 from zmqbricks.fukujou.curve import generate_curve_key_pair  # noqa: F401, E402
 from data_sources.util.random_names import random_elven_name as rand_name  # noqa: E402
+from keys import amanya as keys  # noqa: F401, E402
 
 ScrollT = TypeVar("ScrollT", bound=object)
 
-# some default values that are (can) be shared between components
-DEFAULT_ENCODING = "utf-8"
-DEFAULT_HB_INTERVAL = 1  # seconds
-DEFAULT_HB_LIVENESS = 10  # heartbeat liveness
-DEFAULT_RGSTR_TIMEOUT = 10  # seconds
-DEFAULT_RGSTR_LOG_INTERVAL = 900  # resend request after (secs)
-DEFAULT_RGSTR_MAX_ERRORS = 10  # maximum number of registration errors
-DEFAULT_COLLECTOR_KEYS = (
-    'L>&NKg9E/Cxv)nw]rXl<mgy!!w:9%s($@=Fk#DDP',
-    '5sIbhID73=!fbqYBeiipw)9p0?(ix#SG]SSN$KqJ'
-)
-STREAMER_BASE_PORT = 5500
-
-
 # endpoints
 #
-collector_sub = "tcp://127.0.0.1:5582"
-collector_pub = "tcp://127.0.0.1:5583"
-collector_mgmt = "tcp://127.0.0.1:5570"
-collector_hb = "tcp://127.0.0.1:5580"
+cnf.collector_sub = "tcp://127.0.0.1:5582"
+cnf.collector_pub = "tcp://127.0.0.1:5583"
+cnf.collector_mgmt = "tcp://127.0.0.1:5570"
+cnf.collector_hb = "tcp://127.0.0.1:5580"
 
 ohlcv_repo_req = "inproc://ohlcv_repository"
 
@@ -54,18 +44,19 @@ class BaseConfig:
     """Base configuration for components."""
 
     desc: str = ""  # service description, just for printing, not essential
-    external_ip: str = "127.0.0.1"  # external ip address
 
-    hb_interval: float = DEFAULT_HB_INTERVAL  # heartbeat interval (seconds)
-    hb_liveness: int = DEFAULT_HB_LIVENESS  # heartbeat liveness (max missed heartbeats)
-    rgstr_timeout: int = DEFAULT_RGSTR_TIMEOUT  # registration timeout (seconds)
-    rgstr_max_errors: int = DEFAULT_RGSTR_MAX_ERRORS  # max no of registration errors
-    rgstr_log_interval: int = DEFAULT_RGSTR_LOG_INTERVAL  # resend request after (secs)
+    encrypted: bool = True  # use encryption or not
+
+    hb_interval: float = cnf.HB_INTERVAL  # heartbeat interval (seconds)
+    hb_liveness: int = cnf.HB_LIVENESS  # heartbeat liveness (max missed heartbeats)
+    rgstr_timeout: int = cnf.RGSTR_TIMEOUT  # registration timeout (seconds)
+    rgstr_max_errors: int = cnf.RGSTR_MAX_ERRORS  # max no of registration errors
+    rgstr_log_interval: int = cnf.RGSTR_LOG_INTERVAL  # resend request after (secs)
 
     def __init__(
         self,
-        exchange: str,
-        markets: Sequence[str],
+        exchange: Optional[str] = "all",
+        markets: Optional[Sequence[str]] = ["all"],
         sock_defs: Sequence[SockDef] = [],
         **kwargs
     ) -> None:
@@ -74,9 +65,6 @@ class BaseConfig:
         self.exchange: str = exchange
         self.markets: Sequence[str] = markets
         self.desc: Optional[str] = kwargs.get("desc", BaseConfig.desc)
-        self.external_ip: Optional[str] = kwargs.get(
-            "external_ip", BaseConfig.external_ip
-        )
 
         self._sock_defs: Sequence[SockDef] = sock_defs
         self._hb_interval: float = kwargs.get("hb_interval", BaseConfig.hb_interval)
@@ -90,6 +78,8 @@ class BaseConfig:
 
         self.public_key, self.private_key = generate_curve_key_pair()
 
+        self._endpoints: dict[str, str] = {}
+
     @property
     def service_name(self) -> str:
         return (
@@ -99,7 +89,39 @@ class BaseConfig:
 
     @property
     def endpoints(self) -> dict[str, str]:
-        return {}
+        if not cnf.DEV_ENV:
+            ip = self.external_ip()
+
+            for name, endpoint in self._endpoints.items():
+                self._endpoints[name] = endpoint.replace("*", ip)
+                self._endpoints[name] = endpoint.replace("127.0.0.1", ip)
+                self._endpoints[name] = endpoint.replace("localhost", ip)
+
+        return self._endpoints
+
+    @property
+    def hb_addr(self) -> str:
+        return self.endpoints.get("heartbeat", None)
+
+    @property
+    def rgstr_addr(self) -> str:
+        return self.endpoints.get("registration", None)
+
+    @property
+    def req_addr(self) -> str:
+        return self.endpoints.get("requests", None)
+
+    @property
+    def pub_addr(self) -> str:
+        return self.endpoints.get("publisher", None)
+
+    @property
+    def mgmt_addr(self) -> str:
+        return self.endpoints.get("management", None)
+
+    @property
+    def external_ip(self) -> str:
+        return requests.get('https://api.ipify.org').text
 
     # ..................................................................................
     def as_dict(self) -> dict:
@@ -138,10 +160,10 @@ class Streamer(BaseConfig):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.name = rand_name(gender='male')
-        self.register_at = kwargs.get("register_at", collector_mgmt)
-        self.publisher_addr = (
-            f"tcp://127.0.0.1:{randint(STREAMER_BASE_PORT, STREAMER_BASE_PORT + 50)}"
-        )
+        self.register_at = kwargs.get("register_at", cnf.collector_mgmt)
+
+        port = randint(cnf.STREAMER_BASE_PORT, cnf.STREAMER_BASE_PORT + 50)
+        self.publisher_addr = (f"tcp://127.0.0.1:{port}")
 
     @property
     def endpoints(self) -> dict[str, str]:
@@ -161,11 +183,11 @@ class Collector(BaseConfig):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.name = rand_name(gender='male')
-        self.SUBSCRIBER_ADDR = collector_sub
-        self.PUBLISHER_ADDR = collector_pub
-        self.RGSTR_ADDR = collector_mgmt
-        self.HB_ADDR = collector_hb
-        self.public_key, self.private_key = DEFAULT_COLLECTOR_KEYS
+        self.SUBSCRIBER_ADDR = cnf.collector_sub
+        self.PUBLISHER_ADDR = cnf.collector_pub
+        self.RGSTR_ADDR = cnf.collector_mgmt
+        self.HB_ADDR = cnf.collector_hb
+        self.public_key, self.private_key = cnf.CoLLECTOR_KEYS
 
     @property
     def endpoints(self) -> dict[str, str]:
@@ -181,13 +203,33 @@ class OhlcvRegistry(BaseConfig):
     """Configuration for the ohlcv registry"""
     PUBLISHER_ADDR = "inproc://craeft_pond"
     REPO_ADDR = ohlcv_repo_req
-    COLLECTOR_PUB_ADDR = collector_pub
+    cnf.collector_PUB_ADDR = cnf.collector_pub
     CONTAINER_SIZE_LIMIT = 1000
 
 
 class OhlcvRepository(BaseConfig):
     """Configuration for ohlcv_repository."""
     REQUESTS_ADDR = ohlcv_repo_req
+
+
+class Amanya(BaseConfig):
+    """Configuration for the Amanya component."""
+
+    service_type: str = "amanya"
+    desc: str = "Central Configuration Service"
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        self._endpoints: dict[str, str] = {
+            "registration": "tcp://*:6000",
+            "requests": "tcp://*:6001",
+            "publisher": "tcp://*:6002",
+            "heartbeat": "tcp://*:33333"
+        }
+
+        self.public = keys.public
+        self.private = keys.private
 
 
 # --------------------------------------------------------------------------------------
@@ -198,6 +240,7 @@ valid_service_types = {
     "collector": Collector,
     "ohlcv_registry": OhlcvRegistry,
     "ohlcv_repository": OhlcvRepository,
+    "amanya": Amanya,
 }
 
 
@@ -251,11 +294,11 @@ def get_rgstr_info(service_type, exchange="kcuoin", market="spot") -> ScrollT | 
     markets = [market] if isinstance(market, str) else market
 
     if service_type == "collector":
-        collector_conf = Collector(exchange, markets)
+        cnf.collector_conf = Collector(exchange, markets)
 
         class C:
-            endpoint = collector_conf.endpoints.get("registration")
-            public_key = collector_conf.public_key
+            endpoint = cnf.collector_conf.endpoints.get("registration")
+            public_key = cnf.collector_conf.public_key
 
             def __repr__(self):
                 return f"C(endpoint={self.endpoint}, public_key={self.public_key})"
