@@ -3,6 +3,9 @@
 """
 Provides configuration information for components in data_sources.
 
+The configuration objects are based on the BaseConfig class from
+the zmqbricks package.
+
 Created on Mon  Sep 18 19:17:23 2023
 
 @author_ dhaneor
@@ -18,135 +21,18 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # --------------------------------------------------------------------------------------
 
-import config as cnf  # noqa: F401, E402
+try:
+    from . import config as cnf  # noqa: F401, E402
+except ImportError:
+    import config as cnf  # noqa: F401, E402
 
-from zmqbricks.base_config import BaseConfig  # noqa: F401, E402
+from zmqbricks.base_config import BaseConfig, ConfigT  # noqa: F401, E402
 from zmqbricks.sockets import SockDef  # noqa: F401, E402
 from zmqbricks.fukujou.curve import generate_curve_key_pair  # noqa: F401, E402
 from data_sources.util.random_names import random_elven_name as rand_name  # noqa: E402
-from keys import amanya as keys  # noqa: F401, E402
+from data_sources.keys import amanya as keys  # noqa: F401, E402
 
 ScrollT = TypeVar("ScrollT", bound=object)
-
-# endpoints
-#
-cnf.collector_sub = "tcp://127.0.0.1:5582"
-cnf.collector_pub = "tcp://127.0.0.1:5583"
-cnf.collector_mgmt = "tcp://127.0.0.1:5570"
-cnf.collector_hb = "tcp://127.0.0.1:5580"
-
-ohlcv_repo_req = "inproc://ohlcv_repository"
-
-
-# class BaseConfig:
-#     """Base configuration for components."""
-
-#     desc: str = ""  # service description, just for printing, not essential
-
-#     encrypted: bool = True  # use encryption or not
-
-#     hb_interval: float = cnf.HB_INTERVAL  # heartbeat interval (seconds)
-#     hb_liveness: int = cnf.HB_LIVENESS  # heartbeat liveness (max missed heartbeats)
-#     rgstr_timeout: int = cnf.RGSTR_TIMEOUT  # registration timeout (seconds)
-#     rgstr_max_errors: int = cnf.RGSTR_MAX_ERRORS  # max no of registration errors
-#     rgstr_log_interval: int = cnf.RGSTR_LOG_INTERVAL  # resend request after (secs)
-
-#     def __init__(
-#         self,
-#         exchange: Optional[str] = "all",
-#         markets: Optional[Sequence[str]] = ["all"],
-#         sock_defs: Sequence[SockDef] = [],
-#         **kwargs
-#     ) -> None:
-#         self.uid: str = str(uuid4())
-
-#         self.exchange: str = exchange
-#         self.markets: Sequence[str] = markets
-#         self.desc: Optional[str] = kwargs.get("desc", BaseConfig.desc)
-
-#         self._sock_defs: Sequence[SockDef] = sock_defs
-#         self._hb_interval: float = kwargs.get("hb_interval", BaseConfig.hb_interval)
-#         self._hb_liveness: int = kwargs.get("hb_liveness", BaseConfig.hb_liveness)
-#         self._rgstr_timeout: int = kwargs.get(
-#             "rgstr_timeout", BaseConfig.rgstr_timeout
-#         )
-#         self._rgstr_max_errors: int = kwargs.get(
-#             "rgstr_max_errors", BaseConfig.rgstr_max_errors
-#         )
-
-#         self.public_key, self.private_key = generate_curve_key_pair()
-
-#         self._endpoints: dict[str, str] = {}
-
-#     @property
-#     def service_name(self) -> str:
-#         return (
-#             f"{self.service_type.capitalize()} for {self.exchange.upper()} "
-#             f"{[m.upper() for m in self.markets]}"
-#         )
-
-#     @property
-#     def endpoints(self) -> dict[str, str]:
-#         if not cnf.DEV_ENV:
-#             ip = self.external_ip()
-
-#             for name, endpoint in self._endpoints.items():
-#                 self._endpoints[name] = endpoint.replace("*", ip)
-#                 self._endpoints[name] = endpoint.replace("127.0.0.1", ip)
-#                 self._endpoints[name] = endpoint.replace("localhost", ip)
-
-#         return self._endpoints
-
-#     @property
-#     def hb_addr(self) -> str:
-#         return self.endpoints.get("heartbeat", None)
-
-#     @property
-#     def rgstr_addr(self) -> str:
-#         return self.endpoints.get("registration", None)
-
-#     @property
-#     def req_addr(self) -> str:
-#         return self.endpoints.get("requests", None)
-
-#     @property
-#     def pub_addr(self) -> str:
-#         return self.endpoints.get("publisher", None)
-
-#     @property
-#     def mgmt_addr(self) -> str:
-#         return self.endpoints.get("management", None)
-
-#     @property
-#     def external_ip(self) -> str:
-#         return requests.get('https://api.ipify.org').text
-
-#     # ..................................................................................
-#     def as_dict(self) -> dict:
-#         """Get the dictionary representation"""
-#         return {
-#             "service_type": self.service_type,
-#             "service_name": self.service_name,
-#             "endpoints": self.endpoints
-#         } | {
-#             var: getattr(self, var) for var in vars(self)
-#             if not var.startswith("_") or var == "private_key"
-#         }
-
-#     def as_json(self) -> str:
-#         """Get the JSON representation"""
-#         return json.dumps(self.as_dict(), indent=2)
-
-#     # ..................................................................................
-#     @staticmethod
-#     def from_json(json_str: str) -> "BaseConfig":
-#         """Build a configuration object from a JSON string."""
-#         return json.loads(json_str, object_hook=BaseConfig.from_dict)
-
-#     @staticmethod
-#     def from_dict(d: dict) -> "BaseConfig":
-#         """Build a configuration object from a dictionary."""
-#         return BaseConfig(**d)
 
 
 # --------------------------------------------------------------------------------------
@@ -163,9 +49,7 @@ class Streamer(BaseConfig):
         port = randint(cnf.STREAMER_BASE_PORT, cnf.STREAMER_BASE_PORT + 50)
         self.publisher_addr = (f"tcp://127.0.0.1:{port}")
 
-    @property
-    def endpoints(self) -> dict[str, str]:
-        return {
+        self._endpoints = {
             "publisher": self.publisher_addr,
         }
 
@@ -181,33 +65,28 @@ class Collector(BaseConfig):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.name = rand_name(gender='male')
-        self.SUBSCRIBER_ADDR = cnf.collector_sub
-        self.PUBLISHER_ADDR = cnf.collector_pub
-        self.RGSTR_ADDR = cnf.collector_mgmt
-        self.HB_ADDR = cnf.collector_hb
-        self.public_key, self.private_key = cnf.CoLLECTOR_KEYS
 
-    @property
-    def endpoints(self) -> dict[str, str]:
-        return {
-            "publisher": self.PUBLISHER_ADDR,
-            "subscriber": self.SUBSCRIBER_ADDR,
-            "registration": self.RGSTR_ADDR,
-            "heartbeat": self.HB_ADDR,
+        self._endpoints = {
+            "publisher": cnf.collector_sub,
+            "subscriber": cnf.collector_pub,
+            "registration": cnf.collector_pub,
+            "heartbeat": cnf.collector_hb
         }
+
+        self.public_key, self.private_key = cnf.COLLECTOR_KEYS
 
 
 class OhlcvRegistry(BaseConfig):
     """Configuration for the ohlcv registry"""
     PUBLISHER_ADDR = "inproc://craeft_pond"
-    REPO_ADDR = ohlcv_repo_req
+    REPO_ADDR = cnf.ohlcv_repo_req
     cnf.collector_PUB_ADDR = cnf.collector_pub
     CONTAINER_SIZE_LIMIT = 1000
 
 
 class OhlcvRepository(BaseConfig):
     """Configuration for ohlcv_repository."""
-    REQUESTS_ADDR = ohlcv_repo_req
+    REQUESTS_ADDR = cnf.ohlcv_repo_req
 
 
 class Amanya(BaseConfig):

@@ -236,7 +236,7 @@ async def process_registration(
         logger.error("service type or endpoints['publisher'] missing, got: %s", req)
 
 
-async def request_to_register(socket: zmq.Socket, uid: str) -> None:
+async def request_to_register(uid: str, socket: zmq.Socket) -> None:
     """Request (re-)registration for a given uid."""
     logger.info("request to register: %s", uid)
     socket.setsockopt(zmq.SUBSCRIBE, uid.encode("utf-8"))
@@ -311,7 +311,7 @@ async def collector(
     config: cnf.Collector,
     ctx: Optional[zmq.asyncio.Context] = None,
 ):
-    """Collects data from a data stream and removes duplicates.
+    """Collects data from multiple producers and removes duplicates.
 
     Parameters
     ----------
@@ -331,22 +331,22 @@ async def collector(
     subscriber.curve_publickey = config.public_key.encode("ascii")
 
     # configure the publisher port
-    logger.info("configuring publisher socket at %s", config.PUBLISHER_ADDR)
+    logger.info("configuring publisher socket at %s", config.pub_addr)
     publisher = context.socket(zmq.XPUB)
-    publisher.bind(config.PUBLISHER_ADDR)
+    publisher.bind(config.pub_addr)
 
     # configure the registration port
-    logger.info("configuring registration socket at %s", config.RGSTR_ADDR)
+    logger.info("configuring registration socket at %s", config.rgstr_addr)
     registration = context.socket(zmq.ROUTER)
     registration.curve_secretkey = config.private_key.encode("ascii")
     registration.curve_publickey = config.public_key.encode("ascii")
     registration.curve_server = True
-    registration.bind(config.RGSTR_ADDR)
+    registration.bind(config.rgstr_addr)
 
     # configure the heartbeat port for the downstream clients
-    logger.debug("configuring heartbeat socket at %s", config.HB_ADDR)
+    logger.debug("configuring heartbeat socket at %s", config.hb_addr)
     heartbeat = context.socket(zmq.PUB)
-    heartbeat.bind(config.HB_ADDR)
+    heartbeat.bind(config.hb_addr)
 
     # register sockets with poller
     for s in (publisher, subscriber, heartbeat):
