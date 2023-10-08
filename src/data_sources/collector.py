@@ -44,7 +44,6 @@ from typing import Optional, Sequence, Mapping, TypeVar
 import zmq_config as cnf  # noqa: F401, E402
 from util.sequence import monitor_sequence  # noqa: F401, E402
 
-import zmqbricks
 from zmqbricks.kinsfolk import Kinsfolk, Kinsman, KinsfolkT  # noqa: F401, E402
 from zmqbricks.registration import Scroll, monitor_registration  # noqa: F401, E402
 from zmqbricks import heartbeat as hb  # noqa: F401, E402
@@ -492,19 +491,8 @@ async def collector(
         logger.debug("cancelling task: %s", task.get_name())
         task.cancel()
         await asyncio.sleep(1)
-        # logger.info(
-        #     "task %s cancelled: %s",
-        #     task.get_name(),
-        #     "OK" if task.cancelled() else "NOPE!")
-        # logger.info(
-        #     "task %s done: %s",
-        #     task.get_name(),
-        #     "OK" if task.done() else "NOPE!")
 
-    res, exc, *_ = await asyncio.gather(*tasks, return_exceptions=True)
-
-    # logger.debug("task results: %s", res)
-    # logger.debug("task exceptions: %s", exc)
+    await asyncio.gather(*tasks, return_exceptions=True)
 
     heartbeat.close(1)
     registration.close(1)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Provides reusable functions related to heartbeating in a ZeroMQ system.
+Provides a central confiuration service/registry for ZMQ components.
 
 Created on Tue Sep 12 19:41:23 2023
 
