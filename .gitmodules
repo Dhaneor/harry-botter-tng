@@ -1,3 +1,0 @@
-[submodule "src/zmqbricks"]
-	path = src/zmqbricks
-	url = https://github.com/Dhaneor/zmqbricks.git
