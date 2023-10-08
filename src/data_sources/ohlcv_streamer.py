@@ -8,7 +8,7 @@ Created on Wed Dec 07 12:44:23 2022
 import asyncio
 import logging
 
-from src.data_sources import streamer as st
+import streamer as st
 
 # listener = QueueListener(que, handler)
 logger = logging.getLogger('main')

@@ -24,8 +24,6 @@ Created on Tue Sep 12 19:41:23 2023
 """
 import asyncio
 import logging
-import os
-import sys
 import uvloop
 import zmq
 import zmq.asyncio
@@ -45,6 +43,8 @@ from typing import Optional, Sequence, Mapping, TypeVar
 
 import zmq_config as cnf  # noqa: F401, E402
 from util.sequence import monitor_sequence  # noqa: F401, E402
+
+import zmqbricks
 from zmqbricks.kinsfolk import Kinsfolk, Kinsman, KinsfolkT  # noqa: F401, E402
 from zmqbricks.registration import Scroll, monitor_registration  # noqa: F401, E402
 from zmqbricks import heartbeat as hb  # noqa: F401, E402

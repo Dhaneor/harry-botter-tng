@@ -13,11 +13,7 @@ Created on Mon  Sep 18 19:17:23 2023
 from random import randint
 from typing import Sequence, TypeVar
 
-try:
-    from . import config as cnf  # noqa: F401, E402
-except ImportError:
-    print("zmq_config: using alt import for config.py ...")
-    import config as cnf  # noqa: F401, E402
+import config as cnf  # noqa: F401, E402
 
 from zmqbricks.base_config import BaseConfig, ConfigT  # noqa: F401, E402
 from zmqbricks.util.sockets import SockDef  # noqa: F401, E402
@@ -37,6 +33,7 @@ class Streamer(BaseConfig):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.name = rand_name(gender='male')
+        self.service_type = kwargs.get("service_type", Streamer.service_type)
         self.register_at = kwargs.get("register_at", cnf.collector_mgmt)
 
         port = randint(cnf.STREAMER_BASE_PORT, cnf.STREAMER_BASE_PORT + 50)
@@ -167,7 +164,7 @@ def get_rgstr_info(service_type, exchange="kcuoin", market="spot") -> ScrollT | 
         cnf.collector_conf = Collector(exchange, markets)
 
         class C:
-            endpoint = cnf.collector_conf.endpoints.get("registration")
+            endpoints = cnf.collector_conf.endpoints
             public_key = cnf.collector_conf.public_key
 
             def __repr__(self):
