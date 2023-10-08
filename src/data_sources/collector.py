@@ -110,7 +110,7 @@ async def handle_missing_seq_no(
 
 
 async def get_streamers(kinsfolk: Kinsfolk) -> Sequence[Kinsman]:
-    return [k for k in kinsfolk.values() if k.servie_type == "streamer"]
+    return [k for k in kinsfolk.values() if k.service_type == "streamer"]
 
 
 async def connect_to_streamer(socket: SockT, config: ConfigT, req: Scroll) -> None:

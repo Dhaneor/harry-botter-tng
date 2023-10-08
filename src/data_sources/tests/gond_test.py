@@ -51,11 +51,11 @@ async def main():
     }
 
     async with Gond(cnf) as g:  # noqa: F841
-        logger.debug(g)
+        # logger.debug(g)
 
         # await g.heart.listen_to(cnf.endpoints["heartbeat"])
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(10)
         logger.debug("waking up from sleep ...")
 
         # await g.heart.stop_listening_to(cnf.endpoints["heartbeat"])
