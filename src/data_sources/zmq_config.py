@@ -10,27 +10,20 @@ Created on Mon  Sep 18 19:17:23 2023
 
 @author_ dhaneor
 """
-import os
-import sys
 from random import randint
 from typing import Sequence, TypeVar
-
-# --------------------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# --------------------------------------------------------------------------------------
 
 try:
     from . import config as cnf  # noqa: F401, E402
 except ImportError:
+    print("zmq_config: using alt import for config.py ...")
     import config as cnf  # noqa: F401, E402
 
 from zmqbricks.base_config import BaseConfig, ConfigT  # noqa: F401, E402
-from zmqbricks.sockets import SockDef  # noqa: F401, E402
+from zmqbricks.util.sockets import SockDef  # noqa: F401, E402
 from zmqbricks.fukujou.curve import generate_curve_key_pair  # noqa: F401, E402
-from data_sources.util.random_names import random_elven_name as rand_name  # noqa: E402
-from data_sources.keys import amanya as keys  # noqa: F401, E402
+from util.random_names import random_elven_name as rand_name  # noqa: E402
+from keys import amanya as keys  # noqa: F401, E402
 
 ScrollT = TypeVar("ScrollT", bound=object)
 
