@@ -15,9 +15,9 @@ Created on Sat Oct 07 12:01:23 2023
 """
 from typing import TypeVar
 
-import src.zmqbricks.kinsfolk as kf
-import src.zmqbricks.registration as rgstr
-import src.zmqbricks.heartbeat as hb
+import zmqbricks.kinsfolk as kf
+import zmqbricks.registration as rgstr
+import zmqbricks.heartbeat as hb
 from src.data_sources.zmq_config import BaseConfig
 
 configT = TypeVar("configT", bound=BaseConfig)
