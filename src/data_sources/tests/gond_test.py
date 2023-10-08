@@ -31,6 +31,13 @@ handler.setFormatter(formatter)
 
 # --------------------------------------------------------------------------------------
 async def main():
+    """Tests the Gond context manager.
+
+    For testing it registers with itself, and sends itself heartbeats.
+    For practical applications this would make no sense, but that's how
+    we can test both directions on one go.
+    """
+
     cnf = BaseConfig("kucoin", ["spot"], [])
     cnf._endpoints = {
         "registration": "tcp://127.0.0.1:5600",
@@ -46,12 +53,12 @@ async def main():
     async with Gond(cnf) as g:  # noqa: F841
         logger.debug(g)
 
-        await g.heart.listen_to(cnf.endpoints["heartbeat"])
+        # await g.heart.listen_to(cnf.endpoints["heartbeat"])
 
         await asyncio.sleep(5)
         logger.debug("waking up from sleep ...")
 
-        await g.heart.stop_listening_to(cnf.endpoints["heartbeat"])
+        # await g.heart.stop_listening_to(cnf.endpoints["heartbeat"])
 
 
 if __name__ == '__main__':
