@@ -56,6 +56,7 @@ class Collector(BaseConfig):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.name = rand_name(gender='male')
+        self.service_type = kwargs.get("service_type", Collector.service_type)
 
         self._endpoints = {
             "publisher": cnf.collector_sub,

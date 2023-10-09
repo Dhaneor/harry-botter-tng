@@ -120,4 +120,4 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except KeyboardInterrupt:
-        logger.info("shutdown complete: KeyboardInterrupt")
+        logger.debug("shutdown complete: KeyboardInterrupt")
