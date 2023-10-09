@@ -41,6 +41,7 @@ class Streamer(BaseConfig):
 
         self._endpoints = {
             "publisher": self.publisher_addr,
+            "heartbeat": self.publisher_addr
         }
 
 
@@ -59,7 +60,7 @@ class Collector(BaseConfig):
         self._endpoints = {
             "publisher": cnf.collector_sub,
             "subscriber": cnf.collector_pub,
-            "registration": cnf.collector_pub,
+            "registration": cnf.collector_mgmt,
             "heartbeat": cnf.collector_hb
         }
 
@@ -156,7 +157,7 @@ def get_config(
     )
 
 
-def get_rgstr_info(service_type, exchange="kcuoin", market="spot") -> ScrollT | None:
+async def get_rgstr_info(service_type, exchange="kcuoin", market="spot") -> ScrollT | None:
 
     markets = [market] if isinstance(market, str) else market
 
@@ -164,6 +165,7 @@ def get_rgstr_info(service_type, exchange="kcuoin", market="spot") -> ScrollT | 
         cnf.collector_conf = Collector(exchange, markets)
 
         class C:
+            service_name = "collector"
             endpoints = cnf.collector_conf.endpoints
             public_key = cnf.collector_conf.public_key
 
@@ -178,4 +180,6 @@ if __name__ == "__main__":
 
     # [print(f"{k} -> {v}") for k, v in vars(c).items()]
 
-    print(get_rgstr_info("collector", "kucoin", "spot"))
+    # print(get_rgstr_info("collector", "kucoin", "spot"))
+
+    print(cnf)

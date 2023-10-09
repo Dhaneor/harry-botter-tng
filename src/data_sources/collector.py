@@ -49,7 +49,7 @@ from zmqbricks.registration import Scroll, monitor_registration  # noqa: F401, E
 from zmqbricks import heartbeat as hb  # noqa: F401, E402
 
 logger = logging.getLogger("main")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 ch = logging.StreamHandler()
 formatter = logging.Formatter(
     "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
@@ -107,6 +107,10 @@ async def handle_missing_seq_no(
         f"Missing sequence number(s) from producer {producer_id}. "
         f"Last: {last_seq}, Current: {current_seq}"
     )
+
+
+async def on_inactive_kinsman(kinsman: Kinsman) -> None:
+    logger.warning("kinsman %s set to status 'inactive'", kinsman.name)
 
 
 async def get_streamers(kinsfolk: Kinsfolk) -> Sequence[Kinsman]:
@@ -237,7 +241,7 @@ async def process_registration(
 
 async def request_to_register(uid: str, socket: zmq.Socket) -> None:
     """Request (re-)registration for a given uid."""
-    logger.info("request to register: %s", uid)
+    logger.info("request to register: %s (%s)", uid, socket)
     socket.setsockopt(zmq.SUBSCRIBE, uid.encode("utf-8"))
 
 
@@ -322,7 +326,7 @@ async def collector(
     """
     context = ctx or zmq.asyncio.Context()
     poller = zmq.asyncio.Poller()
-    kinsfolk = Kinsfolk(config.hb_interval, config.hb_liveness)
+    kinsfolk = Kinsfolk(config.hb_interval, config.hb_liveness, on_inactive_kinsman)
 
     # configure the subscriber port
     subscriber = context.socket(zmq.SUB)
@@ -351,7 +355,7 @@ async def collector(
     for s in (publisher, subscriber, heartbeat):
         poller.register(s, zmq.POLLIN)
 
-    topics = {"XDC-USDT_1min"}
+    topics = set()  # {"XDC-USDT_1min"}
 
     # prepare registration & heartbeat functions for use in the loop
     register_fn = partial(
@@ -364,7 +368,7 @@ async def collector(
 
     hb_send_fn = partial(hb.send_hb, heartbeat, config.uid, config.name)
 
-    req_rgstr_fn = partial(request_to_register, socket=registration)
+    req_rgstr_fn = partial(request_to_register, socket=subscriber)
 
     # start background tasks
     hb_task, _ = await hb.start_hb_send_task(hb_send_fn, config.hb_interval)
@@ -391,9 +395,9 @@ async def collector(
         epoch += 1
 
         try:
-            if time() > next_topic:
-                next_topic = time() + 10
-                await subscribe_topic(subscriber, choice(list(test_topics)))
+            # if time() > next_topic:
+            #     next_topic = time() + 10
+            #     await subscribe_topic(subscriber, choice(list(test_topics)))
 
             events = dict(await poller.poll())
             epoch_start = time()
@@ -479,7 +483,7 @@ async def collector(
             break
 
         except zmq.ZMQError as e:
-            logger.error(e)
+            logger.error(e, exc_info=1)
 
         except Exception as e:
             logger.exception(e)
