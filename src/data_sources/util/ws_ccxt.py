@@ -48,8 +48,14 @@ async def main(exchange):
                 tickers = await exchange.watch_tickers(symbols=symbols, params={})
 
                 if tickers:
-                    logger.info("---------------------------------------------------")
-                    logger.info("[%s] %s", counter, tickers)
+                    for ticker in tickers.values():
+                        if "info" in ticker.keys():
+                            del ticker["info"]
+
+                        logger.info(
+                            "---------------------------------------------------"
+                        )
+                        logger.info("[%s] %s", counter, ticker)
 
             except BadSymbol as e:
                 logger.error("[%s] %s", counter, e)
@@ -71,7 +77,7 @@ async def main(exchange):
         pprint(exchange.has)
 
     await exchange.close()
-    print("exchange closed: OK")
+    logger.info("exchange closed: OK")
 
 if __name__ == '__main__':
     try:

@@ -90,6 +90,8 @@ class Amanya(BaseConfig):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
+        self.service_type = kwargs.get("service_type", Amanya.service_type)
+
         self._endpoints: dict[str, str] = {
             "registration": "tcp://*:6000",
             "requests": "tcp://*:6001",
@@ -158,7 +160,11 @@ def get_config(
     )
 
 
-async def get_rgstr_info(service_type, exchange="kcuoin", market="spot") -> ScrollT | None:
+async def get_rgstr_info(
+    service_type,
+    exchange="kcuoin",
+    market="spot"
+) -> ScrollT | None:
 
     markets = [market] if isinstance(market, str) else market
 
