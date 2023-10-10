@@ -21,8 +21,9 @@ Created on Mon Oct 09 19:57:23 2023
 import json
 
 from dataclasses import dataclass, asdict
+from typing import Optional
 
-from enums import MarketType, SubscriptionType
+from .enums import MarketType, SubscriptionType
 
 
 @dataclass
@@ -33,7 +34,7 @@ class SubscriptionRequest:
     market: MarketType
     sub_type: SubscriptionType
     symbol: str
-    interval: str
+    interval: Optional[str] = None
 
     def __post_init__(self, **kwargs):
         """Type check for provided values."""
@@ -41,7 +42,7 @@ class SubscriptionRequest:
         if not isinstance(self.symbol, str):
             raise TypeError("symbol must be a string")
 
-        if not isinstance(self.interval, str):
+        if self.interval and not isinstance(self.interval, str):
             raise TypeError("interval must be a string")
 
         if not isinstance(self.exchange, str):

@@ -49,7 +49,7 @@ from zmqbricks.registration import Scroll, monitor_registration  # noqa: F401, E
 from zmqbricks import heartbeat as hb  # noqa: F401, E402
 
 logger = logging.getLogger("main")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 ch = logging.StreamHandler()
 formatter = logging.Formatter(
     "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
@@ -395,9 +395,9 @@ async def collector(
         epoch += 1
 
         try:
-            # if time() > next_topic:
-            #     next_topic = time() + 10
-            #     await subscribe_topic(subscriber, choice(list(test_topics)))
+            if time() > next_topic:
+                next_topic = time() + 10
+                await subscribe_topic(subscriber, choice(list(test_topics)))
 
             events = dict(await poller.poll())
             epoch_start = time()

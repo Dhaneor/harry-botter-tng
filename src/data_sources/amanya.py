@@ -54,7 +54,7 @@ ContextT = TypeVar("ContextT", bound=zmq.asyncio.Context)
 async def amanya(config: ConfigT, context: Optional[ContextT] = None):
     """The Central Configuration Service (service registry)
 
-    According to pi.ai:
+    Amanya -> according to pi.ai:
 
     me: Today, I'm looking for a word that describes an institution
         or person where everyone can go and ask for some information!
