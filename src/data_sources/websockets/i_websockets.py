@@ -59,16 +59,9 @@ class IWebsocketPublic(ABC):
         ...
 
     @abstractmethod
-    async def _handle_message(self, msg: dict) -> None:
+    async def set_rate_limit(self):
         ...
 
-    @abstractmethod
-    def _run(self):
-        ...
-
-    @abstractmethod
-    def _start_client(self):
-        ...
 
 
 class ITrades(IWebsocketPublic):

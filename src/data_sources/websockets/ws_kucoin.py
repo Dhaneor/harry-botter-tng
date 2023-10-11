@@ -3,6 +3,16 @@
 """
 Provides a wrapper for the websocket client for the Kucoin API.
 
+There are two implemtations for the public API endpoints. The old
+one is one class for all kinds of subjects (tickers, candles, etc.).
+
+The new implementation splits these up into separate classes. This
+allows to use them as components in in an Exchange class that I
+introduced after switching to CCXT. CCXT however seems to use more
+resources for WS streaming. The Exchange class makes it posssible to
+mix the general WS client from CCXT with specialized implementations,
+like the ones below.
+
 This module uses the websocket client implementation from the
 kucoin-python library/SDK.
 
@@ -21,25 +31,208 @@ Created on Sun Nov 28 13:12:20 2022
 import time
 import asyncio
 import logging
-from typing import Union, List, Tuple, Callable, Optional
+from typing import Callable, Optional, Iterable, Coroutine
+from uuid import uuid4
 
 from kucoin.client import WsToken
 from kucoin.ws_client import KucoinWsClient
 
-from .i_websockets import IWebsocketPublic, IWebsocketPrivate  # noqa: E402, F401
+from data_sources.websockets.i_websockets import (  # noqa: E402, F401
+    IWebsocketPublic, IWebsocketPrivate,
+    ITrades, IOhlcv, IOrderBook, ITicker, IAllTickers, ISnapshots, IAllSnapshots
+)
 from .publishers import (  # noqa: E402, F401
-    IPublisher,
-    LogPublisher,
-    ZeroMqPublisher,
-    PrintPublisher,
+    IPublisher, LogPublisher, ZeroMqPublisher, PrintPublisher,
 )
 
 TICKERS_ENDPOINT = "/market/ticker"
 CANDLES_ENDPOINT = "/market/candles"
 SNAPSHOT_ENDPOINT = "/market/snapshot"
 
+MAX_CONNECTIONS_PER_USER = 50
+CONNECTION_LIMIT = 30  # per minute
+MSG_LIMIT = 100  # 100 per 10 seconds
+MAX_BATCH_SUBSCRIPTIONS = 5  # 100 topics
+MAX_TOPICS_PER_CONNECTION = 10  # 300 topics
 
-# =============================================================================
+
+# ======================================================================================
+#                               WS CLIENTS PUBLIC API (NEW)                             #
+# ======================================================================================
+class Connection:
+    """Helper class that manages one connection."""
+
+    def __init__(self, publish: Coroutine, debug: bool = False):
+        self.publish = publish
+        self.debug = debug
+
+        self._topics: dict[str, int] = {}
+        self._id = str(uuid4())
+
+    @property
+    def topic_limit_reached(self) -> bool:
+        return len(self._topics) >= MAX_TOPICS_PER_CONNECTION
+
+    @property
+    def max_topics_left(self) -> int:
+        return MAX_TOPICS_PER_CONNECTION - len(self._topics)
+
+    async def watch(self, topics: str | Iterable[str], endpoint: str) -> None:
+        ...
+
+    async def _start_client(self) -> KucoinWsClient:
+        try:
+            loop = asyncio.get_running_loop()
+        except Exception:
+            loop = None
+
+        try:
+            client = await KucoinWsClient.create(
+                loop=loop,
+                client=WsToken(),
+                call_back=self._handle_message,
+                private=False
+            )
+            self.logger.info("kucoin public websocket client started ...")
+        except Exception as e:
+            self.logger.error(
+                "unexpected error while creating client: %s", e, exc_info=1
+            )
+        else:
+            return client
+
+    async def _stop_client(self) -> None:
+        del self._ws_client
+
+    async def _prep_topic_str(
+        self,
+        topics: list[str] | str
+    ) -> tuple[list[str], list[str]]:
+        """Prepares the topic string for use in sub/unsub message
+
+        We must consider/respect the limits given by Kucoin.
+
+        Parameters
+        ----------
+        topics : list[str] | str
+            a list of topics or a single topic
+
+        Returns
+        -------
+        tuple[list[str], list[str]]
+            the following two lists are returned:
+                -> A list of strings (concatenated if necessary). Each
+                string will contain a comma separated list of topics,
+                up to the maximum number of topics allowed for batch
+                subscriptions.
+                -> A list of strings for topics that cannot subscribed
+                to, because one of the API limits would be exceeded.
+
+        Raises
+        ------
+        TypeError
+            if topics is not a list or a string
+        """
+        # for tickers and snapshots, we can subscribe to all topics,
+        # this will be assumed if topics are not specified
+        if not topics:
+            return [], ["all"], []
+
+        if isinstance(topics, list):
+            sub_strings = []
+            max_topics_left = self.max_topics_left
+
+            while max_topics_left > 0 and topics:
+                max_topics = min(max_topics_left, MAX_BATCH_SUBSCRIPTIONS)
+                sub_strings.append(",".join(topics[:max_topics]))
+                topics = topics[max_topics:]
+                max_topics_left -= max_topics
+
+            return sub_strings, topics
+
+        elif isinstance(topics, str):
+            # we got only one topic
+            return [topics], []
+
+        else:
+            raise TypeError(
+                f"<topics> parameter must be str or list[str]"
+                f" but was {type(topics)}"
+            )
+
+
+# --------------------------------------------------------------------------------------
+class WebsocketBase(IWebsocketPublic):
+    """Base class for websocket clients for the Kucoin API"""
+
+    publisher: IPublisher = PrintPublisher()
+
+    def __init__(
+        self,
+        publisher: Optional[IPublisher] = None,
+        callback: Optional[Callable] = None,
+    ):
+        """Initialize a KucoinWebsocketPublic.
+
+        Parameters
+        ----------
+        publisher : Optional[IPublisher]
+            A class that publishes the updates/messages, by default None
+
+        callback : Optional[Callable]
+            Alternative/additional function for publisher, by default None
+        """
+        # set the callable to be used for publishing the results
+        self.publisher = publisher or KucoinWebsocketPublic.publisher
+        self.publish = callback or self.publisher.publish
+
+        logger_name = f"main.{__class__.__name__}"
+        self.logger = logging.getLogger(logger_name)
+
+        self.logger.info(
+            f"kucoin public websocket initialized ..."
+            f"with publisher {self.publisher}"
+        )
+
+        self._connections: dict[str, Connection] = {}
+        self._id = str(uuid4())
+
+    async def _get_connection(self) -> Connection:
+        if not self._connections:
+            await self._create_connection()
+
+        while True:
+            for connection in self._connections.values():
+                if not connection.topic_limit_reached:
+                    return connection
+
+            await self._create_connection()
+
+    async def _create_connection(self) -> Connection:
+        connection = Connection()
+        self._connections[connection._id] = connection
+
+
+class WsTickers(WebsocketBase):
+
+    def __init__(
+        self,
+        publisher: Optional[IPublisher] = None,
+        callback: Optional[Callable] = None,
+        id: Optional[str] = None,
+    ):
+        super().__init__(publisher, callback, id)
+
+    def watch(self, topic: str) -> None:
+        ...
+
+    def unwatch(self, topic: str) -> None:
+        ...
+
+
+# ======================================================================================
+#                               WS CLIENT PUBLIC API (OLD)                             #
+# ======================================================================================
 class KucoinWebsocketPublic:
     """Provides a websocket connection for the Kucoin API.
 
@@ -260,7 +453,9 @@ class KucoinWebsocketPublic:
         except ValueError as e:
             self.logger.error(
                 "someone tried to unsubscribe from a topic (%s) where"
-                " we had no subscription anyway -> %s", symbols, e
+                " we had no subscription anyway -> %s",
+                symbols,
+                e,
             )
         except Exception as e:
             self.logger.exception(e)
@@ -272,7 +467,7 @@ class KucoinWebsocketPublic:
         measured the time for letting a specific method for every 'subject'
         handle the response and it was significantly slower, so I put
         everything in here. In the most demanding case (subscribing to all
-        tickers or snapshots) we have thousands of messages per second,
+        tickers or snapshots) we may have thousands of messages per second,
         that's why we wanna be fast here.
 
         Parameters
@@ -362,7 +557,7 @@ class KucoinWebsocketPublic:
                             "topic": msg["topic"].split(":")[-1],
                             "data": msg["data"],
                             "received_at": received_at,
-                            "type": "message"
+                            "type": "message",
                         }
                     )
                     return
@@ -491,8 +686,9 @@ class KucoinWebsocketPublic:
             self.logger.error(f"unable to handle message: {msg}")
 
     async def _transform_symbols_parameter(
-        self, symbols: Union[List[str], str, None]
-    ) -> Tuple[List[str], str]:
+        self,
+        symbols: list[str] | str,
+    ) -> tuple[list[str], str]:
         if not symbols:
             return [], "all"
 
@@ -502,11 +698,14 @@ class KucoinWebsocketPublic:
             return [symbols], symbols
         else:
             raise ValueError(
-                f"<symbols> parameter must be str or List[str]"
+                f"<symbols> parameter must be str or list[str]"
                 f" but was {type(symbols)}"
             )
 
 
+# ======================================================================================
+#                               WS CLIENT PRIVATE API                                  #
+# ======================================================================================
 class KucoinWebsocketPrivate(IWebsocketPrivate):
     ws_client = None
     credentials = {}
@@ -517,7 +716,7 @@ class KucoinWebsocketPrivate(IWebsocketPrivate):
         self,
         credentials: dict,
         callback: Callable,
-        publisher: Union[IPublisher, None] = None,
+        publisher: Optional[IPublisher] = None,
     ):
         # set the callable to be used for publishing the results
         self.publisher = publisher or KucoinWebsocketPublic.publisher
