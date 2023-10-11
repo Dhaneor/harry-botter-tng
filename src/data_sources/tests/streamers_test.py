@@ -10,10 +10,11 @@ import logging
 import sys
 
 from os.path import dirname as dir
+from random import choice
 
 sys.path.append(dir(dir(__file__)))
 
-from streamers import streamer, get_stream_manager  # noqa: E402, F401
+from streamers import streamer, get_stream_manager, VALID_EXCHANGES  # noqa: E402, F401
 from util.enums import SubscriptionType, MarketType  # noqa: E402, F401
 from util.subscription_request import SubscriptionRequest  # noqa: E402, F401
 
@@ -28,33 +29,25 @@ async def test_streamer():
 
 
 async def test_stream_manager():
-    workers = {}
-    sm = get_stream_manager(workers)
+    sm = get_stream_manager()
+    exchange_names = list(VALID_EXCHANGES[MarketType.SPOT].keys())
 
-    await sm(
-        b"",
-        SubscriptionRequest(
-            "binance", MarketType.SPOT, SubscriptionType.TRADES, "BTC/USDT"
+    for _ in range(50):
+
+        action = choice([True, True, True, False])
+        symbol = choice(["BTC/USDT", "ETH/USDT", "XRP/USDT", "ADA/USDT", "ETH/BTC"])
+
+        await sm(
+            action,
+            SubscriptionRequest(
+                choice(exchange_names),
+                MarketType.SPOT,
+                SubscriptionType.TRADES,
+                symbol
+            )
         )
-    )
 
-    await sm(
-        b"",
-        SubscriptionRequest(
-            "kucoin", MarketType.SPOT, SubscriptionType.TRADES, "BTC/USDT"
-        )
-    )
-
-    # await sm(
-    #     b"",
-    #     SubscriptionRequest(
-    #         "binance", MarketType.SPOT, SubscriptionType.TRADES, "BTC/USDT"
-    #     )
-    # )
-
-    logger.info("test_stream_manager started: OK")
-
-    await asyncio.sleep(36000)
+        await asyncio.sleep(7)
 
     await sm(b"", None)
 

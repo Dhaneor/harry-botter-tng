@@ -22,28 +22,24 @@ que = queue.Queue(-1)  # no limit on size
 queue_handler = QueueHandler(que)
 handler = logging.StreamHandler()
 listener = QueueListener(que, handler)
-root = logging.getLogger('main')
-root.addHandler(queue_handler)
-root.addHandler(handler)
+logger = logging.getLogger('main')
+logger.addHandler(queue_handler)
+logger.addHandler(handler)
 formatter = logging.Formatter('%(threadName)s: %(message)s')
 handler.setFormatter(formatter)
 listener.start()
 
 # ------------------------------------------------------------------------------
-# getting the name of the directory
-# where the this file is present.
 current = os.path.dirname(os.path.realpath(__file__))
-  
-# Getting the parent directory name
-# where the current directory is present.
 parent = os.path.dirname(current)
 sys.path.append(parent)
 # ------------------------------------------------------------------------------
 
-from data_sources.util.publishers import (IPublisher, PrintPublisher, LogPublisher,
-                                      EventBusPublisher, ZeroMqPublisher)
-from src.infrastructure.event_bus import EventBus
-from src.helpers.timeops import execution_time
+from data_sources.websockets.publishers import (  # noqa: E402, F401
+    IPublisher, PrintPublisher, LogPublisher,
+    EventBusPublisher, ZeroMqPublisher
+)
+from src.helpers.timeops import execution_time  # noqa: E402, F401
 
 messages = [
     'one message', 'another message', 'really important message',
@@ -51,16 +47,15 @@ messages = [
 ]
 
 
-
 # =============================================================================
 @execution_time
 async def main():
     # eb = EventBus()
     # p = EventBusPublisher(event_bus=eb)
-    
+
     # ctx = zmq.asyncio.Context()
     p = ZeroMqPublisher()
-    
+
     while True:
         try:
             msg = choice(messages)
@@ -74,10 +69,10 @@ async def main():
 
     # coros = [p.publish(choice(messages)) for _ in range(5)]
     # await asyncio.gather(*coros)
-    
-    root.critical('we did it!')
 
-# =============================================================================    
+    logger.critical('we did it!')
+
+# =============================================================================
 if __name__ == '__main__':
     asyncio.run(main())
     listener.stop()

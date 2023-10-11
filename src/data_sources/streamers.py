@@ -49,7 +49,7 @@ VALID_EXCHANGES = {
     MarketType.FUTURES: {
         "binance": ccxt.binanceusdm,
         "kucoin": ccxt.kucoinfutures,
-    }
+    },
 }
 
 
@@ -59,11 +59,40 @@ async def get_exchange_instance(exc_name: str, market: MarketType) -> ExchangeT:
     market = MarketType.SPOT if market == MarketType.MARGIN else market
 
     if exc_name in vars(ccxt) and exc_name in VALID_EXCHANGES[market].keys():
-        return getattr(ccxt, exc_name)({'newUpdates': True})
+        return getattr(ccxt, exc_name)({"newUpdates": True})
     else:
         raise ExchangeNotAvailable(exc_name)
 
 
+async def close_exchange(name: str, exchanges: dict) -> None:
+    try:
+        await exchanges[name].close()
+    except KeyError as e:
+        logger.warning(
+            "unable to close exchange instance, not found: %s --> %s", name, e
+        )
+    except Exception as e:
+        logger.error("unable to close exchange instance, unexpected erorr: %s", e)
+    else:
+        logger.info("exchange instance closed: %s", name)
+        del exchanges[name]
+
+
+async def close_everything(workers: dict, exchanges: dict) -> None:
+    # cancel worker tasks
+    logger.info("shutdown requested ...")
+    for exchange in workers.values():
+        for sub_type in exchange.values():
+            for topic in sub_type.values():
+                logger.info("cancelling task for topic: %s", topic)
+                topic.cancel()
+
+    # close exchange instance(s)
+    for exc_name in list(exchanges.keys()):
+        await close_exchange(exc_name, exchanges)
+
+
+# --------------------------------------------------------------------------------------
 @sequence(logger=logger, identifier="seq")
 async def send(msg: dict, socket: zmq.Socket):
     await socket.send_json(msg)
@@ -71,9 +100,10 @@ async def send(msg: dict, socket: zmq.Socket):
 
 @sequence(logger=logger, identifier="seq")
 async def log_message(msg: dict):
-    logger.info("---------------------------------------------------------------------")
+    pass
+    # logger.info("---------------------------------------------------------------------")
     # logger.info("[%s] %s", msg["sequence"], msg)
-    logger.info(msg)
+    # logger.info(msg)
 
 
 async def process_ohlcv(msg: list) -> dict:
@@ -96,9 +126,8 @@ async def worker(
     add_to_result: Optional[dict] = None,
     process: Optional[Coroutine] = None,
     limit: Optional[int] = LIMIT_UPDATES,
-    freq: Optional[int] = FREQ_UPDATES
+    freq: Optional[int] = FREQ_UPDATES,
 ) -> None:
-
     logger.info(add_to_result)
 
     async def process_update(update: dict) -> dict:
@@ -110,9 +139,7 @@ async def worker(
     counter, since = 0, time.time()
 
     while True:
-
         try:
-
             if use_since:
                 data = await rcv_coro(since=since, limit=limit)
             else:
@@ -123,40 +150,111 @@ async def worker(
             await asyncio.sleep(SLEEP_ON_ERROR)
         except BadSymbol as e:
             logger.error("[%s] %s", counter, e)
+            break
         except NetworkError as e:
-            logger.error("[%s] CCXT network error: %s", counter, e)
+            logger.error("[%s] CCXT network error: %s", counter, e, exc_info=1)
             await asyncio.sleep(SLEEP_ON_ERROR)
         except asyncio.CancelledError:
-            logger.info('Cancelled...')
+            logger.info("Cancelled...")
             break
         except Exception as e:
             logger.exception(e)
-            break
+            # break
         else:
-
             data = [data] if not isinstance(data, list) else data
 
             if data:
                 if use_since is not None:
                     since = data[-1].get("timestamp") + 1
-                    # if freq:
-                    #     await asyncio.sleep(freq / 1000)
+                    if freq:
+                        await asyncio.sleep(freq / 1000)
 
                 for update in data:
                     await snd_coro(await process_update(update))
 
-        finally:
-            counter += 1
+                counter += 1
 
 
-def get_stream_manager(workers):
+async def create_worker(
+    sub_req: SubscriptionRequest,
+    workers: dict,
+    exchanges: dict
+) -> None:
+    # create exchange instance, if it doesn't exist yet
+    if sub_req.exchange not in workers:
+        exchanges[sub_req.exchange] = exchange = await get_exchange_instance(
+            sub_req.exchange, sub_req.market
+        )
+        # create necessary keys in workers registry
+        workers[sub_req.exchange] = {}
+        logger.info("exc --> %s", exchanges[sub_req.exchange])
+    else:
+        exchange = exchanges[sub_req.exchange]
 
-    exchanges = {}
-    workers = workers
+    # prepare parameters for worker coroutine
+    match sub_req.sub_type:
+
+        case SubscriptionType.OHLCV:
+            rcv_coro = partial(
+                exchange.watch_ohlcv,
+                symbol=sub_req.symbol,
+                timeframe=sub_req.interval,
+            )
+            use_since = True
+
+        case SubscriptionType.BOOK:
+            rcv_coro = partial(exchange.watch_order_book, symbol=sub_req.symbol)
+            use_since = False
+
+        case SubscriptionType.TRADES:
+            rcv_coro = partial(exchange.watch_trades, symbol=sub_req.symbol)
+            use_since = True
+
+        case SubscriptionType.TICKER:
+            rcv_coro = partial(exchange.watch_ticker, symbol=sub_req.symbol)
+            use_since = False
+
+        case _:
+            raise ValueError(f"invalid subscription type: {sub_req.sub_type}")
+
+    process = process_ohlcv if sub_req.sub_type == SubscriptionType.OHLCV else None
+    add_to_result = {"exchange": sub_req.exchange, "market": sub_req.market}
+
+    # create a worker task for the topic
+    workers[sub_req.exchange][sub_req.market] = {}
+    workers[sub_req.exchange][sub_req.market][sub_req.topic] = asyncio.create_task(
+        worker(rcv_coro, log_message, use_since, add_to_result, process)
+    )
+
+
+async def remove_worker(
+    sub_req: SubscriptionRequest,
+    workers: dict,
+    exchanges: dict
+) -> None:
+    try:
+        workers[sub_req.exchange][sub_req.market][sub_req.topic].cancel()
+    except KeyError as e:
+        logger.warning("unable to remove worker, not found for: %s --> %s", sub_req, e)
+        return
+    else:
+        del workers[sub_req.exchange][sub_req.market][sub_req.topic]
+
+    if not workers[sub_req.exchange][sub_req.market]:
+        del workers[sub_req.exchange][sub_req.market]
+
+    if not workers[sub_req.exchange]:
+        await close_exchange(sub_req.exchange, exchanges)
+        del workers[sub_req.exchange]
+
+
+def get_stream_manager():
+    exchanges: dict = {}
+    workers: dict = {}
+    topics: dict[str, int] = {}
 
     async def stream_manager(
-        action: bytes,
-        sub_req: Optional[SubscriptionRequest] = None
+        action: bytes, sub_req: Optional[SubscriptionRequest] = None
     ) -> None:
         """Manages creation/removal of stream workers.
 
@@ -170,81 +268,51 @@ def get_stream_manager(workers):
             cancel all tasks/saubscriptions, and close the
             exchange instances.
         """
+        # log request
+        action_str = "subscribe" if action else "unsubscribe"
+        logger.info("received %s request --> %s", action_str.upper(), sub_req)
+
         # shutdown if we got None as subscription request
         if sub_req is None:
-            # cancel worker tasks
-            logger.info("shutdown requested ...")
-            for exchange in workers.values():
-                for sub_type in exchange.values():
-                    for topic in sub_type.values():
-                        logger.info("cancelling task for topic: %s", topic)
-                        topic.cancel()
-
-            # close exchange instance(s)
-            for name, exchange in exchanges.items():
-                logger.info("closing exchange instance: %s", name)
-                await exchange.close()
-
+            await close_everything(workers, exchanges)
             return
 
         # ..............................................................................
-        # log request
-        action = "subcscribe" if action else "unsubscribe"
-        logger.debug("received request %s: %s", action, sub_req)
+        sub_req_json = sub_req.to_json()
 
-        # create exchange instance, if it doesn't exist yet
-        if sub_req.exchange not in workers:
-            exchanges[sub_req.exchange] = exchange = await get_exchange_instance(
-                sub_req.exchange, sub_req.market
-            )
-            # create necessary keys in workers registry
-            workers[sub_req.exchange] = {
-                MarketType.SPOT: {},
-                MarketType.FUTURES: {}
-            }
-            logger.info("exc --> %s", exchanges[sub_req.exchange])
-        else:
-            exchange = exchanges[sub_req.exchange]
+        # subscribe to topic, create worker & exchange if needed
+        if action_str == "subscribe":
+            try:
+                await create_worker(sub_req, workers, exchanges)
+            except Exception as e:
+                logger.error("unable to create worker: %s", e)
+            else:
+                topics[sub_req_json] = topics[sub_req_json] + 1 \
+                    if sub_req_json in topics else 1
 
-        # prepare the (partial) coroutine to receive data
-        process = None  # special processing, required for ohlcv data only
+        # unsubscribe from topic, remove worker & exchange if needed
+        elif action_str == "unsubscribe":
 
-        match sub_req.sub_type:
-
-            case SubscriptionType.OHLCV:
-                rcv_coro = partial(
-                    exchange.watch_ohlcv,
-                    symbol=sub_req.symbol,
-                    timeframe=sub_req.interval
+            if sub_req_json not in topics:
+                logger.warning(
+                    "got unsubscribe for non-existent topic: %s", sub_req_json
                 )
-                topic = f"{sub_req.symbol}_{sub_req.interval}"
-                process = process_ohlcv
-                use_since = True
+                return
 
-            case SubscriptionType.BOOK:
-                rcv_coro = partial(exchange.watch_order_book, symbol=sub_req.symbol)
-                topic = f"{sub_req.symbol}"
-                use_since = False
+            topics[sub_req_json] -= 1
 
-            case SubscriptionType.TRADES:
-                rcv_coro = partial(exchange.watch_trades, symbol=sub_req.symbol)
-                topic = f"{sub_req.symbol}"
-                use_since = True
+            if topics[sub_req_json] == 0:
+                logger.info("removing topic: %s", sub_req_json)
+                del topics[sub_req_json]
 
-            case SubscriptionType.TICKER:
-                rcv_coro = partial(exchange.watch_ticker, symbol=sub_req.symbol)
-                topic = f"{sub_req.symbol}"
-                use_since = False
+                try:
+                    await remove_worker(sub_req, workers, exchanges)
+                except Exception as e:
+                    logger.error("unable to remove worker: %s", e)
 
-            case _:
-                raise ValueError(f"invalid subscription type: {sub_req.sub_type}")
-
-        add_to_result = {"exchange": sub_req.exchange, "market": sub_req.market}
-
-        # create a worker task for the topic
-        workers[sub_req.exchange][sub_req.market][topic] = asyncio.create_task(
-            worker(rcv_coro, log_message, use_since, add_to_result, process)
-        )
+        # this should never happen, but just in case ...
+        else:
+            raise ValueError(f"invalid action: {action}")
 
     return stream_manager
 
@@ -254,19 +322,24 @@ async def streamer(context: ContextT, config: ConfigT):
     ctx = context or zmq.asyncio.Context()
 
     async with Gond(config, ctx) as g:  # noqa: F841
-
-        workers: dict[str, list[Coroutine]] = {}
-        manager = get_stream_manager(workers)
+        manager = get_stream_manager()
 
         # ..............................................................................
         while True:
-            pass
+            try:
 
+                pass
 
-    # close all open exchange instances
-    for exchange in exchanges.values():
-        await exchange.close()
-        logger.info("%s closed: OK", exchange)
+            except asyncio.CancelledError:
+                logger.info("Cancelled...")
+                break
+
+            except Exception as e:
+                logger.exception(e)
+                await asyncio.sleep(SLEEP_ON_ERROR)
+
+        # tell the manager to pack it up ...
+        manager(b"", None)
 
     # if counter > 0:
     #     duration = perf_counter() - start
@@ -281,7 +354,7 @@ async def streamer(context: ContextT, config: ConfigT):
 
 
 # --------------------------------------------------------------------------------------
-if __name__ == '__main__':
+if __name__ == "__main__":
     logger = logging.getLogger("main")
     logger.setLevel(logging.DEBUG)
 
@@ -297,4 +370,4 @@ if __name__ == '__main__':
     try:
         asyncio.run(streamer(None, None))
     except KeyboardInterrupt:
-        print('Interrupted...')
+        print("Interrupted...")

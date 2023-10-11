@@ -54,6 +54,14 @@ class SubscriptionRequest:
         if not isinstance(self.sub_type, SubscriptionType):
             raise TypeError("sub_type must be a SubscriptionType")
 
+    @property
+    def topic(self) -> str:
+        return (
+            f"{self.symbol}_{self.interval}"
+            if self.sub_type == SubscriptionType.OHLCV
+            else f"{self.symbol}"
+        )
+
     def to_json(self) -> str:
         d = asdict(self)
 

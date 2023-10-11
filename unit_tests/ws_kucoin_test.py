@@ -13,7 +13,6 @@ import sys
 import time
 from cProfile import Profile
 from logging.handlers import QueueHandler, QueueListener
-from multiprocessing import Process  # noqa: E402. F401
 from pstats import SortKey, Stats
 from random import choice
 
@@ -37,9 +36,10 @@ sys.path.append(parent)
 # -----------------------------------------------------------------------------
 
 from config import CREDENTIALS  # noqa: E402. F401
-from src.data_sources.util.i_websockets import (  # noqa: E402. F401;
-    CandlesEvent, SnapshotEvent, TickerEvent)
-from src.data_sources.util.ws_kucoin import (  # noqa: E402. F401;
+from data_sources.websockets.i_websockets import (  # noqa: E402. F401;
+    CandlesEvent
+)
+from data_sources.websockets.ws_kucoin import (  # noqa: E402. F401;
     KucoinWebsocketPrivate, KucoinWebsocketPublic)
 
 symbols = [
@@ -258,5 +258,3 @@ if __name__ == "__main__":
     )
 
     print(f"execution time: {((time.time() - st)*1_000_000/runs):.2f} microseconds")
-
-

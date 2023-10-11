@@ -1,6 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+Provides a wrapper for the websocket client for the Kucoin API.
+
+This module uses the websocket client implementation from the
+kucoin-python library/SDK.
+
+These are the Kucoin limits for websocket connections:
+
+Number of connections per user ID: ≤ 50
+Connection Limit: 30 per minute
+Message limit sent to the server: 100 per 10 seconds
+Maximum number of batch subscriptions at a time: 100 topics
+Subscription limit for each connection: 300 topics
+
 Created on Sun Nov 28 13:12:20 2022
 
 @author dhaneor
@@ -13,14 +26,12 @@ from typing import Union, List, Tuple, Callable, Optional
 from kucoin.client import WsToken
 from kucoin.ws_client import KucoinWsClient
 
-from .i_websockets import IWebsocketPublic, IWebsocketPrivate
-from .publishers import (  # noqa: F401
+from .i_websockets import IWebsocketPublic, IWebsocketPrivate  # noqa: E402, F401
+from .publishers import (  # noqa: E402, F401
     IPublisher,
     LogPublisher,
     ZeroMqPublisher,
     PrintPublisher,
-    CallbackPublisher,
-    QueuePublisher,
 )
 
 TICKERS_ENDPOINT = "/market/ticker"
@@ -29,9 +40,15 @@ SNAPSHOT_ENDPOINT = "/market/snapshot"
 
 
 # =============================================================================
-class KucoinWebsocketPublic(IWebsocketPublic):
-    ws_client = None
-    logger_name = f"main.{__name__}"
+class KucoinWebsocketPublic:
+    """Provides a websocket connection for the Kucoin API.
+
+    This is the depraceted version which is replaced by classes below
+    that are now split into separate classes for tickers, OHLCV, etc.
+    This makes it possible to have more topics and still stay within
+    the limits of the Kucoin API (see module docstring).
+    """
+
     publisher: IPublisher = PrintPublisher()
 
     def __init__(
@@ -40,6 +57,17 @@ class KucoinWebsocketPublic(IWebsocketPublic):
         callback: Optional[Callable] = None,
         id: Optional[str] = None,
     ):
+        """Initialize a KucoinWebsocketPublic.
+
+        Parameters
+        ----------
+        publisher : Optional[IPublisher], optional
+            A class tht publishes the updates/messages, by default None
+        callback : Optional[Callable], optional
+            Alternative/additional function for publisher, by default None
+        id : Optional[str], optional
+            identifier for this instance, by default None
+        """
         # set the callable to be used for publishing the results
         self.publisher = publisher or KucoinWebsocketPublic.publisher
         self.publish = callback or self.publisher.publish
@@ -83,7 +111,7 @@ class KucoinWebsocketPublic(IWebsocketPublic):
         except asyncio.CancelledError:
             self.logger.info("websocket client stopped")
 
-    async def watch_ticker(self, symbols: Union[str, List[str], None] = None):
+    async def watch_ticker(self, symbols: str | list[str] | None = None):
         if not self.ws_client:
             await self.start_client()
 
@@ -102,7 +130,7 @@ class KucoinWebsocketPublic(IWebsocketPublic):
         else:
             raise Exception("watch ticker failed: missing client")
 
-    async def unwatch_ticker(self, symbols: Union[str, List[str], None] = None):
+    async def unwatch_ticker(self, symbols: str | list[str] | None = None):
         symbols, symbols_str = await self._transform_symbols_parameter(symbols)
 
         if self.ws_client:
@@ -121,7 +149,7 @@ class KucoinWebsocketPublic(IWebsocketPublic):
             except Exception as e:
                 self.logger.exception(e)
 
-    async def watch_candles(self, symbols: Union[str, List[str]], interval: str):
+    async def watch_candles(self, symbols: str | list[str], interval: str):
         if not self.ws_client:
             await self.start_client()
 
@@ -142,7 +170,7 @@ class KucoinWebsocketPublic(IWebsocketPublic):
         except Exception as e:
             self.logger.exception(e)
 
-    async def unwatch_candles(self, symbols: Union[str, List[str]], interval: str):
+    async def unwatch_candles(self, symbols: str | list[str], interval: str):
         if not self.ws_client:
             self.logger.error(
                 "unwatch candles not possible as we have no subscriptions"
@@ -171,7 +199,7 @@ class KucoinWebsocketPublic(IWebsocketPublic):
         except Exception as e:
             self.logger.exception(e)
 
-    async def watch_snapshot(self, symbols: Union[str, List[str], None] = None):
+    async def watch_snapshot(self, symbols: str | list[str] | None = None):
         if not self.ws_client:
             await self.start_client()
 
@@ -210,7 +238,7 @@ class KucoinWebsocketPublic(IWebsocketPublic):
             except Exception as e:
                 self.logger.exception(e)
 
-    async def unwatch_snapshot(self, symbols: Union[str, List[str]]):
+    async def unwatch_snapshot(self, symbols: str | list[str]):
         if not self.ws_client:
             self.logger.error(
                 "unwatch candles not possible as we have no subscriptions"
