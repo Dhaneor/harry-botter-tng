@@ -31,7 +31,7 @@ Created on Sun Nov 28 13:12:20 2022
 import time
 import asyncio
 import logging
-from typing import Callable, Optional, Iterable, Coroutine
+from typing import Callable, Optional, Coroutine
 from uuid import uuid4
 
 from kucoin.client import WsToken
@@ -45,29 +45,93 @@ from .publishers import (  # noqa: E402, F401
     IPublisher, LogPublisher, ZeroMqPublisher, PrintPublisher,
 )
 
+logger = logging.getLogger('main.websocket')
+
 TICKERS_ENDPOINT = "/market/ticker"
 CANDLES_ENDPOINT = "/market/candles"
 SNAPSHOT_ENDPOINT = "/market/snapshot"
 
 MAX_CONNECTIONS_PER_USER = 50
 CONNECTION_LIMIT = 30  # per minute
-MSG_LIMIT = 100  # 100 per 10 seconds
-MAX_BATCH_SUBSCRIPTIONS = 5  # 100 topics
-MAX_TOPICS_PER_CONNECTION = 10  # 300 topics
+MSG_LIMIT = 10  # 100 per 10 seconds
+MSG_LIMIT_LOOKBACK = 10  # seconds
+MAX_BATCH_SUBSCRIPTIONS = 10  # 100 topics
+MAX_TOPICS_PER_CONNECTION = 300  # 300 topics
 
 
 # ======================================================================================
 #                               WS CLIENTS PUBLIC API (NEW)                             #
 # ======================================================================================
+class Topics:
+    _instance = None  # Singleton instance
+
+    def __new__(cls):
+        # Ensure only one instance of Topics class is created (Singleton)
+        if cls._instance is None:
+            cls._instance = super(Topics, cls).__new__(cls)
+            # cls._instance._topics: dict[str, int] = {}
+        return cls._instance
+
+    def __init__(self):
+        self._topics: dict[str, int] = {}
+
+    def __len__(self) -> int:
+        return len(self._topics)
+
+    def __contains__(self, topic) -> bool:
+        return topic in self._topics
+
+    # ..................................................................................
+    async def filter_topics(self, topics: list[str], add_or_remove: str) -> list[str]:
+        call = self.add_topic if add_or_remove == "add" else self.remove_topic
+        return [topic for topic in topics if await call(topic)]
+
+    async def add_topic(self, topic: str) -> None:
+        subs = self._topics.get(topic, 0)
+
+        if topic not in self._topics:
+            logger.info("new topic: %s (had: %s subscribers)", topic, subs)
+            self._topics[topic] = 1
+            return topic
+
+        else:
+            logger.info(
+                "adding subscriber to topic: %s (had: %s subscribers)", topic, subs
+            )
+            self._topics[topic] += 1
+            return None
+
+    async def remove_topic(self, topic: str) -> None:
+        subs = self._topics.get(topic, 0)
+
+        if topic in self._topics and subs > 1:
+            logger.info(
+                "removing subscriber from topic: %s (had: %s subscribers)", topic, subs
+            )
+            self._topics[topic] -= 1
+
+        elif topic in self._topics and subs <= 1:
+            logger.info("removing topic: %s (had: %s subscribers)", topic, subs)
+            del self._topics[topic]
+            return topic
+
+        return None
+
+
 class Connection:
     """Helper class that manages one connection."""
 
-    def __init__(self, publish: Coroutine, debug: bool = False):
+    def __init__(self, publish: Coroutine, endpoint: str, debug: bool = False):
         self.publish = publish
+        self.endpoint = endpoint
         self.debug = debug
 
-        self._topics: dict[str, int] = {}
+        self._topics: Topics = Topics()
         self._id = str(uuid4())
+        self._ts_msgs: list[float] = []
+
+    async def topic_exists(self, topic: str) -> bool:
+        return topic in self._topics
 
     @property
     def topic_limit_reached(self) -> bool:
@@ -75,10 +139,19 @@ class Connection:
 
     @property
     def max_topics_left(self) -> int:
-        return MAX_TOPICS_PER_CONNECTION - len(self._topics)
+        return max(0, MAX_TOPICS_PER_CONNECTION - len(self._topics) - 1)
 
-    async def watch(self, topics: str | Iterable[str], endpoint: str) -> None:
-        ...
+    async def watch(self, topics: list[str], end_point: str) -> list | None:
+        topics, too_much = await self._prep_topic_str(topics)
+
+        # subscribe with endpoint
+        for topic in topics:
+            logger.debug("subscribing to topic: %s", topic)
+
+        return too_much or None
+
+    async def unwatch(self, topics: list[str], end_point: str) -> list | None:
+        raise NotImplementedError()
 
     async def _start_client(self) -> KucoinWsClient:
         try:
@@ -110,7 +183,8 @@ class Connection:
     ) -> tuple[list[str], list[str]]:
         """Prepares the topic string for use in sub/unsub message
 
-        We must consider/respect the limits given by Kucoin.
+        We must consider/respect the limits given by Kucoin and
+        divide huge batch requests into chunks.
 
         Parameters
         ----------
@@ -138,6 +212,9 @@ class Connection:
         if not topics:
             return [], ["all"], []
 
+        if isinstance(topics, str):
+            topics = [topics]
+
         if isinstance(topics, list):
             sub_strings = []
             max_topics_left = self.max_topics_left
@@ -150,15 +227,24 @@ class Connection:
 
             return sub_strings, topics
 
-        elif isinstance(topics, str):
-            # we got only one topic
-            return [topics], []
+        raise TypeError(
+            f"<topics> parameter must be str or list[str]"
+            f" but was {type(topics)}"
+        )
 
+    async def _wait_for(self) -> float:
+        """Determines necessary delay to stay within API limits"""
+        now = time.time()
+
+        # filter out timestamps that are too old
+        self._ts_msgs = [ts for ts in self._ts_msgs if now - ts < MSG_LIMIT_LOOKBACK]
+
+        if not self._ts_msgs or len(self._ts_msgs) < MSG_LIMIT:
+            return 0.0
         else:
-            raise TypeError(
-                f"<topics> parameter must be str or list[str]"
-                f" but was {type(topics)}"
-            )
+            oldest = min(self._ts_msgs)
+            next_min = min([ts for ts in self._ts_msgs if ts != oldest])
+            return next_min + MSG_LIMIT_LOOKBACK - now
 
 
 # --------------------------------------------------------------------------------------
@@ -194,8 +280,18 @@ class WebsocketBase(IWebsocketPublic):
             f"with publisher {self.publisher}"
         )
 
+        self._topics: Topics = Topics()
         self._connections: dict[str, Connection] = {}
         self._id = str(uuid4())
+
+    async def watch(self, topics: str | list[str], endpoint: str) -> None:
+        # make list, if we got a string & remove duplicates
+        topics = [topics] if isinstance(topics, str) else topics
+        topics = list(set(topics))
+
+        connection = await self._get_connection()
+        if rest := await connection.watch(topics, endpoint):
+            await self.watch(rest, endpoint)
 
     async def _get_connection(self) -> Connection:
         if not self._connections:
@@ -209,6 +305,7 @@ class WebsocketBase(IWebsocketPublic):
             await self._create_connection()
 
     async def _create_connection(self) -> Connection:
+        logger.debug("Creating new connection ...")
         connection = Connection()
         self._connections[connection._id] = connection
 
@@ -223,10 +320,10 @@ class WsTickers(WebsocketBase):
     ):
         super().__init__(publisher, callback, id)
 
-    def watch(self, topic: str) -> None:
+    def watch(self, topics: str | list[str]) -> None:
         ...
 
-    def unwatch(self, topic: str) -> None:
+    def unwatch(self, topics: str | list[str]) -> None:
         ...
 
 
