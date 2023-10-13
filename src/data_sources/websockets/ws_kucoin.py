@@ -174,7 +174,7 @@ class Connection:
 
         self.client: Optional[KucoinWsClient] = None
 
-        logger.info("   connection %s created: %s", self.name, self._id)
+        logger.info("    connection %s created: %s", self.name, self._id)
         if debug:
             logger.warning(
                 "   <<<--- RUNNING IN DEBUG MODE. "
