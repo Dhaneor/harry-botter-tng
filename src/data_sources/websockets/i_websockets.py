@@ -58,11 +58,6 @@ class IWebsocketPublic(ABC):
     async def unwatch(self, topic: str):
         ...
 
-    @abstractmethod
-    async def set_rate_limit(self):
-        ...
-
-
 
 class ITrades(IWebsocketPublic):
     ...

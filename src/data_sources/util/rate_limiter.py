@@ -15,6 +15,8 @@ from functools import wraps
 from time import time, sleep
 from threading import Thread
 
+logger = logging.getLogger('rate_limiter')
+
 
 def rate_limiter(max_rate, time_window=1):
     """
@@ -73,7 +75,6 @@ def rate_limiter(max_rate, time_window=1):
 
 
 # ======================================================================================
-# Correcting the issues and adapting the rate limiter for asynchronous coroutines
 def async_rate_limiter(max_rate, time_window=1, send_immediately=False):
     """
     An asynchronous decorator function to implement rate limiting with parked requests.
@@ -101,7 +102,15 @@ def async_rate_limiter(max_rate, time_window=1, send_immediately=False):
             # Execute a parked request if rate allows
             if parked_requests and len(timestamps) < max_rate:
                 parked_request = parked_requests.popleft()
-                asyncio.create_task(parked_request())
+                # asyncio.create_task(parked_request())
+                logger.debug("executing parked request")
+                try:
+                    await parked_request()
+                except Exception as e:
+                    logger.error(
+                        "parked request caused an exception: %s", e, exc_info=1
+                    )
+                    logger.error(parked_request)
                 timestamps.append(current_time)
 
             await asyncio.sleep(time_window / max_rate)
@@ -124,13 +133,14 @@ def async_rate_limiter(max_rate, time_window=1, send_immediately=False):
             while timestamps and timestamps[0] < current_time - time_window:
                 timestamps.popleft()
 
-            # Execute immediately if rate allows, else park the request
-            # if len(timestamps) < max_rate:
-            #     result = await func(*args, **kwargs)
-            #     timestamps.append(current_time)
-            #     return result
-            # else:
-            parked_requests.append(lambda: func(*args, **kwargs))
+            # Execute immediately if rate allows & flag is set,
+            # else park the request
+            if len(timestamps) < max_rate and send_immediately:
+                result = await func(*args, **kwargs)
+                timestamps.append(current_time)
+                return result
+            else:
+                parked_requests.append(lambda: func(*args, **kwargs))
 
         return wrapper
 
@@ -138,7 +148,7 @@ def async_rate_limiter(max_rate, time_window=1, send_immediately=False):
 
 
 # --------------------------------------------------------------------------------------
-@async_rate_limiter(max_rate=100, time_window=10)
+@async_rate_limiter(max_rate=10, time_window=1, send_immediately=True)
 async def async_send(message):
     """Simulates sending a message asynchronously."""
     logger.info(f"Sent: {message}")
@@ -147,11 +157,11 @@ async def async_send(message):
 
 # Test the async_rate_limiter decorator in an asyncio event loop
 async def test_async_rate_limiter():
-    for i in range(1000):
+    for i in range(100):
         await async_send(f"Async Message {i}")
         await asyncio.sleep(0.01)
 
-    await asyncio.sleep(100)
+    await asyncio.sleep(10)
 
 
 if __name__ == '__main__':

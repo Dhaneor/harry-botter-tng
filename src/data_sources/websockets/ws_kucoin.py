@@ -24,6 +24,8 @@ Message limit sent to the server: 100 per 10 seconds
 Maximum number of batch subscriptions at a time: 100 topics
 Subscription limit for each connection: 300 topics
 
+TODO: close routine & automatic batch unsubscribe for shutdown
+
 Created on Sun Nov 28 13:12:20 2022
 
 @author dhaneor
@@ -38,14 +40,28 @@ from kucoin.client import WsToken
 from kucoin.ws_client import KucoinWsClient
 
 from data_sources.websockets.i_websockets import (  # noqa: E402, F401
-    IWebsocketPublic, IWebsocketPrivate,
-    ITrades, IOhlcv, IOrderBook, ITicker, IAllTickers, ISnapshots, IAllSnapshots
+    IWebsocketPublic,
+    IWebsocketPrivate,
+    ITrades,
+    IOhlcv,
+    IOrderBook,
+    ITicker,
+    IAllTickers,
+    ISnapshots,
+    IAllSnapshots,
 )
 from .publishers import (  # noqa: E402, F401
-    IPublisher, LogPublisher, ZeroMqPublisher, PrintPublisher,
+    IPublisher,
+    LogPublisher,
+    ZeroMqPublisher,
+    PrintPublisher,
 )
+from data_sources.util.random_names import random_celtic_name
+from data_sources.util import rate_limiter as rl
 
-logger = logging.getLogger('main.websocket')
+rate_limiter = rl.async_rate_limiter
+
+logger = logging.getLogger("main.websocket")
 
 TICKERS_ENDPOINT = "/market/ticker"
 CANDLES_ENDPOINT = "/market/candles"
@@ -53,24 +69,17 @@ SNAPSHOT_ENDPOINT = "/market/snapshot"
 
 MAX_CONNECTIONS_PER_USER = 50
 CONNECTION_LIMIT = 30  # per minute
-MSG_LIMIT = 10  # 100 per 10 seconds
+MSG_LIMIT = 100  # 100 per 10 seconds
 MSG_LIMIT_LOOKBACK = 10  # seconds
-MAX_BATCH_SUBSCRIPTIONS = 10  # 100 topics
-MAX_TOPICS_PER_CONNECTION = 300  # 300 topics
+MAX_BATCH_SUBSCRIPTIONS = 9  # 100 topics
+MAX_TOPICS_PER_CONNECTION = 3  # 300 topics
 
 
 # ======================================================================================
 #                               WS CLIENTS PUBLIC API (NEW)                             #
 # ======================================================================================
-class Topics:
-    _instance = None  # Singleton instance
-
-    def __new__(cls):
-        # Ensure only one instance of Topics class is created (Singleton)
-        if cls._instance is None:
-            cls._instance = super(Topics, cls).__new__(cls)
-            # cls._instance._topics: dict[str, int] = {}
-        return cls._instance
+class Subscribers:
+    """Helper class to keep track of the number of subscribers for each topic."""
 
     def __init__(self):
         self._topics: dict[str, int] = {}
@@ -81,37 +90,50 @@ class Topics:
     def __contains__(self, topic) -> bool:
         return topic in self._topics
 
+    def __getitem__(self, topic: str) -> int:
+        return self._topics.get(topic, None)
+
+    @property
+    def topics(self) -> dict[str, int]:
+        return self._topics
+
+    @property
+    def topics_as_list(self) -> list[str]:
+        return list(self._topics.keys())
+
     # ..................................................................................
-    async def filter_topics(self, topics: list[str], add_or_remove: str) -> list[str]:
-        call = self.add_topic if add_or_remove == "add" else self.remove_topic
-        return [topic for topic in topics if await call(topic)]
-
-    async def add_topic(self, topic: str) -> None:
-        subs = self._topics.get(topic, 0)
-
+    async def add_subscriber(self, topic: str) -> None:
         if topic not in self._topics:
-            logger.info("new topic: %s (had: %s subscribers)", topic, subs)
+            logger.info(
+                "... new topic: %s (had: %s subscribers)",
+                topic,
+                self._topics.get(topic, 0),
+            )
             self._topics[topic] = 1
             return topic
 
         else:
             logger.info(
-                "adding subscriber to topic: %s (had: %s subscribers)", topic, subs
+                "... adding subscriber to topic: %s (had: %s subscribers)",
+                topic,
+                self._topics.get(topic, 0),
             )
             self._topics[topic] += 1
             return None
 
-    async def remove_topic(self, topic: str) -> None:
+    async def remove_subscriber(self, topic: str) -> None:
         subs = self._topics.get(topic, 0)
 
         if topic in self._topics and subs > 1:
             logger.info(
-                "removing subscriber from topic: %s (had: %s subscribers)", topic, subs
+                "... removing subscriber from topic: %s (had: %s subscribers)",
+                topic,
+                subs,
             )
             self._topics[topic] -= 1
 
         elif topic in self._topics and subs <= 1:
-            logger.info("removing topic: %s (had: %s subscribers)", topic, subs)
+            logger.info("... removing topic: %s (had: %s subscribers)", topic, subs)
             del self._topics[topic]
             return topic
 
@@ -119,41 +141,214 @@ class Topics:
 
 
 class Connection:
-    """Helper class that manages one connection."""
+    """Helper class that manages one WS connection (= one WS client)."""
 
     def __init__(self, publish: Coroutine, endpoint: str, debug: bool = False):
-        self.publish = publish
-        self.endpoint = endpoint
-        self.debug = debug
+        self.publish: Coroutine = publish  # publisher coroutine
+        self.endpoint: str = endpoint  # websocket endpoint
+        self.debug: bool = debug  # debug mode yes/no
 
-        self._topics: Topics = Topics()
-        self._id = str(uuid4())
-        self._ts_msgs: list[float] = []
+        self.busy: bool = False  # busy flag
+        self._topics: Subscribers = Subscribers()  # topic registry
+        self._pending: int = 0  # number of pending topics
+        self.name: str = random_celtic_name()  # name for humans
+        self._id: str = str(uuid4())  # unique id
+
+        self.client: Optional[KucoinWsClient] = None
+
+        logger.info("   connection %s created: %s", self.name, self._id)
+        if debug:
+            logger.warning(
+                "   <<<--- RUNNING IN DEBUG MODE. "
+                "NO REAL CONNECTIONS WILL BE MADE! --->>>"
+            )
 
     async def topic_exists(self, topic: str) -> bool:
         return topic in self._topics
 
     @property
+    def no_of_topics(self) -> int:
+        return len(self._topics) + self._pending
+
+    @property
+    def pending_topics(self) -> int:
+        return self._pending
+
+    @property
     def topic_limit_reached(self) -> bool:
-        return len(self._topics) >= MAX_TOPICS_PER_CONNECTION
+        return self.no_of_topics >= MAX_TOPICS_PER_CONNECTION
 
     @property
     def max_topics_left(self) -> int:
-        return max(0, MAX_TOPICS_PER_CONNECTION - len(self._topics) - 1)
+        return max(-1, (MAX_TOPICS_PER_CONNECTION - self.no_of_topics))
 
-    async def watch(self, topics: list[str], end_point: str) -> list | None:
-        topics, too_much = await self._prep_topic_str(topics)
+    # ..................................................................................
+    async def watch(self, topics: list[str]) -> list | None:
+        """Watch one or more topics from the websocket strean.
+
+        Parameters
+        ----------
+        topics : list[str]
+            a list of topics to watch
+
+        Returns
+        -------
+        list | None
+            a list of topics that could not be accepted, because the
+            maximum number of topics for one websocket connection
+            woudl have been exceeded. Otherwise returns None.
+
+        Raises
+        ------
+        RuntimeError
+            _description_
+        """
+        # return immediately if we have no capacity left
+        if self.topic_limit_reached:
+            return topics
+
+        self.busy = True
+
+        logger.debug(
+            "%s: about to add topics: %s... (busy: %s)",
+            self.name,
+            ", ".join(topics[:10]),
+            self.busy,
+        )
+
+        # turn the list of topics into a list of topic strings,
+        # as we can send batch requests up to the allowed limit.
+        topic_strings, too_much = await self._prep_topic_str(topics)
+        logger.debug("topics: %s --- too much: %s", topics, too_much)
+
+        # add topics to 'pending' count to prevent new assignments.
+        # This is meant to prevent new assigments by the parent class
+        # while pending requests are being processed
+        for topics in topic_strings:
+            self._pending += len((topics.split(",") if "," in topics else [topics]))
+            logger.debug("%s -> self.no_of_topics: %s", self.name, self.no_of_topics)
+
+        # start client if necessary
+        if not self.client and not self.debug:
+            logger.info("launching websocket client ...")
+            self.client = await self._start_client()
 
         # subscribe with endpoint
-        for topic in topics:
-            logger.debug("subscribing to topic: %s", topic)
+        for topics in topic_strings:
+            await self.subscribe(topics)
 
+        self.busy = False
         return too_much or None
 
-    async def unwatch(self, topics: list[str], end_point: str) -> list | None:
-        raise NotImplementedError()
+    async def unwatch(self, topics: list[str]) -> list | None:
+        self.busy = True
 
+        # turn the list of topics into a list of topic strings,
+        # as we can send batch requests up to the allowed limit.
+        topic_strings = await self._prep_unsub_str(topics)
+
+        logger.debug("%s ... removing topics: %s", self.name, topics)
+
+        # unsubscribe for each topic string
+        for ts in topic_strings:
+            await self.unsubscribe(ts)
+
+        self.busy = False
+
+    # ..................................................................................
+    @rate_limiter(max_rate=MSG_LIMIT, time_window=MSG_LIMIT_LOOKBACK)
+    async def subscribe(self, topic: str) -> None:
+        """Subscribes to a topic.
+
+        Parameters
+        ----------
+        topic : str
+            one or more topic(s) as string, comma separated if multiple
+        """
+        self.busy = True
+
+        try:
+            # only do a dry-run if debug flag is set
+            if not self.debug:
+                await self.client.subscribe(f"{self.endpoint}:{topic}")
+            else:
+                logger.debug("%s: subscribing to topic: %s", self.name, topic)
+        except Exception as e:
+            self.logger.error(
+                "unexpected error while subscribing to topic: %s", e, exc_info=1
+            )
+        else:
+            logger.info("%s: subscribed to topic: %s", self.name, topic)
+
+            for topic in topic.split(",") if "," in topic else [topic]:
+                await self._topics.add_subscriber(topic)
+                self._pending -= 1
+        finally:
+            self.busy = False
+
+    @rate_limiter(max_rate=MSG_LIMIT, time_window=MSG_LIMIT_LOOKBACK)
+    async def unsubscribe(self, topic: str) -> None:
+        """Unsubscribes from a topic.
+
+        Parameters
+        ----------
+        topic : str
+            one or more topic(s) as string, comma separated if multiple
+        """
+        self.busy = True
+
+        try:
+            if not self.debug:
+                await self.client.subscribe(f"{self.endpoint}:{topic}")
+            else:
+                logger.debug("%s: unsubscribing from topic: %s", self.name, topic)
+        except Exception as e:
+            self.logger.error(
+                "%s: unexpected error while unsubscribing from topic: %s",
+                self.name,
+                e,
+                exc_info=1,
+            )
+        else:
+            logger.info("%s: unsubscribed from topic: %s", self.name, topic)
+
+            for topic in topic.split(",") if "," in topic else [topic]:
+                await self._topics.remove_subscriber(topic)
+        finally:
+            self.busy = False
+
+    async def add_subscribers_to_existing(self, topics: list[str]) -> list[str]:
+        """Add subscribers to existing topics."""
+        for topic in tuple(topics):
+            if self.topic_exists:
+                logger.debug("... increasing subscriber count for topic: %s", topic)
+                await self._topics.add_subscriber(topic)
+                topics.remove(topic)
+
+        return topics
+
+    async def remove_subscribers_from_existing(self, topics: list[str]) -> list[str]:
+        """Remove subscribers from existing topics."""
+        for topic in tuple(topics):
+            if self.topic_exists:
+                logger.debug("... decreasing subscriber count for topic: %s", topic)
+                await self._topics.remove_subscriber(topic)
+                if self._topics[topic] > 0:
+                    topics.remove(topic)
+                else:
+                    await self.unwatch(topic)
+
+        return topics
+
+    async def close(self) -> None:
+        """Closes the connection"""
+        # unwatch all topics & stop client
+        await self.unwatch(self._topics.topics_as_list)
+        await self._stop_client()
+
+    # ..................................................................................
     async def _start_client(self) -> KucoinWsClient:
+        """Start a websocket client."""
         try:
             loop = asyncio.get_running_loop()
         except Exception:
@@ -164,22 +359,25 @@ class Connection:
                 loop=loop,
                 client=WsToken(),
                 call_back=self._handle_message,
-                private=False
+                private=False,
             )
-            self.logger.info("kucoin public websocket client started ...")
+            logger.info("%s: kucoin public websocket client started ...", self.name)
         except Exception as e:
-            self.logger.error(
-                "unexpected error while creating client: %s", e, exc_info=1
+            logger.error(
+                "%s: unexpected error while creating client: %s",
+                self.name,
+                e,
+                exc_info=1,
             )
         else:
             return client
 
     async def _stop_client(self) -> None:
-        del self._ws_client
+        if self.client:
+            del self._ws_client
 
     async def _prep_topic_str(
-        self,
-        topics: list[str] | str
+        self, topics: list[str] | str
     ) -> tuple[list[str], list[str]]:
         """Prepares the topic string for use in sub/unsub message
 
@@ -195,12 +393,12 @@ class Connection:
         -------
         tuple[list[str], list[str]]
             the following two lists are returned:
-                -> A list of strings (concatenated if necessary). Each
-                string will contain a comma separated list of topics,
-                up to the maximum number of topics allowed for batch
-                subscriptions.
-                -> A list of strings for topics that cannot subscribed
-                to, because one of the API limits would be exceeded.
+            -> A list of strings (concatenated if necessary). Each
+            string will contain a comma separated list of topics,
+            up to the maximum number of topics allowed for batch
+            subscriptions.
+            -> A list of strings for topics that cannot subscribed
+            to, because one of the API limits would be exceeded.
 
         Raises
         ------
@@ -209,18 +407,18 @@ class Connection:
         """
         # for tickers and snapshots, we can subscribe to all topics,
         # this will be assumed if topics are not specified
-        if not topics:
+        if not topics or topics == "all":
             return [], ["all"], []
 
         if isinstance(topics, str):
             topics = [topics]
 
         if isinstance(topics, list):
-            sub_strings = []
-            max_topics_left = self.max_topics_left
+            sub_strings, max_topics_left = [], self.max_topics_left
 
             while max_topics_left > 0 and topics:
                 max_topics = min(max_topics_left, MAX_BATCH_SUBSCRIPTIONS)
+                logger.debug("...%s has %s topics left", self.name, max_topics)
                 sub_strings.append(",".join(topics[:max_topics]))
                 topics = topics[max_topics:]
                 max_topics_left -= max_topics
@@ -228,23 +426,14 @@ class Connection:
             return sub_strings, topics
 
         raise TypeError(
-            f"<topics> parameter must be str or list[str]"
-            f" but was {type(topics)}"
+            f"<topics> parameter must be str or list[str]" f" but was {type(topics)}"
         )
 
-    async def _wait_for(self) -> float:
-        """Determines necessary delay to stay within API limits"""
-        now = time.time()
-
-        # filter out timestamps that are too old
-        self._ts_msgs = [ts for ts in self._ts_msgs if now - ts < MSG_LIMIT_LOOKBACK]
-
-        if not self._ts_msgs or len(self._ts_msgs) < MSG_LIMIT:
-            return 0.0
-        else:
-            oldest = min(self._ts_msgs)
-            next_min = min([ts for ts in self._ts_msgs if ts != oldest])
-            return next_min + MSG_LIMIT_LOOKBACK - now
+    async def _prep_unsub_str(self, topics: list[str]) -> list[str]:
+        n = MAX_BATCH_SUBSCRIPTIONS
+        topics = [topics[i : i + n] for i in range(0, len(topics), n)]
+        topics = [",".join(t) for t in topics]
+        return topics
 
 
 # --------------------------------------------------------------------------------------
@@ -257,6 +446,7 @@ class WebsocketBase(IWebsocketPublic):
         self,
         publisher: Optional[IPublisher] = None,
         callback: Optional[Callable] = None,
+        debug=False,
     ):
         """Initialize a KucoinWebsocketPublic.
 
@@ -269,8 +459,11 @@ class WebsocketBase(IWebsocketPublic):
             Alternative/additional function for publisher, by default None
         """
         # set the callable to be used for publishing the results
+        # callback parameter takes precedence
         self.publisher = publisher or KucoinWebsocketPublic.publisher
         self.publish = callback or self.publisher.publish
+        self.endpoint = "/this/is/not/an/endpoint"
+        self.debug = debug
 
         logger_name = f"main.{__class__.__name__}"
         self.logger = logging.getLogger(logger_name)
@@ -280,51 +473,142 @@ class WebsocketBase(IWebsocketPublic):
             f"with publisher {self.publisher}"
         )
 
-        self._topics: Topics = Topics()
+        self._topics: Subscribers = Subscribers()
         self._connections: dict[str, Connection] = {}
         self._id = str(uuid4())
 
-    async def watch(self, topics: str | list[str], endpoint: str) -> None:
+    @property
+    def topics(self) -> dict[str, int]:
+        topics = {}
+
+        for conn in self._connections.values():
+            topics = {**topics, **conn._topics._topics}
+
+        return topics
+
+    # ..................................................................................
+    async def watch(self, topics: str | list[str]) -> None:
+        logger.debug("•~-*-~•" * 15)
+        logger.debug("WebsocketBase.watch() called ...")
         # make list, if we got a string & remove duplicates
-        topics = [topics] if isinstance(topics, str) else topics
-        topics = list(set(topics))
 
+        topics = list(set([topics] if isinstance(topics, str) else topics))
+
+        # filter out topics that already exist
+        if not (topics := await self.filter_existing_topics(topics, "subscribe")):
+            return
+
+        # get a connection that we can use
         connection = await self._get_connection()
-        if rest := await connection.watch(topics, endpoint):
-            await self.watch(rest, endpoint)
 
+        # try to subscribe to the given topics with the given connection
+        # this may return a list of topics, that could not be handled by
+        # the connection ... if so, call yourself again recursively
+        if rest := await connection.watch(topics):
+            logger.debug("connection %s returned 'rest' --> %s", connection.name, rest)
+            await self.watch(rest)
+
+    async def unwatch(self, topics: str | list[str]) -> None:
+        logger.debug("•~-*-~•" * 15)
+        logger.debug("WebsocketBase.unwatch() called ...")
+
+        # make list, if we got a string & remove duplicates
+        topics = list(set([topics] if isinstance(topics, str) else topics))
+        topics = await self.filter_existing_topics(topics, "unsubscribe")
+
+        if not topics:
+            return
+
+        for conn in self._connections.values():
+            if to_remove := [t for t in topics if t in conn._topics]:
+                logger.debug("%s --> %s", conn.name, to_remove)
+                await conn.unwatch(to_remove)
+
+    async def filter_existing_topics(self, topics: list[str], action: str) -> list[str]:
+        """Filter out topics that already exist.
+
+        This will just increase the subscriber count for the topics,
+        instead of sending a subscription request to the WS client.
+
+        Parameters
+        ----------
+        topics : list[str]
+            list of topics
+        action : str
+            subscribe or unsubscribe
+
+        Returns
+        -------
+        list[str]
+            filtered list of topics, all existing removed
+
+        Raises
+        ------
+        ValueError
+            if action is not'subscribe' or 'unsubscribe'
+        """
+        for conn in self._connections.values():
+            if action == "subscribe":
+                topics = await conn.add_subscribers_to_existing(topics)
+            elif action == "unsubscribe":
+                topics = await conn.remove_subscribers_from_existing(topics)
+            else:
+                raise ValueError(f"Unexpected action: {action}")
+
+        return topics
+
+    async def close(self) -> None:
+        logger.debug("•~-*-~•" * 15)
+        logger.debug("WebsocketBase.close() called...")
+
+        for conn in self._connections.values():
+            await conn.close()
+
+        self._connections = {}
+
+    # ..................................................................................
     async def _get_connection(self) -> Connection:
         if not self._connections:
             await self._create_connection()
 
-        while True:
-            for connection in self._connections.values():
-                if not connection.topic_limit_reached:
-                    return connection
+        for connection in self._connections.values():
+            logger.debug(
+                "--> checking connection %s ::::: %s BUSY (%s topics - %s)::::: "
+                "limit reached? :: %s",
+                connection.name.upper(),
+                "" if connection.busy else "NOT",
+                connection.no_of_topics,
+                connection.pending_topics,
+                connection.topic_limit_reached,
+            )
 
-            await self._create_connection()
+            if (not connection.topic_limit_reached) and (not connection.busy):
+                logger.debug("will use connection %s", connection.name)
+                return connection
+
+        await self._create_connection()
+        return await self._get_connection()
 
     async def _create_connection(self) -> Connection:
         logger.debug("Creating new connection ...")
-        connection = Connection()
+        connection = Connection(self.publish, self.endpoint, self.debug)
         self._connections[connection._id] = connection
 
 
 class WsTickers(WebsocketBase):
-
     def __init__(
         self,
         publisher: Optional[IPublisher] = None,
         callback: Optional[Callable] = None,
-        id: Optional[str] = None,
     ):
-        super().__init__(publisher, callback, id)
+        super().__init__(publisher, callback)
+        self.endpoint = TICKERS_ENDPOINT
 
     def watch(self, topics: str | list[str]) -> None:
-        ...
+        super().watch(topics, self.endpoint)
 
     def unwatch(self, topics: str | list[str]) -> None:
-        ...
+        super().unwatch(topics, self.endpoint)
 
 
 # ======================================================================================
@@ -428,7 +712,7 @@ class KucoinWebsocketPublic:
                 await self.ws_client.unsubscribe(f"{TICKERS_ENDPOINT}:{symbols_str}")
                 if symbols:
                     [
-                        self.logger.info(f"unsubscribed from ticker stream for: {s} ")
+                        self.logger.info(f"unsubscribed from ticker stream for: {s}")
                         for s in symbols
                     ]
             except ValueError:
