@@ -84,6 +84,9 @@ class Subscribers:
     def __init__(self):
         self._topics: dict[str, int] = {}
 
+    def __repr__(self) -> str:
+        return self._topics.__repr__()
+
     def __len__(self) -> int:
         return len(self._topics)
 
@@ -92,6 +95,9 @@ class Subscribers:
 
     def __getitem__(self, topic: str) -> int:
         return self._topics.get(topic, None)
+
+    def __delitem__(self, topic: str) -> None:
+        del self._topics[topic]
 
     @property
     def topics(self) -> dict[str, int]:
@@ -104,49 +110,61 @@ class Subscribers:
     # ..................................................................................
     async def add_subscriber(self, topic: str) -> None:
         if topic not in self._topics:
-            logger.info(
-                "... new topic: %s (had: %s subscribers)",
-                topic,
-                self._topics.get(topic, 0),
-            )
             self._topics[topic] = 1
+            logger.info(
+                "... new topic: %s (now: %s subscribers)",
+                topic, self._topics.get(topic, 0),
+            )
             return topic
 
         else:
+            self._topics[topic] += 1
             logger.info(
-                "... adding subscriber to topic: %s (had: %s subscribers)",
+                "... adding subscriber to topic: %s (now: %s subscribers)",
                 topic,
                 self._topics.get(topic, 0),
             )
-            self._topics[topic] += 1
             return None
 
-    async def remove_subscriber(self, topic: str) -> None:
-        subs = self._topics.get(topic, 0)
+    async def remove_subscriber(self, topic: str) -> int:
 
-        if topic in self._topics and subs > 1:
-            logger.info(
-                "... removing subscriber from topic: %s (had: %s subscribers)",
-                topic,
-                subs,
-            )
+        if topic in self._topics:  # and (subs := self._topics.get(topic, 0)) > 1:
             self._topics[topic] -= 1
+            logger.info(
+                "... decreased subscribers for: %s (now: %s subscribers)",
+                topic, self._topics[topic]
+            )
+            return self._topics.get(topic, 0)
 
-        elif topic in self._topics and subs <= 1:
-            logger.info("... removing topic: %s (had: %s subscribers)", topic, subs)
-            del self._topics[topic]
-            return topic
+        elif topic not in self._topics:
+            logger.warning("unable to remove topic, not found: %s", topic)
 
-        return None
+        return 0
+
+    async def clear_subscribers(self) -> None:
+        self._topics = {k: v for k, v in self._topics.items() if v > 0}
 
 
 class Connection:
     """Helper class that manages one WS connection (= one WS client)."""
 
     def __init__(self, publish: Coroutine, endpoint: str, debug: bool = False):
-        self.publish: Coroutine = publish  # publisher coroutine
-        self.endpoint: str = endpoint  # websocket endpoint
-        self.debug: bool = debug  # debug mode yes/no
+        """Initializes a new Connection instance.
+
+        If the debug mode is on, no real connections will be made.
+
+        Parameters
+        ----------
+        publish : Coroutine
+            publisher coroutine = where to send the messages to
+        endpoint : str
+            which websocket endpoint to use for the connection
+        debug : bool, optional
+            debug mode yes/no, by default False
+        """
+        self.publish: Coroutine = publish
+        self.endpoint: str = endpoint
+        self.debug: bool = debug
 
         self.busy: bool = False  # busy flag
         self._topics: Subscribers = Subscribers()  # topic registry
@@ -196,12 +214,7 @@ class Connection:
         list | None
             a list of topics that could not be accepted, because the
             maximum number of topics for one websocket connection
-            woudl have been exceeded. Otherwise returns None.
-
-        Raises
-        ------
-        RuntimeError
-            _description_
+            would have been exceeded. Otherwise returns None.
         """
         # return immediately if we have no capacity left
         if self.topic_limit_reached:
@@ -218,14 +231,15 @@ class Connection:
 
         # turn the list of topics into a list of topic strings,
         # as we can send batch requests up to the allowed limit.
-        topic_strings, too_much = await self._prep_topic_str(topics)
-        logger.debug("topics: %s --- too much: %s", topics, too_much)
+        topic_strings, too_much = self._prep_topic_str(topics)
+        logger.debug("topics: %s --- too much: %s", topic_strings, too_much)
 
         # add topics to 'pending' count to prevent new assignments.
         # This is meant to prevent new assigments by the parent class
         # while pending requests are being processed
         for topics in topic_strings:
             self._pending += len((topics.split(",") if "," in topics else [topics]))
+            # self._pending += (len(topics) - len(too_much))
             logger.debug("%s -> self.no_of_topics: %s", self.name, self.no_of_topics)
 
         # start client if necessary
@@ -247,7 +261,7 @@ class Connection:
         # as we can send batch requests up to the allowed limit.
         topic_strings = await self._prep_unsub_str(topics)
 
-        logger.debug("%s ... removing topics: %s", self.name, topics)
+        logger.debug("%s ... removing topics: %s", self.name, topic_strings)
 
         # unsubscribe for each topic string
         for ts in topic_strings:
@@ -273,16 +287,19 @@ class Connection:
                 await self.client.subscribe(f"{self.endpoint}:{topic}")
             else:
                 logger.debug("%s: subscribing to topic: %s", self.name, topic)
+
         except Exception as e:
             self.logger.error(
                 "unexpected error while subscribing to topic: %s", e, exc_info=1
             )
+
         else:
             logger.info("%s: subscribed to topic: %s", self.name, topic)
 
             for topic in topic.split(",") if "," in topic else [topic]:
                 await self._topics.add_subscriber(topic)
                 self._pending -= 1
+
         finally:
             self.busy = False
 
@@ -299,9 +316,10 @@ class Connection:
 
         try:
             if not self.debug:
-                await self.client.subscribe(f"{self.endpoint}:{topic}")
+                await self.client.unsubscribe(f"{self.endpoint}:{topic}")
             else:
                 logger.debug("%s: unsubscribing from topic: %s", self.name, topic)
+
         except Exception as e:
             self.logger.error(
                 "%s: unexpected error while unsubscribing from topic: %s",
@@ -309,18 +327,21 @@ class Connection:
                 e,
                 exc_info=1,
             )
+
         else:
             logger.info("%s: unsubscribed from topic: %s", self.name, topic)
 
-            for topic in topic.split(",") if "," in topic else [topic]:
-                await self._topics.remove_subscriber(topic)
+            for topic in (topic.split(",") if "," in topic else [topic]):
+                logger.debug("deleting topic after unsubscribing: %s", topic)
+                del self._topics[topic]
+
         finally:
             self.busy = False
 
     async def add_subscribers_to_existing(self, topics: list[str]) -> list[str]:
         """Add subscribers to existing topics."""
         for topic in tuple(topics):
-            if self.topic_exists:
+            if await self.topic_exists(topic):
                 logger.debug("... increasing subscriber count for topic: %s", topic)
                 await self._topics.add_subscriber(topic)
                 topics.remove(topic)
@@ -330,15 +351,23 @@ class Connection:
     async def remove_subscribers_from_existing(self, topics: list[str]) -> list[str]:
         """Remove subscribers from existing topics."""
         for topic in tuple(topics):
-            if self.topic_exists:
-                logger.debug("... decreasing subscriber count for topic: %s", topic)
-                await self._topics.remove_subscriber(topic)
-                if self._topics[topic] > 0:
-                    topics.remove(topic)
-                else:
-                    await self.unwatch(topic)
+
+            if not self.topic_exists:
+                logger.warning("... topic not found: %s", topic)
+                continue
+
+            logger.debug("... decreasing subscriber count for topic: %s", topic)
+
+            # decrease subscriber count for the topic & remove it from
+            # the unwatch list, if we still have subscribers left for
+            # the topic
+            if await self._topics.remove_subscriber(topic):
+                topics.remove(topic)
 
         return topics
+
+    async def remove_dead_topics(self) -> None:
+        await self._topics.clear_subscribers()
 
     async def close(self) -> None:
         """Closes the connection"""
@@ -358,7 +387,7 @@ class Connection:
             client = await KucoinWsClient.create(
                 loop=loop,
                 client=WsToken(),
-                call_back=self._handle_message,
+                callback=self.publish,
                 private=False,
             )
             logger.info("%s: kucoin public websocket client started ...", self.name)
@@ -374,9 +403,9 @@ class Connection:
 
     async def _stop_client(self) -> None:
         if self.client:
-            del self._ws_client
+            del self.client
 
-    async def _prep_topic_str(
+    def _prep_topic_str(
         self, topics: list[str] | str
     ) -> tuple[list[str], list[str]]:
         """Prepares the topic string for use in sub/unsub message
@@ -431,7 +460,7 @@ class Connection:
 
     async def _prep_unsub_str(self, topics: list[str]) -> list[str]:
         n = MAX_BATCH_SUBSCRIPTIONS
-        topics = [topics[i : i + n] for i in range(0, len(topics), n)]
+        topics = [topics[i:i + n] for i in range(0, len(topics), n)]
         topics = [",".join(t) for t in topics]
         return topics
 
@@ -462,8 +491,8 @@ class WebsocketBase(IWebsocketPublic):
         # callback parameter takes precedence
         self.publisher = publisher or KucoinWebsocketPublic.publisher
         self.publish = callback or self.publisher.publish
-        self.endpoint = "/this/is/not/an/endpoint"
-        self.debug = debug
+        self.endpoint = "/this/is/not/an/endpoint"  # must be replaced by subclasses
+        self.debug = debug  # debug mode yes/no
 
         logger_name = f"main.{__class__.__name__}"
         self.logger = logging.getLogger(logger_name)
@@ -473,9 +502,7 @@ class WebsocketBase(IWebsocketPublic):
             f"with publisher {self.publisher}"
         )
 
-        self._topics: Subscribers = Subscribers()
-        self._connections: dict[str, Connection] = {}
-        self._id = str(uuid4())
+        self._connections: dict[str, Connection] = {}  # active websocket connections
 
     @property
     def topics(self) -> dict[str, int]:
@@ -488,10 +515,17 @@ class WebsocketBase(IWebsocketPublic):
 
     # ..................................................................................
     async def watch(self, topics: str | list[str]) -> None:
-        logger.debug("•~-*-~•" * 15)
-        logger.debug("WebsocketBase.watch() called ...")
-        # make list, if we got a string & remove duplicates
+        """Watch one or more topics with a websocket connection.
 
+        Parameters
+        ----------
+        topics : str | list[str]
+            one or more topic(s) as string, a list for multiple
+        """
+        logger.debug("•~-*-~•" * 15)
+        # logger.debug("WebsocketBase.watch() called ...")
+
+        # make a list, if we got a string & remove duplicates
         topics = list(set([topics] if isinstance(topics, str) else topics))
 
         # filter out topics that already exist
@@ -509,23 +543,38 @@ class WebsocketBase(IWebsocketPublic):
             await self.watch(rest)
 
     async def unwatch(self, topics: str | list[str]) -> None:
+        """Unwatch one or more topics with a websocket connection.
+
+        Parameters
+        ----------
+        topics : str | list[str]
+            one or more topic(s) as string, a list for multiple
+        """
         logger.debug("•~-*-~•" * 15)
         logger.debug("WebsocketBase.unwatch() called ...")
+        logger.debug("unwatch request for topics: %s", topics)
 
-        # make list, if we got a string & remove duplicates
+        # make a list, if we got a string & remove duplicates
         topics = list(set([topics] if isinstance(topics, str) else topics))
-        topics = await self.filter_existing_topics(topics, "unsubscribe")
 
-        if not topics:
+        # filter out topics that we need to keep, because there
+        # are other subscribers
+        if not (topics := await self.filter_existing_topics(topics, "unsubscribe")):
+            logger.debug("... no topics left to unsubscribe")
+            for conn in self._connections.values():
+                await conn.remove_dead_topics()
             return
 
+        logger.debug("unwatch topics after filtering: %s", topics)
+
+        # tell each connection that has the topic(s) to unwatch them
         for conn in self._connections.values():
             if to_remove := [t for t in topics if t in conn._topics]:
                 logger.debug("%s --> %s", conn.name, to_remove)
                 await conn.unwatch(to_remove)
 
     async def filter_existing_topics(self, topics: list[str], action: str) -> list[str]:
-        """Filter out topics that already exist.
+        """Filter out topics that have other subscribers.
 
         This will just increase the subscriber count for the topics,
         instead of sending a subscription request to the WS client.
@@ -535,12 +584,13 @@ class WebsocketBase(IWebsocketPublic):
         topics : list[str]
             list of topics
         action : str
-            subscribe or unsubscribe
+            "subscribe"/"unsubscribe"
 
         Returns
         -------
         list[str]
-            filtered list of topics, all existing removed
+            filtered list of topics, all existing removed for "subscribe",
+            all that we need to keep removed for "unsubscribe" action
 
         Raises
         ------
@@ -558,6 +608,7 @@ class WebsocketBase(IWebsocketPublic):
         return topics
 
     async def close(self) -> None:
+        """Close the websocket connection."""
         logger.debug("•~-*-~•" * 15)
         logger.debug("WebsocketBase.close() called...")
 
@@ -582,7 +633,7 @@ class WebsocketBase(IWebsocketPublic):
                 connection.topic_limit_reached,
             )
 
-            if (not connection.topic_limit_reached) and (not connection.busy):
+            if (not connection.topic_limit_reached):  #  and (not connection.busy):
                 logger.debug("will use connection %s", connection.name)
                 return connection
 
@@ -592,6 +643,8 @@ class WebsocketBase(IWebsocketPublic):
     async def _create_connection(self) -> Connection:
         logger.debug("Creating new connection ...")
         connection = Connection(self.publish, self.endpoint, self.debug)
+        await connection._start_client()
+        await asyncio.sleep(2)  # wait for the connection to be ready
         self._connections[connection._id] = connection
 
 
@@ -603,12 +656,6 @@ class WsTickers(WebsocketBase):
     ):
         super().__init__(publisher, callback)
         self.endpoint = TICKERS_ENDPOINT
-
-    def watch(self, topics: str | list[str]) -> None:
-        super().watch(topics, self.endpoint)
-
-    def unwatch(self, topics: str | list[str]) -> None:
-        super().unwatch(topics, self.endpoint)
 
 
 # ======================================================================================

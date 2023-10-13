@@ -181,6 +181,7 @@ def callback(topic):
 
 # as class
 class Test:
+
     @subscriber_tracker()
     def subscribe(self, topic, client_id):
         logger.debug(f"... Subscribed to topic: {topic}")
