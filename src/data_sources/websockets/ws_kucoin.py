@@ -83,6 +83,7 @@ class Subscribers:
 
     def __init__(self):
         self._topics: dict[str, int] = {}
+        self.warnings: int = 0
 
     def __repr__(self) -> str:
         return self._topics.__repr__()
@@ -108,7 +109,7 @@ class Subscribers:
         return list(self._topics.keys())
 
     # ..................................................................................
-    async def add_subscriber(self, topic: str) -> None:
+    def add_subscriber(self, topic: str) -> None:
         if topic not in self._topics:
             self._topics[topic] = 1
             logger.info(
@@ -126,7 +127,7 @@ class Subscribers:
             )
             return None
 
-    async def remove_subscriber(self, topic: str) -> int:
+    def remove_subscriber(self, topic: str) -> int:
 
         if topic in self._topics:  # and (subs := self._topics.get(topic, 0)) > 1:
             self._topics[topic] -= 1
@@ -136,10 +137,10 @@ class Subscribers:
             )
             return self._topics.get(topic, 0)
 
-        elif topic not in self._topics:
-            logger.warning("unable to remove topic, not found: %s", topic)
-
         return 0
+
+    def get_subscriber_count(self, topic: str) -> int:
+        return self._topics.get(topic, 0)
 
     async def clear_subscribers(self) -> None:
         self._topics = {k: v for k, v in self._topics.items() if v > 0}
@@ -166,15 +167,17 @@ class Connection:
         self.endpoint: str = endpoint
         self.debug: bool = debug
 
-        self.busy: bool = False  # busy flag
         self._topics: Subscribers = Subscribers()  # topic registry
-        self._pending: int = 0  # number of pending topics
+        self._pending: set = set()  # pending topics
         self.name: str = random_celtic_name()  # name for humans
         self._id: str = str(uuid4())  # unique id
 
+        self.warnings: int = 0  # number of warning messages
+        self.errors: int = 0  # number of errors
+
         self.client: Optional[KucoinWsClient] = None
 
-        logger.info("    connection %s created: %s", self.name, self._id)
+        logger.info("   connection %s created: %s", self.name, self._id)
         if debug:
             logger.warning(
                 "   <<<--- RUNNING IN DEBUG MODE. "
@@ -186,7 +189,7 @@ class Connection:
 
     @property
     def no_of_topics(self) -> int:
-        return len(self._topics) + self._pending
+        return len(self._topics) + len(self._pending)
 
     @property
     def pending_topics(self) -> int:
@@ -220,13 +223,11 @@ class Connection:
         if self.topic_limit_reached:
             return topics
 
-        self.busy = True
-
         logger.debug(
             "%s: about to add topics: %s... (busy: %s)",
             self.name,
             ", ".join(topics[:10]),
-            self.busy,
+            "False",
         )
 
         # turn the list of topics into a list of topic strings,
@@ -234,13 +235,14 @@ class Connection:
         topic_strings, too_much = self._prep_topic_str(topics)
         logger.debug("topics: %s --- too much: %s", topic_strings, too_much)
 
-        # add topics to 'pending' count to prevent new assignments.
+        # add topics to 'pending' to prevent new assignments.
         # This is meant to prevent new assigments by the parent class
         # while pending requests are being processed
-        for topics in topic_strings:
-            self._pending += len((topics.split(",") if "," in topics else [topics]))
-            # self._pending += (len(topics) - len(too_much))
-            logger.debug("%s -> self.no_of_topics: %s", self.name, self.no_of_topics)
+        self._pending = set(topics) - set(too_much)
+        logger.debug("%s -> self.no_of_topics: %s", self.name, self.no_of_topics)
+
+        for topic in self._pending:
+            self._topics.add_subscriber(topic)
 
         # start client if necessary
         if not self.client and not self.debug:
@@ -251,11 +253,9 @@ class Connection:
         for topics in topic_strings:
             await self.subscribe(topics)
 
-        self.busy = False
         return too_much or None
 
     async def unwatch(self, topics: list[str]) -> list | None:
-        self.busy = True
 
         # turn the list of topics into a list of topic strings,
         # as we can send batch requests up to the allowed limit.
@@ -267,8 +267,6 @@ class Connection:
         for ts in topic_strings:
             await self.unsubscribe(ts)
 
-        self.busy = False
-
     # ..................................................................................
     @rate_limiter(max_rate=MSG_LIMIT, time_window=MSG_LIMIT_LOOKBACK)
     async def subscribe(self, topic: str) -> None:
@@ -279,8 +277,6 @@ class Connection:
         topic : str
             one or more topic(s) as string, comma separated if multiple
         """
-        self.busy = True
-
         try:
             # only do a dry-run if debug flag is set
             if not self.debug:
@@ -292,16 +288,14 @@ class Connection:
             self.logger.error(
                 "unexpected error while subscribing to topic: %s", e, exc_info=1
             )
-
+            for topic in self._pending:
+                del self._topics[topic]
         else:
             logger.info("%s: subscribed to topic: %s", self.name, topic)
 
             for topic in topic.split(",") if "," in topic else [topic]:
-                await self._topics.add_subscriber(topic)
-                self._pending -= 1
-
-        finally:
-            self.busy = False
+                # self._topics.add_subscriber(topic)
+                self._pending.remove(topic)
 
     @rate_limiter(max_rate=MSG_LIMIT, time_window=MSG_LIMIT_LOOKBACK)
     async def unsubscribe(self, topic: str) -> None:
@@ -312,8 +306,6 @@ class Connection:
         topic : str
             one or more topic(s) as string, comma separated if multiple
         """
-        self.busy = True
-
         try:
             if not self.debug:
                 await self.client.unsubscribe(f"{self.endpoint}:{topic}")
@@ -333,36 +325,39 @@ class Connection:
 
             for topic in (topic.split(",") if "," in topic else [topic]):
                 logger.debug("deleting topic after unsubscribing: %s", topic)
-                del self._topics[topic]
-
-        finally:
-            self.busy = False
+                if topic in self._topics:
+                    del self._topics[topic]
 
     async def add_subscribers_to_existing(self, topics: list[str]) -> list[str]:
         """Add subscribers to existing topics."""
         for topic in tuple(topics):
             if await self.topic_exists(topic):
                 logger.debug("... increasing subscriber count for topic: %s", topic)
-                await self._topics.add_subscriber(topic)
+                self._topics.add_subscriber(topic)
                 topics.remove(topic)
 
         return topics
 
     async def remove_subscribers_from_existing(self, topics: list[str]) -> list[str]:
         """Remove subscribers from existing topics."""
+        if not len(self._topics):
+            return topics
+
         for topic in tuple(topics):
 
-            if not self.topic_exists:
-                logger.warning("... topic not found: %s", topic)
-                continue
+            if topic in self._topics:
 
-            logger.debug("... decreasing subscriber count for topic: %s", topic)
+                logger.debug(self._topics)
+                logger.debug(
+                    "   %s --> decreasing subscriber count for topic: %s (was: %s)",
+                    self.name.upper(), topic, self._topics.get_subscriber_count(topic)
+                )
 
-            # decrease subscriber count for the topic & remove it from
-            # the unwatch list, if we still have subscribers left for
-            # the topic
-            if await self._topics.remove_subscriber(topic):
-                topics.remove(topic)
+                # decrease subscriber count for the topic & remove it from
+                # the unwatch list, if we still have subscribers left for
+                # the topic
+                if self._topics.remove_subscriber(topic):
+                    topics.remove(topic)
 
         return topics
 
@@ -374,6 +369,10 @@ class Connection:
         # unwatch all topics & stop client
         await self.unwatch(self._topics.topics_as_list)
         await self._stop_client()
+        logger.info(
+            "%s: connection closed (%s warnings)",
+            self.name, self.warnings + self._topics.warnings
+        )
 
     # ..................................................................................
     async def _start_client(self) -> KucoinWsClient:
@@ -493,6 +492,7 @@ class WebsocketBase(IWebsocketPublic):
         self.publish = callback or self.publisher.publish
         self.endpoint = "/this/is/not/an/endpoint"  # must be replaced by subclasses
         self.debug = debug  # debug mode yes/no
+        self.warnings: int = 0  # number of warnings
 
         logger_name = f"main.{__class__.__name__}"
         self.logger = logging.getLogger(logger_name)
@@ -597,11 +597,24 @@ class WebsocketBase(IWebsocketPublic):
         ValueError
             if action is not'subscribe' or 'unsubscribe'
         """
+        count = 0
+
         for conn in self._connections.values():
             if action == "subscribe":
+                for topic in topics:
+                    if topic in conn._topics:
+                        count += 1
+                    if count > 1:
+                        logger.warning(
+                            "!!!!! topic %s found in multiple connections", topic
+                        )
+                        self.warnings += 1
+
                 topics = await conn.add_subscribers_to_existing(topics)
+
             elif action == "unsubscribe":
                 topics = await conn.remove_subscribers_from_existing(topics)
+
             else:
                 raise ValueError(f"Unexpected action: {action}")
 
@@ -616,6 +629,7 @@ class WebsocketBase(IWebsocketPublic):
             await conn.close()
 
         self._connections = {}
+        logger.info("WebsocketBase:  SHUTDWON COMPLETE (%s warnings)", self.warnings)
 
     # ..................................................................................
     async def _get_connection(self) -> Connection:
@@ -624,16 +638,15 @@ class WebsocketBase(IWebsocketPublic):
 
         for connection in self._connections.values():
             logger.debug(
-                "--> checking connection %s ::::: %s BUSY (%s topics - %s)::::: "
+                "--> checking connection %s ::::: (%s topics - %s)::::: "
                 "limit reached? :: %s",
                 connection.name.upper(),
-                "" if connection.busy else "NOT",
                 connection.no_of_topics,
-                connection.pending_topics,
+                len(connection.pending_topics),
                 connection.topic_limit_reached,
             )
 
-            if (not connection.topic_limit_reached):  #  and (not connection.busy):
+            if (not connection.topic_limit_reached):  # and (not connection.busy):
                 logger.debug("will use connection %s", connection.name)
                 return connection
 
@@ -643,8 +656,9 @@ class WebsocketBase(IWebsocketPublic):
     async def _create_connection(self) -> Connection:
         logger.debug("Creating new connection ...")
         connection = Connection(self.publish, self.endpoint, self.debug)
-        await connection._start_client()
-        await asyncio.sleep(2)  # wait for the connection to be ready
+        if not self.debug:
+            await connection._start_client()
+            await asyncio.sleep(2)  # wait for the connection to be ready
         self._connections[connection._id] = connection
 
 

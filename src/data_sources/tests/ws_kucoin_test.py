@@ -213,15 +213,15 @@ async def test_wsb_watch_unwatch_batch():
 async def test_wsb_watch_unwatch_random():
     # create a WebsocketBase object
     wsb = ws.WebsocketBase(callback=callback, debug=True)
-    symbols = await get_symbols(1)
-    sleep_time = 0.2
+    symbols = await get_symbols(50)
+    sleep_time = 0.1
     run = 0
 
     while True:
         try:
             topic = choice(symbols)
             runs = int(0.5 + random() * 2)
-            threshhold = random() + (run / 50) - 0.5
+            threshhold = random() + (run / 100) - 0.5
             # logger.debug("----------> %s ~ %s <----------", run, threshhold)
 
             if random() > threshhold:
@@ -240,7 +240,7 @@ async def test_wsb_watch_unwatch_random():
                     await asyncio.sleep(sleep_time / runs)
 
             run += 1
-            await asyncio.sleep(random() * 1)
+            # await asyncio.sleep(random() * 1)
 
         except TypeError as e:
             logger.error(e, exc_info=1)
@@ -310,8 +310,8 @@ async def main():
 
     # await test_filter_topics()
     # await test_wsb_watch_unwatch_batch()
-    # await test_wsb_watch_unwatch_random()
-    await test_it_for_real()
+    await test_wsb_watch_unwatch_random()
+    # await test_it_for_real()
 
 
 if __name__ == "__main__":
