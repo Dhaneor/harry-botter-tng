@@ -154,6 +154,45 @@ async def test_prep_unsub_str():
     logger.debug(unsub_str)
 
 
+async def test_remove_multiple_subs():
+    topics = ["topic1", "topic2", "topic3", "topic4", "topic5", "topic6", "topic7"]
+
+    # prepare two test Connection instances
+    c1 = ws.Connection(None, "", True)
+    await c1.watch(topics[:5])
+    c2 = ws.Connection(None, "", True)
+    await c2.watch(topics[2:])
+    await asyncio.sleep(1)
+    await c2.watch(topics[2:])
+    await asyncio.sleep(1)
+
+    logger.debug("connection 1 topics: %s" % (c1._topics))
+    logger.debug("connection 2 topics: %s" % (c2._topics))
+
+    logger.debug("." * 120)
+
+    # add them to a WebsocketBase instance
+    wsb = ws.WebsocketBase(callback=callback, debug=True)
+    wsb._connections = {c._id: c for c in (c1, c2)}
+
+    # see if our coroutine works as expected ...
+    await wsb.remove_multiple_subs()
+    await asyncio.sleep(2)
+
+    assert c1._topics["topic3"] == 3
+    assert c1._topics["topic4"] == 3
+    assert c1._topics["topic5"] == 3
+
+    assert "topic3" not in c2._topics
+    assert "topic4" not in c2._topics
+    assert "topic5" not in c2._topics
+
+    logger.debug("topics conn 1/2: %s <---> %s" % (c1._topics, c2._topics))
+    logger.debug("test passed: OK")
+
+
+
+
 async def test_conn_watch_unwatch():
     # create a Connection object
     endpoint = "/mock/websockets"
@@ -221,7 +260,7 @@ async def test_wsb_watch_unwatch_random():
         try:
             topic = choice(symbols)
             runs = int(0.5 + random() * 2)
-            threshhold = random() + (run / 100) - 0.5
+            threshhold = random() + (run / 1000) - 0.5
             # logger.debug("----------> %s ~ %s <----------", run, threshhold)
 
             if random() > threshhold:
@@ -305,12 +344,13 @@ async def main():
     # await test_get_item()
 
     # await test_connection_prep_topic()
-    # await test_conn_watch_unwatch()
     # await test_prep_unsub_str()
+    await test_remove_multiple_subs()
+    # await test_conn_watch_unwatch()
 
     # await test_filter_topics()
     # await test_wsb_watch_unwatch_batch()
-    await test_wsb_watch_unwatch_random()
+    # await test_wsb_watch_unwatch_random()
     # await test_it_for_real()
 
 

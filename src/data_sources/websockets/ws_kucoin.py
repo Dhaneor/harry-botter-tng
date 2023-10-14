@@ -72,7 +72,7 @@ CONNECTION_LIMIT = 30  # per minute
 MSG_LIMIT = 100  # 100 per 10 seconds
 MSG_LIMIT_LOOKBACK = 10  # seconds
 MAX_BATCH_SUBSCRIPTIONS = 9  # 100 topics
-MAX_TOPICS_PER_CONNECTION = 3  # 300 topics
+MAX_TOPICS_PER_CONNECTION = 10  # 300 topics
 
 
 # ======================================================================================
@@ -364,6 +364,9 @@ class Connection:
     async def remove_dead_topics(self) -> None:
         await self._topics.clear_subscribers()
 
+    async def get_subscriber_count(self, topic: str) -> int:
+        return self._topics.get_subscriber_count(topic)
+
     async def close(self) -> None:
         """Closes the connection"""
         # unwatch all topics & stop client
@@ -525,8 +528,8 @@ class WebsocketBase(IWebsocketPublic):
         logger.debug("•~-*-~•" * 15)
         # logger.debug("WebsocketBase.watch() called ...")
 
-        # make a list, if we got a string & remove duplicates
-        topics = list(set([topics] if isinstance(topics, str) else topics))
+        # make a list, if we got a string
+        topics = [topics] if isinstance(topics, str) else topics
 
         # filter out topics that already exist
         if not (topics := await self.filter_existing_topics(topics, "subscribe")):
@@ -555,7 +558,7 @@ class WebsocketBase(IWebsocketPublic):
         logger.debug("unwatch request for topics: %s", topics)
 
         # make a list, if we got a string & remove duplicates
-        topics = list(set([topics] if isinstance(topics, str) else topics))
+        topics = [topics] if isinstance(topics, str) else topics
 
         # filter out topics that we need to keep, because there
         # are other subscribers
@@ -597,18 +600,21 @@ class WebsocketBase(IWebsocketPublic):
         ValueError
             if action is not'subscribe' or 'unsubscribe'
         """
-        count = 0
+        occurences = {t: 0 for t in topics}
 
         for conn in self._connections.values():
             if action == "subscribe":
+
                 for topic in topics:
-                    if topic in conn._topics:
-                        count += 1
-                    if count > 1:
-                        logger.warning(
-                            "!!!!! topic %s found in multiple connections", topic
-                        )
-                        self.warnings += 1
+                    count = count + 1 if topic in conn._topics else count
+
+                occurs = sum(1 for t in topics if t in conn._topics)
+
+                if count > 1:
+                    logger.warning(
+                        "!!!!! topic %s found in multiple connections", topic
+                    )
+                    self.warnings += 1
 
                 topics = await conn.add_subscribers_to_existing(topics)
 
@@ -619,6 +625,28 @@ class WebsocketBase(IWebsocketPublic):
                 raise ValueError(f"Unexpected action: {action}")
 
         return topics
+
+    async def remove_multiple_subs(self) -> None:
+
+        logger.debug(self.topics)
+
+        for t in self.topics:
+            has_topic = [
+                conn for conn in self._connections.values() if t in conn._topics
+            ]
+
+            keep, inc = has_topic.pop(0), 0
+
+            if has_topic:
+                for conn in has_topic:
+                    inc += (dec := await conn.get_subscriber_count(t))
+                    await conn.unwatch([t] * dec)
+
+                await keep.add_subscribers_to_existing([t] * inc)
+
+    async def move_topics(self, topics: list[str], src: Connection, dst: Connection):
+
+
 
     async def close(self) -> None:
         """Close the websocket connection."""
