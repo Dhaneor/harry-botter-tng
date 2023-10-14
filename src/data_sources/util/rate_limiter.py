@@ -15,7 +15,8 @@ from functools import wraps
 from time import time, sleep
 from threading import Thread
 
-logger = logging.getLogger('rate_limiter')
+logger = logging.getLogger('main.rate_limiter')
+logger.setLevel(logging.DEBUG)
 
 
 def rate_limiter(max_rate, time_window=1):
@@ -110,7 +111,7 @@ def async_rate_limiter(max_rate, time_window=1, send_immediately=False):
                     logger.error(
                         "parked request caused an exception: %s", e, exc_info=1
                     )
-                    logger.error(parked_request)
+                    # logger.error(parked_request)
                 timestamps.append(current_time)
 
             await asyncio.sleep(time_window / max_rate)

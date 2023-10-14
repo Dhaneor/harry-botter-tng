@@ -191,8 +191,6 @@ async def test_remove_multiple_subs():
     logger.debug("test passed: OK")
 
 
-
-
 async def test_conn_watch_unwatch():
     # create a Connection object
     endpoint = "/mock/websockets"
@@ -217,7 +215,7 @@ async def test_filter_topics():
     topics = [random_topic() for _ in range(10)]
     logger.debug(topics)
 
-    topics = await wsb.filter_existing_topics(topics, "subscribe")
+    topics = await wsb.handle_existing_topics(topics, "subscribe")
     logger.debug(topics)
 
     assert len(topics) == 10, f"{len(topics)}!= 10"
@@ -226,6 +224,69 @@ async def test_filter_topics():
     await asyncio.sleep(2)
     await wsb.close()
     await asyncio.sleep(2)
+
+
+async def test_move_topics():
+    topics = [
+        "topic1", "topic2", "topic3", "topic4", "topic5", "topic6", "topic7",
+        "topic8", "topic9", "topic10", "topic11", "topic12", "topic13", "topic14",
+    ]
+
+    # prepare two test Connection instances
+    c1 = ws.Connection(None, "", True)
+    await c1.watch(topics[:7])
+    c2 = ws.Connection(None, "", True)
+    await c2.watch(topics[7:])
+    # await asyncio.sleep(1)
+    # await c2.watch(topics[2:])
+    await asyncio.sleep(1)
+
+    # add them to a WebsocketBase instance
+    wsb = ws.WebsocketBase(callback=callback, debug=True)
+    wsb._connections = [c1, c2]
+    topics_before = {k: v for k, v in wsb.topics.items()}
+
+    # see if our coroutine works as expected...
+    await wsb.move_topics(c1, c2)
+
+    await asyncio.sleep(2)
+
+    c2_topics_after = {
+        k: c2._topics[k] for k in sorted(c2._topics._topics.keys())
+    }
+    logger.debug("topics conn 1/2: %s <---> %s" % (c1._topics, c2_topics_after))
+
+    assert not c1._topics, f"{c1._topics} != " + "{}"
+    assert c2.topics.sort() == topics.sort(), f"{c2.topics} != {topics}"
+    assert topics_before == wsb.topics, f"{topics_before}!= {wsb.topics}"
+
+    logger.debug("test passed: OK")
+
+
+async def test_switch_connection(debug=True):
+    if debug:
+        logger.setLevel(logging.DEBUG)
+        interval = 15
+    else:
+        logger.setLevel(logging.INFO)
+        interval = 30
+
+    symbols = await get_symbols(17)
+    wsb = ws.WsTickers(callback=callback, cycle_interval=interval, debug=debug)
+    await wsb.watch(symbols)
+    await asyncio.sleep(1)
+    await wsb.watch(symbols)
+
+    while True:
+        try:
+            await asyncio.sleep(interval)
+            logger.debug("=" * 120)
+            await wsb.switch_connections()
+        except asyncio.CancelledError:
+            break
+        except Exception as e:
+            logger.error(e)
+            break
 
 
 async def test_wsb_watch_unwatch_batch():
@@ -296,16 +357,18 @@ async def test_wsb_watch_unwatch_random():
 
 async def test_it_for_real():
     """Test with the real websocket client."""
-    wsb = ws.WsTickers(callback=callback)
-    symbols = await get_symbols(1)
+    wsb = ws.WsTickers(callback=callback, cycle_interval=30)
+    symbols = await get_symbols(10)
     sleep_time = 2
     run = 0
+
+    asyncio.create_task(wsb.run())
 
     while True:
         try:
             topic = choice(symbols)
             runs = int(0.5 + random() * 2)
-            threshhold = random() + (run / 50) - 0.5
+            threshhold = random() + (run / 2000) - 0.5
             # logger.debug("----------> %s ~ %s <----------", run, threshhold)
 
             if random() > threshhold:
@@ -345,10 +408,12 @@ async def main():
 
     # await test_connection_prep_topic()
     # await test_prep_unsub_str()
-    await test_remove_multiple_subs()
+    # await test_remove_multiple_subs()
     # await test_conn_watch_unwatch()
 
     # await test_filter_topics()
+    # await test_move_topics()
+    await test_switch_connection(True)
     # await test_wsb_watch_unwatch_batch()
     # await test_wsb_watch_unwatch_random()
     # await test_it_for_real()
