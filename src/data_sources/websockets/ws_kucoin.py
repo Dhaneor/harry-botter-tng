@@ -78,7 +78,7 @@ CONNECTION_LIMIT = 30  # per minute
 MSG_LIMIT = 100  # 100 per 10 seconds
 MSG_LIMIT_LOOKBACK = 10  # seconds
 MAX_BATCH_SUBSCRIPTIONS = 5  # 100 topics
-MAX_TOPICS_PER_CONNECTION = 10  # 300 topics
+MAX_TOPICS_PER_CONNECTION = 300  # 300 topics
 
 
 # ======================================================================================
@@ -749,11 +749,16 @@ class WebsocketBase(IWebsocketPublic):
 
         await self.move_topics(src=src, dst=dst, topics=src_topics)
 
+        success = all_topics_before == self.topics
+
         logger.info(
             "all topics from %s moved to new connection: %s",
             src_name,
-            (all_topics_before == self.topics),
+            success
         )
+
+        if not success:
+            raise asyncio.CancelledError("connection switch failed")
 
         self.switch_in_progress = False
 
@@ -772,54 +777,72 @@ class WebsocketBase(IWebsocketPublic):
         dst = dst or self._connections[-1]
         dst._pending = src._pending
         topics_to_move = topics or src.topics
-        topics_done = []
+        topics_done, subscriber_count = [], {}
 
         # move all topics to the destination
         while dst.max_topics_left > 0 and topics_to_move:
-            topic = topics.pop(0)
-            subscriber_count = await src.get_subscriber_count(topic)
-            logger.info("moving %s (%s subscribers)", topic, subscriber_count)
 
-            # move the topic itself to the new connection
-            await dst.watch([topic])
-            del src._topics._topics[topic]
+            next_batch = []
+            max_batch = min(
+                dst.max_topics_left, MAX_BATCH_SUBSCRIPTIONS, len(topics_to_move)
+            )
 
-            # move additional subscribers as fast as possible
-            for _ in range(subscriber_count - 1):
-                dst._topics.add_subscriber(topic)
+            for _ in range(max_batch):
+                topic = topics_to_move.pop(0)
+                subscriber_count[topic] = await src.get_subscriber_count(topic)
 
-            topics_done.append(topic)
+                logger.info(
+                    "moving %s (%s subscribers)", topic, subscriber_count[topic]
+                )
 
+                next_batch.append(topic)
+                del src._topics._topics[topic]
+
+            # move the topic(s) to the new connection
+            await dst.watch(next_batch)
+
+            topics_done += next_batch
+
+        # remove all topics from the source
         topics_done = [
             topics_done[i: i + MAX_BATCH_SUBSCRIPTIONS]
             for i in range(0, len(topics_done), MAX_BATCH_SUBSCRIPTIONS)
         ]
 
         for sub_list in topics_done:
-            t_str = " ".join(sub_list)
-            if not self.debug:
-                await src.client.unsubscribe(f"{src.endpoint}:{t_str}")
-            else:
-                self.logger.debug("simulating unsubscribe for %s", t_str)
+            t_str = ",".join(sub_list)
 
-        if topics:
+            try:
+                if not self.debug:
+                    await src.client.unsubscribe(f"{src.endpoint}:{t_str}")
+                else:
+                    self.logger.debug("simulating unsubscribe for %s", t_str)
+            except Exception as e:
+                logger.error(e, exc_info=1)
+
+        # update the subscriber count for all topics in the destination
+        for topic, subs in subscriber_count.items():
+            dst._topics._topics[topic] = subs
+            logger.info("increased subscriber count for %s, now: %s", topic, subs)
+
+        # if there are topics left to move, create a new connection
+        # and call this coroutine again
+        if topics_to_move:
             logger.debug("some topics left to move: %s", topics)
             await self._create_connection()
             new_dst = self._connections[-1]
             logger.debug(
                 "created new connection: %s (%s)", new_dst.name, len(new_dst.topics)
             )
-            await self.move_topics(src=src, dst=new_dst, topics=topics)
+            await self.move_topics(src=src, dst=new_dst, topics=topics_to_move)
         else:
             self._connections.remove(src)
 
     async def close(self) -> None:
         """Shutdown."""
-        self.logger.debug("•~-*-~•" * 15)
-        self.logger.debug("WebsocketBase.close() called...")
+        self.logger.info("•~-*-~•" * 15)
 
         [await conn.close() for conn in self._connections]
-        self._connections = []
 
         self.logger.info(
             "WebsocketBase:  SHUTDWON COMPLETE (%s warnings)", self.warnings

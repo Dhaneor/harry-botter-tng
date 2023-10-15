@@ -271,7 +271,7 @@ async def test_switch_connection(debug=True):
         logger.setLevel(logging.INFO)
         interval = 30
 
-    symbols = await get_symbols(17)
+    symbols = await get_symbols(3)
     wsb = ws.WsTickers(callback=callback, cycle_interval=interval, debug=debug)
     await wsb.watch(symbols)
     await asyncio.sleep(1)
@@ -285,7 +285,7 @@ async def test_switch_connection(debug=True):
         except asyncio.CancelledError:
             break
         except Exception as e:
-            logger.error(e)
+            logger.error(e, exc_info=1)
             break
 
 
@@ -357,18 +357,18 @@ async def test_wsb_watch_unwatch_random():
 
 async def test_it_for_real():
     """Test with the real websocket client."""
-    wsb = ws.WsTickers(callback=callback, cycle_interval=30)
-    symbols = await get_symbols(10)
+    wsb = ws.WsTickers(callback=callback, cycle_interval=3600)
+    symbols = await get_symbols(200)
     sleep_time = 2
     run = 0
 
-    asyncio.create_task(wsb.run())
+    bg_task = asyncio.create_task(wsb.run())
 
     while True:
         try:
             topic = choice(symbols)
             runs = int(0.5 + random() * 2)
-            threshhold = random() + (run / 2000) - 0.5
+            threshhold = random() + (run / 5000) - 0.5
             # logger.debug("----------> %s ~ %s <----------", run, threshhold)
 
             if random() > threshhold:
@@ -396,9 +396,25 @@ async def test_it_for_real():
             logger.info("test cancelled ...")
             break
         except Exception as e:
-            logger.error(e, exc_info=1)
+            logger.error(e, exc_info=0)
             break
-    await wsb.close()
+
+    logger.info("terminating background task...")
+
+    try:
+        bg_task.cancel()
+    except Exception as e:
+        logger.error("exception while cancelling background task: %s", e)
+
+    logger.info("closing WebsocketBase instance ...")
+
+    try:
+        await wsb.close()
+    except Exception as e:
+        logger.error("exception during shutdown of WebsocketBase: %s", e)
+
+    await asyncio.sleep(3)
+
     logger.info("exchange closed: OK")
 
 
@@ -413,10 +429,10 @@ async def main():
 
     # await test_filter_topics()
     # await test_move_topics()
-    await test_switch_connection(True)
+    # await test_switch_connection(False)
     # await test_wsb_watch_unwatch_batch()
     # await test_wsb_watch_unwatch_random()
-    # await test_it_for_real()
+    await test_it_for_real()
 
 
 if __name__ == "__main__":
