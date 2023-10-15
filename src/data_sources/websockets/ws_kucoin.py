@@ -71,7 +71,9 @@ logger = logging.getLogger("main.websocket")
 
 TICKERS_ENDPOINT = "/market/ticker"
 CANDLES_ENDPOINT = "/market/candles"
-SNAPSHOT_ENDPOINT = "/market/snapshot"
+SNAPSHOTS_ENDPOINT = "/market/snapshot"
+TRADES_ENDPOINT = "/market/match"
+BOOK_ENDPOINT = "/market/level2"
 
 MAX_CONNECTIONS_PER_USER = 50
 CONNECTION_LIMIT = 30  # per minute
@@ -82,7 +84,7 @@ MAX_TOPICS_PER_CONNECTION = 300  # 300 topics
 
 
 # ======================================================================================
-#                               WS CLIENTS PUBLIC API (NEW)                             #
+#                               WS CLIENTS PUBLIC API (NEW)                            #
 # ======================================================================================
 class Subscribers:
     """Helper class to keep track of the number of subscribers for each topic."""
@@ -401,30 +403,20 @@ class Connection:
 
     # ..................................................................................
     async def _start_client(self) -> KucoinWsClient:
-        """Start a websocket client."""
-        try:
-            loop = asyncio.get_running_loop()
-        except Exception:
-            loop = None
-
+        """Start a websocket client for Kucoin."""
         try:
             client = await KucoinWsClient.create(
-                loop=loop,
+                loop=asyncio.get_running_loop(),
                 client=WsToken(),
                 callback=self.publish,
                 private=False,
             )
-            self.logger.info(
-                "%s: kucoin public websocket client started ...", self.name
-            )
         except Exception as e:
-            self.logger.error(
-                "%s: unexpected error while creating client: %s",
-                self.name,
-                e,
-                exc_info=1,
-            )
+            logger.error("unexpected error while creating client: %s", e, exc_info=1)
         else:
+            logger.info(
+                "KUCOIN PUBLIC websocket client started ...",
+            )
             return client
 
     async def _stop_client(self) -> None:
@@ -484,7 +476,7 @@ class Connection:
 
     async def _prep_unsub_str(self, topics: list[str]) -> list[str]:
         n = MAX_BATCH_SUBSCRIPTIONS
-        topics = [topics[i : i + n] for i in range(0, len(topics), n)]
+        topics = [topics[i: i + n] for i in range(0, len(topics), n)]
         topics = [",".join(t) for t in topics]
         return topics
 
@@ -878,7 +870,7 @@ class WebsocketBase(IWebsocketPublic):
 
         # start WS client, if we´re not in debug mode
         if not self.debug:
-            await connection._start_client()
+            connection.client = await connection._start_client()
             await asyncio.sleep(2)  # wait for the connection to be ready
 
         # append to list of active connections
@@ -901,7 +893,81 @@ class WsTickers(WebsocketBase):
         )
 
         self.endpoint = TICKERS_ENDPOINT
-        self.cycle_interval = cycle_interval
+
+
+class WsTrades(WebsocketBase):
+    def __init__(
+        self,
+        publisher: Optional[IPublisher] = None,
+        callback: Optional[Callable] = None,
+        cycle_interval: Optional[int] = 0,
+        debug: Optional[bool] = False,
+    ):
+        super().__init__(
+            publisher=publisher,
+            callback=callback,
+            cycle_interval=cycle_interval,
+            debug=debug,
+        )
+
+        self.endpoint = TRADES_ENDPOINT
+
+
+class WsCandles(WebsocketBase):
+    def __init__(
+        self,
+        publisher: Optional[IPublisher] = None,
+        callback: Optional[Callable] = None,
+        cycle_interval: Optional[int] = 0,
+        debug: Optional[bool] = False,
+    ) -> None:
+        super().__init__(
+            publisher=publisher,
+            callback=callback,
+            cycle_interval=cycle_interval,
+            debug=debug,
+        )
+
+        self.endpoint = CANDLES_ENDPOINT
+
+
+class WsSnapshots(WebsocketBase):
+
+    def __init__(
+        self,
+        publisher: Optional[IPublisher] = None,
+        callback: Optional[Callable] = None,
+        cycle_interval: Optional[int] = 0,
+        debug: Optional[bool] = False,
+    ) -> None:
+        super().__init__(
+            publisher=publisher,
+            callback=callback,
+            cycle_interval=cycle_interval,
+            debug=debug,
+        )
+
+        self.endpoint = SNAPSHOTS_ENDPOINT
+
+
+class WsBook(WebsocketBase):
+
+    def __init__(
+        self,
+        publisher: Optional[IPublisher] = None,
+        callback: Optional[Callable] = None,
+        cycle_interval: Optional[int] = 0,
+        debug: Optional[bool] = False,
+    ) -> None:
+
+        super().__init__(
+            publisher=publisher,
+            callback=callback,
+            cycle_interval=cycle_interval,
+            debug=debug,
+        )
+
+        self.endpoint = BOOK_ENDPOINT
 
 
 # ======================================================================================
@@ -1078,7 +1144,7 @@ class KucoinWebsocketPublic:
             try:
                 markets = ["USDS", "BTC", "ALTS", "KCS"]
                 [
-                    await self.ws_client.subscribe(f"{SNAPSHOT_ENDPOINT}:{m}")
+                    await self.ws_client.subscribe(f"{SNAPSHOTS_ENDPOINT}:{m}")
                     for m in markets
                     if self.ws_client
                 ]
@@ -1094,7 +1160,7 @@ class KucoinWebsocketPublic:
             self.logger.debug(f"subscribing to symbol snapshots ... {symbols}")
             try:
                 [
-                    await self.ws_client.subscribe(f"{SNAPSHOT_ENDPOINT}:{s}")
+                    await self.ws_client.subscribe(f"{SNAPSHOTS_ENDPOINT}:{s}")
                     for s in symbols
                     if self.ws_client
                 ]
@@ -1116,7 +1182,7 @@ class KucoinWebsocketPublic:
 
         try:
             [
-                await self.ws_client.unsubscribe(f"{SNAPSHOT_ENDPOINT}:{symbol}")
+                await self.ws_client.unsubscribe(f"{SNAPSHOTS_ENDPOINT}:{symbol}")
                 for symbol in symbols
                 if self.ws_client
             ]

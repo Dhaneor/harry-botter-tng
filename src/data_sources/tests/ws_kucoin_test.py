@@ -60,8 +60,7 @@ def random_topic():
 
 # mock publish coroutine
 async def callback(msg):
-    pass
-    # logger.info(f"received message: {msg}")
+    logger.info(f"received message: {msg}")
 
 
 # --------------------------------------------------------------------------------------
@@ -356,10 +355,15 @@ async def test_wsb_watch_unwatch_random():
 
 
 async def test_it_for_real():
-    """Test with the real websocket client."""
-    wsb = ws.WsTickers(callback=callback, cycle_interval=3600)
-    symbols = await get_symbols(200)
-    sleep_time = 2
+    """Test with the real websocket client.
+
+    Subscriptions are changed after sleep_time, simulating multiple
+    pretty active/dynamic consumers to check if this is handled well.
+
+    """
+    wsb = ws.WsTrades(callback=callback, cycle_interval=3600)
+    symbols = await get_symbols(10)
+    sleep_time = 5
     run = 0
 
     bg_task = asyncio.create_task(wsb.run())
@@ -368,7 +372,7 @@ async def test_it_for_real():
         try:
             topic = choice(symbols)
             runs = int(0.5 + random() * 2)
-            threshhold = random() + (run / 5000) - 0.5
+            threshhold = random() + (run / 50) - 0.5
             # logger.debug("----------> %s ~ %s <----------", run, threshhold)
 
             if random() > threshhold:
@@ -418,6 +422,28 @@ async def test_it_for_real():
     logger.info("exchange closed: OK")
 
 
+async def test_trades_stream():
+    ts = ws.WsTrades(callback=callback)
+    await ts.watch(["BTC-USDT", "ETH-USDT", "XRP-USDT"])
+
+    while True:
+        try:
+            await asyncio.sleep(5)
+        except asyncio.CancelledError:
+            logger.info("test cancelled ...")
+            break
+        except Exception as e:
+            logger.error(e, exc_info=0)
+            break
+
+    logger.info("closing WsTrades instance ...")
+
+    await ts.close()
+    await asyncio.sleep(3)
+
+    logger.info("exchange closed: OK")
+
+
 async def main():
     # await test_add_remove_topics()
     # await test_get_item()
@@ -432,7 +458,8 @@ async def main():
     # await test_switch_connection(False)
     # await test_wsb_watch_unwatch_batch()
     # await test_wsb_watch_unwatch_random()
-    await test_it_for_real()
+    # await test_it_for_real()
+    await test_trades_stream()
 
 
 if __name__ == "__main__":

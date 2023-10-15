@@ -9,6 +9,7 @@ Created on Tue Oct 10  09:10:23 2023
 """
 import asyncio
 import ccxt.pro as ccxt
+import time
 
 from ccxt.base.errors import (
     BadSymbol, NetworkError, ExchangeNotAvailable, AuthenticationError,
@@ -24,7 +25,7 @@ async def trades(exchange: ExchangeT, symbol: str, limit: int = 1000):
 
     while True:
         try:
-            data = await exchange.fetch_trades(symbol=symbol, since=since, limit=limit)
+            data = await exchange.watch_trades(symbol=symbol, since=since, limit=limit)
         except NetworkError as e:
             print(e)
         except ExchangeNotAvailable as e:
@@ -55,4 +56,5 @@ if __name__ == '__main__':
     except KeyboardInterrupt:
         print('Interrupted...')
         exchange.close()
+        time.sleep(1)
         print("shutdown completed: OK")
