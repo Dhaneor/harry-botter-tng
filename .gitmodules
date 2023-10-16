@@ -1,3 +1,6 @@
 [submodule "src/data_sources/zmqbricks"]
 	path = src/data_sources/zmqbricks
 	url = https://github.com/Dhaneor/zmqbricks.git
+[submodule "src/data_sources/kucoin-python-sdk"]
+	path = src/data_sources/kucoin-python-sdk
+	url = https://github.com/Dhaneor/kucoin-python-sdk.git
