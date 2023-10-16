@@ -43,7 +43,7 @@ from typing import Callable, Optional, Coroutine
 from uuid import uuid4
 
 from kucoin.client import WsToken
-from .ws_client import KucoinWsClient
+from ..kucoin-python-sdk.kucoin.ws_client import KucoinWsClient
 
 from data_sources.websockets.i_websockets import (  # noqa: E402, F401
     IWebsocketPublic,
@@ -56,7 +56,7 @@ from data_sources.websockets.i_websockets import (  # noqa: E402, F401
     ISnapshots,
     IAllSnapshots,
 )
-from ..publishers import (  # noqa: E402, F401
+from .publishers import (  # noqa: E402, F401
     IPublisher,
     LogPublisher,
     ZeroMqPublisher,

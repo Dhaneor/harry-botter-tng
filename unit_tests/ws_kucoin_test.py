@@ -37,7 +37,7 @@ from config import CREDENTIALS  # noqa: E402. F401
 from data_sources.websockets.i_websockets import (  # noqa: E402. F401;
     CandlesEvent
 )
-from data_sources.websockets.kucoin.ws_kucoin import (  # noqa: E402. F401;
+from data_sources.websockets.ws_kucoin import (  # noqa: E402. F401;
     KucoinWebsocketPrivate, KucoinWebsocketPublic)
 
 symbols = [
