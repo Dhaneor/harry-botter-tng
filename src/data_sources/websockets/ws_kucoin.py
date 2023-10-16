@@ -43,7 +43,7 @@ from typing import Callable, Optional, Coroutine
 from uuid import uuid4
 
 from kucoin.client import WsToken
-from ..kucoin-python-sdk.kucoin.ws_client import KucoinWsClient
+from ..kucoin.kucoin.ws_client import KucoinWsClient
 
 from data_sources.websockets.i_websockets import (  # noqa: E402, F401
     IWebsocketPublic,
@@ -86,7 +86,7 @@ MAX_TOPICS_PER_CONNECTION = 300  # 300 topics
 #                         WS CLIENTS PUBLIC API (SUPER NEW)                            #
 # ======================================================================================
 
-
+# ...
 
 # ======================================================================================
 #                            WS CLIENTS PUBLIC API (NEW)                               #
