@@ -97,40 +97,54 @@ async def test_add_remove_topics(runs=20):
 async def test_batched_topics():
     wsc.MAX_BATCH_SUBSCRIPTIONS = 10
     t = wsc.Topics()
-    topics = [random_topic() for _ in range(95)]
+    no_of_topics = int(random() * 100)
+    should_be_batches = no_of_topics // wsc.MAX_BATCH_SUBSCRIPTIONS + 1
+
+    logger.info(f"creating {no_of_topics} topics")
+    logger.info("should be batches: %s", should_be_batches)
+    topics = [random_topic() for _ in range(no_of_topics)]
 
     batched_topics = await t.batch_topics(topics)
-    assert len(batched_topics) == 10
+    assert len(batched_topics) == should_be_batches
     for row in batched_topics:
-        print(row)
+        logger.info(row)
 
     batched_topics_str = await t.batch_topics_str(topics)
-    assert len(batched_topics_str) == 10
+    assert len(batched_topics_str) == should_be_batches
     for row in batched_topics_str:
-        print(row)
+        logger.info(row)
+
+    logger.info("test passed: OK")
 
 
-async def test_get_item():
-    # create a Topics object
+async def test_process_subscribe():
+    wsc.MAX_TOPICS_PER_CLIENT = 5
     t = wsc.Topics()
+    topic = f"/market/ticker:{','.join(random_topic() for _ in range(10))}"
+    logger.info(topic)
+    subscribe, too_many = await t.process_subscribe(topic)
 
-    topic = random_topic()
-    await t.add_subscriber(topic)
-    assert topic in t._topics
-    assert t._topics[topic] == 1
+    assert len(subscribe) == 5
+    assert len(too_many) == 5
 
-    await t.add_subscriber(topic)
-    assert t._topics[topic] == 2
+    logger.info(subscribe)
+    logger.info(too_many)
 
-    logger.debug(t[topic])
 
-    await t.remove_subscriber("not_there")
+async def test_process_unsubscribe():
+    wsc.MAX_BATCH_SUBSCRIPTIONS = 5
+    t, subject, topics = wsc.Topics(), "subject", [random_topic() for _ in range(12)]
 
-    await t.remove_subscriber(topic)
-    assert t._topics[topic] == 1
+    t._topics = [f"{subject}:{t}" for t in topics]
+    topic = f"{subject}:{','.join(topics)}"
+    logger.info(topic)
 
-    await t.remove_subscriber(topic)
-    assert topic not in t._topics
+    to_unsubscribe = await t.process_unsubscribe(topic)
+    logger.info("ready for unsubscribe: %s" % to_unsubscribe)
+
+    assert t._topics == [], f"topics: {t._topics} should be empty"
+
+    logger.info("test passed: OK")
 
 
 # --------------------------------------------------------------------------------------
@@ -162,9 +176,9 @@ async def test_multiple_unsubscribe():
 
 async def main():
     try:
-        await test_batched_topics()
+        await test_process_unsubscribe()
     except Exception as e:
-        logger.error(e)
+        logger.error(e, exc_info=1)
 
 
 if __name__ == "__main__":
