@@ -19,7 +19,7 @@ from src.broker.models.orders import (MarketOrder, LimitOrder, Order, StopLimitO
 from src.broker.models.exchange_order import ExchangeOrder, build_exchange_order
 from src.broker.models.symbol import SymbolFactory, Symbol
 from src.broker.models.margin_loan_info import MarginLoanInfo
-from data_sources.websockets.ws_kucoin import KucoinWebsocketPrivate
+from data_sources.websockets.kucoin.ws_kucoin import KucoinWebsocketPrivate
 
 logginda = logging.getLogger('main.Ganesh')
 logginda.setLevel(logging.DEBUG)

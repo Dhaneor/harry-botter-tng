@@ -43,7 +43,7 @@ from typing import Callable, Optional, Coroutine
 from uuid import uuid4
 
 from kucoin.client import WsToken
-from kucoin.ws_client import KucoinWsClient
+from .ws_client import KucoinWsClient
 
 from data_sources.websockets.i_websockets import (  # noqa: E402, F401
     IWebsocketPublic,
@@ -56,16 +56,15 @@ from data_sources.websockets.i_websockets import (  # noqa: E402, F401
     ISnapshots,
     IAllSnapshots,
 )
-from .publishers import (  # noqa: E402, F401
+from ..publishers import (  # noqa: E402, F401
     IPublisher,
     LogPublisher,
     ZeroMqPublisher,
     PrintPublisher,
 )
 from data_sources.util.random_names import random_celtic_name
-from data_sources.util import rate_limiter as rl
-
-rate_limiter = rl.async_rate_limiter
+from data_sources.util.rate_limiter import async_rate_limiter as rate_limiter
+from data_sources.util.subscription_request import SubscriptionRequest  # noqa: F401
 
 logger = logging.getLogger("main.websocket")
 
@@ -84,7 +83,13 @@ MAX_TOPICS_PER_CONNECTION = 300  # 300 topics
 
 
 # ======================================================================================
-#                               WS CLIENTS PUBLIC API (NEW)                            #
+#                         WS CLIENTS PUBLIC API (SUPER NEW)                            #
+# ======================================================================================
+
+
+
+# ======================================================================================
+#                            WS CLIENTS PUBLIC API (NEW)                               #
 # ======================================================================================
 class Subscribers:
     """Helper class to keep track of the number of subscribers for each topic."""

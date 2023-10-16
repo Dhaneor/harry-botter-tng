@@ -25,7 +25,7 @@ formatter = logging.Formatter(
 )
 handler.setFormatter(formatter)
 
-import data_sources.websockets.ws_kucoin as ws  # noqa: E402
+import data_sources.websockets.kucoin.ws_kucoin as ws  # noqa: E402
 
 
 # symbols downloader
@@ -423,8 +423,8 @@ async def test_it_for_real():
 
 
 async def test_trades_stream():
-    ts = ws.WsTrades(callback=callback)
-    await ts.watch(["BTC-USDT", "ETH-USDT", "XRP-USDT"])
+    ts = ws.WsSnapshots(callback=callback)
+    await ts.watch(["BTC-USDT"])  # , "ETH-USDT", "XRP-USDT"])
 
     while True:
         try:

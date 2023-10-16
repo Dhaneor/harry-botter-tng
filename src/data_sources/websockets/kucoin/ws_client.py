@@ -1,4 +1,4 @@
-from kucoin.websocket.websocket import ConnectWebsocket
+from .websocket import ConnectWebsocket
 import asyncio
 
 
@@ -26,6 +26,10 @@ class KucoinWsClient:
         self._conn = ConnectWebsocket(loop, self._client, self._recv, private)
         return self
 
+    @property
+    def topics(self) -> list:
+        return self._conn.topics
+
     async def _recv(self, msg):
         if 'data' in msg:
             await self._callback(msg)
@@ -42,16 +46,16 @@ class KucoinWsClient:
             'topic': topic,
             'response': True
         }
-        
+
         if "," in topic:
             prefix, topics = topic.split(":")
             single_topics = topics.split(",")
-            
+
             for topic in single_topics:
                 self._conn.topics.append(f"{prefix}:{topic}")
         else:
             self._conn.topics.append(topic)
-                       
+
         await self._conn.send_message(req_msg)
 
     async def unsubscribe(self, topic):
@@ -67,17 +71,14 @@ class KucoinWsClient:
             'topic': topic,
             'response': True
         }
-        
-        print(topic)
-        print(self._conn.topics)
-        
+
         if "," in topic:
             prefix, topics = topic.split(":")
             single_topics = topics.split(",")
-            
+
             for topic in single_topics:
                 self._conn.topics.remove(f"{prefix}:{topic}")
         else:
             self._conn.topics.remove(topic)
-        
+
         await self._conn.send_message(req_msg)

@@ -16,7 +16,7 @@ from ..position_handlers.position_handler import PositionHandlerBuilder
 from ..models.position import Position, PositionFactory
 from ..models.requests import RequestFactory
 from src.exchange.util.kucoin_async_client import AsyncKucoinClient
-from data_sources.websockets.ws_kucoin import (
+from data_sources.websockets.kucoin.ws_kucoin import (
     KucoinWebsocketPrivate,
     KucoinWebsocketPublic,
 )

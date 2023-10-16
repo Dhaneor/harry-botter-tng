@@ -16,8 +16,6 @@ from logging.handlers import QueueHandler, QueueListener
 from pstats import SortKey, Stats
 from random import choice
 
-import zmq
-
 que = queue.Queue(-1)  # no limit on size
 queue_handler = QueueHandler(que)
 handler = logging.StreamHandler()
@@ -39,7 +37,7 @@ from config import CREDENTIALS  # noqa: E402. F401
 from data_sources.websockets.i_websockets import (  # noqa: E402. F401;
     CandlesEvent
 )
-from data_sources.websockets.ws_kucoin import (  # noqa: E402. F401;
+from data_sources.websockets.kucoin.ws_kucoin import (  # noqa: E402. F401;
     KucoinWebsocketPrivate, KucoinWebsocketPublic)
 
 symbols = [
@@ -81,6 +79,7 @@ candles_message = {
     'topic': '/market/candles:BTC-USDT_1min',
     'type': 'message'
 }
+
 
 # =============================================================================
 async def test_publish(data):
