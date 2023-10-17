@@ -134,8 +134,9 @@ async def test_process_subscribe():
 async def test_process_unsubscribe():
     wsc.MAX_BATCH_SUBSCRIPTIONS = 5
     t, subject, topics = wsc.Topics(), "subject", [random_topic() for _ in range(12)]
+    prepped = [f"{subject}:{t}" for t in topics]
+    t._topics = prepped
 
-    t._topics = [f"{subject}:{t}" for t in topics]
     topic = f"{subject}:{','.join(topics)}"
     logger.info(topic)
 
@@ -144,8 +145,15 @@ async def test_process_unsubscribe():
 
     assert t._topics == [], f"topics: {t._topics} should be empty"
 
-    logger.info("test passed: OK")
+    logger.info("=" * 100)
 
+    t._topics = prepped * 2
+
+    to_unsubscribe = await t.process_unsubscribe(topic)
+
+    assert t._topics == prepped, f"topics: {t._topics} should be: {prepped}"
+
+    logger.info("test passed: OK")
 
 # --------------------------------------------------------------------------------------
 #                     test methods of KucoinWsClient class
