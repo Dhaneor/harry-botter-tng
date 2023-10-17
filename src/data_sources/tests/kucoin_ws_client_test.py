@@ -18,8 +18,6 @@ from random import random, choice  # noqa: E402
 sys.path.append(dir(dir(dir(__file__))))
 
 from data_sources.kucoin.kucoin import ws_client as wsc  # noqa: E402
-from data_sources.kucoin.kucoin.websocket.websocket import ConnectWebsocket  # noqa: E402
-from data_sources.kucoin.kucoin.ws_token.token import GetToken  # noqa: E402
 
 logger = logging.getLogger('main')
 logger.setLevel(logging.DEBUG)
@@ -63,12 +61,11 @@ def random_topic():
 
 # mock publish coroutine
 async def callback(msg):
-    pass
-    # logger.info(f"received message: {msg}")
+    logger.info(f"received message: {msg}")
 
 
 # --------------------------------------------------------------------------------------
-#                     test methods of SUBSCRIBERS class
+#                     test methods of TOPICS class
 async def test_add_remove_topics(runs=20):
     # create a Topics object
     t = wsc.Topics()
@@ -77,20 +74,20 @@ async def test_add_remove_topics(runs=20):
 
     for _ in range(runs):
         topic = f"{choice(subjects)}:{choice(topics)}"
-        subs_for_topic = await t.subscribers(topic)
+        subs_for_topic = t._topics.count(topic)
 
         if random() < 0.5:
             await t.add_subscriber(topic)
-            assert subs_for_topic + 1 == await t.subscribers(topic)
+            assert subs_for_topic + 1 == t._topics.count(topic)
 
         else:
             if subs_for_topic:
                 await t.remove_subscriber(topic)
                 if subs_for_topic >= 1:
-                    assert subs_for_topic - 1 == await t.subscribers(topic)
+                    assert subs_for_topic - 1 == t._topics.count(topic)
                 else:
-                    assert await t.subscribers(topic) == 0, \
-                        f"{await t.subscribers(topic)} != 0"
+                    assert t._topics.count(topic) == 0, \
+                        f"{t._topics.count(topic)} != 0"
 
     logger.info("test passed: OK")
     logger.info("~-*-~" * 30)
@@ -98,7 +95,6 @@ async def test_add_remove_topics(runs=20):
 
 async def test_batch_topics():
     wsc.MAX_BATCH_SUBSCRIPTIONS = 10
-    t = wsc.Topics()
     no_of_topics = int(random() * 100)
     should_be_batches = no_of_topics // wsc.MAX_BATCH_SUBSCRIPTIONS + 1
 
@@ -106,12 +102,12 @@ async def test_batch_topics():
     logger.info("should be batches: %s", should_be_batches)
     topics = [f"subject:{random_topic()}" for _ in range(no_of_topics)]
 
-    batched_topics = t.batch_topics(topics)
+    batched_topics = wsc.batch_topics(topics)
     assert len(batched_topics) == should_be_batches
     for row in batched_topics:
         logger.info(row)
 
-    batched_topics_str = t.batch_topics_str(topics)
+    batched_topics_str = wsc.batch_topics_str(topics)
     assert len(batched_topics_str) == should_be_batches
     for row in batched_topics_str:
         logger.info(row)
@@ -122,7 +118,7 @@ async def test_batch_topics():
 
 async def test_process_subscribe():
     wsc.MAX_TOPICS_PER_CLIENT = 5
-    wsc.MAX_BATCH_SUBSCRIPTIONS = 3
+    wsc.MAX_BATCH_SUBSCRIPTIONS = 5
     t = wsc.Topics()
     topic = f"/market/ticker:{','.join(random_topic() for _ in range(10))}"
     logger.info(topic)
@@ -131,7 +127,7 @@ async def test_process_subscribe():
     logger.info("topics to subscribe to: %s" % subscribe)
     logger.info("topics exceeding the limit: %s" % too_many)
 
-    assert len(subscribe) == 5
+    assert len(subscribe[0].split(",")) == 5
     assert len(too_many) == 5
 
     t._topics = subscribe
@@ -296,17 +292,17 @@ async def test_batch_subscribe():
 
     await client.subscribe("/market/ticker:NOTEXIST2:USDT,ETH-USDT")
 
-    await asyncio.sleep(12)
+    await asyncio.sleep(30)
 
 
 async def main():
     try:
-        await test_batched_topics_str()
+        # await test_batched_topics_str()
         # await test_process_unsubscribe()
-        # await test_topics_class()
+        await test_topics_class()
         # await test_multiple_unsubscribe()
         # await test_rate_limiter()
-        await test_batch_subscribe()
+        # await test_batch_subscribe()
     except Exception as e:
         logger.error(e, exc_info=1)
 
