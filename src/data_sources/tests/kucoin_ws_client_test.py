@@ -63,7 +63,8 @@ def random_topic():
 
 # mock publish coroutine
 async def callback(msg):
-    logger.info(f"received message: {msg}")
+    pass
+    # logger.info(f"received message: {msg}")
 
 
 # --------------------------------------------------------------------------------------
@@ -92,9 +93,10 @@ async def test_add_remove_topics(runs=20):
                         f"{await t.subscribers(topic)} != 0"
 
     logger.info("test passed: OK")
+    logger.info("~-*-~" * 30)
 
 
-async def test_batched_topics():
+async def test_batch_topics():
     wsc.MAX_BATCH_SUBSCRIPTIONS = 10
     t = wsc.Topics()
     no_of_topics = int(random() * 100)
@@ -102,33 +104,45 @@ async def test_batched_topics():
 
     logger.info(f"creating {no_of_topics} topics")
     logger.info("should be batches: %s", should_be_batches)
-    topics = [random_topic() for _ in range(no_of_topics)]
+    topics = [f"subject:{random_topic()}" for _ in range(no_of_topics)]
 
-    batched_topics = await t.batch_topics(topics)
+    batched_topics = t.batch_topics(topics)
     assert len(batched_topics) == should_be_batches
     for row in batched_topics:
         logger.info(row)
 
-    batched_topics_str = await t.batch_topics_str(topics)
+    batched_topics_str = t.batch_topics_str(topics)
     assert len(batched_topics_str) == should_be_batches
     for row in batched_topics_str:
         logger.info(row)
 
     logger.info("test passed: OK")
+    logger.info("~-*-~" * 30)
 
 
 async def test_process_subscribe():
     wsc.MAX_TOPICS_PER_CLIENT = 5
+    wsc.MAX_BATCH_SUBSCRIPTIONS = 3
     t = wsc.Topics()
     topic = f"/market/ticker:{','.join(random_topic() for _ in range(10))}"
     logger.info(topic)
     subscribe, too_many = await t.process_subscribe(topic)
 
+    logger.info("topics to subscribe to: %s" % subscribe)
+    logger.info("topics exceeding the limit: %s" % too_many)
+
     assert len(subscribe) == 5
     assert len(too_many) == 5
 
-    logger.info(subscribe)
-    logger.info(too_many)
+    t._topics = subscribe
+
+    logger.info("=" * 100)
+    logger.info("topics: %s", t)
+    for topic in t:
+        logger.info(topic)
+
+    logger.info("test passed: OK")
+    logger.info("~-*-~" * 30)
 
 
 async def test_process_unsubscribe():
@@ -154,6 +168,37 @@ async def test_process_unsubscribe():
     assert t._topics == prepped, f"topics: {t._topics} should be: {prepped}"
 
     logger.info("test passed: OK")
+    logger.info("~-*-~" * 30)
+
+
+async def test_batched_topics_str():
+    wsc.MAX_TOPICS_PER_CLIENT = 10
+    wsc.MAX_BATCH_SUBSCRIPTIONS = 4
+    t = wsc.Topics()
+
+    subject = "subject"
+    topics = ["topic1", "topic2", "topic3", "topic4", "topic5", "topic6", "topic7"]
+    t._topics = [f"{subject}:{t}" for t in topics]
+
+    logger.info(t._topics)
+
+    batched = t.batched_topics_str
+    logger.info(batched)
+
+    should_be = ['subject:topic1,topic2,topic3,topic4', 'subject:topic5,topic6,topic7']
+    assert batched == should_be, f"{batched} != {should_be}"
+
+    logger.info("test passed: OK")
+    logger.info("~-*-~" * 30)
+
+
+async def test_topics_class():
+    await test_add_remove_topics()
+    await test_batch_topics()
+    await test_process_subscribe()
+    await test_process_unsubscribe()
+    await test_batched_topics_str()
+
 
 # --------------------------------------------------------------------------------------
 #                     test methods of KucoinWsClient class
@@ -164,7 +209,7 @@ async def test_multiple_unsubscribe():
         callback=callback
     )
 
-    logger.info("using callback: %s", wsc._callback)
+    logger.info("using callback: %s", client._callback)
 
     topic = "/market/ticker:BTC-USDT"
 
@@ -173,18 +218,95 @@ async def test_multiple_unsubscribe():
     await client.subscribe(topic)
     await asyncio.sleep(5)
 
-    logger.info("topics after 2x subscribe: %s", wsc._conn.topics)
+    logger.info("topics after 2x subscribe: %s", client._conn.topics)
+
+    should_be = ["/market/ticker:BTC-USDT", "/market/ticker:BTC-USDT"]
+    assert client._topics._topics == should_be, \
+        f"client: {client._topics} != {should_be}"
+    assert client._conn._topics._topics == should_be, \
+        f"ws: {client._topics} != {should_be}"
+
+    for _ in range(3):
+        await client.subscribe(topic)
+
+    await asyncio.sleep(2)
+
+    for _ in range(3):
+        await client.unsubscribe(topic)
 
     await client.unsubscribe(topic)
+    logger.info("topics after 1x unsubscribe: %s", client._conn.topics)
+    assert client._topics._topics == ["/market/ticker:BTC-USDT"]
+    assert client._conn._topics._topics == ["/market/ticker:BTC-USDT"]
 
-    logger.info("topics after 1x unsubscribe: %s", wsc._conn.topics)
+    await client.unsubscribe(topic)
+    logger.info("topics after 2x unsubscribe: %s", client._conn.topics)
+
+    await asyncio.sleep(0.5)
+    assert client._topics._topics == []
+    assert client._conn._topics._topics == []
 
     await asyncio.sleep(10)
+
+    logger.info("test passed: OK")
+
+
+async def test_rate_limiter():
+    symbols = await get_symbols(100)
+    topics = [f"/market/ticker:{s}" for s in symbols]
+    topics.append("/market/sticker:DEFINITELYNOTEXIST-USDT")
+
+    client = await wsc.KucoinWsClient.create(
+        loop=asyncio.get_event_loop(),
+        client=WsToken(),
+        callback=callback
+    )
+
+    # await asyncio.sleep(5)
+    logger.info("------> let's go! <------")
+
+    for topic in topics:
+        await client.subscribe(topic)
+
+    await asyncio.sleep(12)
+
+
+async def test_batch_subscribe():
+    wsc.MAX_TOPICS_PER_CLIENT = 300
+    wsc.MAX_BATCH_SUBSCRIPTIONS = 50
+    symbols = await get_symbols(200)
+    topics = [f"/market/ticker:{s}" for s in symbols]
+    # topics.append("/market/sticker:DEFINITELYNOTEXIST-USDT")
+
+    client = await wsc.KucoinWsClient.create(
+        loop=asyncio.get_event_loop(),
+        client=WsToken(),
+        callback=callback
+    )
+
+    # await asyncio.sleep(5)
+    logger.info("------> let's go! <------")
+
+    logger.debug(topics)
+    topic = client._topics.batch_topics_str(topics)
+
+    for t in topic:
+        logger.debug("sending topic: %s", t)
+        await client.subscribe(t)
+
+    await client.subscribe("/market/ticker:NOTEXIST2:USDT,ETH-USDT")
+
+    await asyncio.sleep(12)
 
 
 async def main():
     try:
-        await test_process_unsubscribe()
+        await test_batched_topics_str()
+        # await test_process_unsubscribe()
+        # await test_topics_class()
+        # await test_multiple_unsubscribe()
+        # await test_rate_limiter()
+        await test_batch_subscribe()
     except Exception as e:
         logger.error(e, exc_info=1)
 
