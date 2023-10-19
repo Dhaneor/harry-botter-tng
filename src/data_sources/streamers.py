@@ -81,11 +81,15 @@ async def close_exchange(name: str, exchanges: dict) -> None:
 async def close_everything(workers: dict, exchanges: dict) -> None:
     # cancel worker tasks
     logger.info("shutdown requested ...")
+    tasks = []
     for exchange in workers.values():
         for sub_type in exchange.values():
             for topic in sub_type.values():
                 logger.info("cancelling task for topic: %s", topic)
                 topic.cancel()
+                tasks.append(topic)
+
+    await asyncio.gather(*tasks, return_exceptions=False)
 
     # close exchange instance(s)
     for exc_name in list(exchanges.keys()):

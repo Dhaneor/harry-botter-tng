@@ -45,7 +45,7 @@ from uuid import uuid4
 from kucoin.client import WsToken
 from ..kucoin.kucoin.ws_client import KucoinWsClient
 
-from data_sources.websockets.i_websockets import (  # noqa: E402, F401
+from data_sources.websocket.i_websockets import (  # noqa: E402, F401
     IWebsocketPublic,
     IWebsocketPrivate,
     ITrades,
@@ -81,12 +81,6 @@ MSG_LIMIT_LOOKBACK = 10  # seconds
 MAX_BATCH_SUBSCRIPTIONS = 5  # 100 topics
 MAX_TOPICS_PER_CONNECTION = 300  # 300 topics
 
-
-# ======================================================================================
-#                         WS CLIENTS PUBLIC API (SUPER NEW)                            #
-# ======================================================================================
-
-# ...
 
 # ======================================================================================
 #                            WS CLIENTS PUBLIC API (NEW)                               #

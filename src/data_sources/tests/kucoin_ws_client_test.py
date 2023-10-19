@@ -295,14 +295,29 @@ async def test_batch_subscribe():
     await asyncio.sleep(30)
 
 
+async def test_close():
+    c = await wsc.KucoinWsClient.create(
+        loop=asyncio.get_event_loop(),
+        client=WsToken(),
+        callback=callback
+    )
+
+    await asyncio.sleep(3)
+    logger.debug(c)
+
+    await c.close()
+    logger.info("test passed: OK")
+
+
 async def main():
     try:
         # await test_batched_topics_str()
         # await test_process_unsubscribe()
-        await test_topics_class()
+        # await test_topics_class()
         # await test_multiple_unsubscribe()
         # await test_rate_limiter()
         # await test_batch_subscribe()
+        await test_close()
     except Exception as e:
         logger.error(e, exc_info=1)
 
