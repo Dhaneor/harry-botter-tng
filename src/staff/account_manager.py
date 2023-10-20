@@ -47,7 +47,7 @@ TODO    change Moses class so that the SL parameters are not set on
 
 # =============================================================================
 from analysis.strategies.definitions import STRATEGIES
-from config import MIN_POS_CHANGE_PERCENT, ALLOW_POS_INCREASE
+from broker.config import MIN_POS_CHANGE_PERCENT, ALLOW_POS_INCREASE
 
 LOGGER_NAME = 'main.AccountManager'
 

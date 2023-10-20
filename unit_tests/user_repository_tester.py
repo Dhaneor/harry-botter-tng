@@ -20,7 +20,7 @@ import os
 # getting the name of the directory
 # where the this file is present.
 current = os.path.dirname(os.path.realpath(__file__))
-  
+
 # Getting the parent directory name
 # where the current directory is present.
 parent = os.path.dirname(current)
@@ -30,7 +30,7 @@ sys.path.append(parent)
 from models.users import Users
 from analysis.oracle import Oracle
 from helpers.timeops import execution_time
-from  config import CREDENTIALS, VALID_EXCHANGES, VALID_MARKETS
+from  broker.config import CREDENTIALS, VALID_EXCHANGES, VALID_MARKETS
 
 USERS = Users()
 
@@ -45,16 +45,16 @@ ORACLE = Oracle()
 
 # =============================================================================
 def create_test_user():
-    
+
     user_name = 'dhaneor'
-    
+
     user_params = {
         'user_name' : user_name,
         'password' : 123456,
         'email' : 'dhaneor@cloud7.org',
         'vip_level' : 10,
     }
-    
+
     try:
         USERS.create_user(user_params)
     except ValidationError as e:
@@ -64,7 +64,7 @@ def create_test_user():
         print(e)
     except Exception as e:
         print(e)
-        
+
     # .........................................................................
     account_params = {
         'name' : 'dhaneor_developer',
@@ -73,19 +73,19 @@ def create_test_user():
         'api_secret' : CREDENTIALS['api_secret'],
         'api_passphrase' : CREDENTIALS['api_passphrase'],
     }
-    
+
     ACCOUNTS.create_account(user_name, account_params)
 
     # .........................................................................
     # print(USERS.get_user('dhaneor'))
     pprint(ACCOUNTS.get_accounts('dhaneor'))
     print('•'*80 + '\n')
-        
-    
+
+
 # =============================================================================
 def create_random_string(length:int):
     return ''.join([
-        choice([*ascii_letters, *digits]) for _ in range(length) 
+        choice([*ascii_letters, *digits]) for _ in range(length)
     ])
 
 def get_random_assets():
@@ -94,9 +94,9 @@ def get_random_assets():
             [choice(ASSETS) for _ in range(randint(1, 10))]
         )
     )
-    
+
     return ' '.join(assets)
-    
+
 def get_random_account():
     account, counter = None, 0
     while not account and counter < 100:
@@ -109,13 +109,13 @@ def get_random_account():
 # =============================================================================
 @execution_time
 def test_create_user(no_of_new_users=1, verbose=True):
-    
-    for _ in range(no_of_new_users): 
-        
+
+    for _ in range(no_of_new_users):
+
         name = f'{choice(NAMES)}_{int(random()*1000)}' if random() < 0.75 else None
         email = f'{name}@cloud7.org' if random() < 0.75 else None
         password = '123456' if random() < 0.75 else None
-        
+
         if verbose:
             print(f'creating user: {name} (email: {email})')
 
@@ -124,7 +124,7 @@ def test_create_user(no_of_new_users=1, verbose=True):
             'password' : password,
             'email' : email,
         }
-    
+
         try:
             USERS.create_user(params)
         except (AssertionError, ValidationError) as e:
@@ -139,11 +139,11 @@ def test_create_user(no_of_new_users=1, verbose=True):
 @execution_time
 def test_get_user(user_name):
     user = USERS.get_user(user_name)
-    
+
     if not user:
         print(f'unable to find user: {user_name}')
         return
-        
+
     print(user)
     print('-'*80)
     print(f'user {user_name} has the these accounts configured:')
@@ -151,13 +151,13 @@ def test_get_user(user_name):
         [print(acc) for acc in user.accounts]
     else:
         print('None')
-    
+
 @execution_time
 def test_update_user(user_name=None, runs=1):
     for _ in range(runs):
         if not user_name:
             user_name = choice(USERS.all_user_names)
-        
+
         email = f'{create_random_string(5)}_{randint(1, 100)}@wolke7.net'
         email = None if random() < 0.1 else email
         new_values = {'email': email, 'vip level': randint(1, 10)}
@@ -167,14 +167,14 @@ def test_update_user(user_name=None, runs=1):
             print(e)
         finally:
             print(USERS.get_user(user_name))
-    
+
 @execution_time
 def test_delete_user(user_name:str):
     try:
         USERS.delete_user(user_name)
     except Exception as e:
         print(e)
-        
+
     print(USERS.get_user(user_name))
 
 @execution_time
@@ -186,20 +186,20 @@ def test_get_all_users():
     for user in USERS.all_users:
         print(user)
         [print('\t', account) for account in user.accounts]
-            
-                
+
+
         print('='*120)
 
 
 # -----------------------------------------------------------------------------
 @execution_time
 def test_create_account(runs=1):
-        
+
     assets = get_random_assets()
-  
+
     for _ in range(runs):
         user = choice(USERS.all_users)
-        
+
         account_params = {
             'name': f'test_{randint(1, 1000)}',
             'is active': True,
@@ -216,9 +216,9 @@ def test_create_account(runs=1):
             'max leverage': randint(1, 6),
             'initial capital': 1_000
         }
-        
+
         pprint(account_params)
-        
+
         try:
             _id = USERS.add_account_to_user(
                 user.id, account_params  # type: ignore
@@ -226,52 +226,52 @@ def test_create_account(runs=1):
         except AssertionError as e:
             print(e)
             _id = None
-        
+
         if _id:
             print(USERS.get_user_by_id(user.id))
 
 @execution_time
 def test_get_account_():
     print(ACCOUNTS.get_account(1))
-        
+
 @execution_time
 def test_get_accounts(user_name: str):
     pprint(ACCOUNTS.get_accounts(user_name))
-    
+
 @execution_time
 def test_update_account(runs=1):
     for _ in  range(runs):
         account = get_random_account()
-        
+
         if not account:
             print('unable to get any account ... exiting!')
             return
-        
+
         update_values = {
             'assets': get_random_assets(),
             'max_leverage': random() * 6,
             'crap': 'useless stuff'
         }
-        
+
         if random() > 0.1:
             del update_values['crap']
-        
+
         try:
             USERS.update_account(
                 account_id=account.id, update_values=update_values
             )
-            
+
             user = USERS.get_user_by_id(user.id) # type:ignore
             print(user)
             for acc in user.accounts: # type:ignore
                 if acc.id == account.id:
-                    pprint(acc.__dict__) 
-        
+                    pprint(acc.__dict__)
+
         except (AssertionError, ValueError) as e:
             print(e)
 
 @execution_time
-def test_delete_account(runs=1):    
+def test_delete_account(runs=1):
     for _ in  range(runs):
         account = get_random_account()
         if not account:
@@ -283,7 +283,7 @@ def test_delete_account(runs=1):
             print(f'deleted account id {account.id}')
         except ValueError as e:
             print(f'unable to delete account with id {account.id}: {e}')
-        
+
         assert USERS.get_account_by_id(account.id) == None
 
 @execution_time
@@ -295,21 +295,21 @@ def test_get_all_accounts():
 # =========================================================================== #
 if __name__ == '__main__':
     print(datetime.now().replace(microsecond=0))
-    
+
     test_create_user(no_of_new_users=50)
     # test_get_user('dhaneor')
     # test_update_user(runs=10)
     # test_delete_user('trevor_65')
     # test_get_all_user_names()
     # test_get_all_users()
-    
+
     test_create_account(15)
     # test_get_accounts('dhaneor')
     # test_update_account(1)
     test_delete_account(15)
     # test_get_all_accounts()
-    
+
     # create_test_user()
-    
+
     # .........................................................................
     # test_create_strategy(10)

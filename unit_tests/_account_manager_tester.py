@@ -28,7 +28,7 @@ LOGGER.addHandler(ch)
 # getting the name of the directory
 # where the this file is present.
 current = os.path.dirname(os.path.realpath(__file__))
-  
+
 # Getting the parent directory name
 # where the current directory is present.
 parent = os.path.dirname(current)
@@ -40,7 +40,7 @@ from models.users import Account
 from staff.hermes import Hermes
 from analysis.oracle import LiveOracle
 from helpers.timeops import execution_time
-from config import ACCOUNTS
+from broker.config import ACCOUNTS
 
 hermes = Hermes(exchange='kucoin', mode='live')
 oracle = LiveOracle()
@@ -50,15 +50,15 @@ am = None
 
 # =============================================================================
 class FakeOhlcvObserver:
-    
+
     def register_subscriber(*args, **kwargs):
         id = kwargs.get('id')
         LOGGER.info(f'registered subscriber {id}')
         return
 
-item = ACCOUNTS['one']    
+item = ACCOUNTS['one']
 account = Account(
-    name='test', 
+    name='test',
     exchange=item.get('exchange'),
     market='cross margin',
     quote_asset='USDT',
@@ -75,7 +75,7 @@ account = Account(
 
 def start_account_manager():
     oo = FakeOhlcvObserver()
-    
+
     global am
     am = AccountManager(
         account=account, ohlcv_observer=oo, oracle=oracle, # type: ignore
@@ -84,21 +84,21 @@ def start_account_manager():
 
 @execution_time
 def test_handle_ohlcv_update(data: list):
-    
+
     msg = {
         'id': 'None(test)',
         'data' : data,
     }
-    
+
     if am:
         am.handle_ohlcv_update(msg)
-        
+
 @execution_time
 def test_get_max_leverage_allowed_by_exchange():
     if am is not None:
         ml = am._get_max_leverage_allowed_by_exchange()
         print(ml, type(ml))
-    
+
 # =============================================================================
 #                                   MAIN                                      #
 # =============================================================================
@@ -108,27 +108,26 @@ if __name__ == '__main__':
     start = -1000
     end = 'now UTC'
     data = []
-    
+
     for symbol in symbols:
         res = hermes.get_ohlcv(
             symbols=symbol, interval=interval, start=start, end=end
         )
         df = res.get('message')
-        
+
         if isinstance(df, pd.DataFrame):
             df['s.all'] = -1
-            
-            data.append( 
+
+            data.append(
                 {
                     'symbol': symbol,
                     'interval': interval,
                     'data': df
                 }
             )
-    
-    
+
+
     start_account_manager()
     test_handle_ohlcv_update(data=data)
     # test_get_max_leverage_allowed_by_exchange()
-    
-    
+

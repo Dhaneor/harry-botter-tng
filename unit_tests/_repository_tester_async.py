@@ -18,7 +18,7 @@ from random import random, randint, choice
 # getting the name of the directory
 # where the this file is present.
 current = os.path.dirname(os.path.realpath(__file__))
-  
+
 # Getting the parent directory name
 # where the current directory is present.
 parent = os.path.dirname(current)
@@ -30,7 +30,7 @@ from exchange.util.event_bus import (EventBus, LoanRepaidEvent, OrderCreatedEven
                                    OrderCancelledEvent)
 from broker.models.exchange_order import build_exchange_order
 from helpers.timeops import execution_time
-from config import CREDENTIALS
+from broker.config import CREDENTIALS
 
 
 CLIENT = Kucoin(market='CROSS MARGIN', credentials=CREDENTIALS)
@@ -48,11 +48,11 @@ def blocking_func(n):
 # we define our main coroutine
 async def main(loop, executor):
 	print('creating executor tasks')
-  
+
   # create a list of coroutines and execute in the event loop
 	blocking_tasks = [loop.run_in_executor(executor, blocking_func, i) for i in range(6)]
 	print('waiting for tasks to complete')
-  
+
   # group the results of all completed coroutines
 	results = await asyncio.gather(*blocking_tasks)
 	print(f'results: {results}')
@@ -85,22 +85,22 @@ def check_repository(repo):
 
     print(f'got account with {len(acc)} balances')
     print(f'got symbols list with {len(sym)} symbols')
-    print(f'got tickers list with {len(tic)} tickers') 
-    print(f'got orders list with {len(ord_)} orders')     
-    
+    print(f'got tickers list with {len(tic)} tickers')
+    print(f'got orders list with {len(ord_)} orders')
+
 
 def test_async_repository():
     check_latency()
     repo = get_repository()
     check_repository(repo)
-    
-    
-  
+
+
+
 
 # =========================================================================== #
 #                                   MAIN                                      #
 # =========================================================================== #
 if __name__ == '__main__':
-    
+
     test_async_repository()
     # asyncio.run(amain())

@@ -9,7 +9,7 @@ import os
 import logging
 
 # =============================================================================
-from config import LOG_LEVEL, LOG_DIRECTORY, LOG_FILE
+from broker.config import LOG_LEVEL, LOG_DIRECTORY, LOG_FILE
 from staff.zeus import Zeus
 
 log_dir = os.path.join(
@@ -39,7 +39,7 @@ LOGGER.addHandler(fh)
 
 # =============================================================================
 
-""" 
+"""
 TODO    implement a central event bus
 
 TODO    build a web app to manage users
@@ -47,7 +47,7 @@ TODO    build a web app to manage users
 TODO    implement Kelly Formula for position size/leverage to use, see:
         Ernest P. Chan 'Quantitative Trading' (Kindle) on page 113
 
-TODO    implement a mechanism that checks how much KCS we need to pay 
+TODO    implement a mechanism that checks how much KCS we need to pay
         fees in KCS and buys some if necessary ... in AccountManager
 """
 

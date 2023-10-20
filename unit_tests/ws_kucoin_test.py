@@ -33,11 +33,11 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # -----------------------------------------------------------------------------
 
-from config import CREDENTIALS  # noqa: E402. F401
-from data_sources.websockets.i_websockets import (  # noqa: E402. F401;
+from broker.config import CREDENTIALS  # noqa: E402. F401
+from rawi.websocket.i_websockets import (  # noqa: E402. F401;
     CandlesEvent
 )
-from data_sources.websockets.ws_kucoin import (  # noqa: E402. F401;
+from rawi.websocket.ws_kucoin import (  # noqa: E402. F401;
     KucoinWebsocketPrivate, KucoinWebsocketPublic)
 
 symbols = [

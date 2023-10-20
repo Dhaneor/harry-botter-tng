@@ -10,7 +10,7 @@ import os
 import logging
 import time
 import random, string
-from pprint import pprint 
+from pprint import pprint
 from typing import List
 from collections import namedtuple
 
@@ -18,7 +18,7 @@ from collections import namedtuple
 # getting the name of the directory
 # where the this file is present.
 current = os.path.dirname(os.path.realpath(__file__))
-  
+
 # Getting the parent directory name
 # where the current directory is present.
 parent = os.path.dirname(current)
@@ -26,11 +26,11 @@ sys.path.append(parent)
 # -----------------------------------------------------------------------------
 
 from broker.ganesh import Ganesh
-from broker.position_handlers.workers import (PositionUpdateRequest, 
-                                              PositionWorker, LoanRequest, 
+from broker.position_handlers.workers import (PositionUpdateRequest,
+                                              PositionWorker, LoanRequest,
                                               LoanWorker)
 from helpers.timeops import execution_time
-from config import CREDENTIALS
+from broker.config import CREDENTIALS
 
 LOGGER = logging.getLogger('main')
 LOGGER.setLevel(logging.DEBUG)
@@ -52,17 +52,17 @@ def _execute(request):
         POSITIONWORKER.execute_request(request)
     elif isinstance(request, LoanRequest):
         LOANWORKER.execute_request(request)
-  
+
 def _get_amount_to_open_position(target_size:float):
     balance = GANESH.get_balance(SYMBOL.base_asset)
     free = balance.get('net')
-    
+
     return (target_size - free)
-        
+
 def _get_amount_to_close_position():
     balance = GANESH.get_balance(SYMBOL.base_asset)
     return balance.get('free')
-    
+
 
 # =============================================================================
 def test_loan_worker():
@@ -71,39 +71,39 @@ def test_loan_worker():
     amount = 5.00
 
     LOGGER.info(GANESH.get_balance(asset))
-    
+
     request = LoanRequest(action='borrow', asset=asset, amount=amount)
     _execute(request)
-    
-    balance = GANESH.get_balance(asset)    
+
+    balance = GANESH.get_balance(asset)
     LOGGER.info(balance)
-    
+
     time.sleep(3)
-    
+
     # .........................................................................
     borrowed = balance.get('borrowed')
     request = LoanRequest(action='repay', asset=asset, amount=borrowed)
     _execute(request)
-        
+
     LOGGER.info(GANESH.get_balance(asset))
 
 def test_position_worker(target_size:float):
     asset = SYMBOL.base_asset
     amount = _get_amount_to_open_position(target_size)
-    
+
     if amount > 0:
-        side = 'BUY' 
+        side = 'BUY'
     elif amount <  0:
         side = 'SELL'
     else:
         LOGGER.info('no position change required')
         return
-        
+
     LOGGER.info(GANESH.get_balance(asset))
     LOGGER.info(f'going to {side} {amount} {asset}')
-    
+
     request = PositionUpdateRequest(side=side, asset=asset, base_qty=amount)
-    
+
     _execute(request)
     LOGGER.info(GANESH.get_balance(asset))
 
@@ -111,7 +111,7 @@ def test_position_worker(target_size:float):
 #                                   MAIN                                      #
 # =========================================================================== #
 if __name__ == '__main__':
-    
+
     test_position_worker(target_size=0)
-    
+
     # test_loan_worker()

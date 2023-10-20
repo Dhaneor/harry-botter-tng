@@ -9,13 +9,13 @@ import sys
 import os
 import logging
 import random, string
-from pprint import pprint 
+from pprint import pprint
 
 # -----------------------------------------------------------------------------
 # getting the name of the directory
 # where the this file is present.
 current = os.path.dirname(os.path.realpath(__file__))
-  
+
 # Getting the parent directory name
 # where the current directory is present.
 parent = os.path.dirname(current)
@@ -26,7 +26,7 @@ from broker.jupiter import Jupiter
 from broker.models.requests import RequestFactory
 from models.users import Users, Accounts
 from helpers.timeops import execution_time
-from config import CREDENTIALS
+from broker.config import CREDENTIALS
 
 # ------------------------------------------------------------------------------
 LOGGER = logging.getLogger('main')
@@ -43,7 +43,7 @@ JUPITER = None
 @execution_time
 def init_jupiter():
     global JUPITER
-    
+
     JUPITER = Jupiter(
         exchange='Kucoin', market='CROSS MARGIN', user_account=CREDENTIALS
         )
@@ -82,69 +82,69 @@ def get_target_account():
          'take_profit' : None,
          'quote_asset' : 'USDT'
          },
-        ]    
+        ]
 
 def get_assets(real:bool=True):
-    
+
     def _get_fake_assets(number_of_assets:int):
         length = random.choice([3, 4])
         letters = string.ascii_uppercase
-        return [''.join(random.choice(letters) for i in range(length)) 
+        return [''.join(random.choice(letters) for i in range(length))
                 for _ in range(number_of_assets)
                 ]
-    
-    real_assets = ['BTC', 'ETH', 'LTC', 'XMR', 'UNI', 'XLM', 'XRP', 'ADA'] 
-    
+
+    real_assets = ['BTC', 'ETH', 'LTC', 'XMR', 'UNI', 'XLM', 'XRP', 'ADA']
+
     if real:
         return ['BTC', 'ETH', 'LTC', 'XMR', 'UNI', 'XLM', 'XRP', 'ADA']
     else:
         return real_assets + _get_fake_assets(1000)
-        
+
 
 # ..............................................................................
 @execution_time
 def test_request_factory():
     t = get_target_account()
-    
+
     assets = get_assets()
-    
+
     r = RequestFactory()
     requests = r.convert_target_account_to_requests(t, all_assets=assets)
-    
+
     pprint(requests)
 
 @execution_time
 def test_build_requests():
-    
+
     @execution_time
     def _build_them():
         return JUPITER._build_requests(t)
-    
+
     init_jupiter()
     t = get_target_account()
-    
-    # _build_them()    
-         
+
+    # _build_them()
+
     pprint(_build_them())
-    
+
 
 @execution_time
 def test_update_account():
-    
+
     target_account = get_target_account()
-    
+
     pprint(target_account)
     print('-~*~-'*30)
     print('\n')
-    
+
 
     JUPITER.update_account(target_account)
-    
+
 
 # =========================================================================== #
 #                                   MAIN                                      #
 # =========================================================================== #
 if __name__ == '__main__':
-    
+
     init_jupiter()
     test_update_account()

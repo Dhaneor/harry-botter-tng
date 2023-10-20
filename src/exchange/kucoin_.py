@@ -32,7 +32,7 @@ from src.helpers.timeops import utc_to_unix, unix_to_utc, interval_to_millisecon
 from src.helpers.accounting import Accounting
 
 try:
-    from config import CREDENTIALS
+    from broker.config import CREDENTIALS
 except:
     pass
 

@@ -16,7 +16,7 @@ from uuid import uuid1
 from urllib.parse import urljoin
 from pprint import pprint
 
-from config import CREDENTIALS
+from broker.config import CREDENTIALS
 
 class AsyncKucoinBaseRestApi(object):
 
@@ -69,8 +69,8 @@ class AsyncKucoinBaseRestApi(object):
             str_to_sign = str(now_time) + method + uri_path
             sign = base64.b64encode(
                 hmac.new(
-                    self.secret.encode('utf-8'), 
-                    str_to_sign.encode('utf-8'), 
+                    self.secret.encode('utf-8'),
+                    str_to_sign.encode('utf-8'),
                     hashlib.sha256
                 ).digest()
             ).decode('ascii')
@@ -85,8 +85,8 @@ class AsyncKucoinBaseRestApi(object):
             else:
                 passphrase = base64.b64encode(
                     hmac.new(
-                        self.secret.encode('utf-8'), 
-                        self.passphrase.encode('utf-8'), 
+                        self.secret.encode('utf-8'),
+                        self.passphrase.encode('utf-8'),
                         hashlib.sha256
                     ).digest()
                 ).decode('ascii')
@@ -128,7 +128,7 @@ class AsyncKucoinBaseRestApi(object):
                 return response_data['data']
         except ValueError:
             raise Exception(f'invalid data format: {response_data}')
-        
+
         code, msg = response_data['code'], response_data['message']
         raise Exception(f'{code} - {msg}')
 
@@ -136,40 +136,40 @@ class AsyncKucoinBaseRestApi(object):
     @property
     async def return_unique_id(self):
         return ''.join([each for each in str(uuid1()).split('-')])
-    
+
 
 class AsyncKucoinClient(AsyncKucoinBaseRestApi):
-    
+
     def __init__(self, credentials: dict, is_sandbox: bool=False):
         AsyncKucoinBaseRestApi.__init__(
-            self, 
+            self,
             key=credentials['api_key'],
             secret=credentials['api_secret'],
             passphrase=credentials['api_passphrase'],
             is_sandbox=is_sandbox
         )
-        
+
     async def get_margin_account(self):
         params = {'type': 'margin'}
         res = await self._request(
-            method='GET', 
-            uri='/api/v1/margin/account', 
-            auth=True, 
+            method='GET',
+            uri='/api/v1/margin/account',
+            auth=True,
             params=params
         )
         return res['accounts']
-    
+
 # =============================================================================
 async def main():
-    
+
     c = AsyncKucoinClient(credentials=CREDENTIALS)
-    
+
     res = await asyncio.gather(*[c.get_margin_account() for i in range(3)])
     data = res[-1]
 
     [print(i) for i in data]
     print(f'got {len(data)} balances')
-    
+
     await asyncio.sleep(1)
 
 

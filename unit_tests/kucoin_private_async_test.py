@@ -17,7 +17,7 @@ sys.path.append(parent)
 
 from src.exchange.kucoin_async import KucoinCrossMargin
 from helpers.timeops import execution_time
-from config import CREDENTIALS
+from broker.config import CREDENTIALS
 
 conn = KucoinCrossMargin(credentials=CREDENTIALS)
 
@@ -25,33 +25,33 @@ conn = KucoinCrossMargin(credentials=CREDENTIALS)
 async def test_get_margin_config():
     res = await conn.get_margin_config()
     pprint(res)
-    
+
 async def test_get_account():
     res = await conn.get_account()
     pprint(res)
-    
+
 async def test_get_orders():
     res = await conn.get_orders()
-    print(f'got {len(res)} orders') if res else print('nothing') 
+    print(f'got {len(res)} orders') if res else print('nothing')
 
 async def test_get_active_orders():
     res = await conn.get_active_orders()
-        
+
 async def test_get_active_stop_orders():
     res = await conn.get_active_stop_orders()
-    
+
 async def test_get_multiple_orders():
     try:
         res = await conn._get_multiple_orders(
             symbol='XRP-USDT',
-            side=None, 
+            side=None,
             start=None, # 'November 01, 00:00:00 2022',
             end=None, # 'December 05, 00:00:00 2022'
         )
-        print(f'got {len(res)} orders') 
+        print(f'got {len(res)} orders')
     except Exception as e:
         print(e)
-    
+
 
 async def test_buy_market():
     try:
@@ -62,7 +62,7 @@ async def test_buy_market():
         pprint(res)
     except Exception as e:
         print(e)
-        
+
 async def test_sell_market():
     try:
         res = await conn.sell_market(
@@ -72,7 +72,7 @@ async def test_sell_market():
         pprint(res)
     except Exception as e:
         print(e)
-        
+
 async def test_buy_limit():
     try:
         res = await conn.buy_limit(
@@ -83,7 +83,7 @@ async def test_buy_limit():
         pprint(res)
     except Exception as e:
         print(e)
-        
+
 async def test_sell_limit():
     try:
         res = await conn.sell_limit(
@@ -94,7 +94,7 @@ async def test_sell_limit():
         pprint(res)
     except Exception as e:
         print(e)
-        
+
 async def test_stop_limit():
     try:
         res = await conn.stop_limit(
@@ -105,12 +105,12 @@ async def test_stop_limit():
             limit_price='0.32'
         )
         pprint(res)
-        
-        orders = await conn.get_active_stop_orders() 
-        pprint(orders) 
+
+        orders = await conn.get_active_stop_orders()
+        pprint(orders)
     except Exception as e:
         print(e)
-        
+
 async def test_stop_market():
     try:
         tasks = []
@@ -121,82 +121,82 @@ async def test_stop_market():
                 base_qty='1.5',
                 stop_price=str(round(0.34 + (random.random() - 0.5) / 20, 4)),
             )
-        
+
             tasks.append(asyncio.create_task(conn.stop_market(**kwargs)))
-        
-        res = await asyncio.gather(*tasks)    
+
+        res = await asyncio.gather(*tasks)
         pprint(res)
     except Exception as e:
         print(e)
 
 async def test_cancel_order():
     try:
-        orders = await conn.get_active_orders() 
-        pprint(orders)  
+        orders = await conn.get_active_orders()
+        pprint(orders)
         if orders:
             for order in orders:
                 res = await conn.cancel_order(order['orderId'])
-                print(res) 
+                print(res)
     except Exception as e:
         print(e)
 
 async def test_cancel_all_orders():
     try:
-        orders = await conn.get_active_stop_orders() 
-        pprint(orders)  
+        orders = await conn.get_active_stop_orders()
+        pprint(orders)
         if orders:
             res = await conn.cancel_all_orders(symbol='XRP-USDT')
-            print(res) 
+            print(res)
     except Exception as e:
         print(e)
-    
-    
+
+
 async def test_get_margin_risk_limit():
     try:
         res = await conn.get_margin_risk_limit()
         pprint(res)
     except Exception as e:
-        print(e)  
-        
+        print(e)
+
 async def test_get_borrow_details():
     try:
         res = await conn.get_borrow_details(asset='XLM')
         pprint(res)
     except Exception as e:
-        print(e) 
-        
+        print(e)
+
 async def test_get_liability():
     try:
         res = await conn.get_liability()
         pprint(res)
     except Exception as e:
-        print(e) 
-    
-        
+        print(e)
+
+
 # =============================================================================
 if __name__ == '__main__':
-    
+
     # func = test_get_margin_config
     # func = test_get_account
-    
+
     # func = test_get_orders
     # func = test_get_active_orders
     # func = test_get_active_stop_orders
     # func = test_get_multiple_orders
-    
+
     # func = test_buy_market
     # func = test_sell_market
     # func = test_buy_limit
     # func = test_sell_limit
-    
+
     # func = test_stop_limit
     # func = test_stop_market
-    
+
     # func = test_cancel_order
     # func = test_cancel_all_orders
-    
+
     # func = test_get_margin_risk_limit
     # func = test_get_borrow_details
     func = test_get_liability
-    
+
     asyncio.run(func())

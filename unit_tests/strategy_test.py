@@ -33,7 +33,7 @@ sys.path.append(parent)
 from src.analysis.strategies.definitions import Breakout
 from src.staff.hermes import Hermes
 from analysis.strategies.exit_order_strategies import *
-from config import CREDENTIALS
+from broker.config import CREDENTIALS
 
 h = Hermes(exchange='kucoin', mode='live')
 s = Breakout()

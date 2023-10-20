@@ -9,13 +9,13 @@ import sys
 import os
 import logging
 import random, string
-from pprint import pprint 
+from pprint import pprint
 
 # ----------------------------------------------------------------------------
 # getting the name of the directory
 # where the this file is present.
 current = os.path.dirname(os.path.realpath(__file__))
-  
+
 # Getting the parent directory name
 # where the current directory is present.
 parent = os.path.dirname(current)
@@ -24,7 +24,7 @@ sys.path.append(parent)
 
 from src.broker.ganesh import Ganesh
 from src.helpers.timeops import execution_time
-from config import CREDENTIALS
+from broker.config import CREDENTIALS
 
 # -----------------------------------------------------------------------------
 LOGGER = logging.getLogger('main')
@@ -52,39 +52,39 @@ def test_get_system_status():
 def test_get_ticker():
     pprint(GANESH.tickers[0])
 
-@execution_time    
+@execution_time
 def test_get_currencies():
     pprint(GANESH.currencies[0])
-    
+
 @execution_time
 def test_get_symbol():
     pprint(GANESH.get_symbol('BTC-USDT'))
 
-@execution_time    
+@execution_time
 def test_get_all_symbols():
     pprint(random.choice(GANESH.get_all_symbols()))
-    
-@execution_time    
+
+@execution_time
 def test_get_symbols():
     # print([s['symbol'] for s in GANESH.symbols])
     print(len(GANESH.symbols))
-    
+
 def test_valid_assets():
     print(list(sorted(GANESH.valid_assets)))
-    
+
 # =========================================================================== #
 #                                   MAIN                                      #
 # =========================================================================== #
 if __name__ == '__main__':
     # test_get_server_time()
     # test_get_system_status()
-    
+
     # test_get_ticker()
     # test_get_currencies()
-    
+
     # test_get_symbol()
     test_valid_assets()
-    
+
     # for _ in range(3):
     #     test_get_all_symbols()
 
