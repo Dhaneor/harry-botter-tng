@@ -4,3 +4,6 @@
 [submodule "src/data_sources/kucoin-python-sdk"]
 	path = src/data_sources/kucoin
 	url = https://github.com/Dhaneor/kucoin-python-sdk.git
+[submodule "src/rawi"]
+	path = src/rawi
+	url = https://github.com/Dhaneor/rawi.git
