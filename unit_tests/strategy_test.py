@@ -10,9 +10,7 @@ import sys
 import os
 import time
 import logging
-from typing import Iterable
 from random import random
-import pandas as pd
 
 LOGGER = logging.getLogger('main')
 LOGGER.setLevel(logging.DEBUG)
@@ -30,15 +28,15 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # -----------------------------------------------------------------------------
 
-from src.analysis.strategies.definitions import Breakout
-from src.staff.hermes import Hermes
-from analysis.strategies.exit_order_strategies import *
-from broker.config import CREDENTIALS
+from src.analysis.strategies.definitions import Breakout  # noqa: E402, F401
+from src.staff.hermes import Hermes  # noqa: E402, F401
+from analysis.strategies.exit_order_strategies import *  # noqa: E402, F401
 
 h = Hermes(exchange='kucoin', mode='live')
 s = Breakout()
 s.symbol = 'BTC-USDT'
 s.interval = '1d'
+
 
 def get_data():
     res = h.get_ohlcv(

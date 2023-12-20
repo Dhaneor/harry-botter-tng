@@ -88,7 +88,7 @@ trix = sg.SignalsDefinition(
 )
 
 timeperiod = randint(30, 50)
-timeperiod = 8
+timeperiod = 32
 
 ema_cross = sg.SignalsDefinition(
     name=f"EMA cross {timeperiod}/{timeperiod*4}",

@@ -16,10 +16,8 @@ sys.path.append(parent)
 # ------------------------------------------------------------------------------
 
 from src.staff.hermes import Hermes  # noqa: E402, F401
-from src.broker.models.symbol import SymbolFactory, Symbol  # noqa: E402, F401
-from src.broker.models.orders import Order, MarketOrder, LimitOrder  # noqa: E402, F401
-from src.backtest.mock_responses.order_results import OrderResultConstructor  # noqa: E402, F401
-from src.helpers.timeops import execution_time  # noqa: E402, F401
+from src.broker.models.symbol import Symbol  # noqa: E402, F401
+
 
 hermes = Hermes(exchange='binance')
 

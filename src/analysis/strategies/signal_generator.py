@@ -198,7 +198,7 @@ class SignalGenerator:
 
         return main, sub
 
-    def execute(self, data: tp.Data, weight: tp.Weight) -> tp.Data:
+    def execute(self, data: tp.Data, weight: tp.Weight = 1) -> tp.Data:
         """Execute the signal generator.
 
         Parameters

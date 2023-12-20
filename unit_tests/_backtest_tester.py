@@ -46,6 +46,8 @@ from src.plotting.minerva import BacktestChart  # noqa: E402, F401
 from src.helpers.timeops import execution_time  # noqa: E402, F401
 
 bt = Backtest(exchange='kucoin')
+
+
 # =============================================================================
 @execution_time
 def test_run(symbol: str, interval: str, strategy: str,

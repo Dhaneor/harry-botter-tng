@@ -48,35 +48,35 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # set interval and length of test data
-interval = "1h"
+interval = "15min"
 length = 750
 
 # ======================================================================================
-# df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
-# df.drop(
-#     ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
-# )
+df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
+df.drop(
+    ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
+)
 
-# df['human open time'] = pd.to_datetime(df['human open time'])
-# df.set_index(keys=['human open time'], inplace=True)
+df['human open time'] = pd.to_datetime(df['human open time'])
+df.set_index(keys=['human open time'], inplace=True)
 
-# if interval != "15min":
-#     df = df.resample(interval)\
-#         .agg(
-#             {
-#                 'close': 'last', 'open': 'first',
-#                 'high': 'max', 'low': 'min', 'volume': 'sum',
-#                 'open time': 'first'
-#             },
-#             min_periods=1
-#         )  # noqa: E123
+if interval != "15min":
+    df = df.resample(interval)\
+        .agg(
+            {
+                'close': 'last', 'open': 'first',
+                'high': 'max', 'low': 'min', 'volume': 'sum',
+                'open time': 'first'
+            },
+            min_periods=1
+        )  # noqa: E123
 
-# df.dropna(inplace=True)
+df.dropna(inplace=True)
 
-# start = random.randint(0, len(df) - length)
-# end = start + length
-# data = {col: df[start:end][col].to_numpy() for col in df.columns}
-data = get_sample_data(length)
+start = random.randint(0, len(df) - length)
+end = start + length
+data = {col: df[start:end][col].to_numpy() for col in df.columns}
+# data = get_sample_data(length)
 
 # ======================================================================================
 
@@ -208,6 +208,7 @@ def test_returns(sig_gen: sg.SignalGenerator, data, show=False):
             except Exception as exc:
                 logger.exception(exc)
                 print(df1)
+                sys.exit()
 
             df1['signal_cont'] = df1['signal_cont'].ffill()
 
@@ -342,8 +343,9 @@ if __name__ == "__main__":
         sys.exit()
 
     print(sig_gen)
-    test_plot_desc(sig_gen)
-    test_execute(sig_gen, data, 1, True, True)
+    # test_plot_desc(sig_gen)
+    # test_execute(sig_gen, data, 1, True, True)
+    test_returns(sig_gen, data, True)
 
     sys.exit()
 

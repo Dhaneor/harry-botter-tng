@@ -44,14 +44,14 @@ from src.analysis.strategies.definitions import contra_1, trend_1  # noqa: E402,
 from src.plotting.minerva import BacktestChart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
 
-symbol = "BTCUSDT"
+symbol = "BTC-USDT"
 interval = "1d"
 
-start = 'August 18, 2018 00:00:00'
+start = 'August 18, 2022 00:00:00'
 end = 'now UTC'
 
 strategy = trend_1
-risk_level = 3
+risk_level = 4
 initial_capital = 1_000 if symbol.endswith('USDT') else 0.1
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -152,7 +152,7 @@ def run(data, show=False, plot=False):
         chart = BacktestChart(
             df=df,  # df[200:],
             title=f'{symbol} ({interval})',
-            color_scheme='night'
+            color_scheme='day'
         )
         chart.draw()
 
