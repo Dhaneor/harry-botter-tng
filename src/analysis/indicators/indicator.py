@@ -37,7 +37,6 @@ from typing import (
     Iterable,
 )
 from talib import MA_Type, abstract  # noqa: F401
-from uuid import uuid4  # noqa: F401
 
 import numpy as np
 import talib
@@ -45,7 +44,7 @@ import talib
 from ..util import proj_types as tp
 
 logger = logging.getLogger("main.indicator")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 Params = Dict[str, Union[str, float, int, bool]]
 IndicatorSource = Literal["talib", "nb"]
@@ -394,6 +393,7 @@ class IIndicator(ABC):
         self.input: Sequence[str] = []
         self.output: Sequence[str] = []
         self.output_flags: dict
+
         self._plot_desc: dict
 
         self._apply_func: Callable
@@ -481,7 +481,7 @@ class IIndicator(ABC):
 
     @abstractmethod
     def run(self, *args) -> np.ndarray:
-        """Run function that returns the result of the self._call_func.
+        """Run function that returns the result of the self._apply_func.
 
         This skeleton method is replaced by the factory() method
         when building the indicator class.
@@ -495,7 +495,7 @@ class IIndicator(ABC):
         ValueError
             Error if array has more than 2 dimensions.
         NotImplementedError
-            Error if self._call_func is not implemented.
+            Error if self._apply_func is not implemented.
         """
 
     @abstractmethod
@@ -514,6 +514,9 @@ class Indicator(IIndicator):
     Do not use on its own!
     """
 
+    not_subplot = talib.get_function_groups()["Overlap Studies"] \
+        + ["MIN", "MAX"]
+
     def __init__(self) -> None:
         super().__init__()
 
@@ -527,9 +530,7 @@ class Indicator(IIndicator):
         self._valid_params: tuple[str]
 
         self._parameter_space: dict[str, Sequence[Number]]
-        self._is_subplot: bool = (
-            self._name.upper() not in talib.get_function_groups()["Overlap Studies"]
-        )
+        self._is_subplot: bool = self._name.upper() not in Indicator.not_subplot
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} - {self.parameters}"
@@ -713,7 +714,7 @@ class Indicator(IIndicator):
         )
 
     def run(self, *inputs) -> np.ndarray:
-        """Run function that returns the result of the self._call_func.
+        """Run function that returns the result of the self._apply_func.
 
         This skeleton method is replaced by the factory() method
         when building the indicator class.
@@ -727,7 +728,7 @@ class Indicator(IIndicator):
         ValueError
             Error if array has more than 2 dimensions.
         NotImplementedError
-            Error if self._call_func is not implemented.
+            Error if self._apply_func is not implemented.
         """
         raise NotImplementedError()
 
@@ -1203,7 +1204,9 @@ cache = {i_name: _indicator_factory_talib(i_name) for i_name in talib.get_functi
 
 
 def factory(
-    indicator_name: str, params: Params | None = None, source: IndicatorSource = "talib"
+    indicator_name: str,
+    params: Params | None = None,
+    source: IndicatorSource = "talib"
 ) -> Indicator:
     """Creates an indicator object based on its name .
 

@@ -15,7 +15,7 @@ import pandas as pd
 from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
-LOG_LEVEL = "INFO"
+LOG_LEVEL = "DEBUG"
 logger = logging.getLogger('main')
 logger.setLevel(LOG_LEVEL)
 
@@ -40,17 +40,19 @@ from src.staff.hermes import Hermes  # noqa: E402, F401
 from src.analysis import strategy_builder as sb  # noqa: E402, F401
 from src.analysis.util import find_positions as fp  # noqa: E402, F401
 from src.analysis import strategy_backtest as bt  # noqa: E402, F401
-from src.analysis.strategies.definitions import contra_1, trend_1  # noqa: E402, F401
+from src.analysis.strategies.definitions import (  # noqa: E402, F401
+    contra_1, trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross
+)
 from src.plotting.minerva import BacktestChart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
 
-symbol = "BTC-USDT"
+symbol = "ETH-USDT"
 interval = "1d"
 
-start = 'August 18, 2022 00:00:00'
+start = 'January 01, 2019 00:00:00'
 end = 'now UTC'
 
-strategy = trend_1
+strategy = s_kama_cross
 risk_level = 4
 initial_capital = 1_000 if symbol.endswith('USDT') else 0.1
 
@@ -115,10 +117,7 @@ def _get_ohlcv_from_db():
 
 
 def _run_backtest(data: dict):
-    for key, arr in data.items():
-        data[key] = arr[200:]
-
-    bt.run(strategy, data, initial_capital, risk_level)
+    return bt.run(strategy, data, initial_capital, risk_level)
 
 
 def _add_stats(df):
@@ -133,10 +132,8 @@ def _show(df):
 # ..............................................................................
 def run(data, show=False, plot=False):
 
-    # data = _get_ohlcv_from_db()
-    _run_backtest(data)
+    df = pd.DataFrame.from_dict(_run_backtest(data))
 
-    df = pd.DataFrame.from_dict(data)
     _add_stats(df)
 
     if show:

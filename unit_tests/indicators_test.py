@@ -357,11 +357,11 @@ def test_parameter_iter():
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == '__main__':
-    test_set_indicator_parameters()
+    # test_set_indicator_parameters()
 
     # test_parameter_space()
     # test_parameter_iter()
-    sys.exit()
+    # sys.exit()
 
     # arr, res = test_is_above()
 
@@ -370,7 +370,7 @@ if __name__ == '__main__':
     #     show=False
     # )
 
-    ind = test_indicator_factory('MACD', show=False)
+    ind = test_indicator_factory('MAX', show=False)
 
     # ind = test_indicator_factory('SMA', {'timeperiod': 20}, show=False)
 
@@ -390,9 +390,9 @@ if __name__ == '__main__':
     # print(ind)
     pprint(ind.__dict__)
     # print(ind.unique_output)
-    # print(ind.plot_desc)
+    print(ind.plot_desc)
 
-    # print(test_indicator_run(ind))
+    print(test_indicator_run(ind))
 
     sys.exit(0)
 

@@ -30,7 +30,7 @@ sys.path.append(parent)
 from src.analysis.strategies import signal_generator as sg  # noqa: E402
 from src.analysis.strategies import condition as cn  # noqa: E402
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
-    cci, ema_cross, tema_cross, rsi, kama, trix
+    cci, ema_cross, tema_cross, rsi, kama, trix, breakout
 )
 from src.analysis.strategies import strategy_plot as sp  # noqa: E402
 from helpers_ import get_sample_data  # noqa: E402, F401
@@ -48,8 +48,8 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # set interval and length of test data
-interval = "15min"
-length = 750
+interval = "1h"
+length = 700
 
 # ======================================================================================
 df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
@@ -337,14 +337,14 @@ if __name__ == "__main__":
 
     # test_indicators()
 
-    sig_gen = test_factory(tema_cross)
+    sig_gen = test_factory(breakout)
 
     if not sig_gen:
         sys.exit()
 
     print(sig_gen)
     # test_plot_desc(sig_gen)
-    # test_execute(sig_gen, data, 1, True, True)
+    test_execute(sig_gen, data, 1, True, True)
     test_returns(sig_gen, data, True)
 
     sys.exit()

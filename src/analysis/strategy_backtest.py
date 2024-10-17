@@ -193,6 +193,8 @@ def run(strategy: IStrategy, data: tp.Data, initial_capital: float, risk_level: 
     strategy.speak(data)
     merge_signals(data)
 
+    data = {key: arr[200:] for key, arr in data.items()}
+
     # add positions
     find_positions_with_dict(data)
 
@@ -205,8 +207,7 @@ def run(strategy: IStrategy, data: tp.Data, initial_capital: float, risk_level: 
 
     # # calculate the value of the account/portfolio
     data['b.value'] = np.add(
-        data['b.quote'],
-        np.multiply(data['b.base'], data['close'])
+        data['b.quote'], np.multiply(data['b.base'], data['close'])
     )
 
     return data

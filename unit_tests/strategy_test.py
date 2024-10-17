@@ -79,7 +79,7 @@ async def main():
                     'quote volume': update['quote asset volume'],
                 },
                 'time': update['close time'],
-                'reveived_at' : time.time() - random() / 10
+                'reveived_at': time.time() - random() / 10
             }
 
             await test_process_kline_update(pub_msg)

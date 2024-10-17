@@ -51,9 +51,9 @@ rsi = sg.SignalsDefinition(
     ),
 )
 
-# timeperiod = 32
+timeperiod = 16
 
-kama = sg.SignalsDefinition(
+kama_cross = sg.SignalsDefinition(
     name=f"KAMA cross {timeperiod}/{timeperiod*4}",
     conditions=[
         cn.ConditionDefinition(
@@ -66,7 +66,23 @@ kama = sg.SignalsDefinition(
     ]
 )
 
-timeperiod = 7
+timeperiod = 40
+
+breakout = sg.SignalsDefinition(
+    name=f"Breakout {timeperiod}",
+    conditions=[
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a="close",
+            operand_b=("max", {"timeperiod": timeperiod}),
+            operand_c=("min", {"timeperiod": timeperiod}),
+            open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
+            open_short=("a", cn.COMPARISON.IS_EQUAL, "c"),
+        ),
+    ]
+)
+
+timeperiod = 16
 linreg_timeperiod = 5
 
 
@@ -80,7 +96,11 @@ trix = sg.SignalsDefinition(
                 ("trix", {"timeperiod": timeperiod}),
                 {"timeperiod": linreg_timeperiod},
             ),
-            operand_b=("threshhold", 0),
+            operand_b=(
+                "linearreg_slope",
+                ("trix", {"timeperiod": timeperiod}),
+                {"timeperiod": linreg_timeperiod * 4},
+            ),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
@@ -88,7 +108,7 @@ trix = sg.SignalsDefinition(
 )
 
 timeperiod = randint(30, 50)
-timeperiod = 32
+timeperiod = 12
 
 ema_cross = sg.SignalsDefinition(
     name=f"EMA cross {timeperiod}/{timeperiod*4}",
@@ -96,13 +116,14 @@ ema_cross = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a=("ema", {"timeperiod": timeperiod}),
-            operand_b=("ema", {"timeperiod": timeperiod * 4}),
+            operand_b=("ema", {"timeperiod": timeperiod * 6}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
     ]
 )
 
+timeperiod = 20
 
 tema_cross = sg.SignalsDefinition(
     name=f"TEMA cross {timeperiod}/{timeperiod*4}",
@@ -144,7 +165,7 @@ contra_1 = sb.StrategyDefinition(
 )
 
 trend_1 = sb.StrategyDefinition(
-    strategy="Composite Strategy",
+    strategy="EMA Cross",
     symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
     interval="1d",
     sub_strategies=[
@@ -153,6 +174,66 @@ trend_1 = sb.StrategyDefinition(
             symbol="ETHUSDT",
             interval="1d",
             signals_definition=ema_cross,
+            weight=1,
+        ),
+    ]
+)
+
+s_tema_cross = sb.StrategyDefinition(
+    strategy="TEMA Cross",
+    symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
+    interval="1d",
+    sub_strategies=[
+        sb.StrategyDefinition(
+            strategy="TEMA CROSS",
+            symbol="ETHUSDT",
+            interval="1d",
+            signals_definition=tema_cross,
+            weight=1,
+        ),
+    ]
+)
+
+s_kama_cross = sb.StrategyDefinition(
+    strategy="KAMA Cross",
+    symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
+    interval="1d",
+    sub_strategies=[
+        sb.StrategyDefinition(
+            strategy="TEMA CROSS",
+            symbol="ETHUSDT",
+            interval="1d",
+            signals_definition=kama_cross,
+            weight=1,
+        ),
+    ]
+)
+
+s_breakout = sb.StrategyDefinition(
+    strategy="Breakout",
+    symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
+    interval="1d",
+    sub_strategies=[
+        sb.StrategyDefinition(
+            strategy="Breakout",
+            symbol="ETHUSDT",
+            interval="1d",
+            signals_definition=breakout,
+            weight=1,
+        ),
+    ]
+)
+
+s_trix = sb.StrategyDefinition(
+    strategy="TRIX",
+    symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
+    interval="1d",
+    sub_strategies=[
+        sb.StrategyDefinition(
+            strategy="trix",
+            symbol="ETHUSDT",
+            interval="1d",
+            signals_definition=trix,
             weight=1,
         ),
     ]

@@ -264,8 +264,8 @@ def test_update_parameters():
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    # test_operand_factory()
-    test_update_parameters()
+    test_operand_factory()
+    # test_update_parameters()
     sys.exit()
 
     operand = op.operand_factory(op_defs.get('sma').get('def'))

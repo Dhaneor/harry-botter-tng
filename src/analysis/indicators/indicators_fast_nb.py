@@ -31,5 +31,5 @@ def atr(open_, high, low, period=14):
             abs(high[i] - open_[i]),
             abs(low[i] - open_[i])
         )
-        atr[i] = (atr[i-1] * (period-1) + tr) / period
+        atr[i] = (atr[i - 1] * (period - 1) + tr) / period
     return atr
