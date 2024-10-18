@@ -260,7 +260,7 @@ def show_overview(
 
     # replace numerical values with strings for 'position'
     # for better readability
-    conditions = [ (df['position'] == 1),  (df['position'] == -1)]
+    conditions = [(df['position'] == 1),  (df['position'] == -1)]
     choices = ['LONG', 'SHORT']
     df['position'] = np.select(conditions, choices, default='')
 
