@@ -32,9 +32,9 @@ This is taken from Robert Carver´s book: Systematic Trading (p.131)
 """
 DM_MATRIX = {
     0: {2: 1.41, 3: 1.73, 4: 2.0, 5: 2.2, 10: 3.2, 15: 3.9, 20: 4.5, 50: 7.1},
-    0.25: {2: 1.27, 3: 1.41, 4: 1.51, 5: 1.58, 10: 1.75, 15: 1.83, 20: 1.86, 50: 1.94},
-    0.5: {2: 1.15, 3: 1.22, 4: 1.27, 5: 1.29, 10: 1.35, 15: 1.37, 20: 1.38, 50: 1.40},
-    0.75: {2: 1.10, 3: 1.12, 4: 1.13, 5: 1.15, 10: 1.17, 15: 1.17, 20: 1.18, 50: 1.19},
+    0.25: {2: 1.27, 3: 1.41, 4: 1.51, 5: 1.58, 10: 1.75, 15: 1.83, 20: 1.86, 50: 1.94},   # noqa: E501
+    0.5: {2: 1.15, 3: 1.22, 4: 1.27, 5: 1.29, 10: 1.35, 15: 1.37, 20: 1.38, 50: 1.40},   # noqa: E501
+    0.75: {2: 1.10, 3: 1.12, 4: 1.13, 5: 1.15, 10: 1.17, 15: 1.17, 20: 1.18, 50: 1.19},   # noqa: E501
     1.0: {2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 10: 1.0, 15: 1.0, 20: 1.0, 50: 1.0},
 }
 
@@ -180,10 +180,9 @@ def _conservative_sizing(
     np.ndarray
         the maximum leverage
     """
-    # return np.nan_to_num(
-    #     target_risk_annual / vol_anno(data["close"], _interval_in_ms(data))
-    # )
-    leverage = target_risk_annual / vol_anno(data["close"], _interval_in_ms(data))
+    leverage = target_risk_annual / vol_anno(
+        data["close"], _interval_in_ms(data)
+    )
 
     return np.nan_to_num(bn.move_mean(leverage, smoothing))
 
@@ -254,7 +253,9 @@ def mean_correlation(close_prices: np.ndarray, period: int) -> float:
     return np.nanmean(correlations[np.triu_indices(len(correlations), k=1)])
 
 
-def diversification_multiplier(close_prices: tp.Array_2d, period: int = 14) -> float:
+def diversification_multiplier(
+    close_prices: tp.Array_2d, period: int = 14
+) -> float:
     """Calculates the diversification multiplier based on 'close' prices.
 
     This is the method described by Robert Carver in 'Leveraged
