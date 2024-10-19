@@ -5,15 +5,15 @@ Created on Sun Jan 31 00:21:53 2021
 
 @author: dhaneor
 """
-
-import mysql.connector as dbc
 import logging
-from mysql.connector import Error, IntegrityError
 from time import time
 from typing import Union, Optional
 
+import mysql.connector as dbc
+from mysql.connector import Error, IntegrityError
+
 from src.helpers.ilabrat import get_exchange_name
-from src.helpers.timeops import utc_to_unix, execution_time
+from src.helpers.timeops import utc_to_unix
 
 import pandas as pd
 from pprint import pprint

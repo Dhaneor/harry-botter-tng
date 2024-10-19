@@ -66,7 +66,7 @@ kama_cross = sg.SignalsDefinition(
     ]
 )
 
-timeperiod = 40
+timeperiod = 20
 
 breakout = sg.SignalsDefinition(
     name=f"Breakout {timeperiod}",

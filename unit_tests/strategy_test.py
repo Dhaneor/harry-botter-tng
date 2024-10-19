@@ -30,7 +30,7 @@ sys.path.append(parent)
 
 from src.analysis.strategies.definitions import Breakout  # noqa: E402, F401
 from src.staff.hermes import Hermes  # noqa: E402, F401
-from analysis.strategies.exit_order_strategies import *  # noqa: E402, F401
+from analysis.strategies.exit_order_strategies import *  # noqa: E402, F401, F403
 
 h = Hermes(exchange='kucoin', mode='live')
 s = Breakout()
@@ -91,5 +91,3 @@ async def main():
 # =============================================================================
 if __name__ == '__main__':
     asyncio.run(main())
-
-

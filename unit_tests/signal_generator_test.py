@@ -30,7 +30,7 @@ sys.path.append(parent)
 from src.analysis.strategies import signal_generator as sg  # noqa: E402
 from src.analysis.strategies import condition as cn  # noqa: E402
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
-    cci, ema_cross, tema_cross, rsi, kama, trix, breakout
+    cci, ema_cross, tema_cross, rsi, trix, breakout
 )
 from src.analysis.strategies import strategy_plot as sp  # noqa: E402
 from helpers_ import get_sample_data  # noqa: E402, F401
@@ -48,7 +48,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # set interval and length of test data
-interval = "1h"
+interval = "15m"
 length = 700
 
 # ======================================================================================
@@ -60,7 +60,7 @@ df.drop(
 df['human open time'] = pd.to_datetime(df['human open time'])
 df.set_index(keys=['human open time'], inplace=True)
 
-if interval != "15min":
+if interval != "15m":
     df = df.resample(interval)\
         .agg(
             {
@@ -73,7 +73,7 @@ if interval != "15min":
 
 df.dropna(inplace=True)
 
-start = random.randint(0, len(df) - length)
+start = random.randint(0, (len(df) - length))
 end = start + length
 data = {col: df[start:end][col].to_numpy() for col in df.columns}
 # data = get_sample_data(length)
@@ -229,7 +229,10 @@ def test_returns(sig_gen: sg.SignalGenerator, data, show=False):
             df1['returns'] = (df1.close.pct_change() * 100).round(2)
 
             # Create a unique trade ID for each trade/position
-            df1['trade_id'] = (np.random.rand(df1['close'].shape[0]) * 10_000).astype(int)
+            df1['trade_id'] = \
+                (np.random.rand(df1['close'].shape[0]) * 10_000)\
+                .astype(int)
+
             # Adjust the trade IDs based on position changes
             df1.loc[df1['position'] == df1['position'].shift(), 'trade_id'] = np.nan
             df1['trade_id'].ffill(inplace=True)
@@ -269,9 +272,7 @@ def test_returns(sig_gen: sg.SignalGenerator, data, show=False):
     if returns:
 
         plt_ = pd.DataFrame.from_dict(
-            {
-                'returns_final': returns_final
-            }
+            {'returns_final': returns_final}
         ).round(1).astype(float)
 
         plt_.plot(
@@ -337,7 +338,7 @@ if __name__ == "__main__":
 
     # test_indicators()
 
-    sig_gen = test_factory(breakout)
+    sig_gen = test_factory(ema_cross)
 
     if not sig_gen:
         sys.exit()
@@ -345,7 +346,7 @@ if __name__ == "__main__":
     print(sig_gen)
     # test_plot_desc(sig_gen)
     test_execute(sig_gen, data, 1, True, True)
-    test_returns(sig_gen, data, True)
+    # test_returns(sig_gen, data, True)
 
     sys.exit()
 

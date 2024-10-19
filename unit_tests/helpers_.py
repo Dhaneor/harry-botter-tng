@@ -23,7 +23,7 @@ hermes = Hermes(exchange='binance')
 
 
 # ------------------------------------------------------------------------------
-def get_sample_data(length: int, interval: str = '15min'):
+def get_sample_data(length: int, interval: str = '15min') -> dict:
     df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
     df.drop(
         ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
@@ -41,17 +41,16 @@ def get_sample_data(length: int, interval: str = '15min'):
                     'volume': 'sum'
                 },
                 min_periods=1
-            )  # noqa: E123
+            ).dropna(inplace=True)  # noqa: E123
 
-    df.dropna(inplace=True)
+    # df.dropna(inplace=True)
 
-    start = len(df) - length  # randint(0, len(df) - length)
-    end = -1  # start + length
+    start, end = len(df) - length, -1
     return {col: df[start:end][col].to_numpy() for col in df.columns}
 
 
 def get_ohlcv(symbol: str, interval: str, as_dataframe: bool = False) -> pd.DataFrame:
-    """Get the 1000 least recent periods of OHLCV data for a symbol.
+    """Get the 1000 most recent periods of OHLCV data for a symbol.
 
     Parameters
     ----------
@@ -105,4 +104,3 @@ def get_symbol(self, symbol_name: str) -> Symbol:
 
 if __name__ == "__main__":
     print(get_sample_data(50))
-

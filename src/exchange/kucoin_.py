@@ -11,8 +11,7 @@ import pandas as pd
 import logging
 from cachetools import cached, TTLCache
 
-from numpy import average
-from typing import Tuple, Union, Callable, Optional
+from typing import Tuple, Union, Optional
 from uuid import uuid1
 from time import time, sleep
 from pprint import pprint
@@ -23,21 +22,21 @@ current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 # ------------------------------------------------------------------------------
-from kucoin.client import Market, Margin, User, Trade
+from src.rawi.kucoin.kucoin.client import Market, Margin, User, Trade
 from src.exchange.exchange_interface import (IExchangePublic, IExchangeTrading,
                                              IExchangeMargin)
 from src.exchange.util.ohlcv_download_prepper import OhlcvDownloadPrepper
 from src.exchange.util.kucoin_order_downloader import KucoinOrderDownloader
-from src.helpers.timeops import utc_to_unix, unix_to_utc, interval_to_milliseconds
+from src.helpers.timeops import utc_to_unix, interval_to_milliseconds
 from src.helpers.accounting import Accounting
+
+logger = logging.getLogger('main.kucoin')
+logger.setLevel(logging.INFO)
 
 try:
     from broker.config import CREDENTIALS
 except:
-    pass
-
-logger = logging.getLogger('main.kucoin')
-logger.setLevel(logging.INFO)
+    logger.warning("unable to import CREDENTIALS from broker.config")
 
 global DELAY
 DELAY = 0
