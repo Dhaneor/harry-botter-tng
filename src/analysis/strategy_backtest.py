@@ -200,7 +200,7 @@ def run(strategy: IStrategy, data: tp.Data, initial_capital: float, risk_level: 
 
     # add leverage
     data["leverage"] = max_leverage(data, risk_level)
-    data["leverage"] = np.clip(data["leverage"], 0, 5)
+    data["leverage"] = np.clip(data["leverage"], 0, 3)
 
     # calculate the actual trades
     calculate_trades(data, initial_capital)

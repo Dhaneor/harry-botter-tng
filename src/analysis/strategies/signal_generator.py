@@ -60,7 +60,6 @@ from . import condition as cnd
 from ..indicators.indicator import PlotDescription, Indicator
 
 logger = logging.getLogger("main.signal_generator")
-# logger.setLevel(logging.ERROR)
 
 PositionTypeT = Literal["open_long", "open_short", "close_long", "close_short"]
 
@@ -152,7 +151,6 @@ class SignalGenerator:
         tuple[cnd.Indicator]
             the indicator(s) used by the signal generator
         """
-        # [item for sublist in list_of_lists for item in sublist]
         return tuple(
             itertools.chain(
                 ind for cond in self.conditions for ind in cond.indicators

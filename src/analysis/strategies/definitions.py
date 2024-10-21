@@ -107,10 +107,10 @@ trix = sg.SignalsDefinition(
     ],
 )
 
-linreg_timeperiod = 15
+linreg_timeperiod = 24
 
 linreg = sg.SignalsDefinition(
-    name=f"TRIX {timeperiod}",
+    name=f"Linear Regression Slope {timeperiod}",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",

@@ -48,40 +48,42 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # set interval and length of test data
-interval = "1h"
+interval = "1d"
 length = 1500
 
 # ======================================================================================
-df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
-df.drop(
-    ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
-)
+# df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
+# df.drop(
+#     ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
+# )
 
-df['human open time'] = pd.to_datetime(df['human open time'])
-df.set_index(keys=['human open time'], inplace=True)
+# df['human open time'] = pd.to_datetime(df['human open time'])
+# df.set_index(keys=['human open time'], inplace=True)
 
-if interval != "15m":
-    df = df.resample(interval)\
-        .agg(
-            {
-                'close': 'last', 'open': 'first',
-                'high': 'max', 'low': 'min', 'volume': 'sum',
-                'open time': 'first'
-            },
-            min_periods=1
-        )  # noqa: E123
+# if interval != "15m":
+#     df = df.resample(interval)\
+#         .agg(
+#             {
+#                 'close': 'last', 'open': 'first',
+#                 'high': 'max', 'low': 'min', 'volume': 'sum',
+#                 'open time': 'first'
+#             },
+#             min_periods=1
+#         )  # noqa: E123
 
-df.dropna(inplace=True)
-
-start = random.randint(0, (len(df) - length))
-end = start + length
-data = {col: df[start:end][col].to_numpy() for col in df.columns}
+# df.dropna(inplace=True)
 
 try:
-    data = get_ohlcv(symbol="BTCUSDT", interval="1d", as_dataframe=True)
+    df = get_ohlcv(symbol="BTCUSDT", interval="1h", as_dataframe=True)
 except Exception as e:
     logger.error(f"Error fetching data: {e}")
     sys.exit()
+
+# start = random.randint(0, (len(df) - length))
+# end = start + length
+# data = {col: df[start:end][col].to_numpy() for col in df.columns}
+
+data = {col: df[col].to_numpy() for col in df.columns}
 
 # ======================================================================================
 
@@ -343,7 +345,7 @@ if __name__ == "__main__":
 
     # test_indicators()
 
-    sig_gen = test_factory(breakout)
+    sig_gen = test_factory(linreg)
 
     if not sig_gen:
         sys.exit()

@@ -574,12 +574,7 @@ class OperandIndicator(Operand):
 
 @dataclass(kw_only=True)
 class OperandTrigger(Operand):
-    """A single operand of a condition.
-
-    A single operand can represent either:
-        - an indicator
-        - a series
-        - a numerical value or a boolean.
+    """A single operand of a condition that represents a fixed value.
 
     Attributes
     ----------

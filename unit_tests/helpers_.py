@@ -81,7 +81,7 @@ def get_ohlcv(symbol: str, interval: str, as_dataframe: bool = False) -> pd.Data
 
     drop_cols = [
         c for c
-        in ['volume', 'quote asset volume', 'close time']
+        in ['quote asset volume', 'close time']
         if c in ohlcv.columns
     ]
 

@@ -46,14 +46,14 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 from src.plotting.minerva import BacktestChart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
 
-symbol = "ETH-USDT"
+symbol = "BTC-USDT"
 interval = "1d"
 
-start = -3000  # 'January 01, 2019 00:00:00'
+start = 'July 01, 2020 00:00:00'
 end = 'now UTC'
 
 strategy = s_breakout
-risk_level = 3
+risk_level = 2
 initial_capital = 1_000 if symbol.endswith('USDT') else 0.1
 
 hermes = Hermes(exchange='kucoin', mode='backtest')

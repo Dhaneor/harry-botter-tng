@@ -515,8 +515,7 @@ class Indicator(IIndicator):
     Do not use on its own!
     """
 
-    not_subplot = talib.get_function_groups()["Overlap Studies"] \
-        + ["MIN", "MAX"]
+    not_subplot = talib.get_function_groups()["Overlap Studies"] + ["MIN", "MAX"]
 
     def __init__(self) -> None:
         super().__init__()
@@ -568,9 +567,11 @@ class Indicator(IIndicator):
             return (self.unique_name,)
 
         return tuple(
-            f"{self.unique_name}_{elem}"
-            if elem.endswith("band")
-            else f"{self.unique_name}_{elem}"
+            (
+                f"{self.unique_name}_{elem}"
+                if elem.endswith("band")
+                else f"{self.unique_name}_{elem}"
+            )
             for elem in self.output
         )
 
@@ -974,6 +975,35 @@ class FixedIndicator(IIndicator):
 #                              factory functions                                       #
 # --------------------------------------------------------------------------------------
 def _indicator_factory_talib(func_name: str) -> Indicator:
+    """
+    Create and return an Indicator instance based on a TA-Lib function.
+
+    This factory function dynamically creates an Indicator subclass for
+    a given TA-Lib function. It sets up the necessary attributes and
+    methods, including input and output names, parameters, and the main
+    computation method.
+
+    Parameters
+    ----------
+    func_name : str
+        The name of the TA-Lib function to create an indicator for. This
+        should match exactly with the function name in TA-Lib
+        (case-insensitive).
+
+    Returns
+    -------
+    Indicator
+        An instance of a dynamically created Indicator subclass that
+        wraps the specified TA-Lib function.
+
+    Notes
+    -----
+    The created Indicator instance includes:
+    - Properly set input and output names
+    - A 'run' method that calls the underlying TA-Lib function
+    - Dynamically generated documentation
+    - Configured parameters and parameter spaces
+    """
     func_name = func_name.upper()
     class_name = func_name
     talib_func = getattr(talib, class_name)
@@ -1182,6 +1212,34 @@ def fixed_indicator_factory(name, params):
 
 
 def set_parameter_space(indicator: Indicator) -> None:
+    """
+    Set the parameter space for an indicator if it's not already defined.
+
+    This function iterates through the parameters of the given indicator and sets
+    a default parameter space for each parameter that doesn't already have one.
+    The parameter space is defined as a list of [min, max, step] values, which can
+    be used for parameter optimization.
+
+    Parameters:
+    -----------
+    indicator : Indicator
+        The indicator object for which to set the parameter space.
+
+    Returns:
+    --------
+    None
+        This function modifies the indicator object in-place and
+        doesn't return anything.
+
+    Notes:
+    ------
+    The function sets different parameter spaces based on the parameter name:
+    - 'timeperiod': [2, 200, 2]
+    - 'fastperiod', 'signalperiod', 'fastk_period': [2, 100, 2]
+    - 'slowperiod', 'slowk_period': [10, 200, 2]
+    - Parameters ending with 'matype': [first MA type, last MA type, 1]
+    - Parameters starting with 'nbdev': [0.1, 4, 0.1]
+    """
     for param in indicator.parameters:
         logger.debug("   setting parameter space for %s", param)
 
@@ -1201,7 +1259,7 @@ def set_parameter_space(indicator: Indicator) -> None:
                 indicator.parameter_space[param] = [ma_types[0], ma_types[-1], 1]
 
             elif param.startswith("nbdev"):
-                indicator.parameter_space = [0.1, 4, 0.1]
+                indicator.parameter_space[param] = [0.1, 4, 0.1]
 
             else:
                 pass
@@ -1214,9 +1272,7 @@ cache = {i_name: _indicator_factory_talib(i_name) for i_name in talib.get_functi
 
 
 def factory(
-    indicator_name: str,
-    params: Params | None = None,
-    source: IndicatorSource = "talib"
+    indicator_name: str, params: Params | None = None, source: IndicatorSource = "talib"
 ) -> Indicator:
     """Creates an indicator object based on its name .
 

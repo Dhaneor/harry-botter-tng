@@ -66,8 +66,6 @@ a = np.random.rand(array_len) * 100
 a1 = np.random.rand(array_len) * 1.05
 a2 = np.random.rand(array_len) * 0.95
 
-# logger.info(f'arr1 shape: {arr1.shape}')
-
 # ==============================================================================
 defs = {
     'SMA': {
@@ -359,9 +357,9 @@ def test_parameter_iter():
 if __name__ == '__main__':
     # test_set_indicator_parameters()
 
-    # test_parameter_space()
+    test_parameter_space()
     # test_parameter_iter()
-    # sys.exit()
+    sys.exit()
 
     # arr, res = test_is_above()
 
