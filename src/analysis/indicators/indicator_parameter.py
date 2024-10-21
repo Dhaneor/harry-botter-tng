@@ -56,7 +56,7 @@ class Parameter(Iterable):
 
     - if the value is outside the hard limits for the parameter space
     (which were set during the instantiation of the indicator class using
-    this class), it is set to the closest valid value
+    this class), an Exception is raised.
     - if the minimum is greater than the maximum, an exception is raised
 
     All of this is done to prevent sloppy humans (like me) from setting
@@ -68,14 +68,13 @@ class Parameter(Iterable):
 
     name: str
     initial_value: float | int | bool
-    hard_min: Optional[float | int | bool]
-    hard_max: Optional[float | int | bool]
+    hard_min: float | int | bool
+    hard_max: float | int | bool
 
-    _value: float | int | bool
+    _value: float | int = None
     _enforce_int: bool = False
-    # _space: Sequence[float | int | bool | str] = field(default_factory=list)
 
-    step: float | int = 1
+    step: Optional[float | int] = 1
 
     def __str__(self):
         return f"Parameter {self.name} -> {self.value}"
@@ -84,17 +83,20 @@ class Parameter(Iterable):
         return iter(range(self.hard_min, self.hard_max + 1, self.step))
 
     def __post_init__(self):
+        self._value = self.initial_value
+
         for elem in ("period", "lookback", "type"):
             if elem in self.name.lower():
                 self._enforce_int = True
                 break
 
-        if self.hard_min is not None:
-            self.hard_min = self._validate(self.hard_min)
-        if self.hard_max is not None:
-            self.hard_max = self._validate(self.hard_max)
+        self.hard_min = self._validate(self.hard_min)
+        self.hard_max = self._validate(self.hard_max)
 
-        self._space = self.hard_min, self.hard_max, self.step
+        if self.hard_min > self.hard_max:
+            raise ValueError(
+                f"hard_min ({self.hard_min}) > hard_max ({self.hard_max})"
+                )
 
     @property
     def value(self) -> float | int | bool:
@@ -108,36 +110,14 @@ class Parameter(Iterable):
         Raises
         ------
         TypeError
-            if value is not a float, int, bool or string.
-        TypeError
-            if type of value is incompatible with current value
+            if value not of the same type as the current value
         ValueError
-            if value is not in the allowed parameter space.
+            • if value is not in the allowed parameter space
+            • if negative values for a timeperiod a requested
+            • if negative values for categorical parameters are requested
         """
-        if not isinstance(value, (float, int, bool, str)):
-            raise TypeError(f"invalid type for parameter {self.name}: {type(value)}")
-
-        if any(
-            arg
-            for arg in (
-                (
-                    isinstance(self.value, (float, int, bool))
-                    & (not isinstance(value, (float, int, bool)))  # noqa: W503
-                ),
-                (isinstance(self.value, str) & (not isinstance(value, str))),
-            )
-        ):
-            raise TypeError(
-                "invalid type for parameter %s: %s" % (self.name, type(value))
-            )
-
-        if not self.space[0] <= value <= self.space[1]:
-            raise ValueError(
-                f"parameter {self.name} out of range: " f"{value} not in {self._space}"
-            )
-
         self._value = self._validate(value)
-        logger.info(f"Set parameter {self.name} to {value}")
+        logger.info(f"Set parameter {self.name} to {self._value}")
 
     @property
     def space(self) -> Tuple[float | int | bool]:
@@ -156,17 +136,7 @@ class Parameter(Iterable):
         raise PermissionError("Changing the parameter space is not allowed.")
 
     def _validate(self, value):
-        """Validates requested values for parameter.
-
-        Raises
-        ------
-        TypeError
-            if the type of the value does not match the expected type
-        ValueError
-            if negative values for a timeperiod a requested
-        ValueError
-            if negative values for categorical parameters are requested
-        """
+        """Validates requested values for parameter"""
         # make sure the value we got has the correct type
         if not isinstance(value, type(self._value)):
             raise TypeError(
@@ -203,6 +173,11 @@ class Parameter(Iterable):
     def _validate_numerical_value(self, value):
         # some values just can't be floats, flag is set in __post_init__
         value = int(round(value)) if self._enforce_int else value
+
+        if not self.hard_min <= value <= self.hard_max:
+            raise ValueError(
+                f"parameter {self.name} out of range: " f"{value} not in {self.space}"
+            )
 
         # timeperiods can't be 0 or negative
         if "period" in self.name and value == 0:

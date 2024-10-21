@@ -21,7 +21,6 @@ class TestParameter(unittest.TestCase):
         self.param = Parameter(
             name="TestParameter",
             initial_value=10,
-            _value=10,
             hard_min=1,
             hard_max=20,
             step=1
@@ -57,7 +56,7 @@ class TestParameter(unittest.TestCase):
             self.assertIn(i, range(1, 21))
 
     def test_post_init(self):
-        self.assertEqual(self.param._space, (1, 20, 1))
+        self.assertEqual(self.param.space, (1, 20, 1))
         self.assertFalse(self.param._enforce_int)
 
     def test_post_init_with_enforce_int(self):
@@ -70,8 +69,19 @@ class TestParameter(unittest.TestCase):
             step=1,
             _enforce_int=True
         )
-        self.assertEqual(param._space, (1, 20, 1))
+        self.assertEqual(param.space, (1, 20, 1))
         self.assertTrue(param._enforce_int)
+
+    def test_set_min_above_max(self):
+        with self.assertRaises(ValueError):
+            _ = Parameter(
+                name="TestParameterWithHardLimits",
+                initial_value=10,
+                _value=10,
+                hard_min=17,
+                hard_max=15,
+                step=1
+            )
 
     def test_post_init_with_hard_limits(self):
         param = Parameter(
