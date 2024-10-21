@@ -41,15 +41,9 @@ Created on Thu July 12 21:44:23 2023
 """
 import abc
 import logging
-from dataclasses import dataclass
-from typing import (
-    Any,
-    NamedTuple,
-    Optional,
-    Sequence,
-    Callable,
-)
 import numpy as np
+from dataclasses import dataclass
+from typing import Any, NamedTuple, Optional, Sequence, Callable
 
 from .util import proj_types as tp
 from .strategies import signal_generator as sg
@@ -516,7 +510,7 @@ def build_strategy(sdef: StrategyDefinition) -> IStrategy:
         for missing 'interval' in strategy_definition
     """
 
-    # validation rlogic
+    # validation logic
     def _validate_strategy_definition(sdef: StrategyDefinition) -> None:
         if sdef.strategy is None:
             raise ValueError(f"strategy: {sdef.strategy} is not a valid strategy")

@@ -66,7 +66,7 @@ from . import operand as op
 logger = logging.getLogger("main.condition")
 logger.setLevel(logging.ERROR)
 
-# data for testing the correct functioning of a Ciondition class
+# data for testing the correct functioning of a Condition class
 TEST_DATA_SIZE = 500
 TEST_DATA = {
     "open": np.random.random(TEST_DATA_SIZE),

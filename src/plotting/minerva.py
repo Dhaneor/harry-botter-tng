@@ -83,11 +83,6 @@ class Minerva:
 
         ax.set_title(self.title, y=1.0, pad=-14)
 
-        # if (self.df['high'].max() / self.df['low'].min()) > 10:
-        #     ax.set_yscale('log')
-        #     ax.yaxis.set_major_formatter(StrMethodFormatter('{x:.2f}'))
-        #     ax.yaxis.set_minor_formatter(NullFormatter())
-
         width, width2 = _get_linewidth()
 
         bull, alpha_bull = self.bull[0], self.bull[1]
@@ -330,8 +325,8 @@ class Minerva:
 
         x = self.df.index.to_list()
 
-        self.df.buy_at.replace(0, np.nan, inplace=True)
-        self.df.sell_at.replace(0, np.nan, inplace=True)
+        self.df = self.df.replace({'buy_at': {0: np.nan}})
+        self.df = self.df.replace({'sell_at': {0: np.nan}})
 
         ax.scatter(
             x,
@@ -403,7 +398,7 @@ class Minerva:
             finally:
                 if not upper and lower and middle:
                     logger.debug(
-                        f"unable to determine upper and/or lower bound for channel"
+                        "unable to determine upper and/or lower bound for channel"
                     )
                     return
 
@@ -454,7 +449,7 @@ class Minerva:
         columns = [
             col
             for col in self.df.columns
-            if col.split(".")[0] == "sma" or  col.split(".")[0] == "ewm"
+            if col.split(".")[0] == "sma" or col.split(".")[0] == "ewm"
             and "diff" not in col
         ]
 
@@ -464,7 +459,7 @@ class Minerva:
             try:
                 color = colors[idx]
                 alpha = alpha[idx] * (1 / (idx + 1))
-            except:
+            except Exception:
                 color = "grey"
                 alpha = 0.5
 
@@ -485,7 +480,7 @@ class Minerva:
 
     def _leverage(self):
         self.df["leverage"] = self.df["leverage"].replace("", np.NaN)
-        self.df.leverage.replace(np.NaN, 0, inplace=True)
+        self.df = self.df.replace({'buy_at': {0: np.nan}})
 
         ax = self.axes[-4]
 
@@ -680,9 +675,9 @@ class Minerva:
 
     def _set_format_parameters(self):
         # different format parameters
-        _lst = self.axes if self.no_of_subplots > 1 else [self.axes]
+        axes_list = self.axes if self.no_of_subplots > 1 else [self.axes]
 
-        for ax_ in _lst:
+        for ax_ in axes_list:
             ax_.set_facecolor(self.background)
             ax_.tick_params(axis="x", labelsize=self.fontsize, colors=self.tick[0])
             ax_.tick_params(axis="y", labelsize=self.fontsize, colors=self.tick[0])
@@ -695,20 +690,20 @@ class Minerva:
                 alpha=self.grid[1],
             )
 
-            ax_.legend(fontsize=self.fontsize)
-
             ax_.margins(tight=True)
 
-            ax_.legend(
-                fancybox=True,
-                framealpha=0.5,
-                shadow=False,
-                borderpad=1,
-                labelcolor=self.grid[0],
-                facecolor=self.canvas,
-                fontsize=self.fontsize,
-                edgecolor=self.canvas,
-            )
+            # Check if there are any labeled artists
+            if ax_.get_legend_handles_labels()[0]:
+                ax_.legend(
+                    fancybox=True,
+                    framealpha=0.5,
+                    shadow=False,
+                    borderpad=1,
+                    labelcolor=self.grid[0],
+                    facecolor=self.canvas,
+                    fontsize=self.fontsize,
+                    edgecolor=self.canvas,
+                )
 
             for brdr in ["left", "right", "top", "bottom"]:
                 ax_.spines[brdr].set_color(self.position[0])
@@ -803,7 +798,6 @@ class Minerva:
         # is already a datetime column and set as index
         df = self._columns_to_numeric(df=df)
 
-
         # generate a signal columns with random values if there is no
         # signal column
         # if not 's.all' in df.columns:
@@ -874,11 +868,11 @@ class BasicChart(Minerva):
     def draw(self):
         self.prepare()
         self._ohlcv()
-        self._set_format_parameters()
 
         # plot the whole thing
         plt.xlabel("date", color=self.tick[0], fontsize=self.fontsize)
         plt.tight_layout()
+        self._set_format_parameters()
         plt.show()
 
 
@@ -919,21 +913,6 @@ class BacktestChart(Minerva):
 
         # ---------------------------------------------------------------------
         self._set_format_parameters()
-        # force format options
-        # for ax_ in self.axes:
-        #     ax_.grid(which='both', linewidth=0.1, linestyle='dotted',
-        #              color=self.grid[0], alpha=self.grid[1])
-
-        #     ax_.legend(fontsize=self.fontsize)
-        #     ax_.tick_params(axis='both', which='both', color=self.tick[0])
-        #     ax_.yaxis.tick_right()
-
-        #     # ax_.set_frame_on(False)
-        #     # ax_.xaxis_date(tz=None)
-
-        #     # for brdr in ['left', 'right', 'top', 'bottom']:
-        #     #     ax_.spines[brdr].set_color(self.position[0])
-        #     #     ax_.spines[brdr].set_linewidth(0.3)
 
         # plot the whole thing
         plt.xlabel("date", color=self.tick[0], fontsize=self.fontsize)
@@ -990,9 +969,9 @@ class AnalystChart(Minerva):
 
         # ---------------------------------------------------------------------
         # different format parameters
-        _lst = self.axes if self.no_of_subplots > 1 else [self.axes]
+        axes_list = self.axes if self.no_of_subplots > 1 else [self.axes]
 
-        for ax_ in _lst:
+        for ax_ in axes_list:
             ax_.set_facecolor(self.background)
             ax_.tick_params(axis="x", labelsize=self.fontsize, colors=self.tick[0])
             ax_.tick_params(axis="y", labelsize=self.fontsize, colors=self.tick[0])
@@ -1004,8 +983,6 @@ class AnalystChart(Minerva):
                 color=self.grid[0],
                 alpha=self.grid[1],
             )
-
-            ax_.legend(fontsize=self.fontsize)
 
             ax_.margins(tight=True)
 
@@ -1068,7 +1045,7 @@ class AnalystChart(Minerva):
                     color=self.channel_bg[0],
                     alpha=self.channel_bg[1],
                 )
-        except:
+        except Exception:
             pass
 
         if params.get("signal") is not None:

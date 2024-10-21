@@ -47,7 +47,7 @@ MAX_WORKERS_BINANCE = VALID_EXCHANGES["binance"]["max_workers"]
 MAX_WORKERS_KUCOIN = VALID_EXCHANGES["kucoin"]["max_workers"]
 
 logger = logging.getLogger("main.hermes")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 # ==============================================================================
 """
@@ -141,7 +141,7 @@ class HermesDataBase:
                 _results.append(future.result())
 
     def check_table(self, symbol: str, interval: str) -> Tuple[list[dict]]:
-        if not symbol in self.tradeable_symbols:
+        if symbol not in self.tradeable_symbols:
             logger.error(f"{symbol} not found on {self.exchange_name.upper()}!")
             return
 
@@ -209,7 +209,8 @@ class HermesDataBase:
             for idx, period in enumerate(missing_periods):
                 logger.info(
                     f"missing period {idx}/{no_of_missing_periods}:"
-                    f" {period[-3]} - {period[-2]} ({period[-1]}) :: {period[-5]} - {period[-6]}"
+                    f" {period[-3]} - {period[-2]} ({period[-1]}) ::"
+                    f" {period[-5]} - {period[-6]}"
                 )
 
                 start, end = period[0], period[1] - 1
@@ -265,8 +266,6 @@ class HermesDataBase:
 
     # --------------------------------------------------------------------------
     def _find_missing_rows_in_df(self, df: pd.DataFrame) -> tuple:
-        res = []
-
         if len(df) < 2:
             logger.warning(f"dataframe too short ({len(df)} to anaylze!)")
             return tuple()
@@ -395,7 +394,7 @@ class HermesDataBase:
                 raise ValueError(f"{self.exchange_name} not found in VALID_EXCHANGES")
 
         if latest_open == 0:
-            raise Exception(f'unable to determine "latest_open" ... aborting')
+            raise Exception('unable to determine "latest_open" ... aborting')
 
         # check if the latest row in table already represents the most
         # recent datapoint and return if true
@@ -523,7 +522,7 @@ class HermesDataBase:
             # delete the last value from the row, it's not needed
             del row[-1]
 
-            logger.debug(f"row {index}: {row}")
+            # logger.debug(f"row {index}: {row}")
 
             save_data.append(tuple(row))
 
@@ -609,13 +608,8 @@ class HermesDataBase:
         return True if table_name in all_tables else False
 
     def _ohlcv_table_needs_update(self, latest_open: int, interval: str) -> bool:
-        now = int(time.time()) * 1000
-        human_now = unix_to_utc(now)
         interval_in_ms = interval_to_milliseconds(interval)
-        human_latest = unix_to_utc(latest_open + 2 * interval_in_ms)
-        update = latest_open + 2 * interval_in_ms < now
-
-        return latest_open + 2 * interval_in_ms < now
+        return latest_open + 2 * interval_in_ms < int(time.time()) * 1000
 
     # --------------------------------------------------------------------------
     # methods that deal with the symbol(s) information table(s)
@@ -719,7 +713,7 @@ class HermesDataBase:
             else:
                 raise Exception("could not create symbols table for update")
         else:
-            logger.debug(f"[_update_symbols_table] unable to create symbols table!")
+            logger.debug("[_update_symbols_table] unable to create symbols table!")
             logger.debug(f"this is what we got from the exchange: {type(symbols)}")
 
     def _write_to_symbols_table(self, table_name: str, data: list) -> None:
@@ -758,7 +752,8 @@ class HermesDataBase:
                             'minQty': '0.00000000',
                             'stepSize': '0.00000000'},
                             {'filterType': 'MAX_NUM_ORDERS', 'maxNumOrders': 200},
-                            {'filterType': 'MAX_NUM_ALGO_ORDERS', 'maxNumAlgoOrders': 5}],
+                            {'filterType': 'MAX_NUM_ALGO_ORDERS', 'maxNumAlgoOrders': 5}
+                            ],
                 'icebergAllowed': True,
                 'isMarginTradingAllowed': False,
                 'isSpotTradingAllowed': True,
@@ -945,7 +940,7 @@ class Hermes(HermesDataBase):
             _all = {k: v for k, v in _all.items() if k not in _forbidden}
 
         elif self.exchange_name == "kucoin" and remove_leveraged:
-            _all = {k: v for k, v in _all.items() if not "3" in v.get("symbol")}
+            _all = {k: v for k, v in _all.items() if "3" not in v.get("symbol")}
 
         if not quote_asset:
             return [sym for sym in _all.keys()]
@@ -985,7 +980,7 @@ class Hermes(HermesDataBase):
             try:
                 symbol = self._flatten_symbol_dictionary(res)
                 return self._convert_symbol_values(symbol)
-            except:
+            except Exception:
                 result = self._get_symbol_from_database(symbol=symbol)
                 if result:
                     return result
@@ -1051,7 +1046,7 @@ class Hermes(HermesDataBase):
             return _data
 
         # ......................................................................
-        _flattened, _sorted = {}, {}
+        _flattened = {}
 
         # flatten the original (nested) dictionary ('filters' is
         # the nested dict) and convert lists to comma separated strings
@@ -1074,7 +1069,7 @@ class Hermes(HermesDataBase):
         # for a few symbols (leveraged ones for instance) the Binance
         # format is has more or less values than all the others and
         # we need to standardize these before writing to the database
-        if not "f_marketLotSize_stepSize" in _flattened.keys():
+        if "f_marketLotSize_stepSize" not in _flattened.keys():
             _flattened["f_marketLotSize_minQty"] = _flattened["f_lotSize_minQty"]
             _flattened["f_marketLotSize_maxQty"] = _flattened["f_lotSize_maxQty"]
             _flattened["f_marketLotSize_stepSize"] = _flattened["f_lotSize_stepSize"]
@@ -1218,8 +1213,7 @@ class Hermes(HermesDataBase):
         :type end: int|str
         """
         # check if we got one symbol or a list with multiple symbols
-        if isinstance(symbols, str):
-            symbols = [symbols]
+        symbols = [symbols] if isinstance(symbols, str) else symbols
 
         self._set_exchange_from_symbol(symbols[0])
         start, end = self.get_timestamps(start, end, interval)
@@ -1314,7 +1308,7 @@ class Hermes(HermesDataBase):
         if not res["success"]:
             if res["error code"] == 23:
                 # give up if the symbol does not exist
-                if not symbol in self.get_tradeable_symbols():
+                if symbol not in self.get_tradeable_symbols():
                     return {"success": False, "error": "symbol is not tradeable!"}
                 # otherwise, create a new table for symbol/interval
                 else:

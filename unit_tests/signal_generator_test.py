@@ -30,10 +30,10 @@ sys.path.append(parent)
 from src.analysis.strategies import signal_generator as sg  # noqa: E402
 from src.analysis.strategies import condition as cn  # noqa: E402
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
-    cci, ema_cross, tema_cross, rsi, trix, breakout
+    cci, ema_cross, tema_cross, rsi, trix, breakout, linreg
 )
 from src.analysis.strategies import strategy_plot as sp  # noqa: E402
-from helpers_ import get_sample_data  # noqa: E402, F401
+from helpers_ import get_sample_data, get_ohlcv  # noqa: E402, F401
 
 logger = logging.getLogger("main")
 logger.setLevel(logging.DEBUG)
@@ -48,8 +48,8 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # set interval and length of test data
-interval = "15m"
-length = 700
+interval = "1h"
+length = 1500
 
 # ======================================================================================
 df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
@@ -76,7 +76,12 @@ df.dropna(inplace=True)
 start = random.randint(0, (len(df) - length))
 end = start + length
 data = {col: df[start:end][col].to_numpy() for col in df.columns}
-# data = get_sample_data(length)
+
+try:
+    data = get_ohlcv(symbol="BTCUSDT", interval="1d", as_dataframe=True)
+except Exception as e:
+    logger.error(f"Error fetching data: {e}")
+    sys.exit()
 
 # ======================================================================================
 
@@ -338,7 +343,7 @@ if __name__ == "__main__":
 
     # test_indicators()
 
-    sig_gen = test_factory(ema_cross)
+    sig_gen = test_factory(breakout)
 
     if not sig_gen:
         sys.exit()

@@ -82,8 +82,8 @@ breakout = sg.SignalsDefinition(
     ]
 )
 
-timeperiod = 16
-linreg_timeperiod = 5
+timeperiod = 10
+linreg_timeperiod = 20
 
 
 trix = sg.SignalsDefinition(
@@ -98,14 +98,38 @@ trix = sg.SignalsDefinition(
             ),
             operand_b=(
                 "linearreg_slope",
-                ("trix", {"timeperiod": timeperiod}),
-                {"timeperiod": linreg_timeperiod * 4},
+                ("trix", {"timeperiod": timeperiod * 4}),
+                {"timeperiod": linreg_timeperiod},
             ),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
     ],
 )
+
+linreg_timeperiod = 15
+
+linreg = sg.SignalsDefinition(
+    name=f"TRIX {timeperiod}",
+    conditions=[
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=(
+                "linearreg_slope",
+                "close",  # ("trix", {"timeperiod": 3}),
+                {"timeperiod": linreg_timeperiod},
+            ),
+            operand_b=(
+                "slope",
+                0,
+                {"parameter_space": {"trigger": [-10, 10, 1]}},
+                ),
+            open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
+            open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+        ),
+    ],
+)
+
 
 timeperiod = randint(30, 50)
 timeperiod = 12
@@ -226,6 +250,21 @@ s_breakout = sb.StrategyDefinition(
 
 s_trix = sb.StrategyDefinition(
     strategy="TRIX",
+    symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
+    interval="1d",
+    sub_strategies=[
+        sb.StrategyDefinition(
+            strategy="trix",
+            symbol="ETHUSDT",
+            interval="1d",
+            signals_definition=trix,
+            weight=1,
+        ),
+    ]
+)
+
+s_linreg = sb.StrategyDefinition(
+    strategy="Linear Regression",
     symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
     interval="1d",
     sub_strategies=[

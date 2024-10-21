@@ -370,7 +370,7 @@ if __name__ == '__main__':
     #     show=False
     # )
 
-    ind = test_indicator_factory('MAX', show=False)
+    ind = test_indicator_factory('LINEARREG_SLOPE', show=False)
 
     # ind = test_indicator_factory('SMA', {'timeperiod': 20}, show=False)
 
@@ -392,7 +392,7 @@ if __name__ == '__main__':
     # print(ind.unique_output)
     print(ind.plot_desc)
 
-    print(test_indicator_run(ind))
+    # print(test_indicator_run(ind))
 
     sys.exit(0)
 

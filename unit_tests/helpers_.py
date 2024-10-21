@@ -19,7 +19,7 @@ from src.staff.hermes import Hermes  # noqa: E402, F401
 from src.broker.models.symbol import Symbol  # noqa: E402, F401
 
 
-hermes = Hermes(exchange='binance')
+hermes = Hermes(exchange='binance', verbose=True)
 
 
 # ------------------------------------------------------------------------------
@@ -85,11 +85,7 @@ def get_ohlcv(symbol: str, interval: str, as_dataframe: bool = False) -> pd.Data
         if c in ohlcv.columns
     ]
 
-    ohlcv.drop(
-        drop_cols,
-        inplace=True,
-        axis=1
-    )
+    ohlcv.drop(drop_cols, inplace=True, axis=1)
 
     if as_dataframe:
         return ohlcv

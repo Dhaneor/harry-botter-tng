@@ -8,10 +8,8 @@ Created on Wed May 26 23:54:28 2021
 import requests
 from threading import Thread
 from multiprocessing import Queue
-from datetime import datetime
 import time
 
-from broker.models.account import Account
 
 # =============================================================================
 class Thoth(Thread):
@@ -25,13 +23,13 @@ class Thoth(Thread):
         self.keep_going = True
         self.start()
 
-    # ------------------------------------------------------------------------- 
+    # -------------------------------------------------------------------------
     def run(self):
         while True:
             if not self.events_queue.empty():
                 self._process_event(self.events_queue.get())
-            else: 
-                time.sleep(1)        
+            else:
+                time.sleep(1)
 
     # -------------------------------------------------------------------------
     def _process_event(self, event):
@@ -40,39 +38,33 @@ class Thoth(Thread):
 
     def _send_telegram_message(self, message):
         self.telegram.send(message)
-        
-        
+
+
 # =============================================================================
 class Telegram:
 
     def __init__(self, chat_id=None):
-
         self.bot_token = '1406970784:AAGB7t29hz9DR2X8SMtYFfvet2GcKTNO12w'
-        
-        if chat_id is None: self.bot_chatID = '600751557'
-        else: self.bot_chatID = chat_id
+        self.bot_chatID = '600751557' if chat_id is None else chat_id
 
     # -------------------------------------------------------------------------
     def run(self):
-
         while True:
-
             time.sleep(1)
 
-
     def send(self, message):
-        
-        send_text = 'https://api.telegram.org/bot' 
-        send_text += self.bot_token + '/sendMessage?chat_id=' + self.bot_chatID 
+
+        send_text = 'https://api.telegram.org/bot'
+        send_text += self.bot_token + '/sendMessage?chat_id=' + self.bot_chatID
         send_text += f'&parse_mode=Markdown&text={message}'
 
         try:
-            response = requests.get(send_text)
+            _ = requests.get(send_text)
         except Exception:
             pass
 
         return
-        
+
 
 # =========================================================================== #
 #                                   MAIN                                      #

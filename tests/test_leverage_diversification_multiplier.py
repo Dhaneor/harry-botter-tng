@@ -12,7 +12,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # ------------------------------------------------------------------------------
 
-from src.analysis.leverage import diversification_multiplier, DM_MATRIX  # noqa: E402, F401
+from src.analysis.leverage import diversification_multiplier, DM_MATRIX
 
 
 class TestDiversificationMultiplier:
@@ -21,13 +21,15 @@ class TestDiversificationMultiplier:
     def test_diversification_multiplier_two_assets_period_14(self):
         close_prices = np.array([[100, 200], [300, 400], [500, 600]])
         expected_multiplier = 1.0
-        assert diversification_multiplier(close_prices, period=14) == expected_multiplier
+        multiplier = diversification_multiplier(close_prices, period=14)
+        assert (multiplier == expected_multiplier)
 
     # Tests that the function returns the correct diversification multiplier for a 2D numpy array of close prices with more than 50 assets and a period of 14
     def test_diversification_multiplier_many_assets_period_14(self):
         close_prices = np.random.randint(100, 1000, size=(14, 60))
         expected_multiplier = DM_MATRIX[0.5][50]
-        assert diversification_multiplier(close_prices, period=14) == expected_multiplier
+        multiplier = diversification_multiplier(close_prices, period=14)
+        assert (multiplier == expected_multiplier)
 
     # Tests that the function returns the correct diversification multiplier for a 2D numpy array of close prices with 2 assets and a period of 1
     def test_diversification_multiplier_two_assets_period_1(self):
@@ -39,7 +41,9 @@ class TestDiversificationMultiplier:
     def test_diversification_multiplier_two_assets_period_100(self):
         close_prices = np.random.randint(100, 1000, size=(100, 2))
         expected_multiplier = DM_MATRIX[0.5][2]
-        assert diversification_multiplier(close_prices, period=100) == expected_multiplier
+        assert (
+            diversification_multiplier(close_prices, period=100) == expected_multiplier
+        )
 
     # Tests that the function returns 1 for a 2D numpy array of close prices with only 1 asset
     def test_diversification_multiplier_one_asset(self):

@@ -20,6 +20,7 @@ Created on Sat Aug 05 22:39:50 2023
 import inspect
 import itertools
 import logging
+import pandas as pd
 
 from abc import ABC, abstractmethod
 from collections import OrderedDict
@@ -1094,9 +1095,18 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     def run(
         self, *inputs: tuple[np.ndarray]
     ) -> np.ndarray | tuple[np.ndarray, ...]:  # type: ignore
+        logger.debug("provided data is in format %s", type(inputs))
+        if type(inputs[0]) in (np.ndarray, pd.Series, pd.DataFrame):
+            logger.debug("shape of data: %s", inputs[0].shape)
+
+        # run indicator for one-dimensional array
         if isinstance(inputs[0], np.ndarray) and inputs[0].ndim == 1:  # ignore:type
             return talib_func(*inputs, **self._parameters)  # type: ignore
 
+        # run indicator for two-dimensional array
+        # NOTE: This code is not yet fully implemented, and the commented
+        #       block does not work as it is! This will be necessary for
+        #       running an idicator for multiple assets at once.
         if isinstance(inputs[0], np.ndarray) and inputs[0].ndim == 2:
             raise NotImplementedError()
 

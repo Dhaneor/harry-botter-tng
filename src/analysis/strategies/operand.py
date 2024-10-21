@@ -14,7 +14,7 @@ TODO:   move the functionality from FixedIndicator back into OperandTrigger?!
 
 classes:
     PriceSeries
-        enums for different preice series
+        enums for different price series
 
     OperandType
         enums for different operand types
@@ -299,16 +299,6 @@ class OperandIndicator(Operand):
             level="operand",
         )
 
-        # return ind.PlotDescription(
-        #     label=self.display_name,
-        #     is_subplot=any(arg.is_subplot for arg in self.indicators),
-        #     lines=lines,
-        #     triggers=desc.triggers,
-        #     channel=desc.channel,
-        #     hist=desc.hist,
-        #     level="operand",
-        # )
-
     # ..........................................................................
     def update_parameters(self, params: dict[str, tp.Parameters]) -> None:
         """Update the parameters for the indicator(s).
@@ -452,7 +442,7 @@ class OperandIndicator(Operand):
         else:
             logger.error("Indicator did not return an array or tuple of arrays")
             raise ValueError(
-                f"Indicator {indicator_.name} did not return an array or tuple of arrays"
+                f"Indicator {indicator_.name} did not return an array/tuple of arrays"
             )
 
         # return name of relevant key that was added to the data dict
@@ -728,7 +718,9 @@ class OperandTrigger(Operand):
                     indicator.parameters = params[k]
                     post_init = True
                 else:
-                    logger.warning("... %s not relevant for %s", k, indicator.unique_name)
+                    logger.warning(
+                        "... %s not relevant for %s", k, indicator.unique_name
+                        )
 
         if post_init:
             self.__post_init__()

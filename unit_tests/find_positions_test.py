@@ -49,11 +49,11 @@ from src.backtest import result_stats as rs  # noqa: E402, F401
 symbol = "ETH-USDT"
 interval = "1d"
 
-start = 'January 01, 2019 00:00:00'
+start = -3000  # 'January 01, 2019 00:00:00'
 end = 'now UTC'
 
-strategy = s_kama_cross
-risk_level = 4
+strategy = s_breakout
+risk_level = 3
 initial_capital = 1_000 if symbol.endswith('USDT') else 0.1
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -149,7 +149,7 @@ def run(data, show=False, plot=False):
         chart = BacktestChart(
             df=df,  # df[200:],
             title=f'{symbol} ({interval})',
-            color_scheme='day'
+            color_scheme='night'
         )
         chart.draw()
 

@@ -28,12 +28,12 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # -----------------------------------------------------------------------------
 
-from src.analysis.strategies.definitions import Breakout  # noqa: E402, F401
+from src.analysis.strategies.definitions import breakout  # noqa: E402, F401
 from src.staff.hermes import Hermes  # noqa: E402, F401
 from analysis.strategies.exit_order_strategies import *  # noqa: E402, F401, F403
 
 h = Hermes(exchange='kucoin', mode='live')
-s = Breakout()
+s = breakout()
 s.symbol = 'BTC-USDT'
 s.interval = '1d'
 
