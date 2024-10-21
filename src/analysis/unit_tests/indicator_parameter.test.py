@@ -86,6 +86,18 @@ class TestParameter(unittest.TestCase):
         self.assertEqual(param.hard_min, 7)
         self.assertEqual(param.hard_max, 15)
 
+    def test_set_space(self):
+        param = Parameter(
+            name="TestParameterWithHardLimits",
+            initial_value=10,
+            _value=10,
+            hard_min=7,
+            hard_max=15,
+            step=1
+        )
+        with self.assertRaises(PermissionError):
+            param.space = (5, 20, 2)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -15,14 +15,15 @@ Created on Sat Aug 05 22:39:50 2023
 """
 import logging
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import (
     Literal,
-    Sequence,
     Union,
     Dict,
+    Tuple,
     Optional,
     Iterable,
+    Any
 )
 from talib import MA_Type
 
@@ -72,7 +73,7 @@ class Parameter(Iterable):
 
     _value: float | int | bool
     _enforce_int: bool = False
-    _space: Sequence[float | int | bool | str] = field(default_factory=list)
+    # _space: Sequence[float | int | bool | str] = field(default_factory=list)
 
     step: float | int = 1
 
@@ -136,62 +137,23 @@ class Parameter(Iterable):
             )
 
         self._value = self._validate(value)
+        logger.info(f"Set parameter {self.name} to {value}")
 
     @property
-    def space(self) -> Sequence[float | int | bool]:
-        """Parameter space property."""
-        if self.hard_min and self.hard_max:
-            return self.hard_min, self.hard_max, self.step
-
-        return self._space
+    def space(self) -> Tuple[float | int | bool]:
+        """Parameter space property. Setting not allowed after init."""
+        return self.hard_min, self.hard_max, self.step
 
     @space.setter
-    def space(self, space: Sequence[float | int]) -> None:
+    def space(self, space: Any) -> None:
         """Sets the parameter space.
 
         Raises
         ------
-        TypeError
-            if space is not a Sequence.
-        ValueError
-            if requested minimum > requested maximum
-        ValueError
-            if space does not contain 2 or 3 values.
-        ValueError
-            if space[0] < hard_min.
-        ValueError
-            if space[1] > hard_max.
+        PermissionError
+            if an attempt is made to change the parameter space.
         """
-        # check that we have a sequence
-        if not isinstance(space, Sequence):
-            raise TypeError(
-                f"invalid type for parameter space {self.name}: {type(space)}"
-            )
-
-        # check that we have 2 or 3 values
-        if not (2 <= len(space) <= 3):
-            raise ValueError(
-                f"parameter space must contain 2 or 3 values, not {len(space)}"
-            )
-
-        # check that minimum < maximum
-        if space[0] > space[1]:
-            raise ValueError(f"parameter space minimum {space[0]} > maximum {space[1]}")
-
-        # check against hard minimum and maximum
-        if self.hard_min is not None and space[0] < self.hard_min:
-            raise ValueError(
-                f"parameter space minimum {space[0]} < hard minimum {self.hard_min}"
-            )
-
-        if self.hard_max is not None and space[1] > self.hard_max:
-            raise ValueError(
-                f"parameter space maximum {space[1]} > hard maximum {self.hard_max}"
-            )
-
-        self.hard_min = self._validate(space[0])
-        self.hard_max = self._validate(space[1])
-        self.step = self._validate(space[2]) if len(space) == 3 else 1
+        raise PermissionError("Changing the parameter space is not allowed.")
 
     def _validate(self, value):
         """Validates requested values for parameter.
