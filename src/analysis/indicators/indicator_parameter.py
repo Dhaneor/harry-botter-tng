@@ -1,17 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Provides a factory for different indicators for Technical Analysis.
+Provides a class to define/manage parameters for indicators.
+
+
 
 classes:
-    Indicator
-        Base class for all technical indicators.
-    FixedIndicator
-        Wrapper for fixed values to appear as indicator.
-
-Functions:
-    factory
-        Factory function for Indicator objects.
+    Parameter
+        parameter class
 
 Created on Sat Aug 05 22:39:50 2023
 
@@ -58,9 +54,8 @@ class Parameter(Iterable):
     When changing the parameter space, some more checks are applied:
 
     - if the value is outside the hard limits for the parameter space
-    (which - hopefully - were set during the instantiation of the
-    indicator class using this class), it is set to the closest valid
-    value
+    (which were set during the instantiation of the indicator class using
+    this class), it is set to the closest valid value
     - if the minimum is greater than the maximum, an exception is raised
 
     All of this is done to prevent sloppy humans (like me) from setting
@@ -71,27 +66,21 @@ class Parameter(Iterable):
     """
 
     name: str
-    initial_value = float | int | bool
+    initial_value: float | int | bool
+    hard_min: Optional[float | int | bool]
+    hard_max: Optional[float | int | bool]
 
     _value: float | int | bool
-
-    min_: float | int | bool
-    max_: float | int | bool
-    step: float | int = 1
-    no_of_steps: int = 20
-
-    hard_min: Optional[float | int | bool] = None
-    hard_max: Optional[float | int | bool] = None
-
     _enforce_int: bool = False
-
     _space: Sequence[float | int | bool | str] = field(default_factory=list)
+
+    step: float | int = 1
 
     def __str__(self):
         return f"Parameter {self.name} -> {self.value}"
 
     def __iter__(self):
-        return iter(range(self.min_, self.max_ + 1, self.step))
+        return iter(range(self.hard_min, self.hard_max + 1, self.step))
 
     def __post_init__(self):
         for elem in ("period", "lookback", "type"):
@@ -101,12 +90,10 @@ class Parameter(Iterable):
 
         if self.hard_min is not None:
             self.hard_min = self._validate(self.hard_min)
-            self.min_ = self.hard_min
         if self.hard_max is not None:
             self.hard_max = self._validate(self.hard_max)
-            self.max_ = self.hard_max
 
-        self._space = self.min_, self.max_, self.step
+        self._space = self.hard_min, self.hard_max, self.step
 
     @property
     def value(self) -> float | int | bool:
@@ -124,7 +111,7 @@ class Parameter(Iterable):
         TypeError
             if type of value is incompatible with current value
         ValueError
-            if value is not in the parameter space.
+            if value is not in the allowed parameter space.
         """
         if not isinstance(value, (float, int, bool, str)):
             raise TypeError(f"invalid type for parameter {self.name}: {type(value)}")
@@ -153,8 +140,8 @@ class Parameter(Iterable):
     @property
     def space(self) -> Sequence[float | int | bool]:
         """Parameter space property."""
-        if self.min_ and self.max_:
-            return self.min_, self.max_, self.step
+        if self.hard_min and self.hard_max:
+            return self.hard_min, self.hard_max, self.step
 
         return self._space
 
@@ -167,13 +154,13 @@ class Parameter(Iterable):
         TypeError
             if space is not a Sequence.
         ValueError
+            if requested minimum > requested maximum
+        ValueError
             if space does not contain 2 or 3 values.
         ValueError
             if space[0] < hard_min.
         ValueError
             if space[1] > hard_max.
-        ValueError
-            if requested minimum > requested maximum
         """
         # check that we have a sequence
         if not isinstance(space, Sequence):
@@ -187,6 +174,10 @@ class Parameter(Iterable):
                 f"parameter space must contain 2 or 3 values, not {len(space)}"
             )
 
+        # check that minimum < maximum
+        if space[0] > space[1]:
+            raise ValueError(f"parameter space minimum {space[0]} > maximum {space[1]}")
+
         # check against hard minimum and maximum
         if self.hard_min is not None and space[0] < self.hard_min:
             raise ValueError(
@@ -198,12 +189,8 @@ class Parameter(Iterable):
                 f"parameter space maximum {space[1]} > hard maximum {self.hard_max}"
             )
 
-        # check that minimum < maximum
-        if space[0] > space[1]:
-            raise ValueError(f"parameter space minimum {space[0]} > maximum {space[1]}")
-
-        self.min_ = self._validate(space[0])
-        self.max_ = self._validate(space[1])
+        self.hard_min = self._validate(space[0])
+        self.hard_max = self._validate(space[1])
         self.step = self._validate(space[2]) if len(space) == 3 else 1
 
     def _validate(self, value):
@@ -211,40 +198,25 @@ class Parameter(Iterable):
 
         Raises
         ------
+        TypeError
+            if the type of the value does not match the expected type
         ValueError
             if negative values for a timeperiod a requested
         ValueError
             if negative values for categorical parameters are requested
         """
-        # if the value for this parameter is a string, make sure we got a valid string
+        # make sure the value we got has the correct type
+        if not isinstance(value, type(self._value)):
+            raise TypeError(
+                f"invalid type for parameter {self.name}: {type(value)}"
+                f" should be the same as {type(self._value)}"
+            )
+
         if isinstance(self._value, str):
-            if not isinstance(value, str):
-                raise TypeError(
-                    f"expected string for parameter {self.name}, but got: {type(value)}"
-                )
-            if len(value) > 50:
-                logger.warning(
-                    "Value for parameter %s is too long (%s), cutting off the rest",
-                    self.name, value
-                    )
-                value = value[:50]
-            return value
+            return self._validate_string(value)
 
-        # some values just can't be floats, flag is set in __post_init__
-        value = int(round(value)) if self._enforce_int else value
-
-        # timeperiods can't be 0 or negative
-        if "period" in self.name and value == 0:
-            logger.warning("%s == 0 does not make sense, setting to 1" % self.name)
-            value = 1
-        if "period" in self.name and value < 0:
-            raise ValueError("%s cannot be negative, but was %s" % (self.name, value))
-
-        # ... neither can anything type-like be negative
-        if "type" in self.name and value < 0:
-            raise ValueError("type cannot be negative, but was %s" % value)
-
-        return value
+        if isinstance(self._value, (int, float)):
+            return self._validate_numerical_value(value)
 
     def _validate_string(self, value):
         """Validates a string value
@@ -256,10 +228,28 @@ class Parameter(Iterable):
         """
         if not isinstance(value, str):
             raise TypeError(
-                f"exepcted string for parameter {self.name}, but got: {type(value)}"
+                f"expected string for parameter {self.name}, but got: {type(value)}"
             )
+        if len(value) > 50:
+            logger.warning(
+                "Value for parameter %s is too long (%s), cutting off the rest",
+                self.name, value
+                )
+            value = value[:50]
+        return value
+
+    def _validate_numerical_value(self, value):
+        # some values just can't be floats, flag is set in __post_init__
+        value = int(round(value)) if self._enforce_int else value
+
+        # timeperiods can't be 0 or negative
+        if "period" in self.name and value == 0:
+            logger.warning("%s == 0 does not make sense, setting to 1" % self.name)
+            value = 1
+        if "period" in self.name and value < 0:
+            raise ValueError("%s cannot be negative, but was %s" % (self.name, value))
 
         return value
 
     def _get_steps(self):
-        return range(self.min_, self.max_ + 1, self.step)
+        return range(self.hard_min, self.hard_max + 1, self.step)
