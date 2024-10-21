@@ -9,11 +9,11 @@ import sys
 import os
 import pandas as pd
 
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 
 from src.staff.hermes import Hermes  # noqa: E402, F401
 from src.broker.models.symbol import Symbol  # noqa: E402, F401
@@ -22,7 +22,7 @@ from src.broker.models.symbol import Symbol  # noqa: E402, F401
 hermes = Hermes(exchange='binance', verbose=True)
 
 
-# ------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
 def get_sample_data(length: int, interval: str = '15min') -> dict:
     df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
     df.drop(
