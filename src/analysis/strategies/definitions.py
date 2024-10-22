@@ -107,16 +107,16 @@ trix = sg.SignalsDefinition(
     ],
 )
 
-linreg_timeperiod = 24
+linreg_timeperiod = 20
 
 linreg = sg.SignalsDefinition(
-    name=f"Linear Regression Slope {timeperiod}",
+    name=f"Linear Regression Slope {linreg_timeperiod}",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
             operand_a=(
                 "linearreg_slope",
-                "close",  # ("trix", {"timeperiod": 3}),
+                "close",
                 {"timeperiod": linreg_timeperiod},
             ),
             operand_b=(
@@ -269,10 +269,10 @@ s_linreg = sb.StrategyDefinition(
     interval="1d",
     sub_strategies=[
         sb.StrategyDefinition(
-            strategy="trix",
+            strategy="Linear Regression",
             symbol="ETHUSDT",
             interval="1d",
-            signals_definition=trix,
+            signals_definition=linreg,
             weight=1,
         ),
     ]

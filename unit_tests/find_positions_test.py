@@ -41,7 +41,8 @@ from src.analysis import strategy_builder as sb  # noqa: E402, F401
 from src.analysis.util import find_positions as fp  # noqa: E402, F401
 from src.analysis import strategy_backtest as bt  # noqa: E402, F401
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
-    contra_1, trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross
+    contra_1, trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross,
+    s_linreg,
 )
 from src.plotting.minerva import BacktestChart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
@@ -49,11 +50,11 @@ from src.backtest import result_stats as rs  # noqa: E402, F401
 symbol = "BTC-USDT"
 interval = "1d"
 
-start = 'July 01, 2020 00:00:00'
+start = -1000  # 'July 01, 2020 00:00:00'
 end = 'now UTC'
 
-strategy = s_breakout
-risk_level = 2
+strategy = s_linreg
+risk_level = 3
 initial_capital = 1_000 if symbol.endswith('USDT') else 0.1
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -164,11 +165,9 @@ def test_find_positions(data: dict):
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == '__main__':
-    data = _get_ohlcv_from_db()
-    # strategy.speak(data)
-    # fp.merge_signals(data)
-    run(data, True, True)
-    # test_find_positions(data)
+    logger.info("Starting backtest...")
+    logger.info(strategy)
+    run(_get_ohlcv_from_db(), True, True)
 
     # ..........................................................................
     sys.exit()
@@ -203,5 +202,5 @@ if __name__ == '__main__':
     #     test_strategy_run(s, False)
 
     et = time.perf_counter()
-    print(f'length data: {len(data["close"])} periods')
+    print(f'length data: {len(data_pre[0]["close"])} periods')
     print(f"execution time: {((et - st)*1_000_000/runs):.2f} microseconds")

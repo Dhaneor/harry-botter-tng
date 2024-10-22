@@ -91,11 +91,11 @@ defs = {
             "slowd_matype": 0,
         },
         "plot_desc": indicator.PlotDescription(
-            label='stoch_5_3_0_3_0',
+            label='stoch_14_5_0_5_0',
             is_subplot=True,
             lines=[
-                ('stoch_5_3_0_3_0_slowk', 'Dashed Line'),
-                ('stoch_5_3_0_3_0_slowd', 'Dashed Line')
+                ('stoch_14_5_0_5_0_slowk', 'Dashed Line'),
+                ('stoch_14_5_0_5_0_slowd', 'Dashed Line')
             ],
             triggers=[],
             channel=[],
@@ -112,11 +112,11 @@ defs = {
             "matype": 0,
         },
         "plot_desc": indicator.PlotDescription(
-            label='bbands_20_2_2_0',
+            label='bbands_20_2.0_2.0_0',
             is_subplot=False,
-            lines=[('bbands_20_2_2_0_middleband', 'Line')],
+            lines=[('bbands_20_2.0_2.0_0_middleband', 'Line')],
             triggers=[],
-            channel=['bbands_20_2_2_0_upperband', 'bbands_20_2_2_0_lowerband'],
+            channel=['bbands_20_2.0_2.0_0_upperband', 'bbands_20_2.0_2.0_0_lowerband'],
             hist=[],
             level='indicator'
         )
@@ -200,9 +200,7 @@ def test_set_indicator_parameters():
             indicator_name=cand, params=defs[cand]['params'], source=defs[cand]['src']
         )
 
-        params = defs[cand].get('params')
-
-        if params:
+        if params := defs[cand].get('params'):
             for k, v in params.items():
                 logger.info("setting parameter %s for %s -> %s", k, i, v * 2)
                 i.parameters = {k: v * 2}
@@ -357,9 +355,10 @@ def test_parameter_iter():
 if __name__ == '__main__':
     # test_set_indicator_parameters()
 
-    test_parameter_space()
+    # test_parameter_space()
     # test_parameter_iter()
-    sys.exit()
+    # test_plot_desc()
+    # sys.exit()
 
     # arr, res = test_is_above()
 
@@ -368,7 +367,7 @@ if __name__ == '__main__':
     #     show=False
     # )
 
-    ind = test_indicator_factory('LINEARREG_SLOPE', show=False)
+    ind = test_indicator_factory('LINEARREG_SLOPE', params= {'timeperiod': 20}, show=True)
 
     # ind = test_indicator_factory('SMA', {'timeperiod': 20}, show=False)
 

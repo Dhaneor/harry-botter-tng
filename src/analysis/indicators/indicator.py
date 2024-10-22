@@ -37,9 +37,9 @@ from typing import (
     Dict,
     Any
 )
-from talib import MA_Type
+from talib import MA_Type, abstract
 
-from indicator_parameter import Parameter
+from .indicator_parameter import Parameter
 from ..util import proj_types as tp
 
 logger = logging.getLogger("main.indicator")

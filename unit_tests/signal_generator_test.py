@@ -99,7 +99,7 @@ def test_signal_definition(show=False):
                 {"timeperiod": timeperiod},
             ),
             operand_b={'oversold': -150},
-            trigger=cn.COMPARISON.CROSSED_ABOVE,
+            open_long=cn.COMPARISON.CROSSED_ABOVE,
         )
 
         open_short = cn.ConditionDefinition(
@@ -109,7 +109,7 @@ def test_signal_definition(show=False):
                 {"timeperiod": timeperiod},
             ),
             operand_b={'overbought': 150},
-            trigger=cn.COMPARISON.CROSSED_BELOW,
+            open_short=cn.COMPARISON.CROSSED_BELOW,
         )
         success = True
     except TypeError as e:
@@ -123,11 +123,11 @@ def test_signal_definition(show=False):
 
     if success:
         sig_def = sg.SignalsDefinition(
-            open_long=open_long,
-            open_short=open_short,
-            close_long=None,
-            close_short=None,
-            reverse=False,
+            name='test name',
+            conditions=[
+                open_long,
+                open_short,
+            ],
         )
 
         if show:
@@ -139,9 +139,13 @@ def test_signal_definition(show=False):
 
 def test_factory(sig_def):
     try:
-        return sg.factory(sig_def)
+        sig_gen = sg.factory(sig_def)
     except Exception as exc:
         logger.exception(exc)
+
+    logger.info("created signal generator: %s", sig_gen)
+    logger.info("plot description: %s", sig_gen.plot_desc)
+    return sig_gen
 
 
 def test_execute(sig_gen, data, weight, show=False, plot=False):
@@ -150,8 +154,9 @@ def test_execute(sig_gen, data, weight, show=False, plot=False):
             logger.debug("signal key '%s' not in data", key)
             data[key] = np.zeros(data['open'].shape)
 
-    for _ in range(1):
-        sig_gen.execute(data, weight)
+    sig_gen.execute(data, weight)
+    logger.info(sig_gen)
+    logger.info(sig_gen.plot_desc)
 
     if show:
         print(list(data.keys()))
@@ -342,15 +347,16 @@ def test_plot_desc(sig_gen):
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-
-    # test_indicators()
+    # test_signal_definition(True)
 
     sig_gen = test_factory(linreg)
+    test_plot_desc(sig_gen)
+
+    # sys.exit()
 
     if not sig_gen:
         sys.exit()
 
-    print(sig_gen)
     # test_plot_desc(sig_gen)
     test_execute(sig_gen, data, 1, True, True)
     # test_returns(sig_gen, data, True)

@@ -24,7 +24,7 @@ def _calculate_capital(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[from_, 'cptl.b'] = df.at[from_, 'b.value']
     df.loc[(df['sell'] == True), 'cptl.b'] = df['b.value']
     df.loc[(df['buy'] == True), 'cptl.b'] = df['b.value']
-    df['cptl.b'].ffill(inplace=True)
+    df['cptl.b'] = df['cptl.b'].ffill()
 
     return df
 
