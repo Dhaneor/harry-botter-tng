@@ -319,7 +319,9 @@ def plot(data: pd.DataFrame | tp.Data, p_def: PlotDefinition):
     _draw_signal(fig, data)
 
     if no_of_subplots:
+
         for row, sub in enumerate(p_def.sub, 1):
+            logger.info("drawing subplot: %s", sub)
             fig = _draw_indicator(fig, data, sub, row)
 
     _update_layout(fig, no_of_subplots + 1)

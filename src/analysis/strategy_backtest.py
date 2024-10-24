@@ -23,7 +23,7 @@ trade_costs = 0.002
 
 
 # ======================================================================================
-@jit(nopython=True, cache=True)
+# @jit(nopython=True, cache=True)
 def calculate_trades_nb(close: np.ndarray, position: np.ndarray,
                         buy_at: np.ndarray, sell_at: np.ndarray,
                         buy_size: np.ndarray, sell_size: np.ndarray,
@@ -134,7 +134,7 @@ def process_short_position(b_base: np.ndarray, b_quote: np.ndarray,
         b_base[i] = 0
         return b_base, b_quote
 
-    # increase/decrease LONG position if necessary
+    # increase/decrease SHORT position if necessary
     if i > 0 and continuous == 1 and not sell_at[i] > 0:
         target_exposure = (b_quote[i] + b_base[i] * close[i - 1]) * leverage[i]
         target_size = (target_exposure / close[i - 1]) * -1
@@ -200,7 +200,8 @@ def run(strategy: IStrategy, data: tp.Data, initial_capital: float, risk_level: 
 
     # add leverage
     data["leverage"] = max_leverage(data, risk_level)
-    data["leverage"] = np.clip(data["leverage"], 0, 3)
+    data["leverage"] = np.clip(data["leverage"], 0, 2)
+    # data['leverage'] = np.full_like(data['close'], 1, dtype=np.float64)
 
     # calculate the actual trades
     calculate_trades(data, initial_capital)

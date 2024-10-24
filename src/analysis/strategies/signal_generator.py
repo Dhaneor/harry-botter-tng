@@ -146,6 +146,10 @@ class SignalGenerator:
     def indicators(self) -> tuple[Indicator]:
         """Get the indicator(s) used by the signal generator.
 
+        This method should return a tuple of Indicator objects that are
+        used in the conditions used by this SignalGenerator instance. It
+        is used to optimize a the strategy that uses this SignalGenerator.
+
         Returns
         -------
         tuple[cnd.Indicator]
@@ -189,6 +193,7 @@ class SignalGenerator:
         # add all definitions that belong together, some of those will
         # still be duplicates
         for p_desc in sub_with_duplicates:
+            logger.info(f"Combining PlotDescription: {p_desc}")
             sub.append(sum(p for p in sub_with_duplicates if p.label == p_desc.label))
 
         # remove duplicates from the result

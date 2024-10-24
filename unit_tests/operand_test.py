@@ -266,40 +266,40 @@ def test_update_parameters():
 if __name__ == "__main__":
     test_operand_factory()
     # test_update_parameters()
-    sys.exit()
+    # sys.exit()
 
     operand = op.operand_factory(op_defs.get('sma').get('def'))
-    # operand = op.operand_factory(op_defs.get('sma_of_rsi').get('def'))
-    # operand = op.operand_factory(
-    #     ("ema", ("trix", {"timeperiod": 7},), {"timeperiod": 9})
-    # )
+    operand = op.operand_factory(op_defs.get('sma_of_rsi').get('def'))
+    operand = op.operand_factory(
+        ("ema", ("trix", {"timeperiod": 7},), {"timeperiod": 9})
+    )
 
-    # operand.update_parameters(
-    #     {
-    #         'rsi_overbought_80.5': {
-    #             'value': 90,
-    #             'this_is_wrong': 'wrongest',
-    #             'parameter_space': {'value': [80, 100]}
-    #         },
-    #     }
-    # )
-    # operand.update_parameters({'sma_10': {'timeperiod': 35}})
-    # logger.debug('before: %s', operand)
-    # operand.update_parameters({operand.unique_name: {'timeperiod': 129}})
-    # logger.debug('after: %s', operand)
+    operand.update_parameters(
+        {
+            'rsi_overbought_80.5': {
+                'value': 90,
+                'this_is_wrong': 'wrongest',
+                'parameter_space': {'value': [80, 100]}
+            },
+        }
+    )
+    operand.update_parameters({'sma_10': {'timeperiod': 35}})
+    logger.debug('before: %s', operand)
+    operand.update_parameters({operand.unique_name: {'timeperiod': 129}})
+    logger.debug('after: %s', operand)
 
-    # operand.run(data)
+    operand.run(data)
 
-    # print('-~•~-' * 40)
-    # print("indicator:")
-    # pprint(operand.indicator.plot_desc)
-    # print('-~•~-' * 40)
-    # print("operand:")
-    # pprint(operand.as_dict())
-    # # print(operand.indicator.unique_output)
-    # print('-~•~-' * 40)
-    # print("plot description:")
-    # pprint(operand.plot_desc)
+    print('-~•~-' * 40)
+    print("indicator:")
+    pprint(operand.indicator.plot_desc)
+    print('-~•~-' * 40)
+    print("operand:")
+    pprint(operand.as_dict())
+    # print(operand.indicator.unique_output)
+    print('-~•~-' * 40)
+    print("plot description:")
+    pprint(operand.plot_desc)
 
     # sys.exit()
 

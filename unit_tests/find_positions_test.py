@@ -47,15 +47,15 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 from src.plotting.minerva import BacktestChart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
 
-symbol = "BTC-USDT"
+symbol = "BTCUSDT"
 interval = "1d"
 
-start = -1000  # 'July 01, 2020 00:00:00'
+start = -730  # 'July 01, 2020 00:00:00'
 end = 'now UTC'
 
 strategy = s_linreg
 risk_level = 3
-initial_capital = 1_000 if symbol.endswith('USDT') else 0.1
+initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
 strategy = sb.build_strategy(strategy)
@@ -150,7 +150,7 @@ def run(data, show=False, plot=False):
         chart = BacktestChart(
             df=df,  # df[200:],
             title=f'{symbol} ({interval})',
-            color_scheme='night'
+            color_scheme='day'
         )
         chart.draw()
 
@@ -175,11 +175,6 @@ if __name__ == '__main__':
     logger.setLevel(logging.ERROR)
     runs = 1_000
     data_pre = [_get_ohlcv_from_db() for _ in range(runs)]
-
-    # for elem in data_pre:
-    #     strategy.speak(elem)
-    #     fp.merge_signals(elem)
-
     st = time.perf_counter()
 
     for i in range(runs):

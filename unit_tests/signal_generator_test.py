@@ -30,7 +30,7 @@ sys.path.append(parent)
 from src.analysis.strategies import signal_generator as sg  # noqa: E402
 from src.analysis.strategies import condition as cn  # noqa: E402
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
-    cci, ema_cross, tema_cross, rsi, trix, breakout, linreg
+    cci, ema_cross, tema_cross, rsi, trix, breakout, linreg_roc
 )
 from src.analysis.strategies import strategy_plot as sp  # noqa: E402
 from helpers_ import get_sample_data, get_ohlcv  # noqa: E402, F401
@@ -48,7 +48,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # set interval and length of test data
-interval = "1d"
+interval = "12h"
 length = 1500
 
 # ======================================================================================
@@ -329,14 +329,17 @@ def test_returns(sig_gen: sg.SignalGenerator, data, show=False):
         print(df1.tail(25))
 
 
-def test_indicators():
+def test_get_all_used_indicators():
     sig_gen = test_factory(tema_cross)
 
-    print(sig_gen.indicators)
+    logger.debug(sig_gen.indicators)
 
-    for ind in sig_gen.indicators:
-        # print(ind)
-        print(f"{ind} -> {ind.parameters} -> {ind.parameter_space}")
+    for n, ind in enumerate(sig_gen.indicators):
+        logger.debug(
+            "[%s] %s-> %s -> %s (%s)",
+            n, ind, ind.parameters, ind._parameter_space, type(ind)
+            )
+        logger.debug(ind.__dict__)
 
 
 def test_plot_desc(sig_gen):
@@ -347,12 +350,14 @@ def test_plot_desc(sig_gen):
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
+    sig_gen = None
+
     # test_signal_definition(True)
 
-    sig_gen = test_factory(linreg)
-    test_plot_desc(sig_gen)
+    # sig_gen = test_factory(linreg_roc)
+    # test_plot_desc(sig_gen)
 
-    # sys.exit()
+    test_get_all_used_indicators()
 
     if not sig_gen:
         sys.exit()

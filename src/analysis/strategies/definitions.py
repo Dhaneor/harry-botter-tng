@@ -107,28 +107,54 @@ trix = sg.SignalsDefinition(
     ],
 )
 
-linreg_timeperiod = 20
+linreg_timeperiod = 60
 
-linreg = sg.SignalsDefinition(
-    name=f"Linear Regression Slope {linreg_timeperiod}",
+linreg_roc = sg.SignalsDefinition(
+    name=f"Linear Regression ROC {linreg_timeperiod}",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
             operand_a=(
-                "linearreg_slope",
-                "close",
-                {"timeperiod": linreg_timeperiod},
+                "roc",
+                ("linearreg", "close", {"timeperiod": linreg_timeperiod}),
+                {"timeperiod": 1},
             ),
             operand_b=(
-                "slope",
+                "value",
                 0,
                 {"parameter_space": {"trigger": [-10, 10, 1]}},
-                ),
-            open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
-            open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+            ),
+            open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
         ),
     ],
 )
+
+# linreg = sg.SignalsDefinition(
+#     name=f"Linear Regression Slope {linreg_timeperiod}",
+#     conditions=[
+#         cn.ConditionDefinition(
+#             interval="1d",
+#             operand_a=(
+#                 "linearreg_slope",
+#                 "close",
+#                 {"timeperiod": linreg_timeperiod},
+#             ),
+#             operand_b=(
+#                 "slope",
+#                 0,
+#                 {"parameter_space": {"trigger": [-10, 10, 1]}},
+#                 ),
+#             operand_c=(
+#                 "linearreg",
+#                 "close",
+#                 {"timeperiod": linreg_timeperiod},
+#             ),
+#             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
+#             open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+#         ),
+#     ],
+# )
 
 
 timeperiod = randint(30, 50)
@@ -264,7 +290,7 @@ s_trix = sb.StrategyDefinition(
 )
 
 s_linreg = sb.StrategyDefinition(
-    strategy="Linear Regression",
+    strategy="Linear Regression (ROC)",
     symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
     interval="1d",
     sub_strategies=[
@@ -272,7 +298,7 @@ s_linreg = sb.StrategyDefinition(
             strategy="Linear Regression",
             symbol="ETHUSDT",
             interval="1d",
-            signals_definition=linreg,
+            signals_definition=linreg_roc,
             weight=1,
         ),
     ]

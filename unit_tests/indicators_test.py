@@ -367,7 +367,9 @@ if __name__ == '__main__':
     #     show=False
     # )
 
-    ind = test_indicator_factory('LINEARREG_SLOPE', params= {'timeperiod': 20}, show=True)
+    ind = test_indicator_factory(
+        'LINEARREG', params={'timeperiod': 20}, show=True
+        )
 
     # ind = test_indicator_factory('SMA', {'timeperiod': 20}, show=False)
 
@@ -382,10 +384,10 @@ if __name__ == '__main__':
 
     # ind.parameters = {'value': 80, 'parameter_space': [40, 70]}
 
-    # print(ind.help())
+    print(ind.help())
 
     # print(ind)
-    pprint(ind.__dict__)
+    # pprint(ind.__dict__)
     # print(ind.unique_output)
     print(ind.plot_desc)
 
