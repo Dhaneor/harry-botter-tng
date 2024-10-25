@@ -29,7 +29,7 @@ from talib import MA_Type
 
 
 logger = logging.getLogger("main.parameter")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 Params = Dict[str, Union[str, float, int, bool]]
 IndicatorSource = Literal["talib", "nb"]
@@ -70,11 +70,9 @@ class Parameter(Iterable):
     initial_value: float | int | bool
     hard_min: float | int | bool
     hard_max: float | int | bool
-
+    step: Optional[float | int]
     _value: float | int = None
     _enforce_int: bool = False
-
-    step: Optional[float | int] = 1
 
     def __str__(self):
         return f"Parameter {self.name} -> {self.value}"
@@ -138,17 +136,27 @@ class Parameter(Iterable):
     def _validate(self, value):
         """Validates requested values for parameter"""
         # make sure the value we got has the correct type
-        if not isinstance(value, type(self._value)):
-            raise TypeError(
-                f"invalid type for parameter {self.name}: {type(value)}"
-                f" should be the same as {type(self._value)}"
-            )
+        self.validate_type(value)
 
         if isinstance(self._value, str):
             return self._validate_string(value)
 
         if isinstance(self._value, (int, float)):
             return self._validate_numerical_value(value)
+
+    def validate_type(self, value):
+        """Validates a value based on its type.
+
+        Raises
+        ------
+        TypeError
+            if value is not of the correct type
+        """
+        if self._value is str:
+            return self._validate_string(value)
+        if isinstance(self._value, (int, float)):
+            return self._validate_numerical_value(value)
+        raise TypeError(f"invalid type for parameter {self.name}: {type(value)}")
 
     def _validate_string(self, value):
         """Validates a string value

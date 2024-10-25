@@ -50,6 +50,7 @@ def test_indicator_factory(indicator_name, params, source, expected_name):
     ]
 )
 def test_indicator_properties(indicator_name, params, source, unique_name):
+    logger.info(f"Testing {indicator_name} with params: {params} and source: {source}")
     indicator = factory(indicator_name, params=params, source=source)
 
     # check the different names
@@ -80,14 +81,17 @@ def test_indicator_properties(indicator_name, params, source, unique_name):
 @pytest.mark.parametrize(
     "indicator_name,params,source,expected_exception",
     [
-        ("SMA", {"timeperiod": -1}, "talib", ValueError),  # Example of an invalid timeperiod
+        ("SMA", {"timeperiod": 0}, "talib", ValueError),  # Example of an invalid timeperiod
+        ("SMA", {"timeperiod": 1000}, "talib", ValueError),  # Example of an invalid timeperiod
+        ("SMA", {"timeperiod": -5}, "talib", ValueError),  # Example of an invalid timeperiod
         ("EMA", {"timeperiod": "invalid"}, "talib", TypeError),  # Example of a wrong type
         ("BBANDS", {"matype": 0, "timeperiod": 5, "nbdevup": "invalid", "nbdevdn": 2}, "talib", TypeError),
-        ("ADX", {"timeperiod": None}, "talib", ValueError),  # Example of a None value
+        ("ADX", {"timeperiod": None}, "talib", TypeError),  # Example of a None value
         ("MACD", {"fastperiod": 12, "slowperiod": 26, 'signalperiod': "invalid"}, "talib", TypeError),
     ]
 )
 def test_indicator_factory_invalid_values(indicator_name, params, source, expected_exception):
+    logger.debug("Testing %s with invalid values: %s ", indicator_name, params)
     with pytest.raises(expected_exception):
         factory(indicator_name, params=params, source=source)
         logger.error(f"Test case for {indicator_name} failed.")

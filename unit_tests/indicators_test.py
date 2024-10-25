@@ -384,12 +384,12 @@ if __name__ == '__main__':
 
     # ind.parameters = {'value': 80, 'parameter_space': [40, 70]}
 
-    print(ind.help())
+    # print(ind.help())
 
     # print(ind)
     # pprint(ind.__dict__)
     # print(ind.unique_output)
-    print(ind.plot_desc)
+    # print(ind.plot_desc)
 
     # print(test_indicator_run(ind))
 

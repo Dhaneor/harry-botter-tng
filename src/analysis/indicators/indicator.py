@@ -164,6 +164,85 @@ class PlotDescription:
             return self.__add__(other)
 
 
+def get_parameter_space(param_name: str) -> dict:
+    """
+    Set the parameter space for an indicator if it's not already defined.
+
+    This function iterates through the parameters of the given indicator and sets
+    a default parameter space for each parameter that doesn't already have one.
+    The parameter space is defined as a list of [min, max, step] values, which can
+    be used for parameter optimization.
+
+    Parameters:
+    -----------
+    indicator : Indicator
+        The indicator object for which to set the parameter space.
+
+    Returns:
+    --------
+    None
+        This function modifies the indicator object in-place and
+        doesn't return anything.
+
+    Notes:
+    ------
+    The function sets different parameter spaces based on the parameter name:
+    - 'timeperiod': [2, 200, 2]
+    - 'fastperiod', 'signalperiod', 'fastk_period': [2, 100, 2]
+    - 'slowperiod', 'slowk_period': [10, 200, 2]
+    - Parameters ending with 'matype': [first MA type, last MA type, 1]
+    - Parameters starting with 'nbdev': [0.1, 4, 0.1]
+    """
+    logger.debug("   determining parameter space for %s", param_name)
+
+    # Define a dictionary to map parameter names to their spaces
+    parameter_spaces = {
+        "timeperiod": [1, 200, 2],
+        "timeperiod1": [2, 200, 2],
+        "timeperiod2": [2, 200, 2],
+        "timeperiod3": [2, 200, 2],
+        "fastperiod": [2, 100, 2],
+        "signalperiod": [2, 100, 2],
+        "fastk_period": [2, 100, 2],
+        "fastd_period": [2, 100, 2],
+        "slowperiod": [10, 200, 2],
+        "slowk_period": [10, 200, 2],
+        "slowd_period": [10, 200, 2],
+        "fastlimit": [0, 10, 1],
+        "slowlimit": [0, 10, 1],
+        "minperiod": [1, 100, 5],
+        "maxperiod": [20, 200, 5],
+        "minmovestep": [1, 10, 1],
+        "maxmovestep": [1, 10, 1],
+        "acceleration": [1, 10, 1],
+        "accelerationinitlong": [1, 10, 1],
+        "accelerationlong": [1, 10, 1],
+        "accelerationmaxlong": [1, 10, 1],
+        "accelerationinitshort": [1, 10, 1],
+        "accelerationshort": [1, 10, 1],
+        "accelerationmaxshort": [1, 10, 1],
+        "maximum": [1, 10, 1],
+        "startvalue": [1, 10, 1],
+        "offsetonreverse": [0, 1, 1],
+        "vfactor": [1, 10, 1],
+        "penetration": [0, 1, 1],
+    }
+
+    # Check for exact matches
+    if param_name in parameter_spaces:
+        return parameter_spaces[param_name]
+
+    # Check for patterns
+    if param_name.endswith("matype"):
+        ma_types = list(MA_TYPES.keys())
+        return [ma_types[0], ma_types[-1], 1]
+
+    if param_name.startswith("nbdev"):
+        return [0.1, 4, 0.1]
+
+    raise ValueError(f"No parameter space for indicator: {param_name}")
+
+
 # ======================================================================================
 #                               Indicator classes                                      #
 # ======================================================================================
@@ -308,7 +387,7 @@ class Indicator(IIndicator):
         self.output: Sequence[str]
 
         self._apply_func: Callable
-        self._parameters: dict[str, str | int | float | bool]
+        self._parameters: dict[str, Parameter]
         self._valid_params: tuple[str]
 
         self._parameter_space: dict[str, Sequence[Number]]
@@ -333,7 +412,7 @@ class Indicator(IIndicator):
         """
         return (
             f"{self.name.lower()}_"
-            f"{'_'.join((str(v) for v in self._parameters.values()))}"
+            f"{'_'.join((str(p.value) for p in self._parameters.values()))}"
         )
 
     @property
@@ -359,7 +438,7 @@ class Indicator(IIndicator):
 
     @property
     def valid_params(self) -> tuple[str]:
-        """Returns the set of valid parameters for the strategy class.
+        """Returns the set of valid parameters.
 
         These should not and can not be changed by the user/client!
 
@@ -395,7 +474,7 @@ class Indicator(IIndicator):
         Params: dict[str, str | float | int]
             the parameters for the indicator.
         """
-        return self._parameters
+        return {name: param.value for name, param in self._parameters.items()}
 
     @parameters.setter
     def parameters(self, params: Params) -> None:
@@ -404,24 +483,15 @@ class Indicator(IIndicator):
         )
 
         for k, v in params.items():
-            if k not in self.valid_params:
-                logger.warning(
-                    "invalid parameter '%s', allowed: %s", k, self.valid_params
-                )
-                continue
+            # if k not in self.valid_params:
+            #     logger.warning(
+            #         "invalid parameter '%s', allowed: %s", k, self.valid_params
+            #     )
+            #     continue
 
-            if not isinstance(v, (str, float, int)):
-                logger.warning(
-                    "invalid type for parameter '%s' (%s), allowed: " "(%s)",
-                    k,
-                    v,
-                    type(self._parameters.get(k)),
-                )
-                continue
-
-            if self._parameters[k] != params[k]:
-                logger.debug("setting parameter %s to %s", k, v)
-                self._parameters[k] = v
+            if self._parameters[k].value != v:
+                logger.debug("%s setting parameter %s to %s", self._name, k, v)
+                self._parameters[k].value = v
                 self._update_name = True
             else:
                 logger.debug("parameter %s not changed", k)
@@ -913,7 +983,7 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
 
         # run indicator for one-dimensional array
         if isinstance(inputs[0], np.ndarray) and inputs[0].ndim == 1:  # ignore:type
-            return talib_func(*inputs, **self._parameters)  # type: ignore
+            return talib_func(*inputs, **self.parameters)  # type: ignore
 
         # run indicator for two-dimensional array
         # NOTE: This code is not yet fully implemented, and the commented
@@ -958,7 +1028,16 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     ind_instance.display_name = display_name  # noqa: W0212
     ind_instance._valid_params = tuple(k for k in parameters.keys())  # noqa: W0212
     ind_instance._parameter_space = {k: [] for k in parameters.keys()}  # noqa: W0212
-    ind_instance._parameters = parameters  # noqa: W0212
+    ind_instance._parameters = {}
+    for k, v in parameters.items():
+        parameter_space = get_parameter_space(k)
+        ind_instance._parameters[k] = Parameter(
+            name=k,
+            initial_value=v,
+            hard_min=parameter_space[0],
+            hard_max=parameter_space[1],
+            step=parameter_space[2] if parameter_space[2] else 1,
+        )
 
     return ind_instance
 
@@ -1098,9 +1177,28 @@ def factory(
     else:
         raise NotImplementedError(f"Indicator source {source} not supported.")
 
+    # if params:
+    #     for k, v in params.items():
+    #         parameter_space = get_parameter_space(k)
+    #         ind_instance.parameters[k] = Parameter(
+    #             name=k,
+    #             initial_value=v,
+    #             hard_min=parameter_space[0],
+    #             hard_max=parameter_space[1],
+    #             step=parameter_space[2] if parameter_space[2] else 1,
+    #         )
+
+    logger.debug(ind_instance.__dict__)
+
     if params:
         ind_instance.parameters = params
 
-    set_parameter_space(ind_instance)
+    # if params:
+    #     for k, v in params.items():
+    #         logger.debug("setting parameter %s to %s", k, v)
+    #         p = ind_instance._parameters[k]
+    #         logger.debug(p)
+    #         if k in ind_instance.parameters:
+    #             ind_instance._parameters[k].value = v
 
     return ind_instance
