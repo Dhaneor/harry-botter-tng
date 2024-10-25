@@ -40,7 +40,6 @@ from typing import (
 from talib import MA_Type, abstract
 
 from .indicator_parameter import Parameter
-from ..util import proj_types as tp
 
 logger = logging.getLogger("main.indicator")
 logger.setLevel(logging.INFO)
@@ -536,7 +535,7 @@ class FixedIndicator(IIndicator):
     indicators), because now these behave like normal indicators.
     """
 
-    def __init__(self, name: str, value: tp.Numeric | bool) -> None:
+    def __init__(self, name: str, value: np.flexible | bool) -> None:
         """Initializes the FixedIndicator class.
 
         Parameters
@@ -553,7 +552,7 @@ class FixedIndicator(IIndicator):
         self.output: tuple[str] = (self.unique_name,)
         self.output_names: tuple[str] = (self.unique_name,)
         self._valid_params: tuple[str, ...] = "trigger", "parameter_space"
-        self._parameter_space: dict[str, Sequence[tp.Numeric]] = {}
+        self._parameter_space: dict[str, Sequence[np.flexible]] = {}
         self.input: tuple[str] = ("close",)
         self._is_subplot: bool = True
         self._plot_desc: dict = {"name": ["Line"]}
