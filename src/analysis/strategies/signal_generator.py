@@ -152,7 +152,7 @@ class SignalGenerator:
 
         Returns
         -------
-        tuple[cnd.Indicator]
+        tuple[Indicator]
             the indicator(s) used by the signal generator
         """
         return tuple(

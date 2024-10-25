@@ -66,7 +66,7 @@ kama_cross = sg.SignalsDefinition(
     ]
 )
 
-timeperiod = 20
+timeperiod = 30
 
 breakout = sg.SignalsDefinition(
     name=f"Breakout {timeperiod}",
@@ -84,7 +84,6 @@ breakout = sg.SignalsDefinition(
 
 timeperiod = 10
 linreg_timeperiod = 20
-
 
 trix = sg.SignalsDefinition(
     name=f"TRIX {timeperiod}",
@@ -158,7 +157,7 @@ linreg_roc = sg.SignalsDefinition(
 
 
 timeperiod = randint(30, 50)
-timeperiod = 12
+timeperiod = 8
 
 ema_cross = sg.SignalsDefinition(
     name=f"EMA cross {timeperiod}/{timeperiod*4}",
@@ -166,14 +165,14 @@ ema_cross = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a=("ema", {"timeperiod": timeperiod}),
-            operand_b=("ema", {"timeperiod": timeperiod * 6}),
+            operand_b=("ema", {"timeperiod": timeperiod * 4}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
     ]
 )
 
-timeperiod = 20
+timeperiod = 30
 
 tema_cross = sg.SignalsDefinition(
     name=f"TEMA cross {timeperiod}/{timeperiod*4}",

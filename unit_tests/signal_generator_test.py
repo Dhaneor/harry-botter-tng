@@ -330,7 +330,7 @@ def test_returns(sig_gen: sg.SignalGenerator, data, show=False):
 
 
 def test_get_all_used_indicators():
-    sig_gen = test_factory(tema_cross)
+    sig_gen = test_factory(cci)
 
     logger.debug(sig_gen.indicators)
 
@@ -340,6 +340,9 @@ def test_get_all_used_indicators():
             n, ind, ind.parameters, ind._parameter_space, type(ind)
             )
         logger.debug(ind.__dict__)
+        methods = [m for m in dir(ind) if '_' not in m]
+        logger.debug(methods)
+        logger.debug("-" * 160)
 
 
 def test_plot_desc(sig_gen):
