@@ -33,6 +33,8 @@ from typing import (
     Mapping,
     Literal,
     Sequence,
+    Generator,
+    Tuple,
     Union,
     Dict,
     Any
@@ -48,6 +50,7 @@ Params = Dict[str, Union[str, float, int, bool]]
 IndicatorSource = Literal["talib", "nb"]
 
 MA_TYPES = MA_Type.__dict__.get("_lookup", [])
+Combinations = Generator[Tuple[Any, ...], None, None]
 
 
 def get_all_indicator_names() -> list[str]:
@@ -187,8 +190,8 @@ def get_parameter_space(param_name: str) -> dict:
     Notes:
     ------
     The function sets different parameter spaces based on the parameter name:
-    - 'timeperiod': [2, 200, 2]
-    - 'fastperiod', 'signalperiod', 'fastk_period': [2, 100, 2]
+    - 'timeperiod': [1, 200, 5]
+    - 'fastperiod', 'signalperiod', 'fastk_period': [1, 100, 5]
     - 'slowperiod', 'slowk_period': [10, 200, 2]
     - Parameters ending with 'matype': [first MA type, last MA type, 1]
     - Parameters starting with 'nbdev': [0.1, 4, 0.1]
@@ -197,14 +200,14 @@ def get_parameter_space(param_name: str) -> dict:
 
     # Define a dictionary to map parameter names to their spaces
     parameter_spaces = {
-        "timeperiod": [1, 200, 2],
-        "timeperiod1": [2, 200, 2],
-        "timeperiod2": [2, 200, 2],
-        "timeperiod3": [2, 200, 2],
-        "fastperiod": [2, 100, 2],
-        "signalperiod": [2, 100, 2],
-        "fastk_period": [2, 100, 2],
-        "fastd_period": [2, 100, 2],
+        "timeperiod": [1, 200, 5],
+        "timeperiod1": [1, 200, 5],
+        "timeperiod2": [1, 200, 5],
+        "timeperiod3": [1, 200, 5],
+        "fastperiod": [1, 100, 5],
+        "signalperiod": [1, 100, 5],
+        "fastk_period": [1, 100, 5],
+        "fastd_period": [1, 100, 5],
         "slowperiod": [10, 200, 2],
         "slowk_period": [10, 200, 2],
         "slowd_period": [10, 200, 2],
@@ -238,7 +241,7 @@ def get_parameter_space(param_name: str) -> dict:
         return [ma_types[0], ma_types[-1], 1]
 
     if param_name.startswith("nbdev"):
-        return [0.1, 4, 0.1]
+        return [0.25, 4, 0.25]
 
     raise ValueError(f"No parameter space for indicator: {param_name}")
 
@@ -259,17 +262,16 @@ class IIndicator(ABC):
         self._plot_desc: dict
 
         self._apply_func: Callable
-        self._parameters: dict[str, str | int | float | bool] = {}
-        self._valid_params: Sequence[str] = []
-
-        self._parameter_space: dict[str, Sequence[Number]] = {}
+        self._parameters: Tuple[Parameter, ...] = ()
 
     @property
     def name(self) -> str:
         """Returns the name of the indicator."""
-        raise NotImplementedError(
-            "The name property is not implemented for this indicator."
-        )
+        return self._name
+
+    @property
+    def display_name(self) -> str:
+        return " ".join(str(x).capitalize() for x in self.unique_name.split("_"))
 
     @property
     def unique_name(self) -> str:
@@ -280,8 +282,9 @@ class IIndicator(ABC):
         str
             Unique name for the indicator.
         """
-        raise NotImplementedError(
-            "The unique_name property is not implemented for this indicator."
+        return (
+            f"{self.name.lower()}_"
+            f"{'_'.join((str(p.value) for p in self._parameters))}"
         )
 
     @property
@@ -293,8 +296,16 @@ class IIndicator(ABC):
         str
             Unique output name for the indicator.
         """
-        raise NotImplementedError(
-            "The unique_output property is not implemented for this indicator."
+        if len(self.output) == 1:
+            return (self.unique_name,)
+
+        return tuple(
+            (
+                f"{self.unique_name}_{elem}"
+                if elem.endswith("band")
+                else f"{self.unique_name}_{elem}"
+            )
+            for elem in self.output
         )
 
     @property
@@ -306,22 +317,73 @@ class IIndicator(ABC):
         tuple[str]
             List of valid parameters for the indicator.
         """
-        raise NotImplementedError(
-            "The valid_params property is not implemented for this indicator."
-        )
+        return tuple(p.name for p in self.parameters)
 
     @property
-    def parameters(self) -> Params:
-        """Returns a dictionary of parameters for the indicator.
+    def parameters(self) -> Tuple[Parameter]:
+        """Returns a tuple of parameters for the indicator.
 
         Returns
         -------
-        dict[str, str | int | float | bool]
-            Dictionary of parameters for the indicator.
+        Tuple[Parameter]
+            Parameters for the indicator.
         """
-        raise NotImplementedError(
-            "The parameters property is not implemented for this indicator."
-        )
+        return self._parameters
+
+    @parameters.setter
+    def parameters(self, params: Params) -> None:
+        logger.info("setting parameters for %s -> %s", self.name, params)
+
+        not_gonna_happen: list[tuple[str, str]] = []
+
+        for k, v in params.items():
+            if k not in self.valid_params:
+                not_gonna_happen.append((k, "unknown parameter"))
+                continue
+
+            for p in self._parameters:
+                if p.name == k:
+                    p.value = v
+
+        # log the invalid parameters
+        if not_gonna_happen:
+            for elem in not_gonna_happen:
+                logger.warning("... parameter '%s' not valid: %s", elem[0], elem[1])
+            logger.warning("... valid parameters: %s", self.valid_params)
+
+        logger.debug("..............................................................")
+
+    @property
+    def parameter_space(self) -> dict[str, Sequence[Number]]:
+        """Returns the parameter space for the indicator."""
+        return {p.name: p.space for p in self.parameters}
+
+    @parameter_space.setter
+    def parameter_space(self, update: Mapping[str, Sequence]) -> None:
+        """Updates the parameter space of the indicator.
+
+        Parameters
+        ----------
+        update:
+            Dictionary with the new parameter space.
+        """
+        if not isinstance(update, Mapping):
+            raise ValueError(f"parameter space must be a Mapping, not {type(update)}")
+
+        for param, p_space in update.items():
+            if param not in self.valid_params:
+                logger.warning(
+                    "invalid parameter '%s', allowed: %s", param, self.valid_params
+                )
+                continue
+
+            for p in self._parameters:
+                if p.name == param:
+                    p.space = p_space
+
+    @property
+    def parameter_combinations(self) -> Combinations:
+        return self._generate_combinations(self.parameters)
 
     @property
     def is_subplot(self) -> dict:
@@ -368,6 +430,20 @@ class IIndicator(ABC):
         each indicator.
         """
 
+    def _generate_combinations(self, parameters: Tuple[Parameter]) -> Combinations:
+        """Generates all possible combinations of elements from the given iterables.
+
+        Yields:
+            A tuple representing a combination of elements, one from each iterable.
+        """
+        if not parameters:
+            yield ()
+        else:
+            first, *rest = parameters
+            for item in first:
+                for combination in self._generate_combinations(rest):
+                    yield (item,) + combination
+
 
 class Indicator(IIndicator):
     """A Template used by the IndicatorFactory to create indicator objects.
@@ -380,164 +456,10 @@ class Indicator(IIndicator):
 
     def __init__(self) -> None:
         super().__init__()
-
-        self._name = self.__class__.__name__.lower()
-        self._update_name: bool
-        self.input: Sequence[str]
-        self.output: Sequence[str]
-
-        self._apply_func: Callable
-        self._parameters: dict[str, Parameter]
-        self._valid_params: tuple[str]
-
-        self._parameter_space: dict[str, Sequence[Number]]
         self._is_subplot: bool = self._name.upper() not in Indicator.not_subplot
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} - {self.parameters}"
-
-    @property
-    def name(self):
-        """Returns the name of the indicator."""
-        return self._name
-
-    @property
-    def unique_name(self) -> str:
-        """Returns a unique name for the indicator.
-
-        Returns
-        -------
-        str
-            Unique name for the indicator.
-        """
-        return (
-            f"{self.name.lower()}_"
-            f"{'_'.join((str(p.value) for p in self._parameters.values()))}"
-        )
-
-    @property
-    def unique_output(self) -> tuple[str, ...]:
-        """Returns a unique output name for the indicator.
-
-        Returns
-        -------
-        str
-            Unique output name for the indicator.
-        """
-        if len(self.output) == 1:
-            return (self.unique_name,)
-
-        return tuple(
-            (
-                f"{self.unique_name}_{elem}"
-                if elem.endswith("band")
-                else f"{self.unique_name}_{elem}"
-            )
-            for elem in self.output
-        )
-
-    @property
-    def valid_params(self) -> tuple[str]:
-        """Returns the set of valid parameters.
-
-        These should not and can not be changed by the user/client!
-
-        Returns
-        -------
-        tuple[str]
-            all valid parameters for this strategy
-        """
-        return self._valid_params
-
-    @property
-    def parameters(self) -> Params:
-        """The default parameters for the indicator.
-
-        These parameters will be used, if the run() method is called.
-
-        They can be changed by the user/client during run time by
-        providing a new dictionary with keys/values that should be
-        updated. Other keys/values remain the same. However, if keys
-        in the update dictionary are not in valid_params, they will
-        be ignored and a warning will be logged.
-
-        This means that the user/client is responsible to ensure that
-        this case is handled or prevented in the first place by
-        comparing the keys in the update dictionary to the valid_params
-        before trying to update.
-        This ensures that running analysis modules keep on running, even
-        if this situation occurs - it's just that the parameters are not
-        changed as intended by the user/client.
-
-        Returns
-        -------
-        Params: dict[str, str | float | int]
-            the parameters for the indicator.
-        """
-        return {name: param.value for name, param in self._parameters.items()}
-
-    @parameters.setter
-    def parameters(self, params: Params) -> None:
-        logger.debug(
-            "setting parameters for %s: %s -> %s", self.name, self._parameters, params
-        )
-
-        for k, v in params.items():
-            # if k not in self.valid_params:
-            #     logger.warning(
-            #         "invalid parameter '%s', allowed: %s", k, self.valid_params
-            #     )
-            #     continue
-
-            if self._parameters[k].value != v:
-                logger.debug("%s setting parameter %s to %s", self._name, k, v)
-                self._parameters[k].value = v
-                self._update_name = True
-            else:
-                logger.debug("parameter %s not changed", k)
-
-        logger.debug("done setting parameters ... ")
-        logger.debug("..............................................................")
-
-    @property
-    def parameter_space(self) -> dict[str, Sequence[Number]]:
-        """Returns the parameter space for the indicator."""
-        return self._parameter_space
-
-    @parameter_space.setter
-    def parameter_space(self, update: Mapping[str, Sequence]) -> None:
-        """Updates the parameter space of the indicator.
-
-        Parameters
-        ----------
-        update:
-            Dictionary with the new parameter space.
-        """
-        if not isinstance(update, Mapping):
-            raise ValueError(f"parameter space must be a Mapping, not {type(update)}")
-
-        for param, p_space in update.items():
-            if param not in self.valid_params:
-                logger.warning(
-                    "invalid parameter '%s', allowed: %s", param, self.valid_params
-                )
-                continue
-
-            if not isinstance(p_space, Sequence):
-                raise ValueError(
-                    f"parameter space must be a Sequence, not {type(p_space)}"
-                )
-
-            if not (2 <= len(p_space) <= 3):
-                raise ValueError(
-                    "Parameter space must contain 2 or 3 values, not %s" % len(p_space)
-                )
-
-            if self._parameter_space[param] != p_space:
-                logger.debug("setting parameter space for '%s' to %s", param, p_space)
-                self._parameter_space[param] = p_space
-            else:
-                logger.debug("parameter %s not changed", param)
 
     @property
     def plot_desc(self) -> PlotDescription:
@@ -605,7 +527,9 @@ class FixedIndicator(IIndicator):
     indicators), because now these behave like normal indicators.
     """
 
-    def __init__(self, name: str, value: np.flexible | bool) -> None:
+    def __init__(
+        self, name: str, value: np.flexible | bool, parameter: Parameter
+    ) -> None:
         """Initializes the FixedIndicator class.
 
         Parameters
@@ -618,11 +542,9 @@ class FixedIndicator(IIndicator):
         super().__init__()
 
         self._name: str = name
-        self.trigger: Number | bool = value
         self.output: tuple[str] = (self.unique_name,)
         self.output_names: tuple[str] = (self.unique_name,)
-        self._valid_params: tuple[str, ...] = "trigger", "parameter_space"
-        self._parameter_space: dict[str, Sequence[np.flexible]] = {}
+        self._parameters = parameter,
         self.input: tuple[str] = ("close",)
         self._is_subplot: bool = True
         self._plot_desc: dict = {"name": ["Line"]}
@@ -635,163 +557,11 @@ class FixedIndicator(IIndicator):
 
     def __eq__(self, other):
         if isinstance(other, FixedIndicator):
-            return self.trigger == other.trigger
+            return self._parameters[0].value == other._parameters[0].value
 
         return False
 
     # ..................................................................................
-    @property
-    def name(self) -> str:
-        """Returns the name of the indicator."""
-        return self._name.lower()
-
-    @property
-    def unique_name(self) -> str:
-        """Returns a unique name for the indicator.
-
-        Returns
-        -------
-        str
-            Unique name for the indicator.
-        """
-        return f"{self.name}_{self.trigger}"
-
-    @property
-    def display_name(self) -> str:
-        return " ".join(str(x).capitalize() for x in self.unique_name.split("_"))
-
-    @property
-    def unique_output(self) -> tuple[str, ...]:
-        """Returns a unique output name for the indicator.
-
-        Returns
-        -------
-        str
-            Unique output name for the indicator.
-        """
-        return (f"{self.name}_{self.trigger}",)
-
-    @property
-    def valid_params(self) -> tuple[str, ...]:
-        """Returns a list of valid parameters for the indicator.
-
-        Returns
-        -------
-        tuple[str]
-            List of valid parameters for the indicator.
-        """
-        return self._valid_params
-
-    @property
-    def parameters(self) -> dict[str, Any]:
-        """Returns a dictionary of parameters for the indicator.
-
-        Returns
-        -------
-        dict[str, str | int | float | bool]
-            Dictionary of parameters for the indicator.
-        """
-        return {"trigger": self.trigger}
-
-    @parameters.setter
-    def parameters(self, params: Params) -> None:
-        """Sets the parameters for the indicator.
-
-        Unknown parameters are ignored and a warning is logged.
-
-        Parameters
-        ----------
-        params : dict[str, int | float | bool | dict]
-            Dictionary of parameters for the indicator.
-        """
-        logger.info("setting parameters for %s -> %s", self.name, params)
-
-        if new_parameter_space := params.pop("parameter_space", None):
-            self.parameter_space = new_parameter_space
-
-        not_gonna_happen: list[tuple[str, str]] = []
-
-        for k, v in params.items():
-            # ignore unknown parameters
-            if k not in self.valid_params:
-                not_gonna_happen.append((k, "unknown parameter"))
-                continue
-
-            # check that we got the correct type
-            if not isinstance(v, (str, float, int, bool)):
-                msg: str = f"invalid type for parameter {k} ({type(k)}"
-                not_gonna_happen.append((k, msg))
-                continue
-
-            # check that the parameter is within the parameter space
-            ps = self._parameter_space.get(k, None)
-            logger.debug("parameter space: %s", self._parameter_space)
-
-            if ps and not ps[0] <= v <= ps[1]:
-                msg = (f"{v} is out of range ({ps[0]}, {ps[1]})",)
-                not_gonna_happen.append((k, msg))
-                continue
-
-            # seems legit, set the parameter (space)
-            setattr(self, k, v)
-            self.output = (f"{self.name}_{v}",)
-            self.output_names = (f"{self.name}_{v}",)
-
-        # log all invalid parameters
-        if not_gonna_happen:
-            for elem in not_gonna_happen:
-                logger.warning("... parameter '%s' not valid: %s", elem[0], elem[1])
-            logger.warning("... valid parameters: %s", self.valid_params)
-
-    @property
-    def parameter_space(self) -> dict[str, Sequence[Number]]:
-        """Returns the parameter space for the indicator.
-
-        Returns
-        -------
-        dict[str, Sequence[Number]]
-            Parameter space for the indicator.
-        """
-        return self._parameter_space
-
-    @parameter_space.setter
-    def parameter_space(self, update: Mapping[str, Sequence] | Sequence) -> None:
-        """Updates the parameter space of the indicator.
-
-        Parameters
-        ----------
-        update:
-            Dictionary or Sequence with the new parameter space.
-            Key must always be 'value' for fixed indicators. Format
-            is: {'value': [min, max, [step]]}.
-        """
-        if isinstance(update, Sequence):
-            update = {"trigger": update}
-
-        if not isinstance(update, Mapping):
-            raise ValueError(
-                f"parameter space must be a Mapping or Sequence, not {type(update)}"
-            )
-
-        if not (new_param_space := update.get("trigger", None)):
-            raise ValueError(
-                f"parameter space must contain a 'trigger' key, not {update.keys()}"
-            )
-
-        if not isinstance(new_param_space, Sequence):
-            raise ValueError(
-                f" value for parameter space must be a Sequence, "
-                f"not {type(new_param_space)}"
-            )
-
-        if not (2 <= len(new_param_space) <= 3):
-            raise ValueError(
-                f"parameter space must be a Sequence with 2 or 3 elements, "
-                f"not {len(new_param_space)}"
-            )
-
-        self._parameter_space["trigger"] = new_param_space
-
     @property
     def plot_desc(self) -> PlotDescription:
         return PlotDescription(
@@ -812,7 +582,7 @@ class FixedIndicator(IIndicator):
             data dictionary, filled with the fixed value that was set
             for the instance of this class.
         """
-        return np.full_like(inputs[0], self.trigger)
+        return np.full_like(inputs[0], self._parameters[0].value)
 
     def help(self):
         """Prints help information (docstring) for the class.
@@ -977,6 +747,7 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     def run(
         self, *inputs: tuple[np.ndarray]
     ) -> np.ndarray | tuple[np.ndarray, ...]:  # type: ignore
+
         logger.debug("provided data is in format %s", type(inputs))
         if type(inputs[0]) in (np.ndarray, pd.Series, pd.DataFrame):
             logger.debug("shape of data: %s", inputs[0].shape)
@@ -1027,18 +798,21 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     ind_instance._plot_desc = output_flags  # noqa: W0212
     ind_instance.display_name = display_name  # noqa: W0212
     ind_instance._valid_params = tuple(k for k in parameters.keys())  # noqa: W0212
-    ind_instance._parameter_space = {k: [] for k in parameters.keys()}  # noqa: W0212
-    ind_instance._parameters = {}
+
+    # set the parameters & their parameter space for the indicator
+    _parameters = []
     for k, v in parameters.items():
         parameter_space = get_parameter_space(k)
-        ind_instance._parameters[k] = Parameter(
-            name=k,
-            initial_value=v,
-            hard_min=parameter_space[0],
-            hard_max=parameter_space[1],
-            step=parameter_space[2] if parameter_space[2] else 1,
-        )
-
+        _parameters.append(
+                Parameter(
+                    name=k,
+                    initial_value=v,
+                    hard_min=parameter_space[0],
+                    hard_max=parameter_space[1],
+                    step=parameter_space[2] if parameter_space[2] else 1,
+                    )
+                )
+    ind_instance._parameters = tuple(_parameters)  # noqa: W0212
     return ind_instance
 
 
@@ -1058,74 +832,60 @@ def fixed_indicator_factory(name, params):
     FixedIndicator
         instance of FixedIndicator class
     """
+    logger.debug("Creating FixedIndicator %s -> %s", name, params)
+
     if name is None:
         raise ValueError("name is required")
 
-    try:
-        value = params.pop("value", None)
-    except AttributeError:
-        value = None
+    if not isinstance(name, str):
+        raise ValueError("name must be a string")
 
-    if value is None:
+    if not isinstance(params, dict):
+        raise ValueError("params must be a dictionary")
+
+    if name not in params:
         raise ValueError("value is required")
 
-    return FixedIndicator(name, value)
+    # set the parameter space
+    if "parameter_space" not in params:
+        raise ValueError(
+            "parameter_space is required for fixed indicators / triggers"
+            )
 
+    space_dict = params["parameter_space"]
 
-def set_parameter_space(indicator: Indicator) -> None:
-    """
-    Set the parameter space for an indicator if it's not already defined.
+    if not isinstance(space_dict, dict):
+        raise ValueError("parameter_space must be a dictionary")
 
-    This function iterates through the parameters of the given indicator and sets
-    a default parameter space for each parameter that doesn't already have one.
-    The parameter space is defined as a list of [min, max, step] values, which can
-    be used for parameter optimization.
+    if name not in space_dict:
+        raise ValueError(f"parameter_space[{name}] is required")
 
-    Parameters:
-    -----------
-    indicator : Indicator
-        The indicator object for which to set the parameter space.
+    space = space_dict[name]
 
-    Returns:
-    --------
-    None
-        This function modifies the indicator object in-place and
-        doesn't return anything.
+    if not isinstance(space, (list, tuple)) or len(space) < 2:
+        raise ValueError(
+            "parameter_space['value'] must be a list/tuple with at least two values"
+        )
 
-    Notes:
-    ------
-    The function sets different parameter spaces based on the parameter name:
-    - 'timeperiod': [2, 200, 2]
-    - 'fastperiod', 'signalperiod', 'fastk_period': [2, 100, 2]
-    - 'slowperiod', 'slowk_period': [10, 200, 2]
-    - Parameters ending with 'matype': [first MA type, last MA type, 1]
-    - Parameters starting with 'nbdev': [0.1, 4, 0.1]
-    """
-    for param in indicator.parameters:
-        logger.debug("   setting parameter space for %s", param)
+    try:
+        min_val, max_val, = space[0], space[1]
+        step = 1 if len(space) < 3 else space[2]
+    except (TypeError, IndexError):
+        raise ValueError(
+            "parameter_space['value'] must be a list with at least two values"
+            )
 
-        if not indicator.parameter_space.get(param, None):
+    _parameter = Parameter(
+        name=name,
+        initial_value=params[name],
+        hard_min=min_val,
+        hard_max=max_val,
+        step=step
+    )
 
-            if param.startswith("timeperiod"):
-                indicator.parameter_space[param] = [2, 200, 2]
+    ind = FixedIndicator(name, params[name], _parameter)
 
-            elif param in ("fastperiod", "signalperiod", "fastk_period"):
-                indicator.parameter_space[param] = [2, 100, 2]
-
-            elif param in ("slowperiod", "slowk_period"):
-                indicator.parameter_space[param] = [10, 200, 2]
-
-            elif param.endswith("matype"):
-                ma_types = list(MA_TYPES.keys())
-                indicator.parameter_space[param] = [ma_types[0], ma_types[-1], 1]
-
-            elif param.startswith("nbdev"):
-                indicator.parameter_space[param] = [0.1, 4, 0.1]
-
-            else:
-                pass
-
-        logger.debug("   parameter space for %s: %s", param, indicator.parameter_space)
+    return ind
 
 
 # --------------------------------------------------------------------------------------
@@ -1192,13 +952,5 @@ def factory(
 
     if params:
         ind_instance.parameters = params
-
-    # if params:
-    #     for k, v in params.items():
-    #         logger.debug("setting parameter %s to %s", k, v)
-    #         p = ind_instance._parameters[k]
-    #         logger.debug(p)
-    #         if k in ind_instance.parameters:
-    #             ind_instance._parameters[k].value = v
 
     return ind_instance

@@ -25,12 +25,12 @@ cci = sg.SignalsDefinition(
         operand_b=(
             "cci_oversold",
             trigger * -1,
-            {"parameter_space": {"trigger": [70, 200, 1]}},
+            {"parameter_space": {"trigger": [70, 200, 10]}},
         ),
         operand_c=(
             "cci_overbought",
             trigger,
-            {"parameter_space": {"trigger": [70, 200, 1]}},
+            {"parameter_space": {"trigger": [70, 200, 10]}},
         ),
         open_long=("a", cn.COMPARISON.IS_BELOW, "b"),
         open_short=("a", cn.COMPARISON.IS_ABOVE, "c"),

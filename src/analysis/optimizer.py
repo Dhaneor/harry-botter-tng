@@ -9,7 +9,7 @@ Created on July 06 21:12:20 2023
 """
 import itertools
 import logging
-from typing import Sequence
+from typing import Sequence, Iterable, Generator, Tuple, Any
 
 # from scipy.optimize import minimize
 # from scipy.optimize import Bounds
@@ -18,6 +18,9 @@ from typing import Sequence
 
 logger = logging.getLogger('main.optimizer')
 logger.setLevel(logging.DEBUG)
+
+# Type aliases
+Combinations = Generator[Tuple[Any, ...], None, None]
 
 
 def generate_param_combinations(
@@ -57,49 +60,37 @@ def generate_param_combinations(
     return list(itertools.product(*combination_sets))
 
 
+def generate_combinations(*iterables: Iterable) -> Combinations:
+    """Generates all possible combinations of elements from the given iterables.
+
+    Args:
+        *iterables: A variable number of iterable objects.
+
+    Yields:
+        A tuple representing a combination of elements, one from each iterable.
+    """
+    if not iterables:
+        yield ()
+    else:
+        first, *rest = iterables
+        for item in first:
+            for combination in generate_combinations(*rest):
+                yield (item,) + combination
+
+
 # ======================================================================================
 if __name__ == '__main__':
-    parameter_spaces = [
-        {'timeperiod': [2, 100, 2]},
-        {'trigger': [5, 35, 1]},
-        {'trigger': [65, 95, 1]},
-    ]
+    a = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
+    b = ("a", "b", "c", "d", "e", "f", "g", "h", "i", "j")
+    c = (True, False)
+    d = (1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20)
 
-    parameter_spaces = [
-        {'timeperiod': [2, 200, 5]},
-        {'trigger': [70, 200, 10]},
-        {'trigger': [70, 200, 10]},
-        {'timeperiod': [2, 200, 5]},
-        {'trigger': [5, 35, 5]},
-        {'trigger': [65, 95, 5]}
-    ]
+    i = 0
+    for _ in generate_combinations(a, b, c, d):
+        if i == 0:
+            print("First combination:", _)
+        i += 1
 
-    # parameter_spaces = [
-    #     {'timeperiod': [2, 200, 1]},
-    #     {'timeperiod': [2, 200, 1]},
-    # ]
+    print(f"Generated {i} combinations.")
 
-    length = 0
 
-    for item in parameter_spaces:
-        for k, v in item.items():
-            if length == 0:
-                length = len(range(*v))
-            else:
-                length = length * len(range(*v))
-
-    print(f"{length:,.0f} parameter spaces")
-
-    # sys.exit()
-
-    combinations = generate_param_combinations(parameter_spaces)
-    filtered = combinations  # list(filter(lambda x: x[1] < x[2], combinations))
-
-    print(filtered[-10:])
-
-    et = 0.0003  # approximate time for one backtest
-
-    print(
-        f"we have {len(filtered):,.0f}/{len(combinations):,.0f} combinations "
-        f"-> estimated time for optimizer: {round(len(filtered) * et):,.0f} seconds"
-    )
