@@ -331,27 +331,34 @@ class IIndicator(ABC):
         return self._parameters
 
     @parameters.setter
-    def parameters(self, params: Params) -> None:
-        logger.info("setting parameters for %s -> %s", self.name, params)
+    def parameters(self, params: Params | Tuple) -> None:
+        """
+        Sets the parameters for the indicator.
 
-        not_gonna_happen: list[tuple[str, str]] = []
+        This method allows setting the parameters of the indicator either
+        from a dictionary or a tuple. It updates the internal parameters
+        of the indicator accordingly.
 
-        for k, v in params.items():
-            if k not in self.valid_params:
-                not_gonna_happen.append((k, "unknown parameter"))
-                continue
+        Parameters
+        ----------
+        params : Params | Tuple
+            The parameters to set for the indicator. This can be either a
+            dictionary where keys are parameter names and values are the
+            parameter values, or a tuple containing parameter values in
+            the order they are defined. The parameters (in order) can be
+            retreived by getting the valid_params property.
 
-            for p in self._parameters:
-                if p.name == k:
-                    p.value = v
-
-        # log the invalid parameters
-        if not_gonna_happen:
-            for elem in not_gonna_happen:
-                logger.warning("... parameter '%s' not valid: %s", elem[0], elem[1])
-            logger.warning("... valid parameters: %s", self.valid_params)
-
-        logger.debug("..............................................................")
+        Raises
+        ------
+        ValueError
+            If the provided params is neither a dictionary nor a tuple.
+        """
+        if isinstance(params, dict):
+            self._set_parameters_from_dict(params)
+        elif isinstance(params, tuple):
+            self._set_parameters_from_tuple(params)
+        else:
+            raise ValueError("parameters must be either Params or a tuple")
 
     @property
     def parameter_space(self) -> dict[str, Sequence[Number]]:
@@ -429,6 +436,27 @@ class IIndicator(ABC):
         Can be used to have easy access to the parameters of
         each indicator.
         """
+
+    # .............................. Private methods .................................
+    def _set_parameters_from_dict(self, params: dict) -> None:
+        logger.info("setting parameters for %s", self.name)
+        for p, v in params.items():
+            if p == "parameter_space":
+                # self.parameter_space = v
+                break
+            for param in self._parameters:
+                logger.info("... setting parameter %s -> %s", param.name, v)
+                if param.name == p:
+                    param.value = v
+                    break
+            else:
+                raise ValueError(f"Unknown parameter: {p}")
+
+    def _set_parameters_from_tuple(self, params: tuple) -> None:
+        logger.info("setting parameters for %s", self.name)
+        for idx, param in enumerate(self._parameters):
+            logger.info("... setting parameter %s -> %s", param.name, params[idx])
+            param.value = params[idx]
 
     def _generate_combinations(self, parameters: Tuple[Parameter]) -> Combinations:
         """Generates all possible combinations of elements from the given iterables.
