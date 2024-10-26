@@ -14,6 +14,7 @@ Created on Sat Aug 05 22:39:50 2023
 @author: dhaneor
 """
 import logging
+import numpy as np
 
 from dataclasses import dataclass
 from typing import (
@@ -23,7 +24,7 @@ from typing import (
     Tuple,
     Optional,
     Iterable,
-    Any
+    Sequence
 )
 from talib import MA_Type
 
@@ -78,7 +79,7 @@ class Parameter(Iterable):
         return f"Parameter {self.name} -> {self.value}"
 
     def __iter__(self):
-        return iter(range(self.hard_min, self.hard_max + 1, self.step))
+        return iter(np.arange(self.hard_min, self.hard_max + self.step, self.step))
 
     def __post_init__(self):
         self._value = self.initial_value
@@ -94,6 +95,13 @@ class Parameter(Iterable):
         if self.hard_min > self.hard_max:
             raise ValueError(
                 f"hard_min ({self.hard_min}) > hard_max ({self.hard_max})"
+                )
+
+        if self.hard_min + self.step > self.hard_max:
+            raise ValueError(
+                f"'step' is too big: "
+                f"hard_min ({self.hard_min}) + step ({self.step})"
+                f" > hard_max ({self.hard_max})"
                 )
 
     @property
@@ -123,7 +131,7 @@ class Parameter(Iterable):
         return self.hard_min, self.hard_max, self.step
 
     @space.setter
-    def space(self, space: Any) -> None:
+    def space(self, space: Sequence[float | int | bool]) -> None:
         """Sets the parameter space.
 
         Raises
@@ -133,6 +141,11 @@ class Parameter(Iterable):
         """
         raise PermissionError("Changing the parameter space is not allowed.")
 
+    def as_dict(self) -> Params:
+        """Returns a dictionary representation of the parameter."""
+        return {self.name: self._value}
+
+    # --------------------------------------------------------------------------------
     def _validate(self, value):
         """Validates requested values for parameter"""
         # make sure the value we got has the correct type
