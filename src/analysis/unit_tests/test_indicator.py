@@ -199,8 +199,8 @@ def test_parameter_combinations(indicator_name, params, source, expected_name):
     indicator = factory(indicator_name, params=params, source=source)
     assert indicator.name == expected_name.lower()
 
-    combinations = list(indicator.parameter_combinations)
+    combinations = tuple(indicator.parameter_combinations)
     logger.info(combinations)
 
     lst = [sum(1 for _ in p) for p in indicator.parameters]
-    assert len(combinations) == reduce(operator.mul, lst, 1)
+    assert len(set(combinations)) == reduce(operator.mul, lst, 1)
