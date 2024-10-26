@@ -116,7 +116,7 @@ linreg_roc = sg.SignalsDefinition(
             operand_a=(
                 "roc",
                 ("linearreg", "close", {"timeperiod": linreg_timeperiod}),
-                {"timeperiod": 1},
+                {"timeperiod": 2},
             ),
             operand_b=(
                 "value",

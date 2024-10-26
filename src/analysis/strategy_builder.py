@@ -223,6 +223,19 @@ class SubStrategy(IStrategy):
             )
         )
 
+    def optimize(self, data: tp.Data, *args, **kwargs) -> None:
+        """
+        # This method should be implemented in the subclasses to optimize the strategy
+        pass
+        """
+        raise NotImplementedError(f"optimize() not implemented for {self.name}")
+
+    # --------------------------------------------------------------------------
+    def _add_positions(self, data: tp.Data) -> None:
+        """Calculates positions and adds them to the data dictionary.
+        """
+        raise NotImplementedError(f"_add_positions() not implemented for {self.name}")
+
     # --------------------------------------------------------------------------
     def _add_signals(self, data: tp.Data) -> tp.Data:
         """Calculates signals and adds them to the data dictionary.
@@ -469,7 +482,7 @@ def build_sub_strategy(sdef: StrategyDefinition) -> IStrategy:
     strategy = SubStrategy(name=sdef.strategy, params=sdef.params)
     strategy.symbol = sdef.symbol
     strategy.interval = sdef.interval
-    strategy.weight = sdef.weight
+    strategy.weight = sdef.weight if sdef.weight else 1.0
     strategy.is_sub_strategy = True
 
     strategy._signal_generator = sg.factory(sdef.signals_definition)
