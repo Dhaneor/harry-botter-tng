@@ -271,7 +271,7 @@ class IIndicator(ABC):
 
     @property
     def display_name(self) -> str:
-        return " ".join(str(x).capitalize() for x in self.unique_name.split("_"))
+        return " ".join((str(x).capitalize() for x in self.unique_name.split("_")))
 
     @property
     def unique_name(self) -> str:
@@ -570,9 +570,9 @@ class FixedIndicator(IIndicator):
         super().__init__()
 
         self._name: str = name
+        self._parameters = parameter,
         self.output: tuple[str] = (self.unique_name,)
         self.output_names: tuple[str] = (self.unique_name,)
-        self._parameters = parameter,
         self.input: tuple[str] = ("close",)
         self._is_subplot: bool = True
         self._plot_desc: dict = {"name": ["Line"]}
@@ -872,7 +872,7 @@ def fixed_indicator_factory(name, params):
         raise ValueError("params must be a dictionary")
 
     if name not in params:
-        raise ValueError("value is required")
+        raise ValueError(f"value for {name} is required")
 
     # set the parameter space
     if "parameter_space" not in params:

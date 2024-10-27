@@ -25,13 +25,9 @@ cci = sg.SignalsDefinition(
         operand_b=(
             "cci_oversold",
             trigger * -1,
-            {"parameter_space": {"trigger": [70, 200, 10]}},
+            {"parameter_space": {"cci_oversold": [-70, -200, 10]}},
         ),
-        operand_c=(
-            "cci_overbought",
-            trigger,
-            {"parameter_space": {"trigger": [70, 200, 10]}},
-        ),
+        operand_c=("cci_overbought", trigger, [70, 200, 10]),
         open_long=("a", cn.COMPARISON.IS_BELOW, "b"),
         open_short=("a", cn.COMPARISON.IS_ABOVE, "c"),
     ),
@@ -44,8 +40,8 @@ rsi = sg.SignalsDefinition(
     conditions=cn.ConditionDefinition(
         interval="1d",
         operand_a=("rsi", {"timeperiod": timeperiod}),
-        operand_b=("rsi_oversold", 30, {"parameter_space": {"trigger": [5, 35]}}),
-        operand_c=("rsi_overbought", 70, {"parameter_space": {"trigger": [65, 95]}}),
+        operand_b=("rsi_oversold", 30, {"parameter_space": {"value": [5, 35]}}),
+        operand_c=("rsi_overbought", 70, {"parameter_space": {"value": [65, 95]}}),
         open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
         open_short=("a", cn.COMPARISON.CROSSED_BELOW, "c"),
     ),
@@ -121,7 +117,7 @@ linreg_roc = sg.SignalsDefinition(
             operand_b=(
                 "value",
                 0,
-                {"parameter_space": {"trigger": [-10, 10, 1]}},
+                {"parameter_space": {"value": [-10, 10, 1]}},
             ),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
@@ -142,7 +138,7 @@ linreg_roc = sg.SignalsDefinition(
 #             operand_b=(
 #                 "slope",
 #                 0,
-#                 {"parameter_space": {"trigger": [-10, 10, 1]}},
+#                 {"parameter_space": {"value": [-10, 10, 1]}},
 #                 ),
 #             operand_c=(
 #                 "linearreg",

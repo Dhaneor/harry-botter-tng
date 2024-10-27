@@ -55,7 +55,7 @@ from ..indicators import indicator as ind
 from ..util import proj_types as tp
 
 logger = logging.getLogger("main.operand")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 # build a list of all available indicators, that can later be used
 # to do a fast check if requested indicators are available.
@@ -233,16 +233,7 @@ class OperandIndicator(Operand):
     @property
     def display_name(self) -> str:
         """Return the display name for the operand"""
-        params = " ".join((str(x) for x in self.indicator.parameters.values()))
-        if len(self.indicators) == 1:
-            return f"{self.indicator.display_name} ({params})"
-        else:
-            out = [f"{self.indicator.display_name} ({params}) of "]
-
-            for indicator in self.indicators[1:]:
-                params = " ".join((str(x) for x in indicator.parameters.values()))
-                out.append(f"{indicator.name.upper()} ({params})")
-            return " ".join(out)
+        return " ".join((i.display_name for i in self.indicators))
 
     @property
     def plot_desc(self) -> dict[str, tp.Parameters]:
@@ -643,7 +634,7 @@ class OperandTrigger(Operand):
     @property
     def display_name(self) -> str:
         """Return the display name for the operand"""
-        return self.name
+        return self.indicator.display_name
 
     @property
     def plot_desc(self) -> dict[str, tp.Parameters]:
@@ -995,16 +986,56 @@ def operand_factory(op_def: OperandDefinitionT) -> Operand:
         ValueError
             if the value is not a bool, int or float
         """
-        if len(op_def) < 2:
-            raise ValueError(f"operand definition needs at least 2 elements: {op_def}")
 
-        name, value = op_def[0], op_def[1]
+        def _is_compatible_type(value, p_space_value) -> bool:
+            if isinstance(value, (int, float)):
+                return True if isinstance(p_space_value, (int, float)) else False
+            elif isinstance(value, bool):
+                return True if isinstance(p_space_value, bool) else False
+            else:
+                raise ValueError(
+                    f"invalid 'value' in definition: {value} (type{type(value)})"
+                    )
 
-        params = op_def[-1] if len(op_def) == 3 and isinstance(op_def[-1], dict) else {}
-        params["value"] = value
+        def _check_parameter_space(params: dict, value: int | float | bool) -> None:
+            p_space_dict = params.get("parameter_space", {})
 
-        i = ind.factory(indicator_name=name, params=params, source="fixed")
+            if not p_space_dict:
+                raise ValueError(f"no parameter space defined for {name}")
 
+            p_space_seq = p_space_dict.get(name, ())
+
+            # make sure that the type of the value is compatible with the
+            # type of the elements in the parameter space
+            for elem in p_space_seq:
+                if not _is_compatible_type(value, elem):
+                    raise ValueError(
+                        f"value {value} for {name} incompatible "
+                        f"with {elem} in parameter space"
+                    )
+
+            # make sure that the first element in the parameter space is
+            # smaller than the second one, exchange them if necessary
+            if p_space_seq[0] > p_space_seq[1]:
+                p_space_seq[0], p_space_seq[1] = p_space_seq[1], p_space_seq[0]
+
+            # make sure that the step size is positive
+            if p_space_dict.get("step_size", 1) <= 0:
+                raise ValueError(f"step size for {name} must be positive")
+
+            # make sure that the step size is smaller than the difference between
+            # the first and second elements in the parameter space. if not, set it
+            # to one tenth of the difference
+            if p_space_dict.get("step_size", 1) > (p_space_seq[1] - p_space_seq[0]):
+                p_space_dict["step_size"] = (p_space_seq[1] - p_space_seq[0]) / 10
+
+        # ............................................................................
+        if len(op_def) != 3:
+            raise ValueError(f"operand definition needs exactly 3 elements: {op_def}")
+
+        name, value, params = op_def[0], op_def[1], op_def[2]
+
+        # determine operand type
         match value:
             case bool():
                 op_type = OperandType.BOOL
@@ -1016,6 +1047,23 @@ def operand_factory(op_def: OperandDefinitionT) -> Operand:
                 raise ValueError(
                     f"no valid 'value' in definition: {value} (type{type(value)})"
                 )
+
+        # check (and if necessary build) the param dictionary
+        match params:
+            case dict():
+                _check_parameter_space(params, value)
+            case list() | tuple() | set():
+                params = {"parameter_space": {name: params}}
+                _check_parameter_space(params, value)
+            case _:
+                raise ValueError(f"invalid 'params' in definition: {params}")
+
+        # add the fixed value to the parameters to comply with the format that is
+        # expected by the indicator factory function
+        params[name] = value
+
+        # get indicator class instance from factory
+        i = ind.factory(indicator_name=name, params=params, source="fixed")
 
         return OperandTrigger(
             name=name, type_=op_type, inputs=("close",), indicator=i, indicators=(i,)

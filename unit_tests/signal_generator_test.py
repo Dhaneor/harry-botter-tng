@@ -142,6 +142,7 @@ def test_factory(sig_def):
         sig_gen = sg.factory(sig_def)
     except Exception as exc:
         logger.exception(exc)
+        sys.exit()
 
     logger.info("created signal generator: %s", sig_gen)
     logger.info("plot description: %s", sig_gen.plot_desc)
@@ -337,7 +338,7 @@ def test_get_all_used_indicators():
     for n, ind in enumerate(sig_gen.indicators):
         logger.debug(
             "[%s] %s-> %s -> %s (%s)",
-            n, ind, ind.parameters, ind._parameter_space, type(ind)
+            n, ind, ind.parameters, ind.parameter_space, type(ind)
             )
         logger.debug(ind.__dict__)
         methods = [m for m in dir(ind) if '_' not in m]
