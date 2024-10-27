@@ -331,7 +331,7 @@ def test_returns(sig_gen: sg.SignalGenerator, data, show=False):
 
 
 def test_get_all_used_indicators():
-    sig_gen = test_factory(cci)
+    sig_gen = test_factory(linreg_roc)
 
     logger.debug(sig_gen.indicators)
 
@@ -344,6 +344,16 @@ def test_get_all_used_indicators():
         methods = [m for m in dir(ind) if '_' not in m]
         logger.debug(methods)
         logger.debug("-" * 160)
+
+
+def test_get_all_operands():
+    """Gets all operands in the SignalGenerator. """
+    sig_gen = test_factory(linreg_roc)
+
+    for n, cond in enumerate(sig_gen.conditions):
+        for op in filter(lambda x: x is not None, cond.operands):
+            logger.debug("[%s] %s", n, op)
+            logger.debug("-" * 160)
 
 
 def test_plot_desc(sig_gen):
@@ -361,7 +371,8 @@ if __name__ == "__main__":
     # sig_gen = test_factory(linreg_roc)
     # test_plot_desc(sig_gen)
 
-    test_get_all_used_indicators()
+    # test_get_all_used_indicators()
+    test_get_all_operands()
 
     if not sig_gen:
         sys.exit()

@@ -3,14 +3,11 @@
 """
 Provides Operand classes and their factory function.
 
-TODO:   move the functionality from FixedIndicator back into OperandTrigger?!
-        pro:
-            - no need to have two classes for the same thing
-            - simpler code
-            - less complexity
-        con:
-            - different operand types have different level of abstraction
-            - optimizer class will probably get more complicated. but will it really?
+NOTE:   Operands that are indicators can have the output from another
+        indicator as input. This is also the main reason level exists
+        in the SignalGenerator -> Condition -> perand -> Indicator ->
+        Parameter chain. This allows for the construction of complex
+        and flexible trading strategies / conditions.
 
 classes:
     PriceSeries
@@ -107,39 +104,19 @@ VALID_PRICE_INPUTS = {member.value for member in PriceSeries}
 # ======================================================================================
 @dataclass
 class Operand(ABC):
-    name: str
-    type_: OperandType
-    inputs: tuple = field(default_factory=tuple)
-    unique_name: str = ""
-    output: str = ""
-
-    @property
-    @abstractmethod
-    def display_name(self) -> str:
-        ...
-
-    @property
-    @abstractmethod
-    def plot_desc(self) -> dict[str, tp.Parameters]:
-        ...
-
-    @abstractmethod
-    def run(self, data: tp.Data) -> str:
-        ...
-
-    @abstractmethod
-    def as_dict(self) -> dict[str, Any]:
-        ...
-
-
-@dataclass(kw_only=True)
-class OperandIndicator(Operand):
     """A single operand of a condition.
 
     A single operand can represent either:
         - an indicator
         - a series
         - a numerical value or a boolean.
+
+    NOTE:   Operands that are indicators can have the output from
+            another indicator as input. This is also the main reason
+            level exists in the SignalGenerator -> Condition ->
+            Operand -> Indicator -> Parameter chain.
+            This allows for the construction of complex and flexible
+            trading strategies / conditions.
 
     Attributes
     ----------
@@ -177,6 +154,29 @@ class OperandIndicator(Operand):
         parameters.
     """
 
+    name: str
+    type_: OperandType
+    inputs: tuple = field(default_factory=tuple)
+    unique_name: str = ""
+    output: str = ""
+
+    @property
+    @abstractmethod
+    def display_name(self) -> str: ...
+
+    @property
+    @abstractmethod
+    def plot_desc(self) -> dict[str, tp.Parameters]: ...
+
+    @abstractmethod
+    def run(self, data: tp.Data) -> str: ...
+
+    @abstractmethod
+    def as_dict(self) -> dict[str, Any]: ...
+
+
+@dataclass(kw_only=True)
+class OperandIndicator(Operand):
     name: str
     type_: OperandType
     indicator: ind.Indicator | None = field(default=None)
@@ -616,7 +616,7 @@ class OperandTrigger(Operand):
     indicators: list[ind.Indicator] = field(default_factory=list)
 
     def __repr__(self) -> str:
-        return f"[{self.type_}] {self.name}={self.indicator.trigger}"
+        return f"[{self.type_}] {self.name}={self.indicator.parameters[0].value}"
 
     def __post_init__(self) -> None:
         # make sure, inputs is a tuple or None
@@ -706,7 +706,7 @@ class OperandTrigger(Operand):
                 else:
                     logger.warning(
                         "... %s not relevant for %s", k, indicator.unique_name
-                        )
+                    )
 
         if post_init:
             self.__post_init__()
@@ -726,7 +726,7 @@ class OperandTrigger(Operand):
         """
         data[self.unique_name] = np.full_like(
             data[self.inputs[0]],
-            fill_value=self.indicator.trigger
+            fill_value=self.indicator.parameters[0].value,
         )
         return self.unique_name
 
@@ -995,7 +995,7 @@ def operand_factory(op_def: OperandDefinitionT) -> Operand:
             else:
                 raise ValueError(
                     f"invalid 'value' in definition: {value} (type{type(value)})"
-                    )
+                )
 
         def _check_parameter_space(params: dict, value: int | float | bool) -> None:
             p_space_dict = params.get("parameter_space", {})
@@ -1108,7 +1108,7 @@ def operand_factory(op_def: OperandDefinitionT) -> Operand:
         """Evaluate the inputs for the indicator.
 
         As each indicator can have inputs of different kind, including
-        other indiicators, this function evaluates the inputs and - if
+        other indicators, this function evaluates the inputs and - if
         necessary - builds more operands for inputs that are indicators
         or price series.
 

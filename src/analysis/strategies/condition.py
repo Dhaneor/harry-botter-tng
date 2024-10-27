@@ -342,6 +342,11 @@ class Condition:
         return "".join(out)
 
     @property
+    def operands(self) -> Iterable[op.Operand]:
+        """Return all operators used in the condition"""
+        return self.operand_a, self.operand_b, self.operand_c, self.operand_d
+
+    @property
     def indicators(self) -> Iterable[op.ind.Indicator]:
         """Return all indicators used in the condition
 

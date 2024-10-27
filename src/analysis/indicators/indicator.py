@@ -361,6 +361,11 @@ class IIndicator(ABC):
             raise ValueError("parameters must be either Params or a tuple")
 
     @property
+    def parameters_dict(self) -> dict:
+        """Returns the parameters of the indicator as a dictionary."""
+        return {p.name: p.value for p in self.parameters}
+
+    @property
     def parameter_space(self) -> dict[str, Sequence[Number]]:
         """Returns the parameter space for the indicator."""
         return {p.name: p.space for p in self.parameters}
@@ -633,6 +638,9 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     methods, including input and output names, parameters, and the main
     computation method.
 
+    We are doing some class contruction magic here to automatically
+    create an indicator class for the specified TA-Lib function.
+
     Parameters
     ----------
     func_name : str
@@ -652,12 +660,11 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     - Properly set input and output names
     - A 'run' method that calls the underlying TA-Lib function
     - Dynamically generated documentation
-    - Configured parameters and parameter spaces
+    - Configured parameters and the (valid) parameter space
     """
     func_name = func_name.upper()
-    class_name = func_name
-    talib_func = getattr(talib, class_name)
-    info = talib.abstract.Function(func_name).info
+    talib_func = getattr(talib, func_name)
+    info = abstract.Function(func_name).info
 
     if isinstance(info["input_names"], OrderedDict):
         if "prices" in info["input_names"].keys():
@@ -782,7 +789,7 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
 
         # run indicator for one-dimensional array
         if isinstance(inputs[0], np.ndarray) and inputs[0].ndim == 1:  # ignore:type
-            return talib_func(*inputs, **self.parameters)  # type: ignore
+            return talib_func(*inputs, **self.parameters_dict)  # type: ignore
 
         # run indicator for two-dimensional array
         # NOTE: This code is not yet fully implemented, and the commented
@@ -809,7 +816,7 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     run.__doc__ = _build_apply_func_doc_str()
 
     ind_instance = type(
-        class_name,
+        func_name,
         (Indicator,),
         {
             "__doc__": run.__doc__,
