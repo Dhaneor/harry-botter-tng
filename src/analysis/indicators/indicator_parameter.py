@@ -79,7 +79,9 @@ class Parameter(Iterable):
         return f"Parameter {self.name} -> {self.value}"
 
     def __iter__(self):
-        return iter(np.arange(self.hard_min, self.hard_max + self.step, self.step))
+        return iter(
+            np.arange(self.hard_min, self.hard_max + self.step + 1e-10, self.step)
+            )
 
     def __post_init__(self):
         self._value = self.initial_value

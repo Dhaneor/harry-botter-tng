@@ -394,7 +394,7 @@ class IIndicator(ABC):
                     p.space = p_space
 
     @property
-    def parameter_combinations(self) -> Combinations:
+    def parameter_combinations(self) -> Generator:
         return self._generate_combinations(self.parameters)
 
     @property
