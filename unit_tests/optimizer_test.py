@@ -8,7 +8,6 @@ Created on Oct 06 10:03:20 2021
 import sys
 import os
 import logging
-import pandas as pd
 
 # profiler imports
 from cProfile import Profile  # noqa: F401
@@ -35,37 +34,56 @@ sys.path.append(parent)
 sys.path.append('../backtest.module/')
 # ------------------------------------------------------------------------------------
 
+from src.staff.hermes import Hermes  # noqa: E402, F401
+from src.analysis import strategy_builder as sb  # noqa: E402, F401
 from src.analysis.strategies import signal_generator as sg  # noqa: E402, F401
-from src.analysis.optimizer import Optimizer  # noqa: E402, F401
+from src.analysis import optimizer  # noqa: E402, F401
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
-    breakout
+    s_breakout, s_tema_cross, s_linreg, s_kama_cross, s_trix, trend_1, contra_1
 )
+
+symbol = "BTCUSDT"
+interval = "12h"
+
+start = -3000  # 'December 01, 2018 00:00:00'
+end = 'now UTC'
+
+strategy = s_linreg
+risk_levels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
+
+hermes = Hermes(exchange='kucoin', mode='backtest')
+strategy: sb.CompositeStrategy = sb.build_strategy(strategy)
 
 # ---------------------------------------- SETUP -------------------------------------
 # Create a signal generator
-signal_generator = sg.factory(breakout)
-# Create an optimizer
-optimizer = Optimizer(signal_generator, 'grid_search')
+sub_strategy: sb.SubStrategy = [v for v in strategy.sub_strategies.values()][0][0]
+print(sub_strategy)
+
+sig_gen = sub_strategy._signal_generator
+
+for param in sig_gen.parameters:
+    print('----------------------------------')
+    print(f'{param.name}: {param.value}')
+    print(f'enforce int {param._enforce_int}')
+
+
+def _get_ohlcv_from_db():
+
+    res = hermes.get_ohlcv(
+        symbols=symbol, interval=interval, start=start, end=end
+    )
+
+    if res.get('success'):
+        df = res.get('message')
+        return {col: df[col].to_numpy() for col in df.columns}
+
+    else:
+        error = res.get('error', 'no error provided in response')
+        raise Exception(error)
 
 
 # ------------------------------------- TESTS ---------------------------------------
-def test_optimizer():
-    # Load data
-    data_path = os.path.join(parent, 'tests', 'data', 'btcusd_1min.csv')
-    df = pd.read_csv(data_path)
-
-    # Generate candidate parameters
-    candidates = optimizer.generate_candidates()
-
-    # Evaluate candidate parameters
-    results = [
-        optimizer.optimization_strategy.evaluate_candidate(c) for c in candidates
-        ]
-
-    # Update population with results
-    optimizer.optimization_strategy.update_population(results)
-
-
 def test_estimate_combinations():
     # Estimate the number of combinations
     total_combinations = optimizer.estimate_combinations()
@@ -84,9 +102,59 @@ def test_estimate_execution_time():
     return execution_time
 
 
+def test_vector_generator():
+    # Generate a vector of combinations
+    parameters = sig_gen.parameters
+    vector = list(optimizer.vector_generator(parameters))
+
+    logger.info(f'Generated vector: {vector}')
+    logger.info(f'Vector length: {len(vector)}')
+
+    return vector
+
+
+def test_optimize():
+    # Optimize the strategy
+    best_parameters = optimizer.optimize(
+        signal_generator=sig_gen,
+        data=_get_ohlcv_from_db(),
+        risk_levels=risk_levels,
+        max_drawdown_pct=60
+    )
+
+    if not best_parameters:
+        logger.info('No profitable parameters with acceptable drawdown found.')
+        return
+
+    # sort results by sharpe ratio
+    best_parameters.sort(
+        key=lambda x: x[2]['kalmar_ratio'],
+        reverse=True
+        )
+
+    profits = [result[2]['profit'] for result in best_parameters]
+    logger.info(f'Best profit: {max(profits):.2f}%')
+    logger.info(f'Worst profit: {min(profits):.2f}%')
+
+    for result in best_parameters[:25]:
+        logger.info(
+            "params: %s :: risk level %s :: stats %s",
+            result[0],
+            result[1],
+            {k: round(v, 3) for k, v in result[2].items()}
+        )
+    logger.info(f'Best parameters length: {len(best_parameters)}')
+
+    return best_parameters
+
+
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == '__main__':
     # test_optimizer()
-    test_estimate_execution_time()
+    # test_estimate_execution_time()
+    # test_estimate_combinations()
+    # test_vector_generator()
+    test_optimize()
+    pass

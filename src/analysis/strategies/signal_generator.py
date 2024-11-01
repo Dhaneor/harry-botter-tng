@@ -58,6 +58,7 @@ import numpy as np
 from ..util import proj_types as tp
 from . import condition as cnd
 from ..indicators.indicator import PlotDescription, Indicator
+from ..indicators.indicator_parameter import Parameter
 
 logger = logging.getLogger("main.signal_generator")
 
@@ -162,6 +163,17 @@ class SignalGenerator:
         )
 
     @property
+    def parameters(self) -> tuple[Parameter]:
+        """Get the parameters used by the signal generator.
+
+        Returns
+        -------
+        tuple[Parameter]
+            the parameters used by the signal generator
+        """
+        return tuple(p for ind in self.indicators for p in ind.parameters)
+
+    @property
     def plot_desc(self) -> tuple[PlotDescription, Sequence[PlotDescription]]:
         """Get the plot parameters for the signal generator.
 
@@ -219,6 +231,9 @@ class SignalGenerator:
         )
 
         return data.update(res.as_dict())
+
+    def speak(self, data: tp.Data, weight: tp.Weight = 1) -> tp.Data:
+        return self.execute(data, weight)
 
     def is_working(self) -> bool:
         """Check if the signal generator is working.

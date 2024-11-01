@@ -48,7 +48,7 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # set interval and length of test data
-interval = "12h"
+interval = "1d"
 length = 1500
 
 # ======================================================================================
@@ -364,7 +364,7 @@ def test_plot_desc(sig_gen):
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    sig_gen = None
+    sig_gen = test_factory(linreg_roc)
 
     # test_signal_definition(True)
 

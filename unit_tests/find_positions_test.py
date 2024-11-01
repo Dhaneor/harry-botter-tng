@@ -14,6 +14,7 @@ import pandas as pd
 # profiler imports
 from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
+from tqdm import tqdm  # noqa: F401
 
 LOG_LEVEL = "DEBUG"
 logger = logging.getLogger('main')
@@ -48,13 +49,13 @@ from src.plotting.minerva import BacktestChart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
 
 symbol = "BTCUSDT"
-interval = "1d"
+interval = "12h"
 
-start = -2300  # 'July 01, 2020 00:00:00'
+start = -3000  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
 strategy = s_linreg
-risk_level = 3
+risk_level = 0
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -122,7 +123,7 @@ def _run_backtest(data: dict):
 
 
 def _add_stats(df):
-    rs.calculate_stats(df, initial_capital)
+    return rs.calculate_stats(df, initial_capital)
 
 
 def _show(df):
@@ -133,9 +134,7 @@ def _show(df):
 # ..............................................................................
 def run(data, show=False, plot=False):
 
-    df = pd.DataFrame.from_dict(_run_backtest(data))
-
-    _add_stats(df)
+    df = _add_stats(pd.DataFrame.from_dict(_run_backtest(data)))
 
     if show:
         _show(df)
@@ -167,10 +166,10 @@ def test_find_positions(data: dict):
 if __name__ == '__main__':
     logger.info("Starting backtest...")
     logger.info(strategy)
-    run(_get_ohlcv_from_db(), True, False)
+    run(_get_ohlcv_from_db(), True, True)
 
     # ..........................................................................
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
     runs = 1_000

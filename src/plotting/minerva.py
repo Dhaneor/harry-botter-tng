@@ -535,11 +535,24 @@ class Minerva:
         ax = self.axes[-2]
         self.df["cptl.drawdown"] = self.df["cptl.drawdown"].replace("", np.NaN)
         self.df["cptl.drawdown"] = self.df["cptl.drawdown"] * 100 * -1
+        self.df["b.drawdown"] = self.df["b.drawdown"].replace("", np.NaN)
+        self.df["b.drawdown"] = self.df["b.drawdown"] * 100 * -1
         self.df["hodl.drawdown"] = self.df["hodl.drawdown"].replace("", np.NaN)
         self.df["hodl.drawdown"] = self.df["hodl.drawdown"] * 100 * -1
 
+        ax.fill_between(
+            x=self.df.index,
+            y1=self.df["b.drawdown"],
+            y2=0,  # self.df["cptl.b"],
+            color=self.channel_bg[0],
+            edgecolor=self.channel[0],
+            alpha=self.channel_bg[1],
+            linewidth=0.1,
+            zorder=-5,
+        )
+
         ax.plot(
-            self.df["cptl.drawdown"],
+            self.df["b.drawdown"],
             color=self.line_colors[3],
             linewidth=0.3,
             alpha=self.line_alphas[3],
@@ -568,16 +581,16 @@ class Minerva:
     def portfolio_value(self):
         ax = self.axes[-1]
 
-        # ax.fill_between(
-        #     x=self.df.index,
-        #     y1=self.df["b.value"],
-        #     y2=self.df["cptl.b"],
-        #     color=self.channel_bg[0],
-        #     edgecolor=self.channel[0],
-        #     alpha=self.channel_bg[1],
-        #     linewidth=0.1,
-        #     zorder=-5,
-        # )
+        ax.fill_between(
+            x=self.df.index,
+            y1=self.df["b.value"],
+            y2=self.df["cptl.b"],
+            color=self.channel_bg[0],
+            edgecolor=self.channel[0],
+            alpha=self.channel_bg[1],
+            linewidth=0.1,
+            zorder=-5,
+        )
 
         ax.plot(
             self.df["b.value"],
