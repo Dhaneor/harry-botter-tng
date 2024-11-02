@@ -55,7 +55,7 @@ end = 'now UTC'
 
 strategy = s_linreg
 risk_level = 3
-max_leverage = 1.5
+max_leverage = 2
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')

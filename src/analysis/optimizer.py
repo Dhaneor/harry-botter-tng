@@ -28,6 +28,8 @@ logger.setLevel(logging.INFO)
 T = TypeVar("T")
 OhlcvData = dict[np.ndarray]
 
+multiprocessing.set_start_method('spawn', force=True)
+
 TIME_FOR_ONE_BACKTEST = 6  # execution time for one backtest in milliseconds
 INITIAL_CAPITAL = 10_000  # initial capital for backtesting
 RISK_FREE_RATE = 0.00  # risk-free rate for calculating Sharpe Ratio
@@ -127,16 +129,22 @@ def vector_diff(vector1: list[T], vector2: list[T]) -> list[T]:
 # ================================ Helper Functions II ================================
 # Functions for the parallel execution of backtests
 def chunk_parameters(signal_generator, chunk_size=1000):
-    for _ in range(0, number_of_combinations(signal_generator), chunk_size):
-        yield list(islice(vector_generator(signal_generator.parameters), chunk_size))
+    param_iterator = vector_generator(signal_generator.parameters)
+    while True:
+        chunk = tuple(islice(param_iterator, chunk_size))
+        if not chunk:
+            break
+        yield chunk
 
 
 def _worker_function(
     chunk,
+    worker_id: int,
     condition_definitions,
-    data,
+    data: dict[np.ndarray],
     risk_level,
     max_leverage,
+    max_drawdown_pct,
     backtest_fn,
     initial_capital,
     periods_per_year
@@ -167,7 +175,11 @@ def _worker_function(
                     )
                 )
             )
-    return profitable_results
+
+    return [
+        pr for pr in profitable_results
+        if pr[2]['max_drawdown'] > max_drawdown_pct * -1
+        ]
 
 
 # ====================================================================================
@@ -190,27 +202,46 @@ def optimize(
     logger.info("Estimated execution time: %.2fs", est_exc_time)
 
     profitable_results = []
-    chunk_size = 1000  # Adjust this based on your system's capabilities
+    chunk_size = 100  # Adjust this based on your system's capabilities
 
-    with multiprocessing.Pool() as pool:
+    num_cores = multiprocessing.cpu_count()
+    num_processes = max(1, num_cores - 1)  # Use all cores except one, but at least 1
+    logger.info("Using %s processes", num_processes)
+
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        start_time = time.time()
+
         with tqdm(total=combinations, desc="Optimizing") as pbar:
             for risk_level in risk_levels:
                 worker = partial(
                     _worker_function,
+                    worker_id=risk_level,
                     condition_definitions=signal_generator.condition_definitions,
                     data=data,
                     risk_level=risk_level,
                     backtest_fn=backtest_fn,
                     initial_capital=INITIAL_CAPITAL,
                     max_leverage=max_leverage,
+                    max_drawdown_pct=max_drawdown_pct,
                     periods_per_year=periods_per_year,
                 )
 
-                chunks = list(chunk_parameters(signal_generator, chunk_size))
+                chunks_iterator = chunk_parameters(signal_generator, chunk_size)
 
-                for result in pool.imap_unordered(worker, chunks):
+                for result in pool.imap_unordered(
+                    worker,
+                    chunks_iterator,
+                ):
                     profitable_results.extend(result)
-                    pbar.update(len(result))
+                    pbar.update(chunk_size)
+
+            pbar.close()
+            duration = time.time() - start_time
+            logger.info(
+                "Optimization completed in %.2fs (%s/s)",
+                duration,
+                combinations / duration
+                )
 
     return profitable_results
 

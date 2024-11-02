@@ -13,12 +13,10 @@ import logging
 from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
-LOG_LEVEL = "DEBUG"
 logger = logging.getLogger('main')
-logger.setLevel(LOG_LEVEL)
+logger.setLevel(logging.INFO)
 
 ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
 
 formatter = logging.Formatter(
     "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
@@ -49,11 +47,12 @@ start = -365 * 5  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
 strategy = s_linreg
-risk_levels = [5]
-max_leverage = 1
+risk_levels = [0, 4]
+max_leverage = 2
+max_drawdown = 50
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
-hermes = Hermes(exchange='kucoin', mode='backtest')
+
 strategy: sb.CompositeStrategy = sb.build_strategy(strategy)
 
 # ---------------------------------------- SETUP -------------------------------------
@@ -63,13 +62,9 @@ sub_strategy: sb.SubStrategy = [v for v in strategy.sub_strategies.values()][0][
 
 sig_gen = sub_strategy._signal_generator
 
-for param in sig_gen.parameters:
-    print('----------------------------------')
-    print(f'{param.name}: {param.value}')
-    print(f'enforce int {param._enforce_int}')
-
 
 def _get_ohlcv_from_db():
+    hermes = Hermes(exchange='kucoin', mode='backtest')
 
     res = hermes.get_ohlcv(
         symbols=symbol, interval=interval, start=start, end=end
@@ -82,6 +77,8 @@ def _get_ohlcv_from_db():
     else:
         error = res.get('error', 'no error provided in response')
         raise Exception(error)
+
+    del hermes
 
 
 # ------------------------------------- TESTS ---------------------------------------
@@ -115,14 +112,17 @@ def test_vector_generator():
 
 
 def test_optimize():
+    # fetch the OHLCV data from the database
+    data = _get_ohlcv_from_db()
+
     # Optimize the strategy
     best_parameters = optimizer.optimize(
         signal_generator=sig_gen,
-        data=_get_ohlcv_from_db(),
+        data=data,
         interval=interval,
         risk_levels=risk_levels,
         max_leverage=max_leverage,
-        max_drawdown_pct=60
+        max_drawdown_pct=max_drawdown
     )
 
     if not best_parameters:
