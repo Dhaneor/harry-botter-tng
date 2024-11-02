@@ -63,7 +63,7 @@ class Minerva:
 
             _, ax_width = _get_ax_size(ax)
             corr_factor = 86400 / timedelta
-            value_factor = values / 1000
+            value_factor = values / 100
 
             width = round(
                 (
@@ -83,7 +83,7 @@ class Minerva:
 
         ax.set_title(self.title, y=1.0, pad=-14)
 
-        width, width2 = _get_linewidth()
+        width, width2 = self._get_linewidth(ax)
 
         bull, alpha_bull = self.bull[0], self.bull[1]
         bear, alpha_bear = self.bear[0], self.bear[1]
@@ -861,7 +861,7 @@ class Minerva:
 
         _, ax_width = self._get_ax_size(ax)
         corr_factor = 86400 / timedelta
-        value_factor = values / 10000
+        value_factor = values / 500
 
         width = round(((ax_width) / (values) * value_factor) / corr_factor, precision)
 

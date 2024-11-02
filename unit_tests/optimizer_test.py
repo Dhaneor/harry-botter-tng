@@ -43,9 +43,9 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 )
 
 symbol = "BTCUSDT"
-interval = "12h"
+interval = "4h"
 
-start = -365*2*3  # 'December 01, 2018 00:00:00'
+start = -365*6*3  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
 strategy = s_breakout
