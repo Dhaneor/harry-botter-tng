@@ -44,7 +44,7 @@ from talib import MA_Type, abstract
 from .indicator_parameter import Parameter
 
 logger = logging.getLogger("main.indicator")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 Params = Dict[str, Union[str, float, int, bool]]
 IndicatorSource = Literal["talib", "nb"]
@@ -190,8 +190,8 @@ def get_parameter_space(param_name: str) -> dict:
     Notes:
     ------
     The function sets different parameter spaces based on the parameter name:
-    - 'timeperiod': [1, 200, 5]
-    - 'fastperiod', 'signalperiod', 'fastk_period': [1, 100, 5]
+    - 'timeperiod': [2, 200, 5]
+    - 'fastperiod', 'signalperiod', 'fastk_period': [2, 100, 5]
     - 'slowperiod', 'slowk_period': [10, 200, 2]
     - Parameters ending with 'matype': [first MA type, last MA type, 1]
     - Parameters starting with 'nbdev': [0.1, 4, 0.1]
@@ -200,20 +200,20 @@ def get_parameter_space(param_name: str) -> dict:
 
     # Define a dictionary to map parameter names to their spaces
     parameter_spaces = {
-        "timeperiod": [1, 200, 5],
-        "timeperiod1": [1, 200, 5],
-        "timeperiod2": [1, 200, 5],
-        "timeperiod3": [1, 200, 5],
-        "fastperiod": [1, 100, 5],
-        "signalperiod": [1, 100, 5],
-        "fastk_period": [1, 100, 5],
-        "fastd_period": [1, 100, 5],
+        "timeperiod": [2, 200, 5],
+        "timeperiod1": [2, 200, 5],
+        "timeperiod2": [2, 200, 5],
+        "timeperiod3": [2, 200, 5],
+        "fastperiod": [2, 100, 5],
+        "signalperiod": [2, 100, 5],
+        "fastk_period": [2, 100, 5],
+        "fastd_period": [2, 100, 5],
         "slowperiod": [10, 200, 2],
         "slowk_period": [10, 200, 2],
         "slowd_period": [10, 200, 2],
         "fastlimit": [0, 10, 1],
         "slowlimit": [0, 10, 1],
-        "minperiod": [1, 100, 5],
+        "minperiod": [2, 100, 5],
         "maxperiod": [20, 200, 5],
         "minmovestep": [1, 10, 1],
         "maxmovestep": [1, 10, 1],
@@ -394,7 +394,7 @@ class IIndicator(ABC):
                     p.space = p_space
 
     @property
-    def parameter_combinations(self) -> Combinations:
+    def parameter_combinations(self) -> Generator:
         return self._generate_combinations(self.parameters)
 
     @property
@@ -461,7 +461,7 @@ class IIndicator(ABC):
         logger.info("setting parameters for %s", self.name)
         for idx, param in enumerate(self._parameters):
             logger.info("... setting parameter %s -> %s", param.name, params[idx])
-            param.value = params[idx]
+            param._value = params[idx]
 
     def _generate_combinations(self, parameters: Tuple[Parameter]) -> Combinations:
         """Generates all possible combinations of elements from the given iterables.
@@ -784,6 +784,7 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     ) -> np.ndarray | tuple[np.ndarray, ...]:  # type: ignore
 
         logger.debug("provided data is in format %s", type(inputs))
+        logger.debug("parameters: %s", self.parameters_dict)
         if type(inputs[0]) in (np.ndarray, pd.Series, pd.DataFrame):
             logger.debug("shape of data: %s", inputs[0].shape)
 

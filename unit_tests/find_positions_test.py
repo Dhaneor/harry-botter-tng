@@ -50,11 +50,12 @@ from src.backtest import result_stats as rs  # noqa: E402, F401
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = -2300  # 'July 01, 2020 00:00:00'
+start = -365*5  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
 strategy = s_linreg
 risk_level = 3
+max_leverage = 2
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -118,11 +119,11 @@ def _get_ohlcv_from_db():
 
 
 def _run_backtest(data: dict):
-    return bt.run(strategy, data, initial_capital, risk_level)
+    return bt.run(strategy, data, initial_capital, risk_level, max_leverage)
 
 
 def _add_stats(df):
-    rs.calculate_stats(df, initial_capital)
+    return rs.calculate_stats(df, initial_capital)
 
 
 def _show(df):
@@ -133,9 +134,7 @@ def _show(df):
 # ..............................................................................
 def run(data, show=False, plot=False):
 
-    df = pd.DataFrame.from_dict(_run_backtest(data))
-
-    _add_stats(df)
+    df = _add_stats(pd.DataFrame.from_dict(_run_backtest(data)))
 
     if show:
         _show(df)
@@ -177,25 +176,25 @@ if __name__ == '__main__':
     data_pre = [_get_ohlcv_from_db() for _ in range(runs)]
     st = time.perf_counter()
 
-    for i in range(runs):
-        # test_find_positions(data_pre[i])
-        bt.run(strategy, data_pre[i], initial_capital, risk_level)
+    # for i in range(runs):
+    #     # test_find_positions(data_pre[i])
+    #     bt.run(strategy, data_pre[i], initial_capital, risk_level)
 
-    # with Profile(timeunit=0.001) as p:
-    #     for i in range(runs):
-    #         bt.run(strategy, data_pre[i], initial_capital, risk_level)
+    with Profile(timeunit=0.001) as p:
+        for i in range(runs):
+            bt.run(strategy, data_pre[i], initial_capital, risk_level)
 
-    # (
-    #     Stats(p)
-    #     .strip_dirs()
-    #     .sort_stats(SortKey.CUMULATIVE)  # (SortKey.CALLS)
-    #     # .reverse_order()
-    #     .print_stats(30)
-    # )
+    (
+        Stats(p)
+        .strip_dirs()
+        .sort_stats(SortKey.CUMULATIVE)  # (SortKey.CALLS)
+        # .reverse_order()
+        .print_stats(30)
+    )
 
     # for _ in range(runs):
     #     test_strategy_run(s, False)
 
     et = time.perf_counter()
     print(f'length data: {len(data_pre[0]["close"])} periods')
-    print(f"execution time: {((et - st)*1_000_000/runs):.2f} microseconds")
+    print(f"average execution time: {((et - st)*1_000_000/runs):.2f} microseconds")

@@ -58,8 +58,10 @@ import numpy as np
 from ..util import proj_types as tp
 from . import condition as cnd
 from ..indicators.indicator import PlotDescription, Indicator
+from ..indicators.indicator_parameter import Parameter
 
 logger = logging.getLogger("main.signal_generator")
+logger.setLevel(logging.ERROR)
 
 PositionTypeT = Literal["open_long", "open_short", "close_long", "close_short"]
 
@@ -126,15 +128,16 @@ class SignalGenerator:
         "close_short",
     )
 
-    def __init__(self, conditions: Sequence[cnd.Condition]):
+    def __init__(self, name, conditions: Sequence[cnd.Condition]):
         """Initializes the signal generator.
 
         The instance attributes are not set here. Use the factory
         function of this module to create instances of SignalGenerator!
 
         """
-        self.name: str
+        self.name: str = name
         self.conditions: Sequence[cnd.Condition] = conditions
+        self.conditions_definitions: Sequence[cnd.ConditionDefinition] | None = None
 
     def __repr__(self):
         return (
@@ -160,6 +163,17 @@ class SignalGenerator:
                 ind for cond in self.conditions for ind in cond.indicators
             )
         )
+
+    @property
+    def parameters(self) -> tuple[Parameter]:
+        """Get the parameters used by the signal generator.
+
+        Returns
+        -------
+        tuple[Parameter]
+            the parameters used by the signal generator
+        """
+        return tuple(p for ind in self.indicators for p in ind.parameters)
 
     @property
     def plot_desc(self) -> tuple[PlotDescription, Sequence[PlotDescription]]:
@@ -220,6 +234,9 @@ class SignalGenerator:
 
         return data.update(res.as_dict())
 
+    def speak(self, data: tp.Data, weight: tp.Weight = 1) -> tp.Data:
+        return self.execute(data, weight)
+
     def is_working(self) -> bool:
         """Check if the signal generator is working.
 
@@ -231,6 +248,32 @@ class SignalGenerator:
         raise NotImplementedError()
 
     def combine_signals(data):
+        """
+        Combine different trading signals into a single array of position indicators.
+
+        This function takes a dictionary of trading signals and combines them into a
+        single numpy array. The array uses the following convention:
+        1 for long positions, -1 for short positions, 0 for closing positions,
+        and NaN for no signal.
+
+        Parameters
+        ----------
+        data : dict
+            A dictionary containing the following keys:
+            - 'open_long': Array of signals to open long positions
+            - 'open_short': Array of signals to open short positions
+            - 'close_long': Array of signals to close long positions
+            - 'close_short': Array of signals to close short positions
+
+        Returns
+        -------
+        numpy.ndarray
+            An array of the same length as the input signals, where:
+            - 1 indicates opening a long position
+            - -1 indicates opening a short position
+            - 0 indicates closing a position (either long or short)
+            - NaN indicates no signal
+        """
         open_long = np.nan_to_num(data["open_long"])
         open_short = np.nan_to_num(data["open_short"])
         close_long = np.nan_to_num(data["close_long"])
@@ -273,13 +316,13 @@ def factory(
             # make sure we have a sequence, the elements will be validated
             # later in the condition factory function
             condition_definitions = (
-                list((condition_definitions,))
+                tuple((condition_definitions,))
                 if isinstance(condition_definitions, cnd.ConditionDefinition)
                 else condition_definitions
             )
 
-        case Sequence():
-            name = "unnamed"
+        case tuple() | list():
+            name = "Unnnamed SignalGenerator"
             condition_definitions = sig_def
 
         case _:
@@ -291,7 +334,11 @@ def factory(
     logger.debug(
         "... Processing %s condition definition(s) ...", len(condition_definitions),
     )
-    sig_gen = SignalGenerator(tuple(cnd.factory(c) for c in condition_definitions))
+    sig_gen = SignalGenerator(
+        name,
+        tuple(cnd.factory(c) for c in condition_definitions)
+        )
     sig_gen.name = name
+    sig_gen.condition_definitions = condition_definitions
 
     return sig_gen

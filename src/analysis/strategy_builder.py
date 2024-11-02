@@ -120,6 +120,7 @@ class IStrategy(abc.ABC):
             data with added signals, values for stop loss and
             take profit, and the (theoretical) positions
         """
+        ...
 
     # ----------------------------------------------------------------------------------
     @abc.abstractmethod
@@ -353,14 +354,18 @@ class CompositeStrategy(IStrategy):
         tp.Data
             data with added 'signal' key/values
         """
-        for key in sg.SignalGenerator.dict_keys:
-            if key not in data:
-                logger.debug("creating key '%s' in data", key)
-                data[key] = np.zeros(data['open'].shape)
+        # for key in sg.SignalGenerator.dict_keys:
+        #     if key not in data:
+        #         logger.debug("creating key '%s' in data", key)
+        #         data[key] = np.zeros(data['open'].shape)
 
         [strat.speak(data) for strat, _ in self.sub_strategies.values()]
 
-        # data['signal'] = self._combine_signals(signals)
+        # result = np.array(arrays[0])
+
+        # for array in arrays[1:]:
+        #     result = np.add(result, array)
+        # return result
 
         return data
 

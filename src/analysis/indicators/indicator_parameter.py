@@ -79,10 +79,17 @@ class Parameter(Iterable):
         return f"Parameter {self.name} -> {self.value}"
 
     def __iter__(self):
-        return iter(np.arange(self.hard_min, self.hard_max + self.step, self.step))
+        return iter(
+            np.arange(self.hard_min, self.hard_max, self.step)
+            )
 
     def __post_init__(self):
         self._value = self.initial_value
+
+        if self._value is None:
+            raise ValueError(
+                f"initial_value of parameter {self.name} is None"
+                )
 
         for elem in ("period", "lookback", "type"):
             if elem in self.name.lower():
@@ -123,6 +130,10 @@ class Parameter(Iterable):
             • if negative values for categorical parameters are requested
         """
         self._value = self._validate(value)
+
+        if self._value is None:
+            raise TypeError(f"Invalid value {self._value} for parameter {self.name}")
+
         logger.info(f"Set parameter {self.name} to {self._value}")
 
     @property
@@ -154,7 +165,7 @@ class Parameter(Iterable):
         if isinstance(self._value, str):
             return self._validate_string(value)
 
-        if isinstance(self._value, (int, float)):
+        if isinstance(self._value, (int, float, np.int64)):
             return self._validate_numerical_value(value)
 
     def validate_type(self, value):
@@ -167,9 +178,14 @@ class Parameter(Iterable):
         """
         if self._value is str:
             return self._validate_string(value)
-        if isinstance(self._value, (int, float)):
+        if isinstance(self._value, (int, float, np.int64)):
             return self._validate_numerical_value(value)
-        raise TypeError(f"invalid type for parameter {self.name}: {type(value)}")
+
+        raise TypeError(
+            f"{self.name} / {value} -> expected {type(self._value)}"
+            f", but got {type(value)}\n"
+            f"{self.__dict__}"
+            )
 
     def _validate_string(self, value):
         """Validates a string value

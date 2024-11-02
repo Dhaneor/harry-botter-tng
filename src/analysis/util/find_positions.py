@@ -13,7 +13,6 @@ from numba import jit, int8
 from src.helpers.timeops import execution_time
 
 LOG_LEVEL = "INFO"
-MAX_LEVERAGE = 20
 
 logger = logging.getLogger("main.position_finder")
 logger.setLevel(LOG_LEVEL)

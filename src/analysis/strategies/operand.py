@@ -52,7 +52,7 @@ from ..indicators import indicator as ind
 from ..util import proj_types as tp
 
 logger = logging.getLogger("main.operand")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 # build a list of all available indicators, that can later be used
 # to do a fast check if requested indicators are available.

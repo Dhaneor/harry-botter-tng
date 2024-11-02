@@ -20,16 +20,12 @@ cci = sg.SignalsDefinition(
         interval="1d",
         operand_a=(
             "cci",
-            {"timeperiod": timeperiod},
+            {"timeperiod": 70},
         ),
-        operand_b=(
-            "cci_oversold",
-            trigger * -1,
-            {"parameter_space": {"cci_oversold": [-70, -200, 10]}},
-        ),
-        operand_c=("cci_overbought", trigger, [70, 200, 10]),
-        open_long=("a", cn.COMPARISON.IS_BELOW, "b"),
-        open_short=("a", cn.COMPARISON.IS_ABOVE, "c"),
+        operand_b=("cci_oversold", -200 * -1, [-200, -70, 15]),
+        operand_c=("cci_overbought", 67, [70, 200, 15]),
+        open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
+        open_short=("a", cn.COMPARISON.CROSSED_BELOW, "c"),
     ),
 )
 
@@ -39,9 +35,9 @@ rsi = sg.SignalsDefinition(
     name=f"RSI {timeperiod}",
     conditions=cn.ConditionDefinition(
         interval="1d",
-        operand_a=("rsi", {"timeperiod": timeperiod}),
-        operand_b=("rsi_oversold", 30, {"parameter_space": {"value": [5, 35]}}),
-        operand_c=("rsi_overbought", 70, {"parameter_space": {"value": [65, 95]}}),
+        operand_a=("rsi", {"timeperiod": 2}),
+        operand_b=("rsi_oversold", 182, [5, 35, 2]),
+        operand_c=("rsi_overbought", 127, [65, 95, 2]),
         open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
         open_short=("a", cn.COMPARISON.CROSSED_BELOW, "c"),
     ),
@@ -54,8 +50,8 @@ kama_cross = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("kama", {"timeperiod": timeperiod}),
-            operand_b=("kama", {"timeperiod": timeperiod * 4}),
+            operand_a=("kama", {"timeperiod": 2}),
+            operand_b=("kama", {"timeperiod": 157}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
@@ -70,8 +66,8 @@ breakout = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod": timeperiod}),
-            operand_c=("min", {"timeperiod": timeperiod}),
+            operand_b=("max", {"timeperiod": 27}),
+            operand_c=("min", {"timeperiod": 27}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
             open_short=("a", cn.COMPARISON.IS_EQUAL, "c"),
         ),
@@ -102,54 +98,47 @@ trix = sg.SignalsDefinition(
     ],
 )
 
-linreg_timeperiod = 60
 
 linreg_roc = sg.SignalsDefinition(
-    name=f"Linear Regression ROC {linreg_timeperiod}",
+    name="ROC 57 - Linear Regression 7",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
             operand_a=(
                 "roc",
-                ("linearreg", "close", {"timeperiod": linreg_timeperiod}),
-                {"timeperiod": 2},
+                ("linearreg", "close", {"timeperiod": 7}),
+                {"timeperiod": 32},
             ),
-            operand_b=(
-                "value",
-                0,
-                {"parameter_space": {"value": [-10, 10, 1]}},
-            ),
-            open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
-            open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
+            # operand_b=(
+            #     "roc",
+            #     ("linearreg", "close", {"timeperiod": 7}),
+            #     {"timeperiod": 32},
+            # ),
+            operand_c=("value", 0, [-3, 3, 3]),
+            operand_d=("value", 0, [-3, 3, 3]),
+            open_long=("a", cn.COMPARISON.IS_ABOVE, "c"),
+            open_short=("a", cn.COMPARISON.IS_BELOW, "d"),
         ),
     ],
 )
 
-# linreg = sg.SignalsDefinition(
-#     name=f"Linear Regression Slope {linreg_timeperiod}",
-#     conditions=[
-#         cn.ConditionDefinition(
-#             interval="1d",
-#             operand_a=(
-#                 "linearreg_slope",
-#                 "close",
-#                 {"timeperiod": linreg_timeperiod},
-#             ),
-#             operand_b=(
-#                 "slope",
-#                 0,
-#                 {"parameter_space": {"value": [-10, 10, 1]}},
-#                 ),
-#             operand_c=(
-#                 "linearreg",
-#                 "close",
-#                 {"timeperiod": linreg_timeperiod},
-#             ),
-#             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
-#             open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
-#         ),
-#     ],
-# )
+linreg = sg.SignalsDefinition(
+    name=f"Linear Regression Slope {linreg_timeperiod}",
+    conditions=[
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=(
+                "linearreg_slope",
+                "close",
+                {"timeperiod": 47},
+            ),
+            operand_b=("slope", -1, [-10, 10, 1]),
+            # operand_c=("slope", 0, [-10, 10, 1]),
+            open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
+            open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+        ),
+    ],
+)
 
 
 timeperiod = randint(30, 50)
@@ -160,8 +149,8 @@ ema_cross = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("ema", {"timeperiod": timeperiod}),
-            operand_b=("ema", {"timeperiod": timeperiod * 4}),
+            operand_a=("ema", {"timeperiod": 7}),
+            operand_b=("ema", {"timeperiod": 82}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
@@ -175,8 +164,8 @@ tema_cross = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("tema", {"timeperiod": timeperiod}),
-            operand_b=("tema", {"timeperiod": timeperiod * 4}),
+            operand_a=("tema", {"timeperiod": 7}),
+            operand_b=("tema", {"timeperiod": 82}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
@@ -193,19 +182,19 @@ contra_1 = sb.StrategyDefinition(
     interval="1d",
     sub_strategies=[
         sb.StrategyDefinition(
-            strategy="CCI",
-            symbol="BTCUSDT",
-            interval="1d",
-            signals_definition=cci,
-            weight=0.3,
-        ),
-        sb.StrategyDefinition(
             strategy="RSI",
             symbol="BTCUSDT",
             interval="1d",
             signals_definition=rsi,
             weight=0.3,
         ),
+        # sb.StrategyDefinition(
+        #     strategy="RSI",
+        #     symbol="BTCUSDT",
+        #     interval="1d",
+        #     signals_definition=rsi,
+        #     weight=0.3,
+        # ),
     ]
 )
 

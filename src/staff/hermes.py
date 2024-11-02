@@ -5,6 +5,7 @@ Created on Sun Jan 31 00:57:06 2021
 
 @author: dhaneor
 """
+import inspect
 import sys
 import concurrent.futures
 import time
@@ -857,6 +858,17 @@ class Hermes(HermesDataBase):
         :param verbose: talk more or less during operation, defaults to False
         :type verbose: bool, optional
         """
+        # Log the calling function and line number
+        current_frame = inspect.currentframe()
+        caller_frame = current_frame.f_back
+        if caller_frame:
+            caller_info = inspect.getframeinfo(caller_frame)
+            logger.debug(
+                f"Hermes __init__ called from {caller_info.filename}, line {caller_info.lineno}, function {caller_info.function}"
+                )
+        else:
+            logger.debug("Hermes __init__ called, but couldn't determine caller")
+
         self.name = "HERMES"
         self.mode = mode
         self.verbose = verbose

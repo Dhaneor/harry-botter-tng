@@ -63,7 +63,7 @@ class Minerva:
 
             _, ax_width = _get_ax_size(ax)
             corr_factor = 86400 / timedelta
-            value_factor = values / 1000
+            value_factor = values / 100
 
             width = round(
                 (
@@ -83,7 +83,7 @@ class Minerva:
 
         ax.set_title(self.title, y=1.0, pad=-14)
 
-        width, width2 = _get_linewidth()
+        width, width2 = self._get_linewidth(ax)
 
         bull, alpha_bull = self.bull[0], self.bull[1]
         bear, alpha_bear = self.bear[0], self.bear[1]
@@ -535,15 +535,20 @@ class Minerva:
         ax = self.axes[-2]
         self.df["cptl.drawdown"] = self.df["cptl.drawdown"].replace("", np.NaN)
         self.df["cptl.drawdown"] = self.df["cptl.drawdown"] * 100 * -1
+        self.df["b.drawdown"] = self.df["b.drawdown"].replace("", np.NaN)
+        self.df["b.drawdown"] = self.df["b.drawdown"] * 100 * -1
         self.df["hodl.drawdown"] = self.df["hodl.drawdown"].replace("", np.NaN)
         self.df["hodl.drawdown"] = self.df["hodl.drawdown"] * 100 * -1
 
-        ax.plot(
-            self.df["cptl.drawdown"],
-            color=self.line_colors[3],
-            linewidth=0.3,
-            alpha=self.line_alphas[3],
-            label="Strategy Drawdown",
+        ax.fill_between(
+            x=self.df.index,
+            y1=self.df["hodl.drawdown"],
+            y2=0,  # self.df["cptl.b"],
+            color=self.line_colors[0],
+            edgecolor=self.line_colors[0],
+            alpha=self.channel_bg[1] / 2,
+            linewidth=0.1,
+            zorder=-5,
         )
         ax.plot(
             self.df["hodl.drawdown"],
@@ -552,6 +557,25 @@ class Minerva:
             alpha=self.line_alphas[0],
             linestyle="dotted",
             label="HODL Drawdown",
+        )
+
+        ax.fill_between(
+            x=self.df.index,
+            y1=self.df["b.drawdown"],
+            y2=0,  # self.df["cptl.b"],
+            color=self.channel_bg[0],
+            edgecolor=self.channel[0],
+            alpha=self.channel_bg[1] * 2,
+            linewidth=0.1,
+            zorder=-4,
+        )
+
+        ax.plot(
+            self.df["b.drawdown"],
+            color=self.line_colors[3],
+            linewidth=0.3,
+            alpha=self.line_alphas[3],
+            label="Strategy Drawdown",
         )
 
         # ax.fill_between(
@@ -568,16 +592,16 @@ class Minerva:
     def portfolio_value(self):
         ax = self.axes[-1]
 
-        # ax.fill_between(
-        #     x=self.df.index,
-        #     y1=self.df["b.value"],
-        #     y2=self.df["cptl.b"],
-        #     color=self.channel_bg[0],
-        #     edgecolor=self.channel[0],
-        #     alpha=self.channel_bg[1],
-        #     linewidth=0.1,
-        #     zorder=-5,
-        # )
+        ax.fill_between(
+            x=self.df.index,
+            y1=self.df["b.value"],
+            y2=self.df["cptl.b"],
+            color=self.channel_bg[0],
+            edgecolor=self.channel[0],
+            alpha=self.channel_bg[1],
+            linewidth=0.1,
+            zorder=-5,
+        )
 
         ax.plot(
             self.df["b.value"],
@@ -837,7 +861,7 @@ class Minerva:
 
         _, ax_width = self._get_ax_size(ax)
         corr_factor = 86400 / timedelta
-        value_factor = values / 10000
+        value_factor = values / 500
 
         width = round(((ax_width) / (values) * value_factor) / corr_factor, precision)
 

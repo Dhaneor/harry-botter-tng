@@ -14,7 +14,7 @@ from numba import jit, int8
 from .util import proj_types as tp
 from .strategy_builder import IStrategy
 from .util.find_positions import find_positions_with_dict, merge_signals
-from .leverage import max_leverage
+from .leverage import calculate_leverage
 
 logger = logging.getLogger('main.backtest')
 logger.setLevel('DEBUG')
@@ -187,21 +187,33 @@ def calculate_trades(data: tp.Data, initial_capital: float = 1000) -> None:
 
 # =====================================================================================
 # @execution_time
-def run(strategy: IStrategy, data: tp.Data, initial_capital: float, risk_level: float):
+def run(
+    strategy: IStrategy,
+    data: tp.Data,
+    initial_capital: float,
+    risk_level: float = 0,
+    max_leverage: float = 1
+):
 
     # add signals
-    strategy.speak(data)
+    if isinstance(strategy, IStrategy):
+        strategy.speak(data)
+    else:
+        strategy.execute(data)
     merge_signals(data)
 
+    # add leverage
+    if risk_level:
+        data["leverage"] = calculate_leverage(data, max_leverage, risk_level)
+    else:
+        data['leverage'] = np.full_like(data['close'], max_leverage, dtype=np.float64)
+
+    # remove the first 200 data points (they were only necessary for the
+    # calculation of indicators and leverage)
     data = {key: arr[200:] for key, arr in data.items()}
 
     # add positions
     find_positions_with_dict(data)
-
-    # add leverage
-    data["leverage"] = max_leverage(data, risk_level)
-    data["leverage"] = np.clip(data["leverage"], 0, 2)
-    # data['leverage'] = np.full_like(data['close'], 1, dtype=np.float64)
 
     # calculate the actual trades
     calculate_trades(data, initial_capital)
