@@ -29,6 +29,18 @@ OhlcvData = dict[np.ndarray]
 
 TIME_FOR_ONE_BACKTEST = 6  # execution time for one backtest in milliseconds
 INITIAL_CAPITAL = 10_000  # initial capital for backtesting
+RISK_FREE_RATE = 0.00  # risk-free rate for calculating Sharpe Ratio
+
+PERIODS_PER_YEAR = {
+    '1m': 365 * 24 * 60,
+    '5m': 365 * 24 * 12,
+    '15m': 365 * 24 * 4,
+    '30m': 365 * 24 * 2,
+    '1h': 365 * 24,
+    '4h': 365 * 6,
+    '12h': 365 * 12,
+    '1d': 365
+}
 
 
 # ================================ Helper Functions ===================================
@@ -113,10 +125,14 @@ def vector_diff(vector1: list[T], vector2: list[T]) -> list[T]:
 def optimize(
     signal_generator: SignalGenerator,
     data: OhlcvData,
+    interval: str = '1d',
     risk_levels: Iterable[float] = (1,),
+    max_leverage: float = 1,
     max_drawdown_pct: float = 99,
     backtest_fn: Callable = bt.run
 ) -> List[Tuple[Dict[str, Any], Dict[str, float]]]:
+
+    periods_per_year = PERIODS_PER_YEAR.get(interval, 365)
 
     combinations = number_of_combinations(signal_generator) * len(risk_levels)
     est_exc_time = combinations * estimate_exc_time(backtest_fn, signal_generator, data)
@@ -139,7 +155,10 @@ def optimize(
 
     for risk_level in risk_levels:
         func = partial(
-            backtest_fn, risk_level=risk_level, initial_capital=INITIAL_CAPITAL
+            backtest_fn,
+            risk_level=risk_level,
+            initial_capital=INITIAL_CAPITAL,
+            max_leverage=max_leverage
         )
 
         for params in vector_generator(signal_generator.parameters):
@@ -157,7 +176,13 @@ def optimize(
             # If profitable, store the result
             if portfolio_values[-1] > INITIAL_CAPITAL:
                 profitable_results.append(
-                    (params, risk_level, calculate_statistics(portfolio_values))
+                    (
+                        params,
+                        risk_level,
+                        calculate_statistics(
+                            portfolio_values, RISK_FREE_RATE, periods_per_year
+                        )
+                    )
                 )
 
             # Update progress

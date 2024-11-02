@@ -154,7 +154,7 @@ def _aggressive_sizing(data: dict, risk_limit_per_trade: float) -> np.ndarray:
 
 
 def _conservative_sizing(
-    data: dict, target_risk_annual: float, smoothing: int = 3
+    data: dict, max_leverage: float, target_risk_annual: float, smoothing: int = 1
 ) -> np.ndarray:
     """Calculates the maximum leverage based on 'close' prices.
 
@@ -180,11 +180,23 @@ def _conservative_sizing(
     np.ndarray
         the maximum leverage
     """
-    leverage = target_risk_annual / vol_anno(
-        data["close"], _interval_in_ms(data)
+    annualized_volatility = vol_anno(
+        close=data["close"],
+        interval_in_ms=_interval_in_ms(data),
+        lookback=21,
+        use_log_returns=True  # Changed to True for potentially better estimates
     )
 
-    return np.nan_to_num(bn.move_mean(leverage, smoothing))
+    # Apply smoothing to volatility
+    smoothed_volatility = bn.move_mean(annualized_volatility, smoothing)
+
+    # Calculate leverage
+    leverage = target_risk_annual / smoothed_volatility
+
+    # Apply maximum leverage limit
+    leverage = np.minimum(leverage, max_leverage)
+
+    return np.nan_to_num(leverage)
 
 
 # ======================================================================================
@@ -203,7 +215,7 @@ run_funcs = {
 }
 
 
-def max_leverage(data: dict, risk_level: int = 1) -> np.ndarray:
+def calculate_leverage(data: dict, max_leverage: float, risk_level: int = 1) -> np.ndarray:
     """Calculates the maximum leverage based on 'close' prices.
 
     Parameters
@@ -224,7 +236,7 @@ def max_leverage(data: dict, risk_level: int = 1) -> np.ndarray:
     KeyError
         if the risk level is not valid
     """
-    return run_funcs[risk_level](data=data)
+    return run_funcs[risk_level](data=data, max_leverage=max_leverage)
 
 
 def valid_risk_levels() -> tuple[int]:

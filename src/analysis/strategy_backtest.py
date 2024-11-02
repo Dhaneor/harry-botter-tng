@@ -14,7 +14,7 @@ from numba import jit, int8
 from .util import proj_types as tp
 from .strategy_builder import IStrategy
 from .util.find_positions import find_positions_with_dict, merge_signals
-from .leverage import max_leverage
+from .leverage import calculate_leverage
 
 logger = logging.getLogger('main.backtest')
 logger.setLevel('DEBUG')
@@ -191,7 +191,8 @@ def run(
     strategy: IStrategy,
     data: tp.Data,
     initial_capital: float,
-    risk_level: float = 0
+    risk_level: float = 0,
+    max_leverage: float = 1
 ):
 
     # add signals
@@ -203,10 +204,9 @@ def run(
 
     # add leverage
     if risk_level:
-        data["leverage"] = max_leverage(data, risk_level)
-        data["leverage"] = np.clip(data["leverage"], 0, 3)
+        data["leverage"] = calculate_leverage(data, max_leverage, risk_level)
     else:
-        data['leverage'] = np.full_like(data['close'], 1, dtype=np.float64)
+        data['leverage'] = np.full_like(data['close'], max_leverage, dtype=np.float64)
 
     # remove the first 200 data points (they were only necessary for the
     # calculation of indicators and leverage)
