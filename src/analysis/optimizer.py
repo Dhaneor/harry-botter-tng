@@ -8,18 +8,19 @@ Created on July 06 21:12:20 2023
 @author dhaneor
 """
 import logging
+import multiprocessing
 import numpy as np
 import operator
 import sys
 import time
 from collections.abc import Iterable
 from functools import reduce, partial
-from itertools import product
+from itertools import product, islice
 from typing import TypeVar, Generator, Dict, Any, List, Tuple, Callable
 from tqdm import tqdm
 
 from . import strategy_backtest as bt
-from .strategies.signal_generator import SignalGenerator
+from .strategies import signal_generator as sg
 from .backtest.statistics import calculate_statistics
 logger = logging.getLogger('main.optimizer')
 logger.setLevel(logging.INFO)
@@ -43,8 +44,9 @@ PERIODS_PER_YEAR = {
 }
 
 
-# ================================ Helper Functions ===================================
-def number_of_combinations(generator: SignalGenerator) -> int:
+# ================================ Helper Functions I =================================
+# Functions to handle parameter vectors
+def number_of_combinations(generator: sg.SignalGenerator) -> int:
     total_combinations = 1
 
     for indicator in generator.indicators:
@@ -61,7 +63,7 @@ def number_of_combinations(generator: SignalGenerator) -> int:
 
 
 def estimate_exc_time(
-    backtest_fn: Callable, signal_generator: SignalGenerator, data: dict[np.ndarray]
+    backtest_fn: Callable, signal_generator: sg.SignalGenerator, data: dict[np.ndarray]
 ) -> float:
 
     # Run the backtest function once to warm up the JIT compiler
@@ -122,8 +124,100 @@ def vector_diff(vector1: list[T], vector2: list[T]) -> list[T]:
     return [v1 - v2 for v1, v2 in zip(vector1, vector2)]
 
 
+# ================================ Helper Functions II ================================
+# Functions for the parallel execution of backtests
+def chunk_parameters(signal_generator, chunk_size=1000):
+    for _ in range(0, number_of_combinations(signal_generator), chunk_size):
+        yield list(islice(vector_generator(signal_generator.parameters), chunk_size))
+
+
+def _worker_function(
+    chunk,
+    condition_definitions,
+    data,
+    risk_level,
+    max_leverage,
+    backtest_fn,
+    initial_capital,
+    periods_per_year
+):
+    signal_generator = sg.factory(condition_definitions)
+
+    profitable_results = []
+    for params in chunk:
+        for param, value in zip(signal_generator.parameters, params):
+            param.value = value
+
+        portfolio_values = backtest_fn(
+            strategy=signal_generator,
+            data=data,
+            risk_level=risk_level,
+            initial_capital=initial_capital,
+            max_leverage=max_leverage
+        ).get('b.value')
+
+        if portfolio_values[-1] > initial_capital:
+            profitable_results.append(
+                (
+                    params,
+                    risk_level,
+                    calculate_statistics(
+                        portfolio_values=portfolio_values,
+                        periods_per_year=periods_per_year,
+                    )
+                )
+            )
+    return profitable_results
+
+
+# ====================================================================================
 def optimize(
-    signal_generator: SignalGenerator,
+    signal_generator: sg.SignalGenerator,
+    data: OhlcvData,
+    interval: str = '1d',
+    risk_levels: Iterable[float] = (1,),
+    max_leverage: float = 1,
+    max_drawdown_pct: float = 99,
+    backtest_fn: Callable = bt.run
+) -> List[Tuple[Dict[str, Any], Dict[str, float]]]:
+
+    periods_per_year = PERIODS_PER_YEAR.get(interval, 365)
+    combinations = number_of_combinations(signal_generator) * len(risk_levels)
+    est_exc_time = combinations * estimate_exc_time(backtest_fn, signal_generator, data)
+
+    logger.info("Starting parallel optimization...")
+    logger.info("testing %s combinations", combinations)
+    logger.info("Estimated execution time: %.2fs", est_exc_time)
+
+    profitable_results = []
+    chunk_size = 1000  # Adjust this based on your system's capabilities
+
+    with multiprocessing.Pool() as pool:
+        with tqdm(total=combinations, desc="Optimizing") as pbar:
+            for risk_level in risk_levels:
+                worker = partial(
+                    _worker_function,
+                    condition_definitions=signal_generator.condition_definitions,
+                    data=data,
+                    risk_level=risk_level,
+                    backtest_fn=backtest_fn,
+                    initial_capital=INITIAL_CAPITAL,
+                    max_leverage=max_leverage,
+                    periods_per_year=periods_per_year,
+                )
+
+                chunks = list(chunk_parameters(signal_generator, chunk_size))
+
+                for result in pool.imap_unordered(worker, chunks):
+                    profitable_results.extend(result)
+                    pbar.update(len(result))
+
+    return profitable_results
+
+
+# ====================================================================================
+def soptimize(
+    signal_generator: sg.SignalGenerator,
     data: OhlcvData,
     interval: str = '1d',
     risk_levels: Iterable[float] = (1,),

@@ -215,7 +215,11 @@ run_funcs = {
 }
 
 
-def calculate_leverage(data: dict, max_leverage: float, risk_level: int = 1) -> np.ndarray:
+def calculate_leverage(
+    data: dict,
+    max_leverage: float,
+    risk_level: int = 1
+) -> np.ndarray:
     """Calculates the maximum leverage based on 'close' prices.
 
     Parameters

@@ -149,6 +149,17 @@ def test_factory(sig_def):
     return sig_gen
 
 
+def test_factory_from_existing(sig_gen):
+    try:
+        sig_gen_new = sg.factory(sig_gen.condition_definitions)
+    except Exception as exc:
+        logger.exception(exc)
+        sys.exit()
+
+    logger.info("created new signal generator from existing: %s", sig_gen_new)
+    return sig_gen_new
+
+
 def test_execute(sig_gen, data, weight, show=False, plot=False):
     for key in sg.SignalGenerator.dict_keys:
         if key not in data:
@@ -366,19 +377,21 @@ def test_plot_desc(sig_gen):
 if __name__ == "__main__":
     sig_gen = test_factory(linreg_roc)
 
+    sig_gen = test_factory_from_existing(sig_gen)
+
     # test_signal_definition(True)
 
     # sig_gen = test_factory(linreg_roc)
     # test_plot_desc(sig_gen)
 
     # test_get_all_used_indicators()
-    test_get_all_operands()
+    # test_get_all_operands()
 
     if not sig_gen:
         sys.exit()
 
     # test_plot_desc(sig_gen)
-    test_execute(sig_gen, data, 1, True, True)
+    # test_execute(sig_gen, data, 1, True, True)
     # test_returns(sig_gen, data, True)
 
     sys.exit()
@@ -387,12 +400,11 @@ if __name__ == "__main__":
     data = data
     st = time.time()
 
-    # for i in range(runs):
-    #    pass
+    logger.setLevel(logging.ERROR)
 
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            _ = sig_gen.plot_desc
+            _ = test_factory(linreg_roc)
 
     (
         Stats(p)

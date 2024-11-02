@@ -59,7 +59,7 @@ strategy: sb.CompositeStrategy = sb.build_strategy(strategy)
 # ---------------------------------------- SETUP -------------------------------------
 # Create a signal generator
 sub_strategy: sb.SubStrategy = [v for v in strategy.sub_strategies.values()][0][0]
-print(sub_strategy)
+# print(sub_strategy)
 
 sig_gen = sub_strategy._signal_generator
 

@@ -61,6 +61,7 @@ from ..indicators.indicator import PlotDescription, Indicator
 from ..indicators.indicator_parameter import Parameter
 
 logger = logging.getLogger("main.signal_generator")
+logger.setLevel(logging.ERROR)
 
 PositionTypeT = Literal["open_long", "open_short", "close_long", "close_short"]
 
@@ -127,15 +128,16 @@ class SignalGenerator:
         "close_short",
     )
 
-    def __init__(self, conditions: Sequence[cnd.Condition]):
+    def __init__(self, name, conditions: Sequence[cnd.Condition]):
         """Initializes the signal generator.
 
         The instance attributes are not set here. Use the factory
         function of this module to create instances of SignalGenerator!
 
         """
-        self.name: str
+        self.name: str = name
         self.conditions: Sequence[cnd.Condition] = conditions
+        self.conditions_definitions: Sequence[cnd.ConditionDefinition] | None = None
 
     def __repr__(self):
         return (
@@ -314,13 +316,13 @@ def factory(
             # make sure we have a sequence, the elements will be validated
             # later in the condition factory function
             condition_definitions = (
-                list((condition_definitions,))
+                tuple((condition_definitions,))
                 if isinstance(condition_definitions, cnd.ConditionDefinition)
                 else condition_definitions
             )
 
-        case Sequence():
-            name = "unnamed"
+        case tuple() | list():
+            name = "Unnnamed SignalGenerator"
             condition_definitions = sig_def
 
         case _:
@@ -332,7 +334,11 @@ def factory(
     logger.debug(
         "... Processing %s condition definition(s) ...", len(condition_definitions),
     )
-    sig_gen = SignalGenerator(tuple(cnd.factory(c) for c in condition_definitions))
+    sig_gen = SignalGenerator(
+        name,
+        tuple(cnd.factory(c) for c in condition_definitions)
+        )
     sig_gen.name = name
+    sig_gen.condition_definitions = condition_definitions
 
     return sig_gen
