@@ -45,11 +45,11 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 symbol = "BTCUSDT"
 interval = "12h"
 
-start = -3000  # 'December 01, 2018 00:00:00'
+start = -365*2*3  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
 strategy = s_linreg
-risk_levels = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+risk_levels = [1, 2]
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -119,7 +119,7 @@ def test_optimize():
         signal_generator=sig_gen,
         data=_get_ohlcv_from_db(),
         risk_levels=risk_levels,
-        max_drawdown_pct=60
+        max_drawdown_pct=30
     )
 
     if not best_parameters:

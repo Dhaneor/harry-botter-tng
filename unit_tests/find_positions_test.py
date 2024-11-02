@@ -51,11 +51,11 @@ from src.backtest import result_stats as rs  # noqa: E402, F401
 symbol = "BTCUSDT"
 interval = "12h"
 
-start = -3000  # 'December 01, 2018 00:00:00'
+start = -365*2*3  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
 strategy = s_linreg
-risk_level = 0
+risk_level = 3
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')

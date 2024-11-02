@@ -137,6 +137,36 @@ def calculate_kalmar_ratio(
     return annualized_return / abs(max_drawdown) if max_drawdown != 0 else np.inf
 
 
+def calculate_annualized_volatility(
+    portfolio_values: np.ndarray,
+    periods_per_year: int = 365,
+    use_log_returns: bool = True
+) -> float:
+    """
+    Calculate the annualized volatility of the portfolio.
+
+    Parameters:
+    ----------
+    portfolio_values : np.ndarray
+        1D array of portfolio values over time.
+    periods_per_year : int, optional
+        Number of periods in a year (default is 365 for daily data).
+    use_log_returns : bool, optional
+        Whether to use log returns or simple returns (default is True).
+
+    Returns:
+    -------
+    float
+        Annualized volatility as a percentage.
+    """
+    if use_log_returns:
+        returns = np.log(portfolio_values[1:] / portfolio_values[:-1])
+    else:
+        returns = portfolio_values[1:] / portfolio_values[:-1] - 1
+
+    return np.std(returns) * np.sqrt(periods_per_year) * 100
+
+
 def calculate_statistics_min(portfolio_values: np.ndarray) -> dict:
     """
     Calculate all statistics for a given backtest result.
@@ -176,5 +206,8 @@ def calculate_statistics(portfolio_values: np.ndarray) -> dict:
         'max_drawdown': calculate_max_drawdown(portfolio_values),
         'sharpe_ratio': calculate_sharpe_ratio(portfolio_values),
         'sortino_ratio': calculate_sortino_ratio(portfolio_values),
-        'kalmar_ratio': calculate_kalmar_ratio(portfolio_values)
+        'kalmar_ratio': calculate_kalmar_ratio(portfolio_values),
+        'annualized_volatility': calculate_annualized_volatility(
+            portfolio_values, use_log_returns=False
+            )
     }

@@ -347,7 +347,7 @@ class Condition:
         return self.operand_a, self.operand_b, self.operand_c, self.operand_d
 
     @property
-    def indicators(self) -> Iterable[op.ind.Indicator]:
+    def indicators(self) -> tuple[op.ind.Indicator]:
         """Return all indicators used in the condition
 
         This is for use by the optimizer(s).

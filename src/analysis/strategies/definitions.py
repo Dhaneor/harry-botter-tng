@@ -106,10 +106,10 @@ linreg_roc = sg.SignalsDefinition(
             interval="1d",
             operand_a=(
                 "roc",
-                ("linearreg", "close", {"timeperiod": 7}),
-                {"timeperiod": 67},
+                ("linearreg", "close", {"timeperiod": 122}),
+                {"timeperiod": 7},
             ),
-            operand_b=("value", -3, [-3, 1, 3]),
+            operand_b=("value", -0, [-3, 1, 3]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
         ),

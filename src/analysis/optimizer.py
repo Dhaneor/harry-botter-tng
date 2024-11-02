@@ -51,6 +51,15 @@ def number_of_combinations(generator: SignalGenerator) -> int:
 def estimate_exc_time(
     backtest_fn: Callable, signal_generator: SignalGenerator, data: dict[np.ndarray]
 ) -> float:
+
+    # Run the backtest function once to warm up the JIT compiler
+    backtest_fn(
+        data=data,
+        strategy=signal_generator,
+        initial_capital=INITIAL_CAPITAL
+    )
+
+    # Run the backtest 50 times to get an average execution time
     execution_time, runs = 0.0, 50
     for _ in range(runs):  # run 100 times to get an average execution time
         start_time = time.time()
