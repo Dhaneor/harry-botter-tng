@@ -36,8 +36,8 @@ rsi = sg.SignalsDefinition(
     conditions=cn.ConditionDefinition(
         interval="1d",
         operand_a=("rsi", {"timeperiod": 2}),
-        operand_b=("rsi_oversold", 33, [5, 35, 2]),
-        operand_c=("rsi_overbought", 67, [65, 95, 2]),
+        operand_b=("rsi_oversold", 182, [5, 35, 2]),
+        operand_c=("rsi_overbought", 127, [65, 95, 2]),
         open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
         open_short=("a", cn.COMPARISON.CROSSED_BELOW, "c"),
     ),
@@ -66,8 +66,8 @@ breakout = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod": 7}),
-            operand_c=("min", {"timeperiod": 27}),
+            operand_b=("max", {"timeperiod": 127}),
+            operand_c=("min", {"timeperiod": 182}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
             open_short=("a", cn.COMPARISON.IS_EQUAL, "c"),
         ),

@@ -14,7 +14,6 @@ import pandas as pd
 # profiler imports
 from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
-from tqdm import tqdm  # noqa: F401
 
 LOG_LEVEL = "DEBUG"
 logger = logging.getLogger('main')
@@ -54,8 +53,8 @@ interval = "12h"
 start = -365*2*3  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_linreg
-risk_level = 3
+strategy = s_breakout
+risk_level = 2
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')

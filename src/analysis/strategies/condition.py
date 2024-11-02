@@ -281,6 +281,22 @@ class ConditionResult(NamedTuple):
             close_short=res[3],
         )
 
+    def apply_weight(self, weight: float) -> 'ConditionResult':
+        res = []
+
+        for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
+            if getattr(self, attr) is None:
+                res.append(None)
+            else:
+                res.append(np.multiply(getattr(self, attr), weight))
+
+        return ConditionResult(
+            open_long=res[0],
+            open_short=res[1],
+            close_long=res[2],
+            close_short=res[3],
+        )
+
     def as_dict(self):
 
         return {

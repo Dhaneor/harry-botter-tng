@@ -542,21 +542,13 @@ class Minerva:
 
         ax.fill_between(
             x=self.df.index,
-            y1=self.df["b.drawdown"],
+            y1=self.df["hodl.drawdown"],
             y2=0,  # self.df["cptl.b"],
-            color=self.channel_bg[0],
-            edgecolor=self.channel[0],
-            alpha=self.channel_bg[1],
+            color=self.line_colors[0],
+            edgecolor=self.line_colors[0],
+            alpha=self.channel_bg[1] / 2,
             linewidth=0.1,
             zorder=-5,
-        )
-
-        ax.plot(
-            self.df["b.drawdown"],
-            color=self.line_colors[3],
-            linewidth=0.3,
-            alpha=self.line_alphas[3],
-            label="Strategy Drawdown",
         )
         ax.plot(
             self.df["hodl.drawdown"],
@@ -565,6 +557,25 @@ class Minerva:
             alpha=self.line_alphas[0],
             linestyle="dotted",
             label="HODL Drawdown",
+        )
+
+        ax.fill_between(
+            x=self.df.index,
+            y1=self.df["b.drawdown"],
+            y2=0,  # self.df["cptl.b"],
+            color=self.channel_bg[0],
+            edgecolor=self.channel[0],
+            alpha=self.channel_bg[1] * 2,
+            linewidth=0.1,
+            zorder=-4,
+        )
+
+        ax.plot(
+            self.df["b.drawdown"],
+            color=self.line_colors[3],
+            linewidth=0.3,
+            alpha=self.line_alphas[3],
+            label="Strategy Drawdown",
         )
 
         # ax.fill_between(
