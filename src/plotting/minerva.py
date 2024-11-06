@@ -482,7 +482,20 @@ class Minerva:
         self.df["leverage"] = self.df["leverage"].replace("", np.NaN)
         self.df = self.df.replace({'buy_at': {0: np.nan}})
 
+        self.df.loc[self.df["position"] == 0, "leverage"] = 0
+
         ax = self.axes[-4]
+
+        ax.fill_between(
+            x=self.df.index,
+            y1=self.df["leverage"],
+            y2=0,
+            color=self.line_colors[3],
+            edgecolor=self.line_colors[3],
+            alpha=self.channel_bg[1],
+            linewidth=0.1,
+            zorder=-5,
+        )
 
         ax.plot(
             self.df["leverage"],
@@ -502,6 +515,17 @@ class Minerva:
 
         if "b.base" not in self.df.columns:
             return
+
+        ax.fill_between(
+            x=self.df.index,
+            y1=self.df["b.base"],
+            y2=0,
+            color=self.line_colors[1],
+            edgecolor=self.line_colors[1],
+            alpha=self.channel_bg[1],
+            linewidth=0.1,
+            zorder=-5,
+        )
 
         ax.plot(
             self.df["b.base"],

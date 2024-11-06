@@ -30,7 +30,8 @@ sys.path.append(parent)
 from src.analysis.strategies import signal_generator as sg  # noqa: E402
 from src.analysis.strategies import condition as cn  # noqa: E402
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
-    cci, ema_cross, tema_cross, rsi, trix, breakout, linreg_roc
+    cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
+    linreg_roc_btc_1d, linreg_roc_eth_1d
 )
 from src.analysis.strategies import strategy_plot as sp  # noqa: E402
 from helpers_ import get_sample_data, get_ohlcv  # noqa: E402, F401
@@ -49,7 +50,7 @@ logger.addHandler(ch)
 
 # set interval and length of test data
 interval = "1d"
-length = 1500
+length = 365*6
 
 # ======================================================================================
 # df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
@@ -74,7 +75,7 @@ length = 1500
 # df.dropna(inplace=True)
 
 try:
-    df = get_ohlcv(symbol="BTCUSDT", interval="1h", as_dataframe=True)
+    df = get_ohlcv(symbol="BTCUSDT", interval="1d", as_dataframe=True)
 except Exception as e:
     logger.error(f"Error fetching data: {e}")
     sys.exit()
@@ -342,7 +343,7 @@ def test_returns(sig_gen: sg.SignalGenerator, data, show=False):
 
 
 def test_get_all_used_indicators():
-    sig_gen = test_factory(linreg_roc)
+    sig_gen = test_factory(linreg_roc_btc_1d)
 
     logger.debug(sig_gen.indicators)
 
@@ -359,7 +360,7 @@ def test_get_all_used_indicators():
 
 def test_get_all_operands():
     """Gets all operands in the SignalGenerator. """
-    sig_gen = test_factory(linreg_roc)
+    sig_gen = test_factory(linreg_roc_btc_1d)
 
     for n, cond in enumerate(sig_gen.conditions):
         for op in filter(lambda x: x is not None, cond.operands):
@@ -375,7 +376,7 @@ def test_plot_desc(sig_gen):
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    sig_gen = test_factory(linreg_roc)
+    sig_gen = test_factory(kama_cross)
 
     sig_gen = test_factory_from_existing(sig_gen)
 
@@ -391,7 +392,7 @@ if __name__ == "__main__":
         sys.exit()
 
     # test_plot_desc(sig_gen)
-    # test_execute(sig_gen, data, 1, True, True)
+    test_execute(sig_gen, data, 1, True, True)
     # test_returns(sig_gen, data, True)
 
     sys.exit()
@@ -404,7 +405,7 @@ if __name__ == "__main__":
 
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            _ = test_factory(linreg_roc)
+            _ = test_factory(linreg_roc_btc_1d)
 
     (
         Stats(p)

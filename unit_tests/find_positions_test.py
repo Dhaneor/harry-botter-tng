@@ -9,6 +9,7 @@ import sys
 import os
 import time
 import logging
+import numpy as np
 import pandas as pd
 
 # profiler imports
@@ -48,14 +49,14 @@ from src.plotting.minerva import BacktestChart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
 
 symbol = "BTCUSDT"
-interval = "1d"
+interval = "12h"
 
-start = -365*5  # 'December 01, 2018 00:00:00'
+start = int(-365*5*2)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_linreg
-risk_level = 3
-max_leverage = 2
+strategy = s_breakout
+risk_level = 4
+max_leverage = 1.5
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -119,7 +120,24 @@ def _get_ohlcv_from_db():
 
 
 def _run_backtest(data: dict):
-    return bt.run(strategy, data, initial_capital, risk_level, max_leverage)
+    result = bt.run(strategy, data, initial_capital, risk_level, max_leverage)
+    df = pd.DataFrame.from_dict(result)
+
+    # Check if portfolio value ever goes negative
+    if (df['b.value'] < 0).any():
+        print("Warning: Portfolio value went below 0 during the backtest.")
+
+        # Find the first index where portfolio value is negative
+        first_negative_index = df.index[df['b.value'] < 0][0]
+
+        # Fill specified columns with NaN from this point onwards
+        columns_to_fill = ['b.base', 'b.quote', 'b.value', 'cptl.b']
+        df.loc[first_negative_index:, columns_to_fill] = np.nan
+
+        # Forward fill NaN values
+        df[columns_to_fill] = df[columns_to_fill].ffill()
+
+    return df
 
 
 def _add_stats(df):
@@ -131,13 +149,96 @@ def _show(df):
     bt.show_overview(df=df)
 
 
+def display_problematic_rows(df):
+    df['b.base'] = df['b.base'].astype(float)
+    df['b.quote'] = df['b.quote'].astype(float)
+
+    # Find the first index where b.base > 0
+    # problem_index = df[df['b.quote'] < 0].index[0] \
+    #   if any(df['b.quote'] < 0) else df.index[-1]
+    problem_index = df[df['b.drawdown'] > 1].index[0] \
+        if any(df['b.drawdown'] > 1) else df.index[-1]
+
+    df = df.loc[:problem_index]
+    # df = df[df['cptl.b'] == 12987.936924]
+
+    include_columns = [
+        'close', 'signal', 'position', 'leverage',
+    ]
+
+    stop_loss_columns = ['sl_current', 'sl_pct', 'sl_trig']
+
+    for col in stop_loss_columns:
+        if col in df.columns:
+            include_columns.append(col)
+
+            if col == 'sl.pct':
+                df['sl.pct'] = df['sl.pct'] * 100
+
+    for c in df.columns:
+        if c.split('.')[0] == 'p':
+            include_columns.append(c)
+        if c.split('_')[0] == 'buy':
+            include_columns.append(c)
+        if c.split('_')[0] == 'sell':
+            include_columns.append(c)
+        if c.split('_')[0] == 'tp':
+            include_columns.append(c)
+
+    include_columns += [
+        'b.base', 'b.quote', 'b.value', 'cptl.b',
+        'b.drawdown.max', 'cptl.drawdown.max',
+        'hodl.value', 'hodl.drawdown.max'
+    ]
+
+    # .....................................................................
+    df['b.base'] = df['b.base'].apply(lambda x: '%.8f' % x)
+    df['b.quote'] = df['b.quote'].apply(lambda x: '%.6f' % x)
+
+    # replace certain values for readability
+    df = df.replace(np.nan, '', regex=True)
+    df = df.replace(False, '', regex=True)
+    df = df.replace(0, '', regex=True)
+
+    # replace numerical values with strings for 'position'
+    # for better readability
+    conditions = [(df['position'] == 1),  (df['position'] == -1)]
+    choices = ['LONG', 'SHORT']
+    df['position'] = np.select(conditions, choices, default='')
+
+    # make sure display columns are available in dataframe
+    include_columns = [col for col in include_columns if col in df.columns]
+
+    # Display the relevant rows
+    pd.set_option('display.max_rows', 100)
+    pd.set_option('display.max_columns', None)
+    pd.set_option('display.width', None)
+    pd.set_option('display.max_colwidth', None)
+
+    print('=' * 200)
+    print(df.loc[:, include_columns])
+
+    # Reset display options
+    pd.reset_option('display.max_rows')
+    pd.reset_option('display.max_columns')
+    pd.reset_option('display.width')
+    pd.reset_option('display.max_colwidth')
+
+
 # ..............................................................................
 def run(data, show=False, plot=False):
 
-    df = _add_stats(pd.DataFrame.from_dict(_run_backtest(data)))
+    df = _add_stats(
+        pd.DataFrame.from_dict(
+            _run_backtest(data)
+        )
+    )
 
     if show:
         _show(df)
+
+    # display_problematic_rows(df)
+    # sys.exit()
 
     if plot:
         df.loc[~(df['position'] == 0), 'p.actv'] = True

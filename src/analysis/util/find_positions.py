@@ -5,38 +5,80 @@ Created on July 06 21:12:20 2023
 
 @author dhaneor
 """
-import logging
 import pandas as pd
 import numpy as np
 from numba import jit, int8
 
-from src.helpers.timeops import execution_time
-
-LOG_LEVEL = "INFO"
-
-logger = logging.getLogger("main.position_finder")
-logger.setLevel(LOG_LEVEL)
-
 
 # ==============================================================================
+# def merge_signals(data):
+#     open_long = np.nan_to_num(data["open_long"])
+#     open_short = np.nan_to_num(data["open_short"])
+#     close_long = np.nan_to_num(data["close_long"])
+#     close_short = np.nan_to_num(data["close_short"])
+
+#     data["signal"] = np.where(
+#         open_long > 0, 1, np.where(
+#             open_short > 0, -1, np.where(
+#                 close_long > 0, 0, np.where(
+#                     close_short > 0, 0, np.nan
+#                 )
+#             )
+#         )
+#     )
+
+
+@jit(nopython=True)
+def merge_signals_nb(open_long, open_short, close_long, close_short):
+    n = len(open_long)
+    signal = np.zeros(n, dtype=np.float64)
+    position = np.zeros(n, dtype=np.float64)
+
+    for i in range(n):
+        if i == 0:
+            if open_long[i] > 0:
+                signal[i] = 1
+                position[i] = 1
+            elif open_short[i] > 0:
+                signal[i] = -1
+                position[i] = -1
+        else:
+            prev_position = position[i-1]
+
+            if open_long[i] > 0:
+                signal[i] = 1
+                position[i] = 1
+            elif open_short[i] > 0:
+                signal[i] = -1
+                position[i] = -1
+            elif close_long[i] > 0:
+                if prev_position > 0:
+                    signal[i] = 0
+                    position[i] = 0
+            elif close_short[i] > 0:
+                if prev_position < 0:
+                    signal[i] = 0
+                    position[i] = 0
+            else:
+                signal[i] = np.nan
+                position[i] = prev_position
+
+    return signal, position
+
+
 def merge_signals(data):
     open_long = np.nan_to_num(data["open_long"])
     open_short = np.nan_to_num(data["open_short"])
     close_long = np.nan_to_num(data["close_long"])
     close_short = np.nan_to_num(data["close_short"])
 
-    data["signal"] = np.where(
-        open_long > 0, 1, np.where(
-            open_short > 0, -1, np.where(
-                close_long > 0, 0, np.where(
-                    close_short > 0, 0, np.nan
-                )
-            )
-        )
-    )
+    signal, position = merge_signals_nb(open_long, open_short, close_long, close_short)
+
+    data["signal"] = signal
+    data["position"] = position
+    return data
 
 
-@execution_time
 def find_positions(df: pd.DataFrame) -> pd.DataFrame:
 
     find_positions_nb(

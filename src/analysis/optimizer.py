@@ -13,10 +13,11 @@ import numpy as np
 import operator
 import sys
 import time
+from collections import Counter
 from collections.abc import Iterable
 from functools import reduce, partial
 from itertools import product, islice
-from typing import TypeVar, Generator, Dict, Any, List, Tuple, Callable
+from typing import TypeVar, Generator, Dict, Any, List, Tuple, Callable, Sequence
 from tqdm import tqdm
 
 from . import strategy_backtest as bt
@@ -41,7 +42,7 @@ PERIODS_PER_YEAR = {
     '30m': 365 * 24 * 2,
     '1h': 365 * 24,
     '4h': 365 * 6,
-    '12h': 365 * 12,
+    '12h': 365 * 2,
     '1d': 365
 }
 
@@ -76,8 +77,8 @@ def estimate_exc_time(
     )
 
     # Run the backtest 50 times to get an average execution time
-    execution_time, runs = 0.0, 50
-    for _ in range(runs):  # run 100 times to get an average execution time
+    execution_time, runs = 0.0, 100
+    for _ in range(runs):
         start_time = time.time()
         _ = backtest_fn(
             data=data,
@@ -86,7 +87,7 @@ def estimate_exc_time(
         )
         execution_time += time.time() - start_time
 
-    return execution_time / runs
+    return 0.27 * execution_time / runs  # 0.27 estimated speedup parallelization
 
 
 def vector_generator(
@@ -126,6 +127,28 @@ def vector_diff(vector1: list[T], vector2: list[T]) -> list[T]:
     return [v1 - v2 for v1, v2 in zip(vector1, vector2)]
 
 
+def analyze_parameters(
+    parameter_sequence: Sequence[Tuple[Any, ...]]
+) -> Tuple[Tuple[Any, ...], ...]:
+    if not parameter_sequence:
+        return tuple()
+
+    n = len(parameter_sequence[0])  # number of parameters in each tuple
+
+    # Create a list of Counters, one for each parameter position
+    counters = [Counter() for _ in range(n)]
+
+    # Count occurrences of each value for each parameter position
+    for params in parameter_sequence:
+        for i, param in enumerate(params):
+            counters[i][param] += 1
+
+    # For each parameter position, get the most common value
+    most_common = tuple(counter.most_common(1)[0][0] for counter in counters)
+
+    return most_common
+
+
 # ================================ Helper Functions II ================================
 # Functions for the parallel execution of backtests
 def chunk_parameters(signal_generator, chunk_size=1000):
@@ -138,17 +161,51 @@ def chunk_parameters(signal_generator, chunk_size=1000):
 
 
 def _worker_function(
-    chunk,
-    worker_id: int,
-    condition_definitions,
+    chunk: tuple[tuple[Any, ...], ...],
+    condition_definitions: Sequence[object],
     data: dict[np.ndarray],
-    risk_level,
-    max_leverage,
-    max_drawdown_pct,
-    backtest_fn,
-    initial_capital,
-    periods_per_year
-):
+    risk_level: int,
+    max_leverage: float,
+    max_drawdown_pct: float,
+    backtest_fn: Callable,
+    initial_capital: float,
+    periods_per_year: int
+) -> List[Tuple[Tuple[Any, ...], int, Dict[str, float]]]:
+    """
+    Process a chunk of parameter combinations for backtesting and optimization.
+
+    This function creates a signal generator, runs backtests for each parameter
+    combination in the given chunk, and returns profitable results that meet
+    the specified drawdown criterion.
+
+    Parameters:
+    -----------
+    chunk : tuple[tuple[Any, ...], ...]
+        A chunk of parameter combinations to test.
+    condition_definitions : Sequence[object]
+        Definitions for creating the signal generator.
+    data : dict[np.ndarray]
+        Market data for backtesting.
+    risk_level : int
+        Risk level for the backtesting strategy.
+    max_leverage : float
+        Maximum allowed leverage.
+    max_drawdown_pct : float
+        Maximum allowed drawdown percentage.
+    backtest_fn : Callable
+        Function to perform the backtest.
+    initial_capital : float
+        Initial capital for backtesting.
+    periods_per_year : int
+        Number of trading periods per year.
+
+    Returns:
+    --------
+    List[Tuple[Tuple[Any, ...], int, Dict[str, float]]]
+        A list of tuples containing profitable parameter combinations,
+        their risk levels, and calculated statistics that meet the
+        maximum drawdown criterion.
+    """
     signal_generator = sg.factory(condition_definitions)
 
     profitable_results = []
@@ -189,7 +246,7 @@ def optimize(
     interval: str = '1d',
     risk_levels: Iterable[float] = (1,),
     max_leverage: float = 1,
-    max_drawdown_pct: float = 99,
+    max_drawdown_pct: float = 100,
     backtest_fn: Callable = bt.run
 ) -> List[Tuple[Dict[str, Any], Dict[str, float]]]:
 
@@ -238,10 +295,15 @@ def optimize(
             pbar.close()
             duration = time.time() - start_time
             logger.info(
-                "Optimization completed in %.2fs (%s/s)",
+                "Optimization completed in %.2fs (%.2f/s)",
                 duration,
                 combinations / duration
                 )
+            logger.info(
+                "Total profitable results: %s (%.2f)",
+                len(profitable_results),
+                (len(profitable_results) / combinations) * 100
+            )
 
     return profitable_results
 

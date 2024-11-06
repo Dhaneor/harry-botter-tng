@@ -113,7 +113,8 @@ def calculate_sharpe_ratio(
     annualized_excess_return = np.mean(excess_returns) * periods_per_year
     annualized_volatility = np.std(excess_returns) * np.sqrt(periods_per_year)
 
-    return annualized_excess_return / annualized_volatility if annualized_volatility != 0 else 0
+    return annualized_excess_return / annualized_volatility \
+        if annualized_volatility != 0 else 0
 
 
 def calculate_sortino_ratio(
@@ -150,7 +151,8 @@ def calculate_sortino_ratio(
     expected_return = np.mean(excess_returns) * periods_per_year
 
     # Annualize the downside deviation
-    downside_deviation = np.sqrt(np.mean(downside_returns**2)) * np.sqrt(periods_per_year)
+    downside_deviation = np.sqrt(np.mean(downside_returns**2)) \
+        * np.sqrt(periods_per_year)
 
     return expected_return / downside_deviation if downside_deviation != 0 else np.inf
 
@@ -239,7 +241,8 @@ def calculate_statistics(
 def test_calculate_profit(series: np.ndarray) -> None:
     profit = calculate_profit(series)
     expected = 1
-    assert np.isclose(profit, expected, atol=1e-6), f"Expected {expected} but got {np.round(profit, 2)}"
+    assert np.isclose(profit, expected, atol=1e-6), \
+        f"[PR] Expected {expected} but got {np.round(profit, 2)}"
 
 
 def test_calculate_annualized_volatility(series: np.ndarray) -> None:
@@ -275,7 +278,8 @@ def test_calculate_sortino_ratio(series: np.ndarray) -> None:
 def test_calculate_kalmar_ratio(series: np.ndarray) -> None:
     kr = calculate_kalmar_ratio(series)
     expected = 11.78
-    assert np.isclose(kr, expected, atol=0.01), f"Expected {expected} but got {np.round(kr, 3)}"
+    assert np.isclose(kr, expected, atol=0.01), \
+        f"Expected {expected} but got {np.round(kr, 3)}"
 
 
 def test_calculate_statistics():

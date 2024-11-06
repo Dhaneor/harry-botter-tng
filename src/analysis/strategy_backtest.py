@@ -23,7 +23,7 @@ trade_costs = 0.002
 
 
 # ======================================================================================
-# @jit(nopython=True, cache=True)
+@jit(nopython=True, cache=True)
 def calculate_trades_nb(close: np.ndarray, position: np.ndarray,
                         buy_at: np.ndarray, sell_at: np.ndarray,
                         buy_size: np.ndarray, sell_size: np.ndarray,
