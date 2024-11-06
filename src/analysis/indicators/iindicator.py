@@ -26,6 +26,7 @@ from typing import Sequence, Callable, Union, Generator, Mapping, Any
 from .indicator_parameter import Parameter
 
 logger = logging.getLogger(f"main.{__name__}")
+logger.setLevel(logging.ERROR)
 
 # define Types
 Params = dict[str, Union[str, float, int, bool]]

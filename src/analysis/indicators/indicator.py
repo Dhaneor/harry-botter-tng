@@ -605,18 +605,12 @@ def _custom_indicator_factory(name, params):
         if not isinstance(params, dict):
             raise ValueError("params must be a dictionary")
 
-        # # set the parameter space
-        # if "parameter_space" not in params:
-        #     raise ValueError(
-        #         "parameter_space is required for custom indicators"
-        #         )
+        ind.parameters = params
 
         space_dict = params.get("parameter_space")
 
         if space_dict and not isinstance(space_dict, dict):
             raise ValueError("parameter_space must be a dictionary")
-
-        ind.parameters = params
 
     return ind
 

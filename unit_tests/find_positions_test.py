@@ -43,7 +43,7 @@ from src.analysis.util import find_positions as fp  # noqa: E402, F401
 from src.analysis import strategy_backtest as bt  # noqa: E402, F401
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
     contra_1, trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross,
-    s_linreg,
+    s_linreg, s_test_er
 )
 from src.plotting.minerva import BacktestChart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
@@ -54,8 +54,8 @@ interval = "12h"
 start = int(-365*5*2)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_breakout
-risk_level = 4
+strategy = s_test_er
+risk_level = 3
 max_leverage = 1.5
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 

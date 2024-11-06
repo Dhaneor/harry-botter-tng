@@ -18,11 +18,8 @@ cci = sg.SignalsDefinition(
     name=f"CCI {timeperiod}",
     conditions=cn.ConditionDefinition(
         interval="1d",
-        operand_a=(
-            "cci",
-            {"timeperiod": 70},
-        ),
-        operand_b=("cci_oversold", -200 * -1, [-200, -70, 15]),
+        operand_a=("cci", {"timeperiod": 70}),
+        operand_b=("cci_oversold", -200, [-200, -70, 15]),
         operand_c=("cci_overbought", 67, [70, 200, 15]),
         open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
         open_short=("a", cn.COMPARISON.CROSSED_BELOW, "c"),
@@ -209,6 +206,30 @@ tema_cross = sg.SignalsDefinition(
 )
 
 
+test_er = sg.SignalsDefinition(
+    name="Efficiency Ratio",
+    conditions=[
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=("er", {"timeperiod": 21}),
+            operand_b=("trending", 0.45, [0.05, 0.55, 0.1]),
+            open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
+            open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            close_short=("a", cn.COMPARISON.IS_BELOW, "b"),
+        ),
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=("close"),
+            operand_b=("kama", {"timeperiod": 192}),
+            open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            # close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
+            open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
+            # close_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
+        ),
+    ]
+)
+
 # ======================================================================================
 #                                       STRATEGIES                                     #
 # ======================================================================================
@@ -319,6 +340,21 @@ s_linreg = sb.StrategyDefinition(
             symbol="ETHUSDT",
             interval="1d",
             signals_definition=linreg,
+            weight=1,
+        ),
+    ]
+)
+
+s_test_er = sb.StrategyDefinition(
+    strategy="Test with Efficiency Ratio",
+    symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
+    interval="1d",
+    sub_strategies=[
+        sb.StrategyDefinition(
+            strategy="Test ER",
+            symbol="ETHUSDT",
+            interval="1d",
+            signals_definition=test_er,
             weight=1,
         ),
     ]

@@ -272,7 +272,6 @@ def optimize(
             for risk_level in risk_levels:
                 worker = partial(
                     _worker_function,
-                    worker_id=risk_level,
                     condition_definitions=signal_generator.condition_definitions,
                     data=data,
                     risk_level=risk_level,

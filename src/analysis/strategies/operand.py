@@ -49,6 +49,7 @@ from typing import Any, Callable, Optional, Sequence
 import numpy as np
 
 from ..indicators import indicator as ind
+from ..indicators import indicators_custom
 from ..util import proj_types as tp
 
 logger = logging.getLogger("main.operand")
@@ -56,7 +57,8 @@ logger.setLevel(logging.ERROR)
 
 # build a list of all available indicators, that can later be used
 # to do a fast check if requested indicators are available.
-ALL_INDICATORS = set(i.lower() for i in ind.get_all_indicator_names())
+ALL_INDICATORS = set(i.lower() for i in ind.talib.get_functions())
+CUSTOM_INDICATORS = tuple(name.lower() for name in indicators_custom.custom_indicators)
 
 OperandDefinitionT = tuple | str
 
@@ -1181,9 +1183,15 @@ def operand_factory(op_def: OperandDefinitionT) -> Operand:
         return tuple(inputs)
 
     # ..........................................................................
+    logger.debug(F"custom indicators: {CUSTOM_INDICATORS}")
+
     match op_def:
-        # if the first string in the op_def is an indicator ..
+        # if the first string in the op_def is a TALIB indicator ..
         case tuple() if op_def[0].split(".")[0].lower() in ALL_INDICATORS:
+            logger.debug("creating operand from tuple: %s", op_def)
+            return from_tuple_indicator(op_def)
+        # if the first string in the op_def is a custom indicator ..
+        case tuple() if op_def[0].lower() in CUSTOM_INDICATORS:
             logger.debug("creating operand from tuple: %s", op_def)
             return from_tuple_indicator(op_def)
         # otherwise the string will be interpreted as the name of a

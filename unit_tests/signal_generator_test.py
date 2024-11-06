@@ -31,7 +31,7 @@ from src.analysis.strategies import signal_generator as sg  # noqa: E402
 from src.analysis.strategies import condition as cn  # noqa: E402
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
-    linreg_roc_btc_1d, linreg_roc_eth_1d
+    linreg_roc_btc_1d, linreg_roc_eth_1d, test_er
 )
 from src.analysis.strategies import strategy_plot as sp  # noqa: E402
 from helpers_ import get_sample_data, get_ohlcv  # noqa: E402, F401
@@ -49,33 +49,33 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # set interval and length of test data
-interval = "1d"
+interval = "15m"
 length = 365*6
 
 # ======================================================================================
-# df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
-# df.drop(
-#     ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
-# )
+df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
+df.drop(
+    ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
+)
 
-# df['human open time'] = pd.to_datetime(df['human open time'])
-# df.set_index(keys=['human open time'], inplace=True)
+df['human open time'] = pd.to_datetime(df['human open time'])
+df.set_index(keys=['human open time'], inplace=True)
 
-# if interval != "15m":
-#     df = df.resample(interval)\
-#         .agg(
-#             {
-#                 'close': 'last', 'open': 'first',
-#                 'high': 'max', 'low': 'min', 'volume': 'sum',
-#                 'open time': 'first'
-#             },
-#             min_periods=1
-#         )  # noqa: E123
+if interval != "15m":
+    df = df.resample(interval)\
+        .agg(
+            {
+                'close': 'last', 'open': 'first',
+                'high': 'max', 'low': 'min', 'volume': 'sum',
+                'open time': 'first'
+            },
+            min_periods=1
+        )  # noqa: E123
 
-# df.dropna(inplace=True)
+df.dropna(inplace=True)
 
 try:
-    df = get_ohlcv(symbol="BTCUSDT", interval="1d", as_dataframe=True)
+    df = get_ohlcv(symbol="SOLUSDT", interval="1d", as_dataframe=True)
 except Exception as e:
     logger.error(f"Error fetching data: {e}")
     sys.exit()
@@ -376,9 +376,9 @@ def test_plot_desc(sig_gen):
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    sig_gen = test_factory(kama_cross)
+    sig_gen = test_factory(test_er)
 
-    sig_gen = test_factory_from_existing(sig_gen)
+    # sig_gen = test_factory_from_existing(sig_gen)
 
     # test_signal_definition(True)
 
@@ -391,7 +391,7 @@ if __name__ == "__main__":
     if not sig_gen:
         sys.exit()
 
-    # test_plot_desc(sig_gen)
+    test_plot_desc(sig_gen)
     test_execute(sig_gen, data, 1, True, True)
     # test_returns(sig_gen, data, True)
 
@@ -405,7 +405,7 @@ if __name__ == "__main__":
 
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            _ = test_factory(linreg_roc_btc_1d)
+            _ = sig_gen.execute(data)
 
     (
         Stats(p)

@@ -20,7 +20,7 @@ timeperiod = Parameter(
 class EfficiencyRatio(IIndicator):
     def __init__(self):
         super().__init__()
-        self._name = "ER"
+        self._name = "er"
         self._update_name = True
         self.input = ["close"]
         self.output = ["er"]
@@ -71,7 +71,8 @@ class EfficiencyRatio(IIndicator):
     def help(self):
         return print(self.run.__doc__)
 
-    def plot_description(self) -> PlotDescription:
+    @property
+    def plot_desc(self) -> PlotDescription:
         return PlotDescription(
             label=self.unique_name,
             is_subplot=self._is_subplot,
