@@ -42,7 +42,7 @@ PERIODS_PER_YEAR = {
     '30m': 365 * 24 * 2,
     '1h': 365 * 24,
     '4h': 365 * 6,
-    '12h': 365 * 12,
+    '12h': 365 * 2,
     '1d': 365
 }
 
@@ -161,17 +161,51 @@ def chunk_parameters(signal_generator, chunk_size=1000):
 
 
 def _worker_function(
-    chunk,
-    worker_id: int,
-    condition_definitions,
+    chunk: tuple[tuple[Any, ...], ...],
+    condition_definitions: Sequence[object],
     data: dict[np.ndarray],
-    risk_level,
-    max_leverage,
-    max_drawdown_pct,
-    backtest_fn,
-    initial_capital,
-    periods_per_year
-):
+    risk_level: int,
+    max_leverage: float,
+    max_drawdown_pct: float,
+    backtest_fn: Callable,
+    initial_capital: float,
+    periods_per_year: int
+) -> List[Tuple[Tuple[Any, ...], int, Dict[str, float]]]:
+    """
+    Process a chunk of parameter combinations for backtesting and optimization.
+
+    This function creates a signal generator, runs backtests for each parameter
+    combination in the given chunk, and returns profitable results that meet
+    the specified drawdown criterion.
+
+    Parameters:
+    -----------
+    chunk : tuple[tuple[Any, ...], ...]
+        A chunk of parameter combinations to test.
+    condition_definitions : Sequence[object]
+        Definitions for creating the signal generator.
+    data : dict[np.ndarray]
+        Market data for backtesting.
+    risk_level : int
+        Risk level for the backtesting strategy.
+    max_leverage : float
+        Maximum allowed leverage.
+    max_drawdown_pct : float
+        Maximum allowed drawdown percentage.
+    backtest_fn : Callable
+        Function to perform the backtest.
+    initial_capital : float
+        Initial capital for backtesting.
+    periods_per_year : int
+        Number of trading periods per year.
+
+    Returns:
+    --------
+    List[Tuple[Tuple[Any, ...], int, Dict[str, float]]]
+        A list of tuples containing profitable parameter combinations,
+        their risk levels, and calculated statistics that meet the
+        maximum drawdown criterion.
+    """
     signal_generator = sg.factory(condition_definitions)
 
     profitable_results = []
@@ -212,7 +246,7 @@ def optimize(
     interval: str = '1d',
     risk_levels: Iterable[float] = (1,),
     max_leverage: float = 1,
-    max_drawdown_pct: float = 99,
+    max_drawdown_pct: float = 100,
     backtest_fn: Callable = bt.run
 ) -> List[Tuple[Dict[str, Any], Dict[str, float]]]:
 

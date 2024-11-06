@@ -66,12 +66,12 @@ breakout = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod": 27}),
+            operand_b=("max", {"timeperiod": 12}),
             operand_c=("min", {"timeperiod": 27}),
-            open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
-            open_short=("a", cn.COMPARISON.IS_BELOW, "c"),
-            # open_short=("a", cn.COMPARISON.IS_BELOW, "c"),
-            # close_short=("a", cn.COMPARISON.IS_ABOVE, "c"),
+            open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
+            # close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
+            open_short=("a", cn.COMPARISON.IS_EQUAL, "c"),
+            # close_short=("a", cn.COMPARISON.IS_EQUAL, "b"),
         ),
     ]
 )

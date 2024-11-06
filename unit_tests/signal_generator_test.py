@@ -30,7 +30,7 @@ sys.path.append(parent)
 from src.analysis.strategies import signal_generator as sg  # noqa: E402
 from src.analysis.strategies import condition as cn  # noqa: E402
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
-    cci, ema_cross, tema_cross, rsi, trix, breakout,
+    cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
     linreg_roc_btc_1d, linreg_roc_eth_1d
 )
 from src.analysis.strategies import strategy_plot as sp  # noqa: E402
@@ -376,7 +376,7 @@ def test_plot_desc(sig_gen):
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    sig_gen = test_factory(breakout)
+    sig_gen = test_factory(kama_cross)
 
     sig_gen = test_factory_from_existing(sig_gen)
 

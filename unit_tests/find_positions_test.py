@@ -48,14 +48,14 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 from src.plotting.minerva import BacktestChart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
 
-symbol = "BNBUSDT"
-interval = "1d"
+symbol = "BTCUSDT"
+interval = "12h"
 
-start = int(-365*5)  # 'December 01, 2018 00:00:00'
+start = int(-365*5*2)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_linreg
-risk_level = 7
+strategy = s_breakout
+risk_level = 4
 max_leverage = 1.5
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 

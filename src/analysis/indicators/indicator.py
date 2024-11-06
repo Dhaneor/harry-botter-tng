@@ -41,7 +41,7 @@ from typing import (
 )
 from talib import MA_Type, abstract
 
-from .indicator_parameter import Parameter
+from indicator_parameter import Parameter
 
 logger = logging.getLogger("main.indicator")
 logger.setLevel(logging.ERROR)

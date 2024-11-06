@@ -757,7 +757,7 @@ class Indicators:
     def _get_precision(self, column: pd.Series) -> int:
         string = str(column.iloc[1])
 
-        if not "e" in string:
+        if "e" not in string:
             try:
                 prec = len(string.split(".")[-1])
             except Exception as e:

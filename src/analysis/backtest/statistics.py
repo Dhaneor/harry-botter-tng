@@ -241,7 +241,8 @@ def calculate_statistics(
 def test_calculate_profit(series: np.ndarray) -> None:
     profit = calculate_profit(series)
     expected = 1
-    assert np.isclose(profit, expected, atol=1e-6), f"Expected {expected} but got {np.round(profit, 2)}"
+    assert np.isclose(profit, expected, atol=1e-6), \
+        f"[PR] Expected {expected} but got {np.round(profit, 2)}"
 
 
 def test_calculate_annualized_volatility(series: np.ndarray) -> None:
@@ -277,7 +278,8 @@ def test_calculate_sortino_ratio(series: np.ndarray) -> None:
 def test_calculate_kalmar_ratio(series: np.ndarray) -> None:
     kr = calculate_kalmar_ratio(series)
     expected = 11.78
-    assert np.isclose(kr, expected, atol=0.01), f"Expected {expected} but got {np.round(kr, 3)}"
+    assert np.isclose(kr, expected, atol=0.01), \
+        f"Expected {expected} but got {np.round(kr, 3)}"
 
 
 def test_calculate_statistics():

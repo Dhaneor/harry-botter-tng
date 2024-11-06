@@ -40,16 +40,16 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
     s_breakout, s_tema_cross, s_linreg, s_kama_cross, s_trix, trend_1, contra_1
 )
 
-symbol = "ETHUSDT"
-interval = "1d"
+symbol = "BTCUSDT"
+interval = "12h"
 
-start = int(-365*5)  # 'December 01, 2018 00:00:00'
+start = int(-365*5*2)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
 strategy = s_breakout
-risk_levels = [3]
-max_leverage = 1
-max_drawdown = 55
+risk_levels = [6]
+max_leverage = 2
+max_drawdown = 45
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 
