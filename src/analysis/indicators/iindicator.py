@@ -150,6 +150,9 @@ class IIndicator(ABC):
         self._apply_func: Callable
         self._parameters: tuple[Parameter, ...] = ()
 
+    def __repr__(self) -> str:
+        return f"{self.name} - {self.parameters}"
+
     @property
     def name(self) -> str:
         """Returns the name of the indicator."""

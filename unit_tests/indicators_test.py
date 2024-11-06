@@ -173,9 +173,12 @@ defs = {
 
 
 # ==============================================================================
-def test_indicator_factory(name: str, params: dict | None = None,
-                           src: str = 'talib', show: bool = False
-                           ) -> indicator.Indicator:
+def test_indicator_factory(
+    name: str,
+    params: dict | None = None,
+    src: str | None = None,
+    show: bool = False
+) -> indicator.Indicator:
 
     ind = indicator.factory(name, params, src)
 
@@ -369,6 +372,10 @@ if __name__ == '__main__':
 
     ind = test_indicator_factory(
         'LINEARREG', params={'timeperiod': 20}, show=True
+        )
+
+    ind = test_indicator_factory(
+        'ER', params={"timeperiod": 30}, show=True
         )
 
     # ind = test_indicator_factory('SMA', {'timeperiod': 20}, show=False)

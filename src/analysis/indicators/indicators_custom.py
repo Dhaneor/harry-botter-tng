@@ -8,14 +8,13 @@ Created on Fri July 28 20:08:20 2023
 import bottleneck as bn
 import numpy as np
 from numba import njit
-from indicator import IIndicator, PlotDescription
-from indicator_parameter import Parameter
+from .indicator import IIndicator, PlotDescription
+from .indicator_parameter import Parameter
 
 # defining parameters for the Noise indicator
 timeperiod = Parameter(
     name="timeperiod", initial_value=14, hard_min=7, hard_max=365, step=7
 )
-
 
 
 class EfficiencyRatio(IIndicator):
@@ -37,7 +36,7 @@ class EfficiencyRatio(IIndicator):
         Calculates the (Kaufman) Efficiency Ratio.
 
         The Efficiency Ratio is a technical indicator used to measure
-        the noise in the market. It is dtermined by calculating the
+        the noise in the market. It is determined by calculating the
         ratio between:
         a) the absolute price difference between the current price
         and the previous price at the beginning of the lookback period
@@ -70,7 +69,7 @@ class EfficiencyRatio(IIndicator):
             raise ValueError("Input data must be either 1D or 2D array")
 
     def help(self):
-        return self.run.__doc__
+        return print(self.run.__doc__)
 
     def plot_description(self) -> PlotDescription:
         return PlotDescription(
@@ -130,7 +129,7 @@ class EfficiencyRatio(IIndicator):
 
         price_diff = np.abs(data[lookback:] / data[:-lookback] - 1)
 
-        noise = price_diff / rolling_sum[lookback - 1 :]
+        noise = price_diff / rolling_sum[lookback - 1:]
 
         # Pad the beginning of the array with NaNs to match the input length
         return np.pad(
@@ -138,10 +137,9 @@ class EfficiencyRatio(IIndicator):
         )
 
 
-custom_indicators = {ind.name: ind for ind in (
-    EfficiencyRatio
-    )
-}
+custom_indicators = {
+    "ER": EfficiencyRatio,
+    }
 
 
 # ====================================================================================

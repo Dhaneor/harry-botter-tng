@@ -48,30 +48,18 @@ MA_TYPES = MA_Type.__dict__.get("_lookup", [])
 Combinations = Generator[Tuple[Any, ...], None, None]
 
 
-def get_all_indicator_names() -> list[str]:
-    """Returns a list of all available indicator names.
-
-    Returns
-    -------
-    list[str]
-        List of all available indicator names.
-    """
-    return talib.get_functions()
-
-
 def get_parameter_space(param_name: str) -> dict:
     """
-    Set the parameter space for an indicator if it's not already defined.
+    Get the parameter space for an indicator if it's not already defined.
 
-    This function iterates through the parameters of the given indicator and sets
-    a default parameter space for each parameter that doesn't already have one.
-    The parameter space is defined as a list of [min, max, step] values, which can
-    be used for parameter optimization.
+    Returns the parameter space based on the name of the parameter.
+    The parameter space is defined as a list of [min, max, step]
+    values, which can be used for parameter optimization.
 
     Parameters:
     -----------
-    indicator : Indicator
-        The indicator object for which to set the parameter space.
+    param_name : str
+        The name of the parameter.
 
     Returns:
     --------
@@ -135,7 +123,7 @@ def get_parameter_space(param_name: str) -> dict:
     if param_name.startswith("nbdev"):
         return [0.25, 4, 0.25]
 
-    raise ValueError(f"No parameter space for indicator: {param_name}")
+    raise ValueError(f"No parameter space for parameter: {param_name}")
 
 
 # ======================================================================================
@@ -611,30 +599,33 @@ def _custom_indicator_factory(name, params):
     if not isinstance(name, str):
         raise ValueError("name must be a string")
 
-    if not isinstance(params, dict):
-        raise ValueError("params must be a dictionary")
+    ind = custom_indicators.get(name)()
 
-    if name not in params:
-        raise ValueError(f"value for {name} is required")
+    if params:
+        if not isinstance(params, dict):
+            raise ValueError("params must be a dictionary")
 
-    # set the parameter space
-    if "parameter_space" not in params:
-        raise ValueError(
-            "parameter_space is required for custom indicators"
-            )
+        # # set the parameter space
+        # if "parameter_space" not in params:
+        #     raise ValueError(
+        #         "parameter_space is required for custom indicators"
+        #         )
 
-    space_dict = params["parameter_space"]
+        space_dict = params.get("parameter_space")
 
-    if not isinstance(space_dict, dict):
-        raise ValueError("parameter_space must be a dictionary")
+        if space_dict and not isinstance(space_dict, dict):
+            raise ValueError("parameter_space must be a dictionary")
+
+        ind.parameters = params
+
+    return ind
 
 
 # --------------------------------------------------------------------------------------
-cache = {i_name: _indicator_factory_talib(i_name) for i_name in talib.get_functions()}
-
-
 def factory(
-    indicator_name: str, params: Params | None = None, source: IndicatorSource = "talib"
+    indicator_name: str,
+    params: Params | None = None,
+    source: IndicatorSource | None = None
 ) -> Indicator:
     """Creates an indicator object based on its name .
 
@@ -664,21 +655,17 @@ def factory(
     """
     logger.debug("creating indicator %s (%s) from %s", indicator_name, params, source)
 
-    if source == "talib":
-        if indicator_name in cache:
-            logger.debug("using cached indicator %s", indicator_name)
-            ind_instance = cache[indicator_name]
-            ind_instance = _indicator_factory_talib(indicator_name)
-        else:
-            ind_instance = _indicator_factory_talib(indicator_name)
+    if (source == "talib") | (indicator_name in talib.get_functions()):
+        ind_instance = _indicator_factory_talib(indicator_name)
+
+    elif (source == "custom") | (indicator_name in custom_indicators):
+        ind_instance = _custom_indicator_factory(indicator_name, params)
 
     elif source == "fixed":
         ind_instance = fixed_indicator_factory(indicator_name, params)
 
-    elif source == "custom":
-        ind_instance = _custom_indicator_factory(indicator_name, params)
-
     else:
+        print(custom_indicators)
         raise NotImplementedError(f"Indicator source {source} not supported.")
 
     logger.debug(ind_instance.__dict__)
