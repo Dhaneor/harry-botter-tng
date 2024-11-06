@@ -17,6 +17,7 @@ timeperiod = Parameter(
 )
 
 
+
 class EfficiencyRatio(IIndicator):
     def __init__(self):
         super().__init__()
@@ -135,6 +136,12 @@ class EfficiencyRatio(IIndicator):
         return np.pad(
             noise, (len(data) - len(noise), 0), mode="constant", constant_values=np.nan
         )
+
+
+custom_indicators = {ind.name: ind for ind in (
+    EfficiencyRatio
+    )
+}
 
 
 # ====================================================================================

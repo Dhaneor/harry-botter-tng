@@ -35,6 +35,7 @@ from typing import (
 from talib import MA_Type, abstract
 
 from .iindicator import IIndicator, PlotDescription
+from .indicators_custom import custom_indicators
 from .indicator_parameter import Parameter
 
 logger = logging.getLogger("main.indicator")
@@ -140,8 +141,6 @@ def get_parameter_space(param_name: str) -> dict:
 # ======================================================================================
 #                               Indicator classes                                      #
 # ======================================================================================
-
-
 class Indicator(IIndicator):
     """A Template used by the IndicatorFactory to create indicator objects.
 
@@ -588,6 +587,48 @@ def fixed_indicator_factory(name, params):
     return ind
 
 
+def _custom_indicator_factory(name, params):
+    """Factory function for CustomIndicator objects.
+
+    Parameters
+    ----------
+    name : str
+        name of the custom indicator
+
+    params : dict
+        parameters for the indicator
+
+    Returns
+    -------
+    CustomIndicator
+        instance of CustomIndicator class
+    """
+    logger.debug("Creating CustomIndicator %s -> %s", name, params)
+
+    if name is None:
+        raise ValueError("name is required")
+
+    if not isinstance(name, str):
+        raise ValueError("name must be a string")
+
+    if not isinstance(params, dict):
+        raise ValueError("params must be a dictionary")
+
+    if name not in params:
+        raise ValueError(f"value for {name} is required")
+
+    # set the parameter space
+    if "parameter_space" not in params:
+        raise ValueError(
+            "parameter_space is required for custom indicators"
+            )
+
+    space_dict = params["parameter_space"]
+
+    if not isinstance(space_dict, dict):
+        raise ValueError("parameter_space must be a dictionary")
+
+
 # --------------------------------------------------------------------------------------
 cache = {i_name: _indicator_factory_talib(i_name) for i_name in talib.get_functions()}
 
@@ -634,19 +675,11 @@ def factory(
     elif source == "fixed":
         ind_instance = fixed_indicator_factory(indicator_name, params)
 
+    elif source == "custom":
+        ind_instance = _custom_indicator_factory(indicator_name, params)
+
     else:
         raise NotImplementedError(f"Indicator source {source} not supported.")
-
-    # if params:
-    #     for k, v in params.items():
-    #         parameter_space = get_parameter_space(k)
-    #         ind_instance.parameters[k] = Parameter(
-    #             name=k,
-    #             initial_value=v,
-    #             hard_min=parameter_space[0],
-    #             hard_max=parameter_space[1],
-    #             step=parameter_space[2] if parameter_space[2] else 1,
-    #         )
 
     logger.debug(ind_instance.__dict__)
 
