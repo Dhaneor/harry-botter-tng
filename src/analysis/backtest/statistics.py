@@ -113,7 +113,8 @@ def calculate_sharpe_ratio(
     annualized_excess_return = np.mean(excess_returns) * periods_per_year
     annualized_volatility = np.std(excess_returns) * np.sqrt(periods_per_year)
 
-    return annualized_excess_return / annualized_volatility if annualized_volatility != 0 else 0
+    return annualized_excess_return / annualized_volatility \
+        if annualized_volatility != 0 else 0
 
 
 def calculate_sortino_ratio(
@@ -150,7 +151,8 @@ def calculate_sortino_ratio(
     expected_return = np.mean(excess_returns) * periods_per_year
 
     # Annualize the downside deviation
-    downside_deviation = np.sqrt(np.mean(downside_returns**2)) * np.sqrt(periods_per_year)
+    downside_deviation = np.sqrt(np.mean(downside_returns**2)) \
+        * np.sqrt(periods_per_year)
 
     return expected_return / downside_deviation if downside_deviation != 0 else np.inf
 

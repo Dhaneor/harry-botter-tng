@@ -99,9 +99,6 @@ def vol_anno(
         the annualized volatility
     """
 
-    # periods_per_day = int(86_400_000 / interval_in_ms)
-    # periods_per_year = periods_per_day * TRADING_DAYS_PER_YEAR
-
     periods_per_year = MILLISECONDS_PER_YEAR / interval_in_ms
     out = np.empty_like(close)
 
@@ -136,7 +133,11 @@ def _interval_in_ms(data):
     return int(np.min(np.diff(x[~np.isnan(x)])))
 
 
-def _aggressive_sizing(data: dict, risk_limit_per_trade: float) -> np.ndarray:
+def _aggressive_sizing(
+    data: dict,
+    risk_limit_per_trade: float,
+    max_leverage: float
+) -> np.ndarray:
     """Calculates the maximum leverage based on 'close' prices.
 
     This is my own algorithm that is very aggressive and
@@ -150,7 +151,10 @@ def _aggressive_sizing(data: dict, risk_limit_per_trade: float) -> np.ndarray:
     """
     atr_ = atr(data["open"], data["high"], data["close"])
 
-    return risk_limit_per_trade / (atr_ / data["close"])
+    leverage = risk_limit_per_trade / (atr_ / data["close"])
+
+    # Apply maximum leverage limit
+    return np.minimum(leverage, max_leverage)
 
 
 def _conservative_sizing(
@@ -184,7 +188,7 @@ def _conservative_sizing(
         close=data["close"],
         interval_in_ms=_interval_in_ms(data),
         lookback=21,
-        use_log_returns=True  # Changed to True for potentially better estimates
+        use_log_returns=False
     )
 
     # Apply smoothing to volatility

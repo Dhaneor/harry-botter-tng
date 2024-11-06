@@ -40,16 +40,16 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
     s_breakout, s_tema_cross, s_linreg, s_kama_cross, s_trix, trend_1, contra_1
 )
 
-symbol = "BTCUSDT"
+symbol = "ETHUSDT"
 interval = "1d"
 
-start = -365 * 5  # 'December 01, 2018 00:00:00'
+start = int(-365*5)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_linreg
-risk_levels = [0, 4]
-max_leverage = 2
-max_drawdown = 50
+strategy = s_breakout
+risk_levels = [3]
+max_leverage = 1
+max_drawdown = 55
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 
@@ -129,24 +129,34 @@ def test_optimize():
         logger.info('No profitable parameters with acceptable drawdown found.')
         return
 
-    # sort results by sharpe ratio
+    # sort results by kalmar ratio
     best_parameters.sort(
-        key=lambda x: x[2]['kalmar_ratio'],
+        key=lambda x: x[2]['profit'],
         reverse=True
         )
 
-    profits = [result[2]['profit'] for result in best_parameters]
-    logger.info(f'Best profit: {max(profits):.2f}%')
-    logger.info(f'Worst profit: {min(profits):.2f}%')
-
-    for result in best_parameters[:25]:
+    for result in best_parameters[:50]:
         logger.info(
             "params: %s :: risk level %s :: stats %s",
             result[0],
             result[1],
             {k: round(v, 3) for k, v in result[2].items()}
         )
-    logger.info(f'Best parameters length: {len(best_parameters)}')
+    logger.info(
+        'Best parameters with less than %s percent drawdown length: %s',
+        max_drawdown, {len(best_parameters)}
+        )
+
+    # Extract just the parameter tuples from the results
+    param_tuples = [result[0] for result in best_parameters[:50]]
+
+    # Analyze the parameters
+    most_common_params = optimizer.analyze_parameters(param_tuples)
+    logger.info(f"Most common parameter values in top 50: {most_common_params}")
+
+    profits = [result[2]['profit'] for result in best_parameters]
+    logger.info(f'Best profit: {max(profits):.2f}%')
+    logger.info(f'Worst profit: {min(profits):.2f}%')
 
     return best_parameters
 

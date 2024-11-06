@@ -68,8 +68,10 @@ breakout = sg.SignalsDefinition(
             operand_a="close",
             operand_b=("max", {"timeperiod": 27}),
             operand_c=("min", {"timeperiod": 27}),
-            open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
-            open_short=("a", cn.COMPARISON.IS_EQUAL, "c"),
+            open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            open_short=("a", cn.COMPARISON.IS_BELOW, "c"),
+            # open_short=("a", cn.COMPARISON.IS_BELOW, "c"),
+            # close_short=("a", cn.COMPARISON.IS_ABOVE, "c"),
         ),
     ]
 )
@@ -99,25 +101,52 @@ trix = sg.SignalsDefinition(
 )
 
 
-linreg_roc = sg.SignalsDefinition(
+linreg_roc_btc_1d = sg.SignalsDefinition(
+    name="ROC - Linear Regression",
+    conditions=[
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=(
+                "roc",
+                ("linearreg", "close", {"timeperiod": 42}),
+                {"timeperiod": 27},
+            ),
+            operand_b=(
+                "roc",
+                ("linearreg", "close", {"timeperiod": 130}),
+                {"timeperiod": 190},
+            ),
+            operand_c=("value", -6, [-21, 21, 1]),
+            operand_d=("value", -21, [-21, 21, 1]),
+            open_long=("a", cn.COMPARISON.IS_ABOVE, "c"),
+            close_long=("a", cn.COMPARISON.IS_BELOW, "c"),
+            open_short=("b", cn.COMPARISON.IS_BELOW, "d"),
+            close_short=("b", cn.COMPARISON.IS_ABOVE, "d"),
+        ),
+    ],
+)
+
+linreg_roc_eth_1d = sg.SignalsDefinition(
     name="ROC 57 - Linear Regression 7",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
             operand_a=(
                 "roc",
-                ("linearreg", "close", {"timeperiod": 7}),
-                {"timeperiod": 32},
+                ("linearreg", "close", {"timeperiod": 37}),
+                {"timeperiod": 22},
             ),
-            # operand_b=(
-            #     "roc",
-            #     ("linearreg", "close", {"timeperiod": 7}),
-            #     {"timeperiod": 32},
-            # ),
-            operand_c=("value", 0, [-3, 3, 3]),
-            operand_d=("value", 0, [-3, 3, 3]),
+            operand_b=(
+                "roc",
+                ("linearreg", "close", {"timeperiod": 42}),
+                {"timeperiod": 27},
+            ),
+            operand_c=("value", -7, [-21, 21, 1]),
+            operand_d=("value", -11, [-21, 21, 1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "c"),
-            open_short=("a", cn.COMPARISON.IS_BELOW, "d"),
+            close_long=("a", cn.COMPARISON.IS_BELOW, "c"),
+            open_short=("b", cn.COMPARISON.IS_BELOW, "d"),
+            close_short=("b", cn.COMPARISON.IS_ABOVE, "d"),
         ),
     ],
 )
@@ -130,12 +159,19 @@ linreg = sg.SignalsDefinition(
             operand_a=(
                 "linearreg_slope",
                 "close",
-                {"timeperiod": 47},
+                {"timeperiod": 22},
             ),
-            operand_b=("slope", -1, [-10, 10, 1]),
-            # operand_c=("slope", 0, [-10, 10, 1]),
-            open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
-            open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+            operand_b=(
+                "linearreg_slope",
+                "close",
+                {"timeperiod": 7},
+            ),
+            operand_c=("slope", 0, [-10, 10, 2]),
+            operand_d=("slope", 0, [-10, 10, 2]),
+            open_long=("a", cn.COMPARISON.IS_ABOVE, "c"),
+            close_long=("a", cn.COMPARISON.IS_BELOW, "c"),
+            open_short=("b", cn.COMPARISON.IS_BELOW, "d"),
+            close_short=("b", cn.COMPARISON.IS_ABOVE, "d"),
         ),
     ],
 )
@@ -282,7 +318,7 @@ s_linreg = sb.StrategyDefinition(
             strategy="Linear Regression",
             symbol="ETHUSDT",
             interval="1d",
-            signals_definition=linreg_roc,
+            signals_definition=linreg,
             weight=1,
         ),
     ]

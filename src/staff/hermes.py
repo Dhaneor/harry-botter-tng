@@ -48,7 +48,7 @@ MAX_WORKERS_BINANCE = VALID_EXCHANGES["binance"]["max_workers"]
 MAX_WORKERS_KUCOIN = VALID_EXCHANGES["kucoin"]["max_workers"]
 
 logger = logging.getLogger("main.hermes")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # ==============================================================================
 """
@@ -864,7 +864,8 @@ class Hermes(HermesDataBase):
         if caller_frame:
             caller_info = inspect.getframeinfo(caller_frame)
             logger.debug(
-                f"Hermes __init__ called from {caller_info.filename}, line {caller_info.lineno}, function {caller_info.function}"
+                f"Hermes __init__ called from {caller_info.filename}, "
+                f"line {caller_info.lineno}, function {caller_info.function}"
                 )
         else:
             logger.debug("Hermes __init__ called, but couldn't determine caller")

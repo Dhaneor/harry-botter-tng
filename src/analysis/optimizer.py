@@ -13,10 +13,11 @@ import numpy as np
 import operator
 import sys
 import time
+from collections import Counter
 from collections.abc import Iterable
 from functools import reduce, partial
 from itertools import product, islice
-from typing import TypeVar, Generator, Dict, Any, List, Tuple, Callable
+from typing import TypeVar, Generator, Dict, Any, List, Tuple, Callable, Sequence
 from tqdm import tqdm
 
 from . import strategy_backtest as bt
@@ -76,8 +77,8 @@ def estimate_exc_time(
     )
 
     # Run the backtest 50 times to get an average execution time
-    execution_time, runs = 0.0, 50
-    for _ in range(runs):  # run 100 times to get an average execution time
+    execution_time, runs = 0.0, 100
+    for _ in range(runs):
         start_time = time.time()
         _ = backtest_fn(
             data=data,
@@ -86,7 +87,7 @@ def estimate_exc_time(
         )
         execution_time += time.time() - start_time
 
-    return execution_time / runs
+    return 0.27 * execution_time / runs  # 0.27 estimated speedup parallelization
 
 
 def vector_generator(
@@ -124,6 +125,28 @@ def vector_diff(vector1: list[T], vector2: list[T]) -> list[T]:
     Difference between vector1 and vector2.
     """
     return [v1 - v2 for v1, v2 in zip(vector1, vector2)]
+
+
+def analyze_parameters(
+    parameter_sequence: Sequence[Tuple[Any, ...]]
+) -> Tuple[Tuple[Any, ...], ...]:
+    if not parameter_sequence:
+        return tuple()
+
+    n = len(parameter_sequence[0])  # number of parameters in each tuple
+
+    # Create a list of Counters, one for each parameter position
+    counters = [Counter() for _ in range(n)]
+
+    # Count occurrences of each value for each parameter position
+    for params in parameter_sequence:
+        for i, param in enumerate(params):
+            counters[i][param] += 1
+
+    # For each parameter position, get the most common value
+    most_common = tuple(counter.most_common(1)[0][0] for counter in counters)
+
+    return most_common
 
 
 # ================================ Helper Functions II ================================
@@ -238,10 +261,15 @@ def optimize(
             pbar.close()
             duration = time.time() - start_time
             logger.info(
-                "Optimization completed in %.2fs (%s/s)",
+                "Optimization completed in %.2fs (%.2f/s)",
                 duration,
                 combinations / duration
                 )
+            logger.info(
+                "Total profitable results: %s (%.2f)",
+                len(profitable_results),
+                (len(profitable_results) / combinations) * 100
+            )
 
     return profitable_results
 
