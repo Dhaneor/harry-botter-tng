@@ -564,10 +564,11 @@ class Minerva:
         self.df["hodl.drawdown"] = self.df["hodl.drawdown"].replace("", np.NaN)
         self.df["hodl.drawdown"] = self.df["hodl.drawdown"] * 100 * -1
 
+        # draw HODL drawdown
         ax.fill_between(
             x=self.df.index,
             y1=self.df["hodl.drawdown"],
-            y2=0,  # self.df["cptl.b"],
+            y2=0,
             color=self.line_colors[0],
             edgecolor=self.line_colors[0],
             alpha=self.channel_bg[1] / 2,
@@ -583,10 +584,11 @@ class Minerva:
             label="HODL Drawdown",
         )
 
+        # draw strategy drawdown
         ax.fill_between(
             x=self.df.index,
             y1=self.df["b.drawdown"],
-            y2=0,  # self.df["cptl.b"],
+            y2=0,
             color=self.channel_bg[0],
             edgecolor=self.channel[0],
             alpha=self.channel_bg[1] * 2,
@@ -602,16 +604,25 @@ class Minerva:
             label="Strategy Drawdown",
         )
 
-        # ax.fill_between(
-        #     x=self.df.index,
-        #     y1=self.df["cptl.drawdown"].astype(np.float64),
-        #     y2=0,
-        #     color=self.channel_bg[0],
-        #     edgecolor=self.channel[0],
-        #     alpha=self.channel_bg[1],
-        #     linewidth=0.1,
-        #     zorder=-5,
-        # )
+        # draw capital drawdown
+        ax.fill_between(
+            x=self.df.index,
+            y1=self.df["cptl.drawdown"].astype(np.float64),
+            y2=0,
+            color=self.line_colors[1],
+            edgecolor=self.line_colors[1],
+            alpha=self.channel_bg[1],
+            linewidth=0.1,
+            zorder=-1,
+        )
+
+        ax.plot(
+            self.df["cptl.drawdown"],
+            color=self.line_colors[1],
+            linewidth=0.1,
+            alpha=self.line_alphas[1],
+            label="Capital Drawdown",
+        )
 
     def portfolio_value(self):
         ax = self.axes[-1]
@@ -666,6 +677,10 @@ class Minerva:
             ratios = [self.height_top_chart]
             for _ in range(self.no_of_subplots - 1):
                 ratios.append(1)
+
+            # make the second last subplot (drawdown) bigger
+            ratios[-2] += 1
+            # also make the last subplot (portfolio value) bigger
             ratios[-1] += 3
 
             self.fig, self.axes = plt.subplots(

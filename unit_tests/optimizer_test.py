@@ -41,16 +41,16 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
     trend_1, contra_1, s_test_er
 )
 
-symbol = "BTCUSDT"
-interval = "12h"
+symbol = "ETHUSDT"
+interval = "1d"
 
-start = int(-365*5*2)  # 'December 01, 2018 00:00:00'
+start = int(-365*5)
 end = 'now UTC'
 
-strategy = s_test_er
-risk_levels = [5]
+strategy = s_breakout
+risk_levels = [0, 4, 5, 6]
 max_leverage = 1.5
-max_drawdown = 45
+max_drawdown = 35
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 
@@ -132,16 +132,17 @@ def test_optimize():
 
     # sort results by kalmar ratio
     best_parameters.sort(
-        key=lambda x: x[2]['profit'],
+        key=lambda x: x[3]['profit'],
         reverse=True
         )
 
     for result in best_parameters[:50]:
         logger.info(
-            "params: %s :: risk level %s :: stats %s",
-            result[0],
+            "params: %s :: risk level %s :: max leverage %s, stats %s",
+            tuple(round(elem, 4) for elem in result[0]),
             result[1],
-            {k: round(v, 3) for k, v in result[2].items()}
+            result[2],
+            {k: round(v, 3) for k, v in result[3].items()}
         )
     logger.info(
         'Best parameters with less than %s percent drawdown length: %s',
@@ -155,7 +156,7 @@ def test_optimize():
     most_common_params = optimizer.analyze_parameters(param_tuples)
     logger.info(f"Most common parameter values in top 50: {most_common_params}")
 
-    profits = [result[2]['profit'] for result in best_parameters]
+    profits = [result[3]['profit'] for result in best_parameters]
     logger.info(f'Best profit: {max(profits):.2f}%')
     logger.info(f'Worst profit: {min(profits):.2f}%')
 

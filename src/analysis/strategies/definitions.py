@@ -63,11 +63,11 @@ breakout = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod": 12}),
-            operand_c=("min", {"timeperiod": 27}),
+            operand_b=("max", {"timeperiod": 37}),
+            operand_c=("min", {"timeperiod": 12}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
-            # close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
-            open_short=("a", cn.COMPARISON.IS_EQUAL, "c"),
+            close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
+            # open_short=("a", cn.COMPARISON.IS_EQUAL, "d"),
             # close_short=("a", cn.COMPARISON.IS_EQUAL, "b"),
         ),
     ]
@@ -211,8 +211,8 @@ test_er = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 21}),
-            operand_b=("trending", 0.45, [0.05, 0.55, 0.1]),
+            operand_a=("er", {"timeperiod": 217}),
+            operand_b=("trending", 0.1, [0.05, 0.55, 0.1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
@@ -220,8 +220,8 @@ test_er = sg.SignalsDefinition(
         ),
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("close"),
-            operand_b=("kama", {"timeperiod": 192}),
+            operand_a=("ema", {"timeperiod": 22}),
+            operand_b=("kama", {"timeperiod": 187}),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             # close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             open_short=("a", cn.COMPARISON.IS_BELOW, "b"),

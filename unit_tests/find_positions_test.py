@@ -48,15 +48,15 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 from src.plotting.minerva import BacktestChart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
 
-symbol = "BTCUSDT"
-interval = "12h"
+symbol = "ETHUSDT"
+interval = "1d"
 
-start = int(-365*5*2)  # 'December 01, 2018 00:00:00'
+start = int(-365*5)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_test_er
-risk_level = 3
-max_leverage = 1.5
+strategy = s_breakout
+risk_level = 0
+max_leverage = 1
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')

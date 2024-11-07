@@ -87,7 +87,7 @@ def estimate_exc_time(
         )
         execution_time += time.time() - start_time
 
-    return 0.27 * execution_time / runs  # 0.27 estimated speedup parallelization
+    return 0.5 * execution_time / runs  # 0.27 estimated speedup parallelization
 
 
 def vector_generator(
@@ -226,6 +226,7 @@ def _worker_function(
                 (
                     params,
                     risk_level,
+                    max_leverage,
                     calculate_statistics(
                         portfolio_values=portfolio_values,
                         periods_per_year=periods_per_year,
@@ -235,7 +236,7 @@ def _worker_function(
 
     return [
         pr for pr in profitable_results
-        if pr[2]['max_drawdown'] > max_drawdown_pct * -1
+        if pr[3]['max_drawdown'] > max_drawdown_pct * -1
         ]
 
 
@@ -250,8 +251,13 @@ def optimize(
     backtest_fn: Callable = bt.run
 ) -> List[Tuple[Dict[str, Any], Dict[str, float]]]:
 
+    max_leverage_levels = (1, 1.5, 2, 2.5, 3)
+
     periods_per_year = PERIODS_PER_YEAR.get(interval, 365)
-    combinations = number_of_combinations(signal_generator) * len(risk_levels)
+    combinations = number_of_combinations(signal_generator) \
+        * len(risk_levels) \
+        * len(max_leverage_levels)
+
     est_exc_time = combinations * estimate_exc_time(backtest_fn, signal_generator, data)
 
     logger.info("Starting parallel optimization...")
@@ -269,27 +275,28 @@ def optimize(
         start_time = time.time()
 
         with tqdm(total=combinations, desc="Optimizing") as pbar:
-            for risk_level in risk_levels:
-                worker = partial(
-                    _worker_function,
-                    condition_definitions=signal_generator.condition_definitions,
-                    data=data,
-                    risk_level=risk_level,
-                    backtest_fn=backtest_fn,
-                    initial_capital=INITIAL_CAPITAL,
-                    max_leverage=max_leverage,
-                    max_drawdown_pct=max_drawdown_pct,
-                    periods_per_year=periods_per_year,
-                )
+            for max_leverage in max_leverage_levels:
+                for risk_level in risk_levels:
+                    worker = partial(
+                        _worker_function,
+                        condition_definitions=signal_generator.condition_definitions,
+                        data=data,
+                        risk_level=risk_level,
+                        backtest_fn=backtest_fn,
+                        initial_capital=INITIAL_CAPITAL,
+                        max_leverage=max_leverage,
+                        max_drawdown_pct=max_drawdown_pct,
+                        periods_per_year=periods_per_year,
+                    )
 
-                chunks_iterator = chunk_parameters(signal_generator, chunk_size)
+                    chunks_iterator = chunk_parameters(signal_generator, chunk_size)
 
-                for result in pool.imap_unordered(
-                    worker,
-                    chunks_iterator,
-                ):
-                    profitable_results.extend(result)
-                    pbar.update(chunk_size)
+                    for result in pool.imap_unordered(
+                        worker,
+                        chunks_iterator,
+                    ):
+                        profitable_results.extend(result)
+                        pbar.update(chunk_size)
 
             pbar.close()
             duration = time.time() - start_time

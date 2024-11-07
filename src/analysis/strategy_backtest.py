@@ -200,6 +200,7 @@ def run(
         strategy.speak(data)
     else:
         strategy.execute(data)
+
     merge_signals(data)
 
     # add leverage
@@ -207,6 +208,20 @@ def run(
         data["leverage"] = calculate_leverage(data, max_leverage, risk_level)
     else:
         data['leverage'] = np.full_like(data['close'], max_leverage, dtype=np.float64)
+
+    # before cutting off the first 200 data points, we need to make
+    # sure that he last signal that occured before the cut-off is
+    # included in the data at the first point aftert the cut-off.
+    # this makes sure that we do not miss any trading opportunities
+    # that might have occurred before the cut-off.
+    signals = data['signal'][:200]
+    mask = np.isnan(signals) | (signals == 0)
+    valid_indices = np.where(~mask)[0]
+
+    if valid_indices.size > 0:
+        last_valid_index = valid_indices[-1]
+        last_valid_signal = signals[last_valid_index]
+        data['signal'][200] = last_valid_signal
 
     # remove the first 200 data points (they were only necessary for the
     # calculation of indicators and leverage)
@@ -220,7 +235,8 @@ def run(
 
     # # calculate the value of the account/portfolio
     data['b.value'] = np.add(
-        data['b.quote'], np.multiply(data['b.base'], data['close'])
+        data['b.quote'],
+        np.multiply(data['b.base'], data['close'])
     )
 
     return data
