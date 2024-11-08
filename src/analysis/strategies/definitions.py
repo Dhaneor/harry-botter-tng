@@ -9,6 +9,7 @@ from random import randint, choice
 from .. import strategy_builder as sb  # noqa: E402, F401
 from . import signal_generator as sg  # noqa: E402, F401
 from . import condition as cn  # noqa: E402, F401
+from . import exit_order_strategies as es  # noqa: E402, F401
 
 timeperiod = randint(50, 60)
 trigger = 200
@@ -55,16 +56,28 @@ kama_cross = sg.SignalsDefinition(
     ]
 )
 
-timeperiod = 30
-
+# BTC
+# best: (21, 0.05, 66, 7) :: risk level 5 :: max leverage 1,
+# stats {'profit': 1536.652, 'max_drawdown': -20.522, 'sharpe_ratio': 1.652,
+# 'sortino_ratio': 1.146, 'kalmar_ratio': 2.893, 'annualized_volatility': 31.151}
+# Most common parameter values in top 50: (14, 0.05, 67, 2)
 breakout = sg.SignalsDefinition(
     name=f"Breakout {timeperiod}",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
+            operand_a=("er", {"timeperiod": 21}),
+            operand_b=("trending", 0.05, [0.05, 0.55, 0.1]),
+            open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
+            # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            # close_short=("a", cn.COMPARISON.IS_BELOW, "b"),
+        ),
+        cn.ConditionDefinition(
+            interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod": 27}),
-            operand_c=("min", {"timeperiod": 27}),
+            operand_b=("max", {"timeperiod": 66}),
+            operand_c=("min", {"timeperiod": 7}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
             close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
             # open_short=("a", cn.COMPARISON.IS_EQUAL, "d"),
@@ -223,8 +236,8 @@ test_er = sg.SignalsDefinition(
             operand_b=("trending", 0.42, [0.05, 0.55, 0.1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
-            open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
-            close_short=("a", cn.COMPARISON.IS_BELOW, "b"),
+            # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            # close_short=("a", cn.COMPARISON.IS_BELOW, "b"),
         ),
         cn.ConditionDefinition(
             interval="1d",
@@ -319,8 +332,14 @@ s_breakout = sb.StrategyDefinition(
             interval="1d",
             signals_definition=breakout,
             weight=1,
+            # stop_loss=(
+            #     es.StopLossDefinition(
+            #         strategy='atr',
+            #         params=dict(atr_lookback=21, atr_factor=6)
+            #     ),
+            # )
         ),
-    ]
+    ],
 )
 
 s_trix = sb.StrategyDefinition(

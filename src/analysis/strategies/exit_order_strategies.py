@@ -26,6 +26,7 @@ from abc import ABC, abstractmethod
 from typing import Tuple, Union, Optional, TypeAlias, NamedTuple
 
 from ..indicators.indicators_fast_nb import atr
+# from ..indicators import indicator_parameter as param
 
 logger = logging.getLogger("main.exit_order_strategies")
 
@@ -47,6 +48,7 @@ ShortStopLossPrices: TypeAlias = np.ndarray
 
 
 # =============================================================================
+
 class StopLossDefinition(NamedTuple):
     """A formal definition of a stop loss strategy.
 
@@ -58,7 +60,6 @@ class StopLossDefinition(NamedTuple):
     params: Union[dict, None]
         the parameters of the stop loss strategy, default: None
     """
-
     strategy: str
     params: Union[dict, None] = None
 
@@ -252,9 +253,21 @@ class AtrStopLossStrategy(IStopLossStrategy):
         self.atr_factor: float = 3
         super().__init__(params)
 
-    # @execution_time
+    def add_stop_loss(self, data: dict[np.ndarray]) -> dict[np.ndarray]:
+        """Calculates stop loss prices and adds them to the data dictionary."""
+        long_stop_loss_prices, short_stop_loss_prices = self.get_trigger_prices_np(
+            open_=data["open"], high=data["high"], low=data["low"], close=data["close"]
+        )
+        data["sl_long"] = long_stop_loss_prices
+        data["sl_short"] = short_stop_loss_prices
+        return data
+
     def get_trigger_prices_np(
-        self, open_: np.ndarray, high: np.ndarray, low: np.ndarray, close: np.ndarray
+        self,
+        open_: np.ndarray,
+        high: np.ndarray,
+        low: np.ndarray,
+        close: np.ndarray
     ) -> Tuple[LongStopLossPrices, ShortStopLossPrices]:
         """The fastest way to calculate stop loss prices.
 
@@ -495,7 +508,7 @@ def tp_strategy_factory(tp_def: TakeProfitDefinition) -> ITakeProfitStrategy:
         If the 'strategy' parameter in the TakeProfitDefinition
         is not a valid take profit strategy.
     """
-    if tp_def.strategy not in valid_sl_strategies:
+    if tp_def.strategy not in valid_tp_strategies:
         raise ValueError(f"{tp_def.strategy} is not a valid strategy")
 
     return valid_tp_strategies[tp_def.strategy](tp_def.params)

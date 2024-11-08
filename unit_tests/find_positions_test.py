@@ -21,7 +21,7 @@ logger = logging.getLogger('main')
 logger.setLevel(LOG_LEVEL)
 
 ch = logging.StreamHandler()
-ch.setLevel(logging.INFO)
+ch.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter(
     "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
@@ -41,6 +41,7 @@ from src.staff.hermes import Hermes  # noqa: E402, F401
 from src.analysis import strategy_builder as sb  # noqa: E402, F401
 from src.analysis.util import find_positions as fp  # noqa: E402, F401
 from src.analysis import strategy_backtest as bt  # noqa: E402, F401
+from src.analysis.backtest import statistics as st  # noqa: E402, F401
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
     contra_1, trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross,
     s_linreg, s_test_er
@@ -54,7 +55,7 @@ interval = "1d"
 start = int(-365*6)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_test_er
+strategy = s_breakout
 risk_level = 6
 max_leverage = 1
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
@@ -228,14 +229,12 @@ def display_problematic_rows(df):
 # ..............................................................................
 def run(data, show=False, plot=False):
 
-    df = _add_stats(
-        pd.DataFrame.from_dict(
-            _run_backtest(data)
-        )
-    )
+    df = _add_stats(pd.DataFrame.from_dict(_run_backtest(data)))
 
     if show:
         _show(df)
+
+    logger.info(st.calculate_statistics(df['b.value'].copy().to_numpy()))
 
     # display_problematic_rows(df)
     # sys.exit()
@@ -275,7 +274,7 @@ if __name__ == '__main__':
     logger.setLevel(logging.ERROR)
     runs = 1_000
     data_pre = [_get_ohlcv_from_db() for _ in range(runs)]
-    st = time.perf_counter()
+    # st = time.perf_counter()
 
     # for i in range(runs):
     #     # test_find_positions(data_pre[i])

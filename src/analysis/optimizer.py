@@ -12,6 +12,7 @@ import math
 import multiprocessing
 import numpy as np
 import operator
+import pandas as pd
 import sys
 import time
 from collections import Counter, defaultdict
@@ -34,7 +35,7 @@ multiprocessing.set_start_method('spawn', force=True)
 
 TIME_FOR_ONE_BACKTEST = 6  # execution time for one backtest in milliseconds
 INITIAL_CAPITAL = 10_000  # initial capital for backtesting
-RISK_FREE_RATE = 0.00  # risk-free rate for calculating Sharpe Ratio
+RISK_FREE_RATE = 0.04  # risk-free rate for calculating Sharpe Ratio
 
 PERIODS_PER_YEAR = {
     '1m': 365 * 24 * 60,
@@ -273,6 +274,60 @@ def filter_results_by_profit_and_leverage(results_list, rel_tol=1e-9):
     return filtered_results
 
 
+def results_to_dataframe(results_list):
+    """
+    Converts a list of optimizer results into a pandas DataFrame.
+
+    Parameters:
+    results_list
+        List of tuples in the format:
+        ((param1, param2, ...), risk_level, max_leverage, stats_dict)
+
+    Returns:
+    df
+        pandas DataFrame with columns p1, p2, ..., risk_level,
+        max_leverage, and stats columns
+    """
+    # Determine the maximum number of parameters across all results
+    max_params = max(len(result[0]) for result in results_list)
+
+    # Collect all possible stats keys to ensure all columns are captured
+    all_stats_keys = set()
+    for result in results_list:
+        stats_dict = result[3]
+        all_stats_keys.update(stats_dict.keys())
+
+    rows = []
+    for result in results_list:
+        params_tuple, risk_level, max_leverage, stats_dict = result
+        row = {}
+        # Add parameters to the row with column names p1, p2, ...
+        for i, param in enumerate(params_tuple):
+            row[f'p{i+1}'] = param
+        # If there are fewer parameters than max_params, fill the rest with None
+        for i in range(len(params_tuple), max_params):
+            row[f'p{i+1}'] = None
+        # Add risk_level and max_leverage
+        row['risk_level'] = risk_level
+        row['max_leverage'] = max_leverage
+        # Add stats to the row
+        for key in all_stats_keys:
+            row[key] = stats_dict.get(key, None)
+        rows.append(row)
+
+    # Create the DataFrame
+    df = pd.DataFrame(rows)
+
+    # Ensure the columns are ordered:
+    # p1, p2, ..., risk_level, max_leverage, stats columns
+    param_cols = [f'p{i+1}' for i in range(max_params)]
+    other_cols = ['risk_level', 'max_leverage']
+    stats_cols = list(all_stats_keys)
+    df = df[param_cols + other_cols + stats_cols]
+
+    return df
+
+
 # ================================ Helper Functions II ================================
 # Functions for the parallel execution of backtests
 def chunk_parameters(signal_generator, chunk_size=1000):
@@ -491,8 +546,31 @@ def optimize(
     risk_levels: Iterable[float] = (1,),
     max_leverage_levels: tuple[float, ...] = (1, 1.5, 2, 2.5, 3),
     backtest_fn: Callable = bt.run
-) -> List[Tuple[Dict[str, Any], Dict[str, float]]]:
+) -> List[Tuple[tuple[int | float, ...], int, int, Dict[str, float]]]:
+    """Runs backtests for different parameter combinations.
 
+    Parameters:
+    -----------
+    signal_generator : sg.SignalGenerator
+        Signal generator for creating the strategy.
+    data : OhlcvData
+        A dictionary containing market data for backtesting.
+    interval : str, optional
+        The trading interval for backtesting. Default is '1d'.
+    risk_levels : Iterable[float], optional
+        Risk levels for backtesting. Default is (1,).
+    max_leverage_levels : tuple[float,...]
+        Maximum allowed leverage levels. Default is (1, 1.5, 2, 2.5, 3).
+    backtest_fn : Callable, optional
+        Function to perform the backtest. Default is `bt.run`.
+
+    Returns:
+    --------
+    List[Tuple[tuple[int | float,...], int, int, Dict[str, float]]]
+        A list of tuples, where each tuple contains a parameter
+        combination, the risk level, the maximum leverage level,
+        and the backtest statistics. The list is unsorted.
+    """
     periods_per_year = PERIODS_PER_YEAR.get(interval, 365)
     combinations = number_of_combinations(signal_generator) \
         * len(risk_levels) \

@@ -232,7 +232,8 @@ class SignalGenerator:
             (cond.execute(data) for cond in self.conditions)
         )
 
-        return data.update(res.as_dict())
+        data.update(res.as_dict())
+        return data
 
     def speak(self, data: tp.Data, weight: tp.Weight = 1) -> tp.Data:
         return self.execute(data, weight)

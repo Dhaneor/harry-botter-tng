@@ -48,7 +48,6 @@ from src.analysis.strategies import exit_order_strategies as es  # noqa: E402
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
     cci, rsi, ema_cross, tema_cross
 )  # noqa: E402, F401
-from src.analysis.optimizer import generate_param_combinations  # noqa: E402, F401
 
 
 df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
@@ -251,30 +250,9 @@ if __name__ == "__main__":
 
     print("-" * 200)
     print(s)
-    # for sub in s.sub_strategies.values():
-    #     for ind in sub[0].indicators:
-    #         print(ind.name, ind.parameter_space)
-    #     param_spaces = [
-    #         ind.parameter_space
-    #         for sub in s.sub_strategies.values()
-    #         for ind in sub[0].indicators
-    #     ]
 
-    # print("-" * 200)
-    # print(param_spaces)
 
-    # combinations = generate_param_combinations(param_spaces)
-    # filtered = list(filter(lambda x: x[1] < x[2], combinations))
-
-    # print(filtered[-10:])
-
-    # et = 0.0003  # approximate time for one backtest
-    # print(
-    #     f"we have {len(combinations)} combinations "
-    #     f"-> estimated time for optimizer: {round(len(combinations) * et)} seconds"
-    # )
-
-    test_strategy_run(s, True)
+    # test_strategy_run(s, True)
 
     # ..........................................................................
     sys.exit()

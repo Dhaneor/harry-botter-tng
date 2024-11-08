@@ -19,7 +19,7 @@ from .leverage import calculate_leverage
 logger = logging.getLogger('main.backtest')
 logger.setLevel('DEBUG')
 
-trade_costs = 0.002
+TRADE_COSTS = 0.002
 
 
 # ======================================================================================
@@ -76,7 +76,7 @@ def process_long_position(b_base: np.ndarray, b_quote: np.ndarray,
     # opening LONG position
     if buy_at[i] > 0:
         budget = b_quote[i] * leverage[i]
-        buy_size[i] = budget / buy_at[i] * (1 - trade_costs)
+        buy_size[i] = budget / buy_at[i] * (1 - TRADE_COSTS)
 
         b_base[i] = b_base[i] + buy_size[i]
         b_quote[i] = b_quote[i] - budget
@@ -84,7 +84,7 @@ def process_long_position(b_base: np.ndarray, b_quote: np.ndarray,
     # closing LONG position after SELL signal
     if sell_at[i] > 0:
         b_quote[i] = b_quote[i] \
-            + b_base[i] * sell_at[i] * (1 - trade_costs)
+            + b_base[i] * sell_at[i] * (1 - TRADE_COSTS)
         b_base[i] = 0
         return b_base, b_quote
 
@@ -99,13 +99,13 @@ def process_long_position(b_base: np.ndarray, b_quote: np.ndarray,
             if increase_allowed and change_size > 0:
                 buy_at[i] = close[i - 1]
                 buy_size[i] = change_size
-                b_base[i] = b_base[i] + (buy_size[i] * (1 - trade_costs))
+                b_base[i] = b_base[i] + (buy_size[i] * (1 - TRADE_COSTS))
                 b_quote[i] = b_quote[i] - (buy_size[i] * close[i - 1])
             elif decrease_allowed and change_size < 0:
                 sell_at[i] = close[i - 1]
                 sell_size[i] = abs(change_size)
                 b_base[i] = b_base[i] - sell_size[i]
-                b_quote[i] += (sell_size[i] * close[i - 1]) * (1 - trade_costs)
+                b_quote[i] += (sell_size[i] * close[i - 1]) * (1 - TRADE_COSTS)
 
     return b_base, b_quote
 
@@ -122,14 +122,14 @@ def process_short_position(b_base: np.ndarray, b_quote: np.ndarray,
     # opening SHORT position
     if sell_at[i] > 0:
         budget = b_quote[i] * leverage[i]
-        size = budget / sell_at[i] * (1 - trade_costs)
+        size = budget / sell_at[i] * (1 - TRADE_COSTS)
 
         b_base[i] = b_base[i] - size
         b_quote[i] = b_quote[i] + budget
 
     # closing SHORT position
     if buy_at[i] > 0:
-        quote_spent = abs(b_base[i]) * buy_at[i] * (1 + trade_costs)
+        quote_spent = abs(b_base[i]) * buy_at[i] * (1 + TRADE_COSTS)
         b_quote[i] = b_quote[i] - quote_spent
         b_base[i] = 0
         return b_base, b_quote
@@ -146,12 +146,12 @@ def process_short_position(b_base: np.ndarray, b_quote: np.ndarray,
                 buy_at[i] = close[i - 1]
                 buy_size[i] = change_size
                 b_base[i] = b_base[i] + buy_size[i]
-                b_quote[i] -= ((buy_size[i] * close[i - 1]) * (1 - trade_costs))
+                b_quote[i] -= ((buy_size[i] * close[i - 1]) * (1 - TRADE_COSTS))
             elif increase_allowed and change_size < 0:
                 sell_at[i] = close[i - 1]
                 sell_size[i] = abs(change_size)
                 b_base[i] = b_base[i] - sell_size[i]
-                b_quote[i] += ((sell_size[i] * close[i - 1]) * (1 - trade_costs))
+                b_quote[i] += ((sell_size[i] * close[i - 1]) * (1 - TRADE_COSTS))
 
     return b_base, b_quote
 

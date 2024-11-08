@@ -42,6 +42,7 @@ Created on Thu July 12 21:44:23 2023
 import abc
 import logging
 import numpy as np
+import sys
 from dataclasses import dataclass
 from typing import Any, NamedTuple, Optional, Sequence, Callable
 
@@ -128,10 +129,14 @@ class IStrategy(abc.ABC):
         ...
 
     def _add_stop_loss(self, data) -> np.ndarray:
-        if self.sl_strategy:
-            return self.sl_strategy.add_stop_loss(data)
+        if not self.sl_strategy:
+            return data
 
-        return data
+        try:
+            return self.sl_strategy[0].add_stop_loss(data)
+        except Exception as e:
+            logger.warning("error adding stop loss: %s", e)
+            return data
 
     def _add_take_profit(self, data) -> np.ndarray:
         if self.tp_strategy:
@@ -263,7 +268,7 @@ class SubStrategy(IStrategy):
         tp.Data
             the dict with added 'stop loss' series
         """
-        return data
+        # return data
         return super()._add_stop_loss(data)
 
     def _add_take_profit(self, data: tp.Data) -> tp.Data:
@@ -472,16 +477,8 @@ def build_sub_strategy(sdef: StrategyDefinition) -> IStrategy:
     -------
     strategy: IStrategy
         the strategy class
-
-    Raises
-    ------
-    ValueError
-        if sdef.strategy is not a valid strategy
     """
     logger.debug("building single strategy: %s - %s", sdef.strategy, sdef.params)
-
-    # if not isinstance(c, cnd.ConditionDefinition):
-    #     raise ValueError(f'invalid condition definition: {c}')
 
     # create the strategy class from the template for single strategies
     strategy = SubStrategy(name=sdef.strategy, params=sdef.params)
@@ -494,11 +491,15 @@ def build_sub_strategy(sdef: StrategyDefinition) -> IStrategy:
 
     # add stop loss strategy if provided
     if sdef.stop_loss:
-        strategy.sl_strategy = [es.sl_strategy_factory(d) for d in sdef.stop_loss]
+        strategy.sl_strategy = tuple(
+            es.sl_strategy_factory(d) for d in sdef.stop_loss
+            )
 
     # add take profit strategy if provided
     if sdef.take_profit:
-        strategy.tp_strategy = [es.tp_strategy_factory(d) for d in sdef.take_profit]
+        strategy.tp_strategy = tuple(
+            es.tp_strategy_factory(d) for d in sdef.take_profit
+            )
 
     return strategy
 
@@ -541,7 +542,7 @@ def build_strategy(sdef: StrategyDefinition) -> IStrategy:
 
     # ..........................................................................
     # build a single strategy if sub_strategies is not provided/requested
-    # this simpllfies definitions for single (indicator) strategies
+    # this simplifies definitions for single (indicator) strategies
     # and makes the strategy a little bit faster later on
     _validate_strategy_definition(sdef)
 

@@ -47,7 +47,7 @@ interval = "1d"
 start = int(-365*6)
 end = 'now UTC'
 
-strategy = s_test_er
+strategy = s_breakout
 risk_levels = [2, 3, 4, 5, 6]
 max_leverage_levels = 1,  # (1, 1.25, 1.5, 1.75, 2)
 max_drawdown = 25
@@ -175,6 +175,9 @@ def test_optimize():
     logger.info(f'Best profit: {max(profits):.2f}%')
     logger.info(f'Worst profit: {min(profits):.2f}%')
 
+    df = optimizer.results_to_dataframe(best_parameters)
+    print(df.describe())
+
     return best_parameters
 
 
@@ -210,6 +213,9 @@ def test_check_robustness():
 
     logger.info("============================================================")
     logger.info(best_result)
+
+    df = optimizer.results_to_dataframe(results)
+    print(df.describe())
 
 
 # ============================================================================ #
