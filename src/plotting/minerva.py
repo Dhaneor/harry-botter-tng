@@ -375,9 +375,33 @@ class Minerva:
                 except ValueError:
                     print(x_)
 
+    def _positions_rectangles(self, ax, df):
+        # Ensure the dataframe is sorted by index
+        df = df.sort_index()
+
+        # Get the 'position' column
+        positions = df['position']
+
+        # Identify segments where 'position' remains the same
+        segments = positions.ne(positions.shift()).cumsum()
+
+        # Group the dataframe by these segments
+        grouped = df.groupby(segments)
+
+        # Iterate over each group to draw rectangles
+        for _, group in grouped:
+            pos_value = group['position'].iloc[0]
+            if pos_value == 1 or pos_value == -1:
+                start_time = group.index[0]
+                end_time = group.index[-1]
+                color = 'green' if pos_value == 1 else 'red'
+                # Draw a rectangle spanning the time interval
+                ax.axvspan(start_time, end_time, facecolor=color, alpha=0.15)
+
+        return ax
+
     def _channel(self, subplots: Optional[dict] = None):
         if subplots is None:
-            logger.warning("no subplots provided")
             return
 
         ax = self.axes[0] if isinstance(subplots, np.ndarray) else self.axes
@@ -967,6 +991,7 @@ class BacktestChart(Minerva):
         self._stop_loss()
         self._moving_averages()
         self._ohlcv(with_market_state=False)
+        self._positions_rectangles(ax=self.axes[0], df=self.df)
         self._buys_and_sells()
 
         self._position_size()

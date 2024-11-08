@@ -63,8 +63,8 @@ breakout = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod": 37}),
-            operand_c=("min", {"timeperiod": 12}),
+            operand_b=("max", {"timeperiod": 27}),
+            operand_c=("min", {"timeperiod": 27}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
             close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
             # open_short=("a", cn.COMPARISON.IS_EQUAL, "d"),
@@ -205,14 +205,22 @@ tema_cross = sg.SignalsDefinition(
     ]
 )
 
+# parameters for noise filtered KAMA
+# 1) long-short
+btc = (128, 0.05, 103), 4, 1
+eth = (91, 0.15, 31), 6, 1
+ada = (12, 0.1, 37), 3, 1
+# 2) long only
+btc = (7, 0.42, 117), 5, 1
+eth = (7, 0.45, 37), 6, 1
 
 test_er = sg.SignalsDefinition(
-    name="Efficiency Ratio",
+    name="KAMA with Noise Filter",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 217}),
-            operand_b=("trending", 0.1, [0.05, 0.55, 0.1]),
+            operand_a=("er", {"timeperiod": 7}),
+            operand_b=("trending", 0.42, [0.05, 0.55, 0.1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
@@ -220,11 +228,11 @@ test_er = sg.SignalsDefinition(
         ),
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("ema", {"timeperiod": 22}),
-            operand_b=("kama", {"timeperiod": 187}),
+            operand_a=("close"),
+            operand_b=("kama", {"timeperiod": 117}),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
-            # close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
-            open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
+            close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
+            # open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
             # close_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
         ),
     ]
@@ -346,7 +354,7 @@ s_linreg = sb.StrategyDefinition(
 )
 
 s_test_er = sb.StrategyDefinition(
-    strategy="Test with Efficiency Ratio",
+    strategy="KAMA with Noise Filter",
     symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
     interval="1d",
     sub_strategies=[

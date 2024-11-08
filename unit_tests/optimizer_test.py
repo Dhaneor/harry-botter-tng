@@ -41,16 +41,16 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
     trend_1, contra_1, s_test_er
 )
 
-symbol = "ETHUSDT"
+symbol = "BTCUSDT"
 interval = "1d"
 
-start = int(-365*5)
+start = int(-365*6)
 end = 'now UTC'
 
-strategy = s_breakout
-risk_levels = [0, 4, 5, 6]
-max_leverage = 1.5
-max_drawdown = 35
+strategy = s_test_er
+risk_levels = [2, 3, 4, 5, 6]
+max_leverage_levels = 1,  # (1, 1.25, 1.5, 1.75, 2)
+max_drawdown = 25
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 
@@ -112,6 +112,18 @@ def test_vector_generator():
     return vector
 
 
+def test_mutations_for_parameters():
+    params = (p.value for p in sig_gen.parameters)
+
+    # Generate mutations for the parameters
+    mutations = optimizer.mutations_for_parameters(params)
+
+    logger.info(f'Generated mutations: {mutations}')
+    logger.info(f'Mutations length: {len(mutations)}')
+
+    return mutations
+
+
 def test_optimize():
     # fetch the OHLCV data from the database
     data = _get_ohlcv_from_db()
@@ -122,17 +134,20 @@ def test_optimize():
         data=data,
         interval=interval,
         risk_levels=risk_levels,
-        max_leverage=max_leverage,
-        max_drawdown_pct=max_drawdown
+        max_leverage_levels=max_leverage_levels
     )
 
     if not best_parameters:
         logger.info('No profitable parameters with acceptable drawdown found.')
         return
 
+    best_parameters = [
+        res for res in best_parameters if res[3]['max_drawdown'] > max_drawdown * -1
+        ]
+
     # sort results by kalmar ratio
     best_parameters.sort(
-        key=lambda x: x[3]['profit'],
+        key=lambda x: x[3]['kalmar_ratio'],
         reverse=True
         )
 
@@ -163,6 +178,40 @@ def test_optimize():
     return best_parameters
 
 
+def test_check_robustness():
+    best_result = test_optimize()[0]
+
+    results = optimizer.check_robustness(
+        signal_generator=sig_gen,
+        data=_get_ohlcv_from_db(),
+        params=best_result[0],
+        interval=interval,
+        risk_levels=(best_result[1],),
+        max_leverage_levels=(best_result[2],),
+    )
+
+    results.sort(
+        key=lambda x: x[3]['profit'],
+        reverse=True
+        )
+
+    for result in results[:50]:
+        logger.info(
+            "params: %s :: risk level %s :: max leverage %s, stats %s",
+            tuple(round(elem, 4) for elem in result[0]),
+            result[1],
+            result[2],
+            {k: round(v, 3) for k, v in result[3].items()}
+        )
+
+    profits = [result[3]['profit'] for result in results]
+    logger.info(f'Best profit: {max(profits):.2f}%')
+    logger.info(f'Worst profit: {min(profits):.2f}%')
+
+    logger.info("============================================================")
+    logger.info(best_result)
+
+
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
@@ -171,5 +220,6 @@ if __name__ == '__main__':
     # test_estimate_execution_time()
     # test_estimate_combinations()
     # test_vector_generator()
-    test_optimize()
-    pass
+    # test_mutations_for_parameters()
+    # test_optimize()
+    test_check_robustness()

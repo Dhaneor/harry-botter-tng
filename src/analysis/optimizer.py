@@ -8,12 +8,13 @@ Created on July 06 21:12:20 2023
 @author dhaneor
 """
 import logging
+import math
 import multiprocessing
 import numpy as np
 import operator
 import sys
 import time
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Iterable
 from functools import reduce, partial
 from itertools import product, islice
@@ -149,6 +150,129 @@ def analyze_parameters(
     return most_common
 
 
+# ============================ Result handling/filtering ==============================
+def collect_results(results_list):
+    """
+    Collects optimizer results, grouping them by parameters and risk_level.
+
+    Parameters:
+    results_list
+        List of tuples in the format
+        ((param1, param2, ...), risk_level, max_leverage, stats_dict)
+
+    Returns:
+    collected_results
+        Dictionary with keys as (params, risk_level) and values as lists
+        of result tuples.
+    """
+    collected_results = {}
+
+    for result in results_list:
+        params, risk_level, max_leverage, stats = result
+        key = (params, risk_level)
+
+        # Initialize the list for this key if it doesn't exist
+        collected_results.setdefault(key, []).append(result)
+
+    return collected_results
+
+
+def filter_results(results_list):
+    """
+    Filters optimizer results to keep only the ones with the lowest max_leverage
+    for each unique combination of parameters and risk_level.
+
+    Parameters:
+    - results_list: List of tuples in the format
+      ((param1, param2, ...), risk_level, max_leverage, stats_dict)
+
+    Returns:
+    - filtered_results: List of filtered tuples with the lowest max_leverage
+      for each unique (params, risk_level) combination.
+    """
+    filtered_results = {}
+
+    for result in results_list:
+        params, risk_level, max_leverage, stats = result
+        key = (params, risk_level)
+
+        # Check if this combination of params and risk_level is already
+        # in the dictionary
+        if key not in filtered_results:
+            filtered_results[key] = result  # Add new entry
+        else:
+            _, _, existing_max_leverage, existing_stats = filtered_results[key]
+
+            # If the current result has a higher profit but a lower max_leverage,
+            # update the existing result with the current result.
+            equal_profit = stats["profit"] == existing_stats["profit"]
+
+            if equal_profit:
+                if max_leverage < existing_max_leverage:
+                    filtered_results[key] = result  # Update with lower max_leverage
+
+    # Extract the filtered results
+    return list(filtered_results.values())
+
+
+def filter_results_by_profit_and_leverage(results_list, rel_tol=1e-9):
+    """
+    Filters optimizer results to keep.
+
+    For each unique combination of parameters and risk_level,
+    and for results with effectively the same profit, only
+    the one with the lowest max_leverage.
+
+    Parameters:
+    results_list
+        List of tuples in the format
+        ((param1, param2, ...), risk_level, max_leverage, stats_dict)
+    rel_tol
+        Relative tolerance for floating-point comparison of profits.
+
+    Returns:
+    - filtered_results: List of filtered tuples.
+    """
+    # Create a dictionary to collect results for each (params, risk_level)
+    results_by_key = defaultdict(list)
+    for result in results_list:
+        params, risk_level, max_leverage, stats = result
+        key = (params, risk_level)
+        results_by_key[key].append(result)
+
+    filtered_results = []
+
+    # For each key, process the results
+    for key, results in results_by_key.items():
+        # List to hold groups of results with the same profit
+        profit_groups = []
+        profits_seen = []
+
+        for res in results:
+            _, _, max_leverage, stats = res
+            profit = stats['profit']
+            # Check if this profit is close to any seen profits
+            found = False
+            for i, p in enumerate(profits_seen):
+                if math.isclose(profit, p, rel_tol=rel_tol):
+                    profit_groups[i].append(res)
+                    found = True
+                    break
+            if not found:
+                # Start a new group
+                profits_seen.append(profit)
+                profit_groups.append([res])
+        # Now, for each profit group, find the result with lowest max_leverage
+        for group in profit_groups:
+            # Find the result with the lowest max_leverage
+            min_leverage = min(res[2] for res in group)
+            # Keep the results with the lowest max_leverage
+            min_leverage_results = [res for res in group if res[2] == min_leverage]
+            # Add these results to the filtered_results
+            filtered_results.extend(min_leverage_results)
+    return filtered_results
+
+
 # ================================ Helper Functions II ================================
 # Functions for the parallel execution of backtests
 def chunk_parameters(signal_generator, chunk_size=1000):
@@ -160,13 +284,59 @@ def chunk_parameters(signal_generator, chunk_size=1000):
         yield chunk
 
 
+def chunk_mutations(mutations: tuple, chunk_size=1000):
+    mutations_iter = iter(mutations)  # Convert tuple to iterator
+    while True:
+        chunk = tuple(islice(mutations_iter, chunk_size))
+        if not chunk:
+            break
+        yield chunk
+
+
+def mutations_for_parameters(params: tuple[int | float, ...]):
+    """Mutates the parameters for a given result tuple.
+
+    This function creates a tuple with mutated parameters for a given
+    result tuple. The mutated parameters can then be used to evaluate
+    the stability of the strategy.
+
+    It takes each of the parameters in the result tuple and:
+    - if the parameter is an integer, it creates a tuple with values from
+    the range of the parameter minus 10 and the range plus 10 (and removes
+    negative values), step size: 1.
+    - if the parameter is a float, it creates a tuple with values from
+    the range of the parameter minus 0.5 and the range plus 0.5 (and removes
+    negative values), step size: 0.1.
+
+    The tuples are collected in a list and the functions returns a generator
+    that yields all permutations. For this the vector_generator function is used.
+
+    Parameters:
+    -----------
+        params: tuple[int | float,...]
+            A tuple containing parameters
+    """
+    # Create a tuple with mutated parameters for each parameter
+    mutated_params = []
+    for param in params:
+        if isinstance(param, (int, np.int64)):
+            mutated_params.append(tuple(range(max(param - 5, 1), param + 6)))
+        elif isinstance(param, (float, np.float64)):
+            mut = tuple(np.arange(max(param - 0.05, 0.01), param + 0.06, 0.01))
+            mutated_params.append(tuple(round(p, 3) for p in mut))
+        else:
+            raise ValueError(f'Unsupported parameter type: {type(param)}')
+
+    # Create all permutations of the mutated parameters
+    return tuple(product(*mutated_params))
+
+
 def _worker_function(
     chunk: tuple[tuple[Any, ...], ...],
     condition_definitions: Sequence[object],
     data: dict[np.ndarray],
     risk_level: int,
     max_leverage: float,
-    max_drawdown_pct: float,
     backtest_fn: Callable,
     initial_capital: float,
     periods_per_year: int
@@ -211,7 +381,10 @@ def _worker_function(
     profitable_results = []
     for params in chunk:
         for param, value in zip(signal_generator.parameters, params):
-            param.value = value
+            try:
+                param.value = value
+            except ValueError:
+                continue
 
         portfolio_values = backtest_fn(
             strategy=signal_generator,
@@ -234,24 +407,91 @@ def _worker_function(
                 )
             )
 
-    return [
-        pr for pr in profitable_results
-        if pr[3]['max_drawdown'] > max_drawdown_pct * -1
-        ]
+    return profitable_results
 
 
 # ====================================================================================
+def check_robustness(
+    signal_generator: sg.SignalGenerator,
+    data: OhlcvData,
+    params: tuple[int | float, ...],
+    interval: str = '1d',
+    risk_levels: Iterable[float] = (1,),
+    max_leverage_levels: tuple[float, ...] = (1,),
+    backtest_fn: Callable = bt.run
+):
+    """
+    Tests the robustness of the strategy by optimizing its parameters and
+    backtesting them against a given market data.
+
+    Parameters:
+    -----------
+    signal_generator : sg.SignalGenerator
+    Signal generator for creating the strategy.
+    data : OhlcvData
+    Market data for backtesting.
+    interval : str, optional
+    Time interval for backtesting. Default is '1d'.
+    risk_levels : Iterable[float], optional
+    Risk levels for backtesting. Default is (1,).
+    max_leverage : float, optional
+    Maximum allowed leverage. Default is 1.
+
+    Returns:
+    results : tuple[tuple[int | float], Dict[str, float]]]
+    """
+    mutations = mutations_for_parameters(params)
+    combinations = len(mutations) * len(risk_levels) * len(max_leverage_levels)
+    periods_per_year = PERIODS_PER_YEAR.get(interval, 365)
+
+    logger.info("Starting robustness check ...")
+    logger.info("testing %s combinations", combinations)
+
+    num_cores = multiprocessing.cpu_count()
+    num_processes = max(1, num_cores - 1)
+
+    profitable_results, chunk_size = [], 100
+
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        with tqdm(total=combinations, desc="Optimizing") as pbar:
+            for max_leverage in max_leverage_levels:
+                for risk_level in risk_levels:
+                    worker = partial(
+                        _worker_function,
+                        condition_definitions=signal_generator.condition_definitions,
+                        data=data,
+                        risk_level=risk_level,
+                        backtest_fn=backtest_fn,
+                        initial_capital=INITIAL_CAPITAL,
+                        max_leverage=max_leverage,
+                        periods_per_year=periods_per_year,
+                    )
+
+                    chunks = chunk_mutations(mutations, chunk_size)
+
+                    for result in pool.imap_unordered(worker, chunks):
+                        profitable_results.extend(result)
+                        pbar.update(chunk_size)
+
+            pbar.close()
+
+            logger.info(
+                "Total profitable results: %s (%.2f)",
+                len(profitable_results),
+                (len(profitable_results) / combinations) * 100
+            )
+
+    return filter_results(profitable_results)
+
+
 def optimize(
     signal_generator: sg.SignalGenerator,
     data: OhlcvData,
     interval: str = '1d',
     risk_levels: Iterable[float] = (1,),
-    max_leverage: float = 1,
-    max_drawdown_pct: float = 100,
+    max_leverage_levels: tuple[float, ...] = (1, 1.5, 2, 2.5, 3),
     backtest_fn: Callable = bt.run
 ) -> List[Tuple[Dict[str, Any], Dict[str, float]]]:
-
-    max_leverage_levels = (1, 1.5, 2, 2.5, 3)
 
     periods_per_year = PERIODS_PER_YEAR.get(interval, 365)
     combinations = number_of_combinations(signal_generator) \
@@ -261,15 +501,16 @@ def optimize(
     est_exc_time = combinations * estimate_exc_time(backtest_fn, signal_generator, data)
 
     logger.info("Starting parallel optimization...")
+    logger.info("leverage levels: %s", max_leverage_levels)
     logger.info("testing %s combinations", combinations)
     logger.info("Estimated execution time: %.2fs", est_exc_time)
-
-    profitable_results = []
-    chunk_size = 100  # Adjust this based on your system's capabilities
 
     num_cores = multiprocessing.cpu_count()
     num_processes = max(1, num_cores - 1)  # Use all cores except one, but at least 1
     logger.info("Using %s processes", num_processes)
+
+    profitable_results = []
+    chunk_size = 100  # Adjust this based on your system's capabilities
 
     with multiprocessing.Pool(processes=num_processes) as pool:
         start_time = time.time()
@@ -285,7 +526,6 @@ def optimize(
                         backtest_fn=backtest_fn,
                         initial_capital=INITIAL_CAPITAL,
                         max_leverage=max_leverage,
-                        max_drawdown_pct=max_drawdown_pct,
                         periods_per_year=periods_per_year,
                     )
 
@@ -311,7 +551,7 @@ def optimize(
                 (len(profitable_results) / combinations) * 100
             )
 
-    return profitable_results
+    return filter_results_by_profit_and_leverage(profitable_results)
 
 
 # ====================================================================================
