@@ -47,7 +47,7 @@ intervals = ('1m', '15m', '1h', '5h', '4h', '12h', '1d',)
 async def get_random_exchange():
 
     candidates = tuple([
-        'alpaca', 'binance', 'binanceus', 'bitmex', 'coinbasepro', 'bitfinex',
+        'alpaca', 'binance', 'binanceus', 'bitmex',  # 'coinbasepro', 'bitfinex',
         'bitstamp', 'bittrex', 'bybit', 'huobi', 'kraken', 'kucoin', 'kucoinfutures',
         'okcoin', 'okex', 'poloniex', 'bitrue'
     ])
@@ -55,7 +55,7 @@ async def get_random_exchange():
     return random.choice(candidates)
 
 
-async def example_client(runs=5):
+async def example_client(runs=10):
 
     socket = ctx.socket(zmq.REQ)
     socket.connect(client_addr)
@@ -74,31 +74,35 @@ async def example_client(runs=5):
         else:
             req = {
                 'exchange': await get_random_exchange(),
-                'symbol': random.choice(symbols),
-                'interval': random.choice(intervals)
+                'symbol': "BTC/USDT",  # random.choice(symbols),
+                'interval': "1h"  # random.choice(intervals)
             }
 
         logger.debug("sending request %s: %s", counter, req)
 
         await socket.send_json(req)
 
-        msg = json.loads(await socket.recv_string())
+        response = repo.Response.from_json(await socket.recv_string())
 
-        if msg and msg.get('success'):
+        logger.info(response)
 
-            if data := msg.get('data'):
-                logger.info("%s ...", data[-1])
-            else:
-                logger.warning(
-                    "No data received even though message indicates success."
-                    )
-                logger.warning(msg)
+        # msg = json.loads(await socket.recv_string())
 
-        elif msg and not msg.get('success'):
-            logger.error(">>>>> >>>>> REQUEST ERRORS: %s", msg.get('errors'))
+        # if msg and msg.get('success'):
 
-        else:
-            logger.error("no message received")
+        #     if data := msg.get('data'):
+        #         logger.info("%s ...", data[-1])
+        #     else:
+        #         logger.warning(
+        #             "No data received even though message indicates success."
+        #             )
+        #         logger.warning(msg)
+
+        # elif msg and not msg.get('success'):
+        #     logger.error(">>>>> >>>>> REQUEST ERRORS: %s", msg.get('errors'))
+
+        # else:
+        #     logger.error("no message received")
 
         logger.info("===============================================================\n")
         counter += 1
