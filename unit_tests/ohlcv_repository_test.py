@@ -6,7 +6,6 @@ Created on Sep 10 20:15:20 2023
 @author dhaneor
 """
 import asyncio
-import ccxt
 import json
 import logging
 import os
@@ -16,7 +15,7 @@ import zmq
 import zmq.asyncio
 
 logger = logging.getLogger("main")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 ch = logging.StreamHandler()
 
@@ -33,12 +32,15 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # --------------------------------------------------------------------------------------
 
-from src.data_sources import ohlcv_repository as repo  # noqa E402
+from src.rawi import ohlcv_repository as repo  # noqa E402
 
 ctx = zmq.asyncio.Context()
 
 server_addr = "inproc://ohlcv"
 client_addr = "inproc://ohlcv"
+
+symbols = ('BTC/USDT', 'ETH/BTC', 'SOL/USDT', 'BNB/USDT', 'DOGE/USDT', 'ETH/GBP')
+intervals = ('1m', '15m', '1h', '5h', '4h', '12h', '1d',)
 
 
 # --------------------------------------------------------------------------------------
@@ -53,7 +55,7 @@ async def get_random_exchange():
     return random.choice(candidates)
 
 
-async def example_client():
+async def example_client(runs=5):
 
     socket = ctx.socket(zmq.REQ)
     socket.connect(client_addr)
@@ -62,12 +64,19 @@ async def example_client():
 
     await asyncio.sleep(2)
 
-    while counter < 10:
-        req = {
-            'exchange': await get_random_exchange(),
-            'symbol': 'XRP/USDT',
-            'interval': '1h'
-        }
+    while counter <= runs:
+        if counter > runs - 2:
+            req = {
+                'exchange': 'binance',  # await get_random_exchange(),
+                'symbol': symbols[0],
+                'interval': intervals[0]
+            }
+        else:
+            req = {
+                'exchange': await get_random_exchange(),
+                'symbol': random.choice(symbols),
+                'interval': random.choice(intervals)
+            }
 
         logger.debug("sending request %s: %s", counter, req)
 
@@ -75,24 +84,36 @@ async def example_client():
 
         msg = json.loads(await socket.recv_string())
 
-        if msg:
-            logger.debug(msg[-1])
-        else:
-            logger.error("...")
+        if msg and msg.get('success'):
 
-        logger.debug("----------------------------------------------------------------")
+            if data := msg.get('data'):
+                logger.info("%s ...", data[-1])
+            else:
+                logger.warning(
+                    "No data received even though message indicates success."
+                    )
+                logger.warning(msg)
+
+        elif msg and not msg.get('success'):
+            logger.error(">>>>> >>>>> REQUEST ERRORS: %s", msg.get('errors'))
+
+        else:
+            logger.error("no message received")
+
+        logger.info("===============================================================\n")
         counter += 1
 
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(1)
 
     await socket.send_json({'action': 'close'})
-    _ = await socket.recv_json()
-    socket.close()
+    _ = await socket.recv_string()
+    socket.close(1)
+    return
 
 
 async def main():
     tasks = [
-        repo.main(ctx, server_addr),
+        repo.ohlcv_repository(ctx, server_addr),
         example_client()
     ]
 
