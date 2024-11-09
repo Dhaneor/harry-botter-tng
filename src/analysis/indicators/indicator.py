@@ -63,9 +63,8 @@ def get_parameter_space(param_name: str) -> dict:
 
     Returns:
     --------
-    None
-        This function modifies the indicator object in-place and
-        doesn't return anything.
+    list
+        A parameter space for the given parameter.
 
     Notes:
     ------
@@ -76,7 +75,15 @@ def get_parameter_space(param_name: str) -> dict:
     - Parameters ending with 'matype': [first MA type, last MA type, 1]
     - Parameters starting with 'nbdev': [0.1, 4, 0.1]
     """
-    logger.debug("   determining parameter space for %s", param_name)
+    logger.debug("determining parameter space for %s", param_name)
+
+    # Check for patterns
+    if param_name.endswith("matype"):
+        ma_types = list(MA_TYPES.keys())
+        return [ma_types[0], ma_types[-1], 1]
+
+    if param_name.startswith("nbdev"):
+        return [0.25, 4, 0.25]
 
     # Define a dictionary to map parameter names to their spaces
     parameter_spaces = {
@@ -93,6 +100,8 @@ def get_parameter_space(param_name: str) -> dict:
         "slowd_period": [10, 200, 2],
         "fastlimit": [0, 10, 1],
         "slowlimit": [0, 10, 1],
+        "min": [2, 120, 5],
+        "max": [2, 120, 5],
         "minperiod": [2, 100, 5],
         "maxperiod": [20, 200, 5],
         "minmovestep": [1, 10, 1],
@@ -114,14 +123,6 @@ def get_parameter_space(param_name: str) -> dict:
     # Check for exact matches
     if param_name in parameter_spaces:
         return parameter_spaces[param_name]
-
-    # Check for patterns
-    if param_name.endswith("matype"):
-        ma_types = list(MA_TYPES.keys())
-        return [ma_types[0], ma_types[-1], 1]
-
-    if param_name.startswith("nbdev"):
-        return [0.25, 4, 0.25]
 
     raise ValueError(f"No parameter space for parameter: {param_name}")
 

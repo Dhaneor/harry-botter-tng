@@ -13,7 +13,7 @@ from .indicator_parameter import Parameter
 
 # defining parameters for the Noise indicator
 timeperiod = Parameter(
-    name="timeperiod", initial_value=14, hard_min=7, hard_max=365, step=7
+    name="timeperiod", initial_value=14, hard_min=7, hard_max=95, step=7
 )
 
 
@@ -56,15 +56,15 @@ class EfficiencyRatio(IIndicator):
         """
         if data.ndim == 1:
             if self._method:
-                return self._noise_index_numba(data)
+                return self._noise_index_numba(data=data, lookback=14)
             else:
                 return self._noise_index_numpy(data)
-        elif data.ndim == 2:
-            return np.apply_along_axis(
-                self._noise_index_numpy
-                if self._method == 0
-                else self._noise_index_numba, 0, data
-                )
+        # elif data.ndim == 2:
+        #     return np.apply_along_axis(
+        #         self._noise_index_numpy
+        #         if self._method == 0
+        #         else self._noise_index_numba, 0, data
+        #         )
         else:
             raise ValueError("Input data must be either 1D or 2D array")
 
@@ -81,9 +81,7 @@ class EfficiencyRatio(IIndicator):
         )
 
     @njit
-    def _noise_index_numba(self, data: np.ndarray) -> np.ndarray:
-        lookback = self._parameters[0].value
-
+    def _noise_index_numba(self, data, lookback: int) -> np.ndarray:
         n = len(data)
         noise = np.empty(n)
         noise[:] = np.nan
@@ -123,7 +121,7 @@ class EfficiencyRatio(IIndicator):
         The Noise index is calculated as:
         (abs(final_price / initial_price - 1)) / (sum of absolute returns)
         """
-        lookback = self._parameters[0].value
+        lookback = min((len(data) - 1), self._parameters[0].value)
 
         returns = np.abs(np.diff(data) / data[:-1])
         rolling_sum = bn.move_sum(returns, window=lookback)

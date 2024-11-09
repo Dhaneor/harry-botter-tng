@@ -56,8 +56,8 @@ start = int(-365*6)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
 strategy = s_breakout
-risk_level = 6
-max_leverage = 1
+risk_level = 7
+max_leverage = 1.5
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')

@@ -56,11 +56,29 @@ kama_cross = sg.SignalsDefinition(
     ]
 )
 
+# BNB with REBALANCING
+# best: params: (42, 0.22, 56, 62) :: risk level 7 :: max leverage 1,
+# stats {'profit': 3152.497, 'max_drawdown': -32.189, 'sharpe_ratio': 1.691,
+# 'sortino_ratio': 1.426, 'kalmar_ratio': 2.445, 'annualized_volatility': 38.814}
+
 # BTC
 # best: (21, 0.05, 66, 7) :: risk level 5 :: max leverage 1,
 # stats {'profit': 1536.652, 'max_drawdown': -20.522, 'sharpe_ratio': 1.652,
 # 'sortino_ratio': 1.146, 'kalmar_ratio': 2.893, 'annualized_volatility': 31.151}
-# Most common parameter values in top 50: (14, 0.05, 67, 2)
+#
+# with leverage & REBALANCING: (21, 0.05, 67, 7) :: risk level 7(8) :: max leverage 1.5,
+# stats {'profit': 2173.039, 'max_drawdown': -19.811, 'sharpe_ratio': 1.803,
+# 'sortino_ratio': 1.28, 'kalmar_ratio': 3.45, 'annualized_volatility': 31.663}
+
+# ETHUSDT
+# best: params: params: (36, 0.07, 24, 7) :: risk level 6 :: max leverage 1,
+# stats {'profit': 1928.265, 'max_drawdown': -31.241, 'sharpe_ratio': 1.338,
+# 'sortino_ratio': 1.009, 'kalmar_ratio': 2.086, 'annualized_volatility': 45.148}
+#
+# with leverage & REBALANCING: (84, 0.05, 29, 12) :: risk level 7 :: max leverage 1.5
+# {'profit': 3282.00105528086, 'max_drawdown': -33.46641732110709,
+# 'sharpe_ratio': 1.7523866305577998, 'sortino_ratio': 1.6187130942382568,
+# 'kalmar_ratio': 2.3868188824737215, 'annualized_volatility': 37.54528536133036}
 breakout = sg.SignalsDefinition(
     name=f"Breakout {timeperiod}",
     conditions=[
@@ -76,7 +94,7 @@ breakout = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod": 66}),
+            operand_b=("max", {"timeperiod": 67}),
             operand_c=("min", {"timeperiod": 7}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
             close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),

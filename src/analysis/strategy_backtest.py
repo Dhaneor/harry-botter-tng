@@ -30,7 +30,7 @@ def calculate_trades_nb(close: np.ndarray, position: np.ndarray,
                         leverage: np.ndarray, b_base: np.ndarray,
                         b_quote: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 
-    continuous = int8(0)
+    continuous = int8(1)
     increase_allowed = int8(1)
     decrease_allowed = int8(1)
     min_change_pct = 0.1

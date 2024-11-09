@@ -33,7 +33,6 @@ OhlcvData = dict[np.ndarray]
 
 multiprocessing.set_start_method('spawn', force=True)
 
-TIME_FOR_ONE_BACKTEST = 6  # execution time for one backtest in milliseconds
 INITIAL_CAPITAL = 10_000  # initial capital for backtesting
 RISK_FREE_RATE = 0.04  # risk-free rate for calculating Sharpe Ratio
 

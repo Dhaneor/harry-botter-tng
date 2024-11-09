@@ -36,6 +36,7 @@ from src.staff.hermes import Hermes  # noqa: E402, F401
 from src.analysis import strategy_builder as sb  # noqa: E402, F401
 from src.analysis.strategies import signal_generator as sg  # noqa: E402, F401
 from src.analysis import optimizer  # noqa: E402, F401
+from src.analysis.indicators import indicators_custom  # noqa: E402, F401
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
     s_breakout, s_tema_cross, s_linreg, s_kama_cross, s_trix,
     trend_1, contra_1, s_test_er
@@ -48,9 +49,9 @@ start = int(-365*6)
 end = 'now UTC'
 
 strategy = s_breakout
-risk_levels = [2, 3, 4, 5, 6]
+risk_levels = [7]
 max_leverage_levels = 1,  # (1, 1.25, 1.5, 1.75, 2)
-max_drawdown = 25
+max_drawdown = 35
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 
@@ -62,6 +63,7 @@ sub_strategy: sb.SubStrategy = [v for v in strategy.sub_strategies.values()][0][
 # print(sub_strategy)
 
 sig_gen = sub_strategy._signal_generator
+noise = indicators_custom.EfficiencyRatio()
 
 
 def _get_ohlcv_from_db():
@@ -124,9 +126,9 @@ def test_mutations_for_parameters():
     return mutations
 
 
-def test_optimize():
+def test_optimize(data: dict | None):
     # fetch the OHLCV data from the database
-    data = _get_ohlcv_from_db()
+    data = data or _get_ohlcv_from_db()
 
     # Optimize the strategy
     best_parameters = optimizer.optimize(
@@ -147,7 +149,7 @@ def test_optimize():
 
     # sort results by kalmar ratio
     best_parameters.sort(
-        key=lambda x: x[3]['kalmar_ratio'],
+        key=lambda x: x[3]['profit'],
         reverse=True
         )
 
@@ -174,6 +176,7 @@ def test_optimize():
     profits = [result[3]['profit'] for result in best_parameters]
     logger.info(f'Best profit: {max(profits):.2f}%')
     logger.info(f'Worst profit: {min(profits):.2f}%')
+    logger.info(f'Average profit: {sum(profits) / len(profits):.2f}%')
 
     df = optimizer.results_to_dataframe(best_parameters)
     print(df.describe())
@@ -182,11 +185,12 @@ def test_optimize():
 
 
 def test_check_robustness():
-    best_result = test_optimize()[0]
+    data = _get_ohlcv_from_db()
+    best_result = test_optimize(data)[0]
 
     results = optimizer.check_robustness(
         signal_generator=sig_gen,
-        data=_get_ohlcv_from_db(),
+        data=data,
         params=best_result[0],
         interval=interval,
         risk_levels=(best_result[1],),
@@ -216,6 +220,11 @@ def test_check_robustness():
 
     df = optimizer.results_to_dataframe(results)
     print(df.describe())
+
+    noise.parameters[0].hard_max = (len(data['close'] + 5))
+    noise._parameters[0].value = (len(data['close'] - 5))
+    er = noise._noise_index_numpy(data['close'])
+    logger.info("Efficiency Ratio: %s", er[-1])
 
 
 # ============================================================================ #
