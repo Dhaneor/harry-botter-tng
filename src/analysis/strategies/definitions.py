@@ -66,6 +66,8 @@ kama_cross = sg.SignalsDefinition(
 # stats {'profit': 1536.652, 'max_drawdown': -20.522, 'sharpe_ratio': 1.652,
 # 'sortino_ratio': 1.146, 'kalmar_ratio': 2.893, 'annualized_volatility': 31.151}
 #
+# (70, 0.15, 12, 17) ... risk level 3 :: max leverage 1, (last 3 years from top)
+#
 # with leverage & REBALANCING: (21, 0.05, 67, 7) :: risk level 7(8) :: max leverage 1.5,
 # stats {'profit': 2173.039, 'max_drawdown': -19.811, 'sharpe_ratio': 1.803,
 # 'sortino_ratio': 1.28, 'kalmar_ratio': 3.45, 'annualized_volatility': 31.663}
@@ -94,7 +96,7 @@ breakout = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod": 67}),
+            operand_b=("max", {"timeperiod": 66}),
             operand_c=("min", {"timeperiod": 7}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
             close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
@@ -341,12 +343,12 @@ s_kama_cross = sb.StrategyDefinition(
 
 s_breakout = sb.StrategyDefinition(
     strategy="Breakout",
-    symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
+    symbol="BTC/USDT",
     interval="1d",
     sub_strategies=[
         sb.StrategyDefinition(
             strategy="Breakout",
-            symbol="ETHUSDT",
+            symbol="BTC/USDT",
             interval="1d",
             signals_definition=breakout,
             weight=1,

@@ -45,11 +45,11 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = int(-365*6)
+start = int(-1000)
 end = 'now UTC'
 
 strategy = s_breakout
-risk_levels = [7]
+risk_levels = [3]
 max_leverage_levels = 1,  # (1, 1.25, 1.5, 1.75, 2)
 max_drawdown = 35
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5

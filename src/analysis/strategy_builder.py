@@ -317,6 +317,7 @@ class CompositeStrategy(IStrategy):
 
     def speak(self, data: tp.Data) -> tp.Data:
         self._add_signals(data)
+        return data
 
     def optimize(self) -> None:
         """Optimize the strategy by testing param combinations.

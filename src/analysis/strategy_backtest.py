@@ -211,7 +211,7 @@ def run(
 
     # before cutting off the first 200 data points, we need to make
     # sure that he last signal that occured before the cut-off is
-    # included in the data at the first point aftert the cut-off.
+    # included in the data at the first point after the cut-off.
     # this makes sure that we do not miss any trading opportunities
     # that might have occurred before the cut-off.
     signals = data['signal'][:200]
