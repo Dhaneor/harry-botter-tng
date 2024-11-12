@@ -53,11 +53,11 @@ from src.analysis.models import position  # noqa: E402, F401
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = int(-365*6)  # 'December 01, 2018 00:00:00'
+start = int(-365*3)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
 strategy = s_test_er
-risk_level, max_leverage = 0, 1
+risk_level, max_leverage = 8, 1.5
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -231,11 +231,15 @@ def run(data, show=False, plot=False):
 
     df = _add_stats(pd.DataFrame.from_dict(_run_backtest(data)))
 
+    df_pos = df.copy()
+
     if show:
         _show(df)
 
-    for pos in (positions := position.extract_positions(df, symbol)):
+    for pos in (positions := position.extract_positions(df_pos, symbol)):
         print(pos)
+        for trade in pos.trades:
+            print(trade)
 
     print(f"Total number of trades: {len(positions)}")
     print(f"Profit Factor: {positions.profit_factor:.2f}")

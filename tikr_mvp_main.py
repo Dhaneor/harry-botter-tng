@@ -45,7 +45,7 @@ ohlcv_request = {
 }
 
 RISK_LEVEL = 7
-MAX_LEVERAGE = 1.5
+MAX_LEVERAGE = 1
 
 
 def display_results(df: pd.DataFrame) -> None:
@@ -84,7 +84,7 @@ def display_results(df: pd.DataFrame) -> None:
 
     df.replace(np.nan, "", inplace=True)
     df.replace(False, ".", inplace=True)
-    df.replace("0.0000", "", inplace=True)
+    df.replace(0, "", inplace=True)
 
     df = df.astype(str)
     df.loc[df["buy_size"] != "", "buy"] = "•"

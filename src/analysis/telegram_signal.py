@@ -32,13 +32,15 @@ class TelegramSignal:
         logger.debug(self.current_position)
 
         position_type = self.current_position.get('position_type', 'Unknown')
-        required_action = self.current_position.get('required_action', None)
+        required_action = self.current_position.get('required_action', 'fail')
+
+        print(required_action)
 
         action_str = (
             F"*{self.current_position.get('change').capitalize()} position by* "
             f"`{self.current_position.get('change_percent'):.4f}%`!\n"
             f"*Target Leverage*: `{self.current_position.get('leverage'):.4f}`\n"
-        ) if required_action else ""
+        ) if required_action is not None else ""
 
         required_action = required_action or "Chill, bro!"
 
