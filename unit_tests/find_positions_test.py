@@ -37,7 +37,7 @@ sys.path.append(parent)
 sys.path.append('../backtest.module/')
 # -----------------------------------------------------------------------------
 
-from src.staff.hermes import Hermes  # noqa: E402, F401
+from src.staff.hermes import Hermes  # noqa: E402, F4011
 from src.analysis import strategy_builder as sb  # noqa: E402, F401
 from src.analysis.util import find_positions as fp  # noqa: E402, F401
 from src.analysis import strategy_backtest as bt  # noqa: E402, F401
@@ -48,16 +48,16 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 )
 from src.plotting.minerva import BacktestChart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
+from src.analysis.models import position  # noqa: E402, F401
 
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = int(-365*3)  # 'December 01, 2018 00:00:00'
+start = int(-365*6)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_breakout
-risk_level = 3
-max_leverage = 1
+strategy = s_test_er
+risk_level, max_leverage = 0, 1
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -234,6 +234,11 @@ def run(data, show=False, plot=False):
     if show:
         _show(df)
 
+    for pos in (positions := position.extract_positions(df, symbol)):
+        print(pos)
+
+    print(f"Total number of trades: {len(positions)}")
+    print(f"Profit Factor: {positions.profit_factor:.2f}")
     logger.info(st.calculate_statistics(df['b.value'].copy().to_numpy()))
 
     # display_problematic_rows(df)
@@ -249,7 +254,7 @@ def run(data, show=False, plot=False):
         chart = BacktestChart(
             df=df,  # df[200:],
             title=f'{symbol} ({interval})',
-            color_scheme='day'
+            color_scheme='night'
         )
         chart.draw()
 

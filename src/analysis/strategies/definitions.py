@@ -96,7 +96,7 @@ breakout = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod": 66}),
+            operand_b=("max", {"timeperiod": 67}),
             operand_c=("min", {"timeperiod": 7}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
             close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
@@ -241,19 +241,34 @@ tema_cross = sg.SignalsDefinition(
 # parameters for noise filtered KAMA
 # 1) long-short
 btc = (128, 0.05, 103), 4, 1
-eth = (91, 0.15, 31), 6, 1
+eth = (14, 0.35, 2), 4, 1
 ada = (12, 0.1, 37), 3, 1
 # 2) long only
-btc = (7, 0.42, 117), 5, 1
-eth = (7, 0.45, 37), 6, 1
+# BTC: (70, 0.2, 167) :: risk level 8 :: max leverage 1.25,
+# stats {'profit': 1907.318, 'max_drawdown': -21.953, 'sharpe_ratio': 1.62,
+# 'sortino_ratio': 1.088, 'kalmar_ratio': 2.956, 'annualized_volatility': 34.551}
+#
+# BTC: (49, 0.15, 182) :: risk level 8 :: max leverage 1,
+# stats {'profit': 1905.738, 'max_drawdown': -29.57, 'sharpe_ratio': 1.6,
+# 'sortino_ratio': 1.24, 'kalmar_ratio': 2.194, 'annualized_volatility': 35.088}
+#
+# BTC: (70, 0.2, 167) :: risk level 0 :: max leverage 1,
+# stats {'profit': 2483.611, 'max_drawdown': -28.132, 'sharpe_ratio': 1.529,
+# 'sortino_ratio': 1.017, 'kalmar_ratio': 2.559, 'annualized_volatility': 40.904}
+#
+# BTC: (49, 0.15, 182) :: risk level 0 :: max leverage 1,
+# stats {'profit': 2766.9935, 'max_drawdown': -30.184, 'sharpe_ratio': 1.517,
+# 'sortino_ratio': 1.1603, 'kalmar_ratio': 2.484, 'annualized_volatility': 42.923}
+eth = (7, 0.45, 37), 7, 1  # profit: 1625.779; drawdown: -26.234
+eth = (7, 0.45, 37), 9, 1.5  # profit': 3440.149, 'max_drawdown': -32.625
 
 test_er = sg.SignalsDefinition(
     name="KAMA with Noise Filter",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 7}),
-            operand_b=("trending", 0.42, [0.05, 0.55, 0.1]),
+            operand_a=("er", {"timeperiod": 49}),
+            operand_b=("trending", 0.15, [0.05, 0.55, 0.05]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
@@ -262,7 +277,7 @@ test_er = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a=("close"),
-            operand_b=("kama", {"timeperiod": 117}),
+            operand_b=("kama", {"timeperiod": 182}),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
@@ -355,7 +370,7 @@ s_breakout = sb.StrategyDefinition(
             # stop_loss=(
             #     es.StopLossDefinition(
             #         strategy='atr',
-            #         params=dict(atr_lookback=21, atr_factor=6)
+            #         params=dict(atr_lookback=21, atr_factor=4)
             #     ),
             # )
         ),

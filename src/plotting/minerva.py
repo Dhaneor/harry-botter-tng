@@ -394,9 +394,11 @@ class Minerva:
             if pos_value == 1 or pos_value == -1:
                 start_time = group.index[0]
                 end_time = group.index[-1]
-                color = 'green' if pos_value == 1 else 'red'
+                color = self.bull[0] if pos_value == 1 else 'red'
                 # Draw a rectangle spanning the time interval
-                ax.axvspan(start_time, end_time, facecolor=color, alpha=0.15)
+                ax.axvspan(
+                    start_time, end_time, facecolor=color, alpha=self.bull[1] / 5
+                    )
 
         return ax
 
@@ -514,8 +516,8 @@ class Minerva:
             x=self.df.index,
             y1=self.df["leverage"],
             y2=0,
-            color=self.line_colors[3],
-            edgecolor=self.line_colors[3],
+            color=self.line_colors[1],
+            edgecolor=self.line_colors[1],
             alpha=self.channel_bg[1],
             linewidth=0.1,
             zorder=-5,
@@ -523,9 +525,9 @@ class Minerva:
 
         ax.plot(
             self.df["leverage"],
-            color=self.line_colors[3],
-            alpha=self.line_alphas[3],
-            linewidth=0.5,
+            color=self.line_colors[1],
+            alpha=self.line_alphas[1],
+            linewidth=0.1,
             label="leverage",
         )
 
@@ -544,8 +546,8 @@ class Minerva:
             x=self.df.index,
             y1=self.df["b.base"],
             y2=0,
-            color=self.line_colors[1],
-            edgecolor=self.line_colors[1],
+            color=self.line_colors[2],
+            edgecolor=self.line_colors[2],
             alpha=self.channel_bg[1],
             linewidth=0.1,
             zorder=-5,
@@ -553,10 +555,10 @@ class Minerva:
 
         ax.plot(
             self.df["b.base"],
-            color=self.line_colors[1],
-            alpha=self.line_alphas[1],
-            linewidth=0.3,
-            drawstyle="steps-pre",
+            color=self.line_colors[2],
+            alpha=self.line_alphas[2],
+            linewidth=0.1,
+            # drawstyle="steps-pre",
             label="Position Size",
         )
 
@@ -595,7 +597,7 @@ class Minerva:
             y2=0,
             color=self.line_colors[0],
             edgecolor=self.line_colors[0],
-            alpha=self.channel_bg[1] / 2,
+            alpha=self.channel_bg[1] / 3,
             linewidth=0.1,
             zorder=-5,
         )
@@ -603,7 +605,7 @@ class Minerva:
             self.df["hodl.drawdown"],
             color=self.line_colors[0],
             linewidth=0.3,
-            alpha=self.line_alphas[0],
+            alpha=self.line_alphas[0] / 2,
             linestyle="dotted",
             label="HODL Drawdown",
         )
@@ -613,19 +615,20 @@ class Minerva:
             x=self.df.index,
             y1=self.df["b.drawdown"],
             y2=0,
-            color=self.channel_bg[0],
-            edgecolor=self.channel[0],
-            alpha=self.channel_bg[1] * 2,
+            color=self.line_colors[1],
+            edgecolor=self.line_colors[1],
+            alpha=self.channel_bg[1] / 2,
             linewidth=0.1,
             zorder=-4,
         )
 
         ax.plot(
             self.df["b.drawdown"],
-            color=self.line_colors[3],
+            color=self.line_colors[1],
             linewidth=0.3,
-            alpha=self.line_alphas[3],
+            alpha=self.line_alphas[1] / 2.5,
             label="Strategy Drawdown",
+            zorder=-4,
         )
 
         # draw capital drawdown
@@ -633,19 +636,20 @@ class Minerva:
             x=self.df.index,
             y1=self.df["cptl.drawdown"].astype(np.float64),
             y2=0,
-            color=self.line_colors[1],
-            edgecolor=self.line_colors[1],
-            alpha=self.channel_bg[1],
+            color=self.line_colors[3],
+            edgecolor=self.line_colors[3],
+            alpha=self.channel_bg[1] / 1.5,
             linewidth=0.1,
             zorder=-1,
         )
 
         ax.plot(
             self.df["cptl.drawdown"],
-            color=self.line_colors[1],
-            linewidth=0.1,
-            alpha=self.line_alphas[1],
+            color=self.line_colors[3],
+            linewidth=0.3,
+            alpha=self.line_alphas[3],
             label="Capital Drawdown",
+            zorder=-1,
         )
 
     def portfolio_value(self):
@@ -657,21 +661,21 @@ class Minerva:
             y2=self.df["cptl.b"],
             color=self.channel_bg[0],
             edgecolor=self.channel[0],
-            alpha=self.channel_bg[1],
+            alpha=self.channel_bg[1] / 2,
             linewidth=0.1,
             zorder=-5,
         )
 
         ax.plot(
             self.df["b.value"],
-            color=self.line_colors[3],
-            alpha=self.line_alphas[3],
+            color=self.line_colors[1],
+            alpha=self.line_alphas[1],
             linewidth=0.4,
             label="strategy",
         )
 
         if "hodl.value" in self.df.columns:
-            hodl_color, hodl_alpha = self.line_colors[0], self.line_alphas[0]
+            hodl_color, hodl_alpha = self.line_colors[2], self.line_alphas[2]
 
             ax.plot(
                 self.df["hodl.value"],
@@ -784,7 +788,7 @@ class Minerva:
                 ax_.legend(
                     fancybox=True,
                     framealpha=0.5,
-                    shadow=False,
+                    shadow=True,
                     borderpad=1,
                     labelcolor=self.grid[0],
                     facecolor=self.canvas,
@@ -792,9 +796,15 @@ class Minerva:
                     edgecolor=self.canvas,
                 )
 
-            for brdr in ["left", "right", "top", "bottom"]:
-                ax_.spines[brdr].set_color(self.position[0])
+            for brdr in ("right", "top"):
+                ax_.spines[brdr].set_color(self.grid[0])
+                ax_.spines[brdr].set_alpha(self.grid[1] / 4)
                 ax_.spines[brdr].set_linewidth(0.3)
+
+            for brdr in ("left", "bottom"):
+                ax_.spines[brdr].set_color(self.tick[0])
+                ax_.spines[brdr].set_alpha(self.tick[1] / 2)
+                ax_.spines[brdr].set_linewidth(0.8)
 
     # -------------------------------------------------------------------------
     # helper methods for handling/preparing the dataframe

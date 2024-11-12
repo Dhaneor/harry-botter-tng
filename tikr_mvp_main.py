@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sep 10 20:15:20 2023
+Created on Nov 10 15:15:20 2024
 
 @author dhaneor
 """
@@ -17,6 +17,8 @@ from src.rawi import ohlcv_repository as repo
 from src.analysis import strategy_builder as sb
 from src.analysis import strategy_backtest as bt
 from src.analysis.backtest import statistics as st
+from src.analysis.models.position import extract_positions, Position
+from src.analysis.telegram_signal import TelegramSignal
 from src.analysis.strategies.definitions import s_breakout
 from src.backtest import result_stats as rs
 
@@ -42,8 +44,58 @@ ohlcv_request = {
     "interval": strategy.interval,
 }
 
-RISK_LEVEL = 3
-MAX_LEVERAGE = 1
+RISK_LEVEL = 7
+MAX_LEVERAGE = 1.5
+
+
+def display_results(df: pd.DataFrame) -> None:
+    # add drawdown information to dataframe
+    df = rs.calculate_stats(df, initial_capital=10_000)
+
+    # calculate the statistics (like sharpe ratio, sortino ratio, ...)
+    # for the strategy and HODL
+    stats = st.calculate_statistics(df["b.value"].to_numpy())
+    stats = {k: f"{v:.2f}" if isinstance(v, float) else v for k, v in stats.items()}
+
+    stats_hodl = st.calculate_statistics(df["hodl.value"].to_numpy())
+    stats_hodl = {
+        k: f"{v:.2f}" if isinstance(v, float) else v for k, v in stats_hodl.items()
+        }
+
+    # preprocess the dataframe for display on std out
+    df["open time utc"] = pd.to_datetime(df["open time"], unit="ms")
+    df.index = pd.to_datetime(df["open time utc"])
+    df.drop(columns=["open time utc"], inplace=True)
+
+    incl_cols = [
+        "open", "high", "low", "close", "volume",
+        "position", "leverage", "buy",
+        "buy_size", "buy_at", "sell", "sell_size", "sell_at",
+        "b.base", "b.quote", "b.value", "b.drawdown.max",
+        "hodl.value", "hodl.drawdown.max",
+        ]
+
+    df = df[incl_cols]
+
+    # Apply rounding and formatting to numeric columns
+    numeric_cols = df.select_dtypes(include=[np.number]).columns
+    for col in numeric_cols:
+        df[col] = df[col].apply(lambda x: f"{x:.4f}" if pd.notnull(x) else x)
+
+    df.replace(np.nan, "", inplace=True)
+    df.replace(False, ".", inplace=True)
+    df.replace("0.0000", "", inplace=True)
+
+    df = df.astype(str)
+    df.loc[df["buy_size"] != "", "buy"] = "•"
+    df.loc[df["sell_size"] != "", "sell"] = "•"
+    df.loc[df["position"] == "1.0000", "position"] = "LONG"
+    df.loc[df["position"] == "-1.0000", "position"] = "SHORT"
+
+    # display the last 50 rows of the dataframe & the statistics
+    print(df.tail(50))
+    logger.info("stats strategy: %s" % stats)
+    logger.info("stats hodl    : %s" % stats_hodl)
 
 
 # ====================================================================================
@@ -89,48 +141,28 @@ def process_data(ohlcv_data):
                     initial_capital=10_000
                     )
 
+    # build a dataframe from the results
     df = pd.DataFrame.from_dict(ohlcv_data)
-    df = rs.calculate_stats(df, initial_capital=10_000)
-    stats = st.calculate_statistics(df["b.value"].to_numpy())
-    stats = {k: f"{v:.2f}" if isinstance(v, float) else v for k, v in stats.items()}
 
-    stats_hodl = st.calculate_statistics(df["hodl.value"].to_numpy())
-    stats_hodl = {
-        k: f"{v:.2f}" if isinstance(v, float) else v for k, v in stats_hodl.items()
-        }
+    display_results(df)
 
-    df["open time utc"] = pd.to_datetime(df["open time"], unit="ms")
-    df.index = pd.to_datetime(df["open time utc"])
-    df.drop(columns=["open time utc"], inplace=True)
+    return df
 
-    incl_cols = [
-        "open", "high", "low", "close", "volume",
-        "position", "leverage", "buy",
-        "buy_size", "buy_at", "sell", "sell_size", "sell_at",
-        "b.base", "b.quote", "b.value", "b.drawdown.max",
-        "hodl.value", "hodl.drawdown.max",
-        ]
 
-    df = df[incl_cols]
+def send_signal(df: pd.DataFrame) -> None:
+    """Sends a trading signal to Telegram, based on the results DataFrame."""
 
-    # Apply rounding and formatting to numeric columns
-    numeric_cols = df.select_dtypes(include=[np.number]).columns
-    for col in numeric_cols:
-        df[col] = df[col].apply(lambda x: f"{x:.4f}" if pd.notnull(x) else x)
+    def get_current_position(df: pd.DataFrame) -> Position | None:
+        position_manager = extract_positions(df, strategy.symbol)
+        return position_manager\
+            .get_current_position(strategy.symbol, False)\
+            .get_signal()
 
-    df.replace(np.nan, "", inplace=True)
-    df.replace(False, ".", inplace=True)
-    df.replace("0.0000", "", inplace=True)
-
-    df = df.astype(str)
-    df.loc[df["buy_size"] != "", "buy"] = "•"
-    df.loc[df["sell_size"] != "", "sell"] = "•"
-    df.loc[df["position"] == "1.0000", "position"] = "LONG"
-    df.loc[df["position"] == "-1.0000", "position"] = "SHORT"
-
-    print(df.tail(50))
-    logger.info("stats strategy: %s" % stats)
-    logger.info("stats hodl    : %s" % stats_hodl)
+    try:
+        signal = TelegramSignal(get_current_position(df))
+        signal.send_signal()
+    except Exception as e:
+        logger.exception("Error sending Telegram signal: %s", e)
 
 
 # Main Function to Integrate Everything
@@ -170,7 +202,8 @@ def main():
                 logger.error("Error processing data: %s", e)
                 continue
             else:
-                process_data(ohlcv_data)
+                df = process_data(ohlcv_data)
+                send_signal(df)
             finally:
                 ohlcv_queue.task_done()
                 counter += 1
