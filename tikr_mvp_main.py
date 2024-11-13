@@ -203,6 +203,9 @@ def main():
                 continue
             else:
                 df = process_data(ohlcv_data)
+                print(f"Shape of full DataFrame: {df.shape}")
+                # df = df[:-2]
+                print(f"Shape of DataFrame after removing last two rows: {df.shape}")
                 send_signal(df)
             finally:
                 ohlcv_queue.task_done()

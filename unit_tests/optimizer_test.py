@@ -42,7 +42,7 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
     trend_1, contra_1, s_test_er
 )
 
-symbol = "DOGEUSDT"
+symbol = "BTCUSDT"
 interval = "1d"
 
 start = int(-365*6)

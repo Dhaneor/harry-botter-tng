@@ -19,11 +19,12 @@ def _has_all_columns(df: pd.DataFrame):
 
 
 def _calculate_capital(df: pd.DataFrame) -> pd.DataFrame:
-    from_ = df.index[0]
+    df.loc[df.index[0], 'cptl.b'] = df.at[df.index[0], 'b.value']
 
-    df.loc[from_, 'cptl.b'] = df.at[from_, 'b.value']
-    df.loc[(df['sell'] == True), 'cptl.b'] = df['b.value']
-    df.loc[(df['buy'] == True), 'cptl.b'] = df['b.value']
+    # update capital for each row where a position is closed
+    df.loc[~(df['position'] == df['position'].shift()), 'cptl.b'] = df['b.value']
+
+    # ffill values
     df['cptl.b'] = df['cptl.b'].ffill()
 
     return df

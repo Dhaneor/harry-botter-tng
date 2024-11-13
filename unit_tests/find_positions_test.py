@@ -46,18 +46,18 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
     contra_1, trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross,
     s_linreg, s_test_er
 )
-from src.plotting.minerva import BacktestChart  # noqa: E402, F401
+from src.plotting.minerva import BacktestChart as Chart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
 from src.analysis.models import position  # noqa: E402, F401
 
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = int(-365*3)  # 'December 01, 2018 00:00:00'
+start = int(-365*6)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
 strategy = s_test_er
-risk_level, max_leverage = 8, 1.5
+risk_level, max_leverage = 8, 2
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -236,31 +236,24 @@ def run(data, show=False, plot=False):
     if show:
         _show(df)
 
-    for pos in (positions := position.extract_positions(df_pos, symbol)):
-        print(pos)
-        for trade in pos.trades:
-            print(trade)
+    positions = position.extract_positions(df_pos, symbol)
+
+    # for pos in positions:
+    #     print(pos)
+    #     for trade in pos.trades:
+    #         print(trade)
 
     print(f"Total number of trades: {len(positions)}")
     print(f"Profit Factor: {positions.profit_factor:.2f}")
     logger.info(st.calculate_statistics(df['b.value'].copy().to_numpy()))
+    logger.info(st.calculate_statistics(df['hodl.value'].copy().to_numpy()))
 
     # display_problematic_rows(df)
     # sys.exit()
 
     if plot:
-        df.loc[~(df['position'] == 0), 'p.actv'] = True
-        df.rename(
-            columns={'buy_size': 'buy.amount', 'sell_size': 'sell.amount'},
-            inplace=True
-        )
-
-        chart = BacktestChart(
-            df=df,  # df[200:],
-            title=f'{symbol} ({interval})',
-            color_scheme='night'
-        )
-        chart.draw()
+        plot_title = f'{strategy.name} - {symbol} ({interval})'
+        Chart(df=df, title=plot_title, color_scheme='day').draw()
 
 
 def test_find_positions(data: dict):
@@ -269,9 +262,9 @@ def test_find_positions(data: dict):
     assert "position" in data, "'position' not found in data dictionary"
 
 
-# ============================================================================ #
-#                                   MAIN                                       #
-# ============================================================================ #
+# ==================================================================------========== #
+#                                       MAIN                                         #
+# ================================================================================== #
 if __name__ == '__main__':
     logger.info("Starting backtest...")
     logger.info(strategy)

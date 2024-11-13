@@ -75,25 +75,6 @@ class TradeAction:
 
         self.target_leverage = self.row.leverage
 
-    def as_signal(self) -> dict:
-        return {
-            "symbol": self.symbol,
-            "position_type": self.position_type,
-            "required_action": self.action,
-            "change": self.change,
-            "change_percent": self.change_percent,
-            "leverage": self.target_leverage,
-            "pnl_percentage": self.row.pnl_percent,
-            "max_drawdown": self.row.max_drawdown,
-            "duration": self.duration,
-            "entry_price": None,  # self.entry_price,
-            "entry_time": None,  # self.df.index[0].strftime("%Y-%m-%d %H:%M:%S"),
-            "current_price": self.row.close,
-            "exit_price": self.close if self.row['b.base'] == 0 else None,
-            "is_open": True if self.row['b.base'] == 0 else False,
-            "is_new": True if self.period == 0 else False,
-        }
-
 
 class Position:
     def __init__(self, symbol: str, position_type: str, df: pd.DataFrame):
@@ -130,11 +111,11 @@ class Position:
 
     @property
     def duration(self) -> pd.Timedelta:
-        print(self.df["open time"].iloc[0])
+        # print(self.df["open time"].iloc[0])
 
         if self.is_open:
             return time.time() - self.df["open time"].iloc[0]
-        return (self.df.index[-1] - self.df.index[0]).total_seconds()
+        return (self.df.index[-1] - self.df.index[0])  # .total_seconds()
 
     @property
     def entry_time(self) -> pd.Timestamp:
@@ -225,16 +206,10 @@ class Position:
         leverage = self.df['leverage'].iloc[-1]
 
         if buy_size > 0:
-            required_action = 'BUY'
-            change = 'increase' if self.is_long else 'decrease'
             change_percent = buy_size / self.df['b.base'].iloc[-2] * 100
         elif sell_size > 0:
-            required_action = 'SELL'
-            change = 'increase' if self.is_short else 'decrease'
             change_percent = sell_size / self.df['b.base'].iloc[-2] * 100
         else:
-            required_action = None
-            change = None
             change_percent = 0
             leverage = 0
 
@@ -247,8 +222,8 @@ class Position:
             "position_type": self.position_type,
             "required_action": lt.action,
             "change": lt.change,
-            "change_percent": change_percent,
-            "leverage": leverage,
+            "change_percent": abs(lt.change_percent),
+            "leverage": lt.target_leverage,
             "pnl_percentage": lt.row.pnl_percent,
             "max_drawdown": self.max_drawdown,
             "duration": self.duration,
@@ -281,8 +256,6 @@ class Position:
         # what is the PNL for each row/period
         df['pnl_percent'] = (df['b.value'].iloc[-1] / df['b.value'].iloc[0] - 1) * 100
         df['max_drawdown'] = (df['b.value'].div(df['b.value'].cummax()) - 1) * 100
-
-        print(self.display_df())
 
         # return a list of all trade actions with a change in position size
         return [

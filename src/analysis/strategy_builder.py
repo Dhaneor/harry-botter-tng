@@ -561,6 +561,7 @@ def build_strategy(sdef: StrategyDefinition) -> IStrategy:
         logger.debug("building composite strategy: %s - %s", sdef.strategy, sdef)
 
         strategy = CompositeStrategy(sdef.symbol, sdef.interval, sdef.weight)
+        strategy.name = sdef.strategy
 
         try:
             strategy.sub_strategies = {

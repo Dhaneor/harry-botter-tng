@@ -4,11 +4,38 @@
 Created on Mon Jan 18 19:53:58 2021
 
 @author: dhaneor
+
+Provides classes to visualize and analyze cryptocurrency trading data.
+
+The data must be provided in a pandas DataFrame with columns:
+{
+  "open": "Opening price of the asset for the time period",
+  "high": "Highest price of the asset for the time period",
+  "low": "Lowest price of the asset for the time period",
+  "close": "Closing price of the asset for the time period",
+  "s.state": "Market state indicator: bull, bear, or flat",
+  "position": "Current position indicator, where 1=long and -1=short",
+  "buy_at": "Price at which buy signals occur",
+  "sell_at": "Price at which sell signals occur",
+  "b.base": "Balance of the base asset",
+  "leverage": "Leverage applied during trading",
+  "sl_current": "Current stop-loss level",
+  "b.value": "Portfolio value based on strategy performance",
+  "hodl.value": "Portfolio value if holding the asset without trading",
+  "b.drawdown": "Drawdown percentage for the strategy",
+  "cptl.drawdown": "Capital drawdown percentage",
+  "hodl.drawdown": "Drawdown percentage for holding the asset without trading",
+  "benchmark": "Relative performance of the strategy compared to holding the asset",
+  "s.all": "Buy/sell signals indicating market entry or exit",
+  "buy.price": "Price at which a buy signal triggers an entry",
+  "sell.price": "Price at which a sell signal triggers an exit",
+}
+
 """
 import sys  # noqa: F401
 import logging
+import matplotlib as mpl
 import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 import pandas as pd
 import numpy as np
 
@@ -32,12 +59,29 @@ logger.addHandler(ch)
 # =============================================================================
 class Minerva:
     def __init__(self):
-        self.name: str = "MINERVA"
         self.df: pd.DataFrame
-        self.height_top_chart: int = 6
+        self.height_top_chart: int = 7
         self.no_of_subplots: int
         self.title: str = ""
         self.color_scheme: str
+
+        # sets the color code for HODL/portfolio related  values.
+        # the actual color is taken from the mpl_styles.py file,
+        # and each style defines at least four colors for lines.
+        # the values below can be 0 .. 3, accordingly.
+        self.color_code_portfolio = 1  # for portfolio
+        self.color_code_hodl = 3  # for hodl
+        self.color_code_capital = 0  # for the invested capital
+
+        self.default_linewidth: float = 0.2
+        self.default_shadow_width: float = self.default_linewidth + 1.5
+
+        self.default_alpha: float = 1
+        self.default_shadow_alpha: float = 0.1
+        self.default_fill_alpha: float = 0.075
+
+        self.max_allowed_strategy_drawdown: float = -30  # 30%
+        self.max_allowed_capital_loss: float = -20  # 20%
 
     # -------------------------------------------------------------------------
     # methods for plotting the different subplots
@@ -81,7 +125,13 @@ class Minerva:
         except Exception:
             ax = self.axes
 
-        ax.set_title(self.title, y=1.0, pad=-14)
+        ax.set_title(
+            self.title,
+            y=1.0,
+            pad=-14,
+            fontdict={'fontsize': 7},
+            color=self.line_colors[1]
+        )
 
         width, width2 = self._get_linewidth(ax)
 
@@ -321,7 +371,7 @@ class Minerva:
         except Exception:
             ax = self.axes
 
-        markersize = 3
+        markersize = 2.5
 
         x = self.df.index.to_list()
 
@@ -391,13 +441,12 @@ class Minerva:
         # Iterate over each group to draw rectangles
         for _, group in grouped:
             pos_value = group['position'].iloc[0]
-            if pos_value == 1 or pos_value == -1:
-                start_time = group.index[0]
-                end_time = group.index[-1]
-                color = self.bull[0] if pos_value == 1 else 'red'
-                # Draw a rectangle spanning the time interval
+            if group['position'].iloc[0] != 0:
                 ax.axvspan(
-                    start_time, end_time, facecolor=color, alpha=self.bull[1] / 5
+                    group.index[0],
+                    group.index[-1],
+                    facecolor=self.bull[0] if pos_value == 1 else self.bear[0],
+                    alpha=self.default_fill_alpha
                     )
 
         return ax
@@ -507,79 +556,95 @@ class Minerva:
     def _leverage(self):
         self.df["leverage"] = self.df["leverage"].replace("", np.NaN)
         self.df = self.df.replace({'buy_at': {0: np.nan}})
-
         self.df.loc[self.df["position"] == 0, "leverage"] = 0
 
-        ax = self.axes[-4]
+        ax = self.axes[1]
 
+        line_color = self.line_colors[1]
+
+        # fill
         ax.fill_between(
             x=self.df.index,
             y1=self.df["leverage"],
             y2=0,
-            color=self.line_colors[1],
-            edgecolor=self.line_colors[1],
-            alpha=self.channel_bg[1],
-            linewidth=0.1,
+            color=line_color,
+            edgecolor=line_color,
+            alpha=self.default_fill_alpha,
+            linewidth=0,
             zorder=-5,
         )
-
+        # line shadow
         ax.plot(
             self.df["leverage"],
-            color=self.line_colors[1],
-            alpha=self.line_alphas[1],
-            linewidth=0.1,
+            color=line_color,
+            alpha=self.default_shadow_alpha,
+            linewidth=self.default_shadow_width,
+        )
+        # line
+        ax.plot(
+            self.df["leverage"],
+            color=line_color,
+            alpha=self.default_alpha,
+            linewidth=self.default_linewidth,
             label="leverage",
         )
 
     def _position_size(self):
-        ax = self.axes[-3]
-        ax.yaxis.set_major_locator(ticker.MaxNLocator(4))
-        ax.yaxis.set_minor_locator(ticker.MaxNLocator(8))
-
-        _, linewidth = self._get_linewidth(ax)
-        linewidth = round(linewidth * 10, 5)
+        ax = self.axes[2]
+        # ax.yaxis.set_major_locator(ticker.MaxNLocator(4))
+        # ax.yaxis.set_minor_locator(ticker.MaxNLocator(8))
 
         if "b.base" not in self.df.columns:
             return
 
+        # create a Pandas Series with position size for long/short positions
+        self.df['long_positions'] = self.df[self.df["position"] == 1]["b.base"]
+        self.df['short_positions'] = self.df[self.df["position"] == -1]["b.base"]
+
+        line_color = self.line_colors[1]
+        long_position_color = self.bull[0]
+        short_positions_color = self.bear[0]
+
+        # green fill for long positions
         ax.fill_between(
             x=self.df.index,
-            y1=self.df["b.base"],
+            y1=self.df['long_positions'],
             y2=0,
-            color=self.line_colors[2],
-            edgecolor=self.line_colors[2],
-            alpha=self.channel_bg[1],
-            linewidth=0.1,
-            zorder=-5,
+            color=long_position_color,
+            edgecolor=long_position_color,
+            alpha=self.default_fill_alpha,
+            linewidth=0,
+            zorder=-2,
         )
-
+        # red fill for short positions
+        ax.fill_between(
+            x=self.df.index,
+            y1=self.df['short_positions'],
+            y2=0,
+            color=short_positions_color,
+            edgecolor=short_positions_color,
+            alpha=self.default_fill_alpha,
+            linewidth=0,
+            zorder=-2,
+        )
+        # draw line for position size for all positions
         ax.plot(
-            self.df["b.base"],
-            color=self.line_colors[2],
-            alpha=self.line_alphas[2],
-            linewidth=0.1,
+            self.df['b.base'],
+            color=line_color,
+            alpha=self.default_shadow_alpha,
+            linewidth=self.default_shadow_width,
+            # drawstyle="steps-pre",
+            zorder=-1,
+        )
+        ax.plot(
+            self.df['b.base'],
+            color=line_color,
+            alpha=self.default_alpha,
+            linewidth=self.default_linewidth,
             # drawstyle="steps-pre",
             label="Position Size",
+            zorder=0,
         )
-
-        # ax.fill_between(
-        #     x=self.df.index, y1=self.df['b.base'], y2=0,
-        #     color=self.channel_bg[0], edgecolor=self.channel[0],
-        #     alpha=self.channel_bg[1], linewidth=0.1, zorder=-5,
-        #     label=None
-        # )
-
-        # only for ccomparison purposes, if alternative position size
-        # was calculated and added to DataFrame
-        if "p.size.alt" in self.df.columns:
-            ax.plot(
-                self.df["p.size.alt"],
-                color=self.line_colors[1],
-                linewidth=0.2,
-                alpha=self.line_alphas[1],
-                drawstyle="steps-mid",
-                label="Alt Position Size",
-            )
 
     def _drawdown(self):
         ax = self.axes[-2]
@@ -590,24 +655,44 @@ class Minerva:
         self.df["hodl.drawdown"] = self.df["hodl.drawdown"].replace("", np.NaN)
         self.df["hodl.drawdown"] = self.df["hodl.drawdown"] * 100 * -1
 
+        hodl_color = self.line_colors[self.color_code_hodl]
+        strategy_color = self.line_colors[self.color_code_portfolio]
+        capital_color = self.line_colors[self.color_code_capital]
+
+        line_width = self.default_linewidth
+        shadow_width = self.default_shadow_width
+
+        line_alpha = 0.5
+        shadow_alpha = self.default_shadow_alpha  # line_alpha * 0.2
+        fill_alpha = 0.1
+
         # draw HODL drawdown
         ax.fill_between(
             x=self.df.index,
             y1=self.df["hodl.drawdown"],
             y2=0,
-            color=self.line_colors[0],
-            edgecolor=self.line_colors[0],
-            alpha=self.channel_bg[1] / 3,
-            linewidth=0.1,
+            color=hodl_color,
+            edgecolor=hodl_color,
+            alpha=fill_alpha,
+            linewidth=line_width,
             zorder=-5,
         )
         ax.plot(
             self.df["hodl.drawdown"],
-            color=self.line_colors[0],
+            color=hodl_color,
+            linewidth=shadow_width,
+            alpha=shadow_alpha,
+            linestyle="dotted",
+            zorder=-4
+        )
+        ax.plot(
+            self.df["hodl.drawdown"],
+            color=hodl_color,
             linewidth=0.3,
-            alpha=self.line_alphas[0] / 2,
+            alpha=line_alpha,
             linestyle="dotted",
             label="HODL Drawdown",
+            zorder=-3
         )
 
         # draw strategy drawdown
@@ -615,20 +700,40 @@ class Minerva:
             x=self.df.index,
             y1=self.df["b.drawdown"],
             y2=0,
-            color=self.line_colors[1],
-            edgecolor=self.line_colors[1],
-            alpha=self.channel_bg[1] / 2,
+            color=strategy_color,
+            edgecolor=strategy_color,
+            alpha=fill_alpha * 0.75,
             linewidth=0.1,
-            zorder=-4,
+            zorder=-3,
         )
-
         ax.plot(
             self.df["b.drawdown"],
-            color=self.line_colors[1],
-            linewidth=0.3,
-            alpha=self.line_alphas[1] / 2.5,
+            color=strategy_color,
+            linewidth=shadow_width,
+            alpha=shadow_alpha,
+            zorder=-2,
+        )
+
+        self.df['exceed'] = self.df["b.drawdown"]\
+            .clip(lower=-self.max_allowed_strategy_drawdown)
+
+        ax.fill_between(
+            x=self.df.index,
+            y1=self.df["b.drawdown"].clip(lower=self.max_allowed_strategy_drawdown),
+            y2=self.df["b.drawdown"].astype(np.float64),
+            color="red",  # capital_color,
+            edgecolor=capital_color,
+            alpha=fill_alpha * 1.5,
+            linewidth=0,
+            zorder=-1,
+        )
+        ax.plot(
+            self.df["b.drawdown"],
+            color=strategy_color,
+            linewidth=0.2,
+            alpha=line_alpha * 0.8,
             label="Strategy Drawdown",
-            zorder=-4,
+            zorder=0,
         )
 
         # draw capital drawdown
@@ -636,93 +741,158 @@ class Minerva:
             x=self.df.index,
             y1=self.df["cptl.drawdown"].astype(np.float64),
             y2=0,
-            color=self.line_colors[3],
-            edgecolor=self.line_colors[3],
-            alpha=self.channel_bg[1] / 1.5,
-            linewidth=0.1,
-            zorder=-1,
+            color=capital_color,
+            edgecolor=capital_color,
+            alpha=fill_alpha,
+            linewidth=0.2,
+            zorder=1,
         )
 
+        self.df['exceed'] = self.df["cptl.drawdown"].clip(lower=-10)
+
+        ax.fill_between(
+            x=self.df.index,
+            y1=self.df["cptl.drawdown"].clip(lower=self.max_allowed_capital_loss),
+            y2=self.df["cptl.drawdown"].astype(np.float64),
+            color="red",  # capital_color,
+            edgecolor=capital_color,
+            alpha=fill_alpha * 1.5,
+            linewidth=0,
+            zorder=2,
+        )
         ax.plot(
             self.df["cptl.drawdown"],
-            color=self.line_colors[3],
-            linewidth=0.3,
-            alpha=self.line_alphas[3],
+            color=capital_color,
+            linewidth=shadow_width,
+            alpha=shadow_alpha,
+            zorder=3,
+        )
+        ax.plot(
+            self.df["cptl.drawdown"],
+            color=capital_color,
+            linewidth=line_width,
+            alpha=line_alpha * 0.9,
             label="Capital Drawdown",
-            zorder=-1,
+            zorder=4,
         )
 
     def portfolio_value(self):
         ax = self.axes[-1]
 
+        self.color_code_portfolio = 1
+        self.color_code_hodl = 2
+
         ax.fill_between(
             x=self.df.index,
             y1=self.df["b.value"],
             y2=self.df["cptl.b"],
-            color=self.channel_bg[0],
-            edgecolor=self.channel[0],
+            color=self.line_colors[self.color_code_portfolio],
+            edgecolor=self.line_colors[self.color_code_portfolio],
             alpha=self.channel_bg[1] / 2,
             linewidth=0.1,
             zorder=-5,
         )
 
+        # portfolio value - draw shadow
         ax.plot(
             self.df["b.value"],
-            color=self.line_colors[1],
-            alpha=self.line_alphas[1],
-            linewidth=0.4,
+            color=self.line_colors[self.color_code_portfolio],
+            alpha=self.default_shadow_alpha,
+            linewidth=self.default_shadow_width,
+            zorder=-2,
+        )
+        # portfolio valaue - draw line
+        ax.plot(
+            self.df["b.value"],
+            color=self.line_colors[self.color_code_portfolio],
+            alpha=self.line_alphas[self.color_code_portfolio],
+            linewidth=self.default_linewidth,
+            zorder=-1,
             label="strategy",
         )
 
         if "hodl.value" in self.df.columns:
-            hodl_color, hodl_alpha = self.line_colors[2], self.line_alphas[2]
-
+            # HODL value - draw shadow
             ax.plot(
                 self.df["hodl.value"],
-                color=hodl_color,
-                alpha=hodl_alpha,
+                color=self.line_colors[self.color_code_hodl],
+                alpha=self.default_shadow_alpha,
+                # linestyle="dotted",
+                linewidth=self.default_shadow_width,
+                zorder=-4,
+            )
+
+            # HODL value - draw line
+            ax.plot(
+                self.df["hodl.value"],
+                color=self.line_colors[self.color_code_hodl],
+                alpha=self.default_alpha,
                 linestyle="dotted",
-                linewidth=0.5,
-                zorder=-6,
+                linewidth=self.default_linewidth,
+                zorder=-3,
                 label="HODL",
             )
 
             self.axes[-1].tick_params(
-                axis="y", labelcolor=hodl_color, labelsize=self.fontsize
+                axis="y",
+                labelcolor=self.line_colors[self.color_code_hodl],
+                labelsize=self.fontsize
             )
 
     # -------------------------------------------------------------------------
     # general settings for colors and formatting
 
     def prepare(self):
-        print(f"{self.no_of_subplots} subplots")
-
         self._set_colors(color_scheme=self.color_scheme)
 
-        figsize = (12, 5.2)
+        plt.figure(dpi=600)
+        fig_size = (16, 8)
+
+        self.font_size = 3
+        font_scaler = 0.6
+
+        with mpl.rc_context({
+            'font.size': self.fontsize * (font_scaler),
+            'axes.titlesize': self.fontsize * 0.5 * (font_scaler),
+            'axes.labelsize': self.fontsize * 1.1 * (font_scaler),
+            'xtick.labelsize': self.fontsize * (font_scaler),
+            'ytick.labelsize': self.fontsize * (font_scaler)
+        }):
+            self._set_colors(color_scheme=self.color_scheme)
 
         if self.no_of_subplots > 1:
             ratios = [self.height_top_chart]
             for _ in range(self.no_of_subplots - 1):
                 ratios.append(1)
 
-            # make the second last subplot (drawdown) bigger
-            ratios[-2] += 1
-            # also make the last subplot (portfolio value) bigger
-            ratios[-1] += 3
+            # make the second subplot bigger
+            ratios[1] += 1
 
-            self.fig, self.axes = plt.subplots(
+            # make the second and third last subplot (drawdown) bigger
+            ratios[-2] += 2
+            # also make the last subplot (portfolio value) bigger
+            ratios[-1] += 4
+
+            plt.fig, plt.axes = plt.subplots(
                 self.no_of_subplots,
                 1,
-                figsize=figsize,
+                figsize=fig_size,
                 sharex=True,
                 sharey=False,
                 gridspec_kw={"width_ratios": [1], "height_ratios": ratios},
             )
         else:
-            self.fig, self.axes = plt.subplots(1, 1, figsize=figsize)
+            plt.fig, plt.axes = plt.subplots(1, 1, figsize=fig_size)
 
-        self.fig.set_dpi(300)
+        self.fig, self.axes = plt.fig, plt.axes
+
+        # display_dpi = 300
+        # self.fig.set_dpi(display_dpi)
+
+        # Scale figure size according to the DPI
+        # figsize = (fig_size[0] * (display_dpi / 50), fig_size[1] * (display_dpi / 50))
+        # self.fig.set_size_inches(*figsize, forward=True)
+
         self.fig.patch.set_facecolor(self.canvas)
 
     def _set_colors(self, color_scheme: str):
@@ -787,28 +957,27 @@ class Minerva:
             if ax_.get_legend_handles_labels()[0]:
                 ax_.legend(
                     fancybox=True,
-                    framealpha=0.5,
-                    shadow=True,
+                    framealpha=0.6,
+                    shadow=False,
                     borderpad=1,
-                    labelcolor=self.grid[0],
+                    labelcolor=self.tick[0],
                     facecolor=self.canvas,
                     fontsize=self.fontsize,
                     edgecolor=self.canvas,
                 )
 
             for brdr in ("right", "top"):
-                ax_.spines[brdr].set_color(self.grid[0])
-                ax_.spines[brdr].set_alpha(self.grid[1] / 4)
-                ax_.spines[brdr].set_linewidth(0.3)
+                ax_.spines[brdr].set_color(self.canvas)
+                ax_.spines[brdr].set_alpha(self.tick[1] / 2)
+                ax_.spines[brdr].set_linewidth(1)
 
             for brdr in ("left", "bottom"):
                 ax_.spines[brdr].set_color(self.tick[0])
-                ax_.spines[brdr].set_alpha(self.tick[1] / 2)
-                ax_.spines[brdr].set_linewidth(0.8)
+                ax_.spines[brdr].set_alpha(self.tick[1] / 3)
+                ax_.spines[brdr].set_linewidth(1)
 
     # -------------------------------------------------------------------------
     # helper methods for handling/preparing the dataframe
-
     def _columns_to_numeric(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Make sure that the columns we need are numeric values ...
@@ -888,19 +1057,9 @@ class Minerva:
         return df
 
     def _prepare_dataframe(self, df: pd.DataFrame) -> pd.DataFrame:
-        # df.dropna(inplace=True)
         # df = self._add_trend_signal(df=df)
 
-        # if this dow not work, it probably means that 'human open time'
-        # is already a datetime column and set as index
         df = self._columns_to_numeric(df=df)
-
-        # generate a signal columns with random values if there is no
-        # signal column
-        # if not 's.all' in df.columns:
-        #     print(f'[WARNING] no buy/sell signals ... generating random signals')
-        #     rng = np.random.default_rng()
-        #     df['s.all'] = rng.choice(3, len(df), p=[0.05, 0.9, 0.05]) - 1
 
         # fill in buy/sell prices from the signal column if necessary
         if "s.all" not in df.columns:
@@ -987,9 +1146,9 @@ class BacktestChart(Minerva):
 
         self.title = title
         self.counter = 1
-        self.no_of_subplots = 5
+        self.no_of_subplots = 6
         self.color_scheme = color_scheme
-        self.fontsize = 3
+        self.fontsize = 5
         self.x = "human open time"
 
     def draw(self):
@@ -1007,6 +1166,7 @@ class BacktestChart(Minerva):
         self._position_size()
         self._leverage()
         self._drawdown()
+        self._relative_performance()
         self.portfolio_value()
 
         # ---------------------------------------------------------------------
@@ -1016,6 +1176,69 @@ class BacktestChart(Minerva):
         plt.xlabel("date", color=self.tick[0], fontsize=self.fontsize)
         plt.tight_layout()
         plt.show()
+
+    def _relative_performance(self):
+        # relative performance of strategy compared to HODL
+        self.df["benchmark"] = (self.df["b.value"] / self.df["hodl.value"] - 1) * 100
+
+        ax = self.axes[3]
+
+        benchmark_color = self.line_colors[self.color_code_portfolio]
+
+        # draw horizontal line at 0
+        ax.axhline(
+            y=0,
+            color=self.grid[0],
+            alpha=self.default_alpha / 2,
+            linewidth=self.default_linewidth,
+            linestyle="--"
+        )
+
+        # fill area in green if strategy performs better than benchmark
+        ax.fill_between(
+            self.df.index,
+            self.df["benchmark"],
+            0,
+            where=self.df["benchmark"] > 0,
+            facecolor=self.bull[0],
+            alpha=self.default_fill_alpha,
+            zorder=-1
+        )
+
+        # fill area in red if strategy performs worse than benchmark
+        ax.fill_between(
+            self.df.index,
+            self.df["benchmark"],
+            0,
+            where=self.df["benchmark"] < 0,
+            facecolor=self.bear[0],
+            alpha=self.default_fill_alpha,
+            zorder=-1
+        )
+
+        # add legend to the benchmark plot
+        ax.legend(loc="upper left")
+
+        # plot benchmark line shadow
+        ax.plot(
+            self.df.index,
+            self.df["benchmark"],
+            color=benchmark_color,
+            linewidth=self.default_shadow_width,
+            alpha=self.default_shadow_alpha,
+            zorder=-1
+        )
+
+        # plot benchmark line
+        ax.plot(
+            self.df.index,
+            self.df["benchmark"],
+            color=benchmark_color,
+            linewidth=self.default_linewidth,
+            alpha=self.default_alpha,
+            label="Relative Performance",
+            zorder=0
+        )
 
 
 # =============================================================================

@@ -6,7 +6,6 @@ Created on Nov 11 22:30:20 2024
 @author dhaneor
 """
 import logging
-import json
 import requests
 
 logger = logging.getLogger('main.telegram_signal')
