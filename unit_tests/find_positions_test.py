@@ -16,9 +16,8 @@ import pandas as pd
 from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
-LOG_LEVEL = "DEBUG"
 logger = logging.getLogger('main')
-logger.setLevel(LOG_LEVEL)
+logger.setLevel(logging.DEBUG)
 
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
@@ -56,8 +55,8 @@ interval = "1d"
 start = int(-365*6)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_test_er
-risk_level, max_leverage = 8, 2
+strategy = s_linreg
+risk_level, max_leverage = 6, 1
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -253,7 +252,7 @@ def run(data, show=False, plot=False):
 
     if plot:
         plot_title = f'{strategy.name} - {symbol} ({interval})'
-        Chart(df=df, title=plot_title, color_scheme='day').draw()
+        Chart(df=df, title=plot_title, color_scheme='night').draw()
 
 
 def test_find_positions(data: dict):

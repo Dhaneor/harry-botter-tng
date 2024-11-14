@@ -34,7 +34,6 @@ The data must be provided in a pandas DataFrame with columns:
 """
 import sys  # noqa: F401
 import logging
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
@@ -74,10 +73,10 @@ class Minerva:
         self.color_code_capital = 0  # for the invested capital
 
         self.default_linewidth: float = 0.2
-        self.default_shadow_width: float = self.default_linewidth + 1.5
+        self.default_shadow_width: float = 0.75  # self.default_linewidth * 3
 
         self.default_alpha: float = 1
-        self.default_shadow_alpha: float = 0.1
+        self.default_shadow_alpha: float = 0.15
         self.default_fill_alpha: float = 0.075
 
         self.max_allowed_strategy_drawdown: float = -30  # 30%
@@ -129,8 +128,9 @@ class Minerva:
             self.title,
             y=1.0,
             pad=-14,
-            fontdict={'fontsize': 7},
-            color=self.line_colors[1]
+            fontdict={'fontsize': 3},
+            color=self.line_colors[1],
+            alpha=0.5
         )
 
         width, width2 = self._get_linewidth(ax)
@@ -371,7 +371,9 @@ class Minerva:
         except Exception:
             ax = self.axes
 
-        markersize = 2.5
+        # Calculate marker size based on figure size
+        fig_width_inches = self.fig.get_figwidth()
+        markersize = fig_width_inches * 0.025  # Adjust this factor as needed
 
         x = self.df.index.to_list()
 
@@ -688,7 +690,7 @@ class Minerva:
         ax.plot(
             self.df["hodl.drawdown"],
             color=hodl_color,
-            linewidth=0.3,
+            # linewidth=0.3,
             alpha=line_alpha,
             linestyle="dotted",
             label="HODL Drawdown",
@@ -782,6 +784,7 @@ class Minerva:
         self.color_code_portfolio = 1
         self.color_code_hodl = 2
 
+        # draw position profits/losses relative to portfolio value
         ax.fill_between(
             x=self.df.index,
             y1=self.df["b.value"],
@@ -801,7 +804,7 @@ class Minerva:
             linewidth=self.default_shadow_width,
             zorder=-2,
         )
-        # portfolio valaue - draw line
+        # portfolio value - draw line
         ax.plot(
             self.df["b.value"],
             color=self.line_colors[self.color_code_portfolio],
@@ -811,6 +814,8 @@ class Minerva:
             label="strategy",
         )
 
+        # ............................................................................
+        # draw lines for HODL VALUE
         if "hodl.value" in self.df.columns:
             # HODL value - draw shadow
             ax.plot(
@@ -839,61 +844,61 @@ class Minerva:
                 labelsize=self.fontsize
             )
 
+        ax.set_xlabel('')
+        ax.xaxis.set_tick_params(labelbottom=True)
+
     # -------------------------------------------------------------------------
     # general settings for colors and formatting
 
     def prepare(self):
         self._set_colors(color_scheme=self.color_scheme)
 
-        plt.figure(dpi=600)
-        fig_size = (16, 8)
+        desired_dpi = 300  # You can adjust this value
+        base_fig_size = (15, 8)  # Base figure size in inches
 
-        self.font_size = 3
-        font_scaler = 0.6
+        # Calculate the scaling factor based on DPI
+        scale_factor = desired_dpi / 100  # Assuming 100 DPI as base
 
-        with mpl.rc_context({
-            'font.size': self.fontsize * (font_scaler),
-            'axes.titlesize': self.fontsize * 0.5 * (font_scaler),
-            'axes.labelsize': self.fontsize * 1.1 * (font_scaler),
-            'xtick.labelsize': self.fontsize * (font_scaler),
-            'ytick.labelsize': self.fontsize * (font_scaler)
-        }):
-            self._set_colors(color_scheme=self.color_scheme)
+        # Scale figure size
+        fig_size = (base_fig_size[0] / scale_factor, base_fig_size[1] / scale_factor)
 
-        if self.no_of_subplots > 1:
-            ratios = [self.height_top_chart]
-            for _ in range(self.no_of_subplots - 1):
-                ratios.append(1)
+        # Create the figure and axes
+        self.fig, self.axes = plt.subplots(
+            nrows=6,
+            ncols=1,
+            figsize=fig_size,
+            dpi=desired_dpi,
+            sharex=True,
+            gridspec_kw={'height_ratios': [7, 2, 1, 1, 2, 4]}
+        )
 
-            # make the second subplot bigger
-            ratios[1] += 1
+        # Scale font sizes and line widths
+        base_fontsize = 5
+        base_linewidth = 0.2
 
-            # make the second and third last subplot (drawdown) bigger
-            ratios[-2] += 2
-            # also make the last subplot (portfolio value) bigger
-            ratios[-1] += 4
+        scaled_fontsize = base_fontsize / scale_factor
+        scaled_linewidth = base_linewidth / scale_factor
 
-            plt.fig, plt.axes = plt.subplots(
-                self.no_of_subplots,
-                1,
-                figsize=fig_size,
-                sharex=True,
-                sharey=False,
-                gridspec_kw={"width_ratios": [1], "height_ratios": ratios},
-            )
-        else:
-            plt.fig, plt.axes = plt.subplots(1, 1, figsize=fig_size)
+        # Update class attributes
+        self.fontsize = scaled_fontsize
+        self.default_linewidth = scaled_linewidth
+        self.default_shadow_width = scaled_linewidth * 9  # Increased shadow width
 
-        self.fig, self.axes = plt.fig, plt.axes
+        # Set up rc parameters
+        plt.rcParams.update({
+            'font.size': scaled_fontsize,
+            'axes.labelsize': scaled_fontsize,
+            'axes.titlesize': scaled_fontsize * 0.5,
+            'xtick.labelsize': scaled_fontsize * 0.8,
+            'ytick.labelsize': scaled_fontsize * 0.8,
+            'legend.fontsize': scaled_fontsize * 0.8,
+            'lines.linewidth': scaled_linewidth,
+        })
 
-        # display_dpi = 300
-        # self.fig.set_dpi(display_dpi)
-
-        # Scale figure size according to the DPI
-        # figsize = (fig_size[0] * (display_dpi / 50), fig_size[1] * (display_dpi / 50))
-        # self.fig.set_size_inches(*figsize, forward=True)
-
+        # set the background/canvas color
         self.fig.patch.set_facecolor(self.canvas)
+
+        return self.fig, self.axes
 
     def _set_colors(self, color_scheme: str):
         # import the styles as defined in the (mandatory) file mpl_schemes.py
@@ -940,6 +945,7 @@ class Minerva:
 
         for ax_ in axes_list:
             ax_.set_facecolor(self.background)
+            ax_.tick_params(width=0.2, length=1.5)
             ax_.tick_params(axis="x", labelsize=self.fontsize, colors=self.tick[0])
             ax_.tick_params(axis="y", labelsize=self.fontsize, colors=self.tick[0])
 
@@ -966,15 +972,22 @@ class Minerva:
                     edgecolor=self.canvas,
                 )
 
+            for spine in ax_.spines.values():
+                spine.set_linewidth(self.default_linewidth / 2)
+
             for brdr in ("right", "top"):
                 ax_.spines[brdr].set_color(self.canvas)
                 ax_.spines[brdr].set_alpha(self.tick[1] / 2)
-                ax_.spines[brdr].set_linewidth(1)
+                ax_.spines[brdr].set_linewidth(0.5)
 
             for brdr in ("left", "bottom"):
                 ax_.spines[brdr].set_color(self.tick[0])
                 ax_.spines[brdr].set_alpha(self.tick[1] / 3)
-                ax_.spines[brdr].set_linewidth(1)
+                ax_.spines[brdr].set_linewidth(0.5)
+
+        # Adjust spacing between subplots
+        plt.tight_layout()
+        plt.subplots_adjust(hspace=0.1)
 
     # -------------------------------------------------------------------------
     # helper methods for handling/preparing the dataframe
@@ -1093,7 +1106,7 @@ class Minerva:
 
         _, ax_width = self._get_ax_size(ax)
         corr_factor = 86400 / timedelta
-        value_factor = values / 500
+        value_factor = values / 250
 
         width = round(((ax_width) / (values) * value_factor) / corr_factor, precision)
 
@@ -1151,6 +1164,8 @@ class BacktestChart(Minerva):
         self.fontsize = 5
         self.x = "human open time"
 
+        self.default_shadow_width: float = 0.75
+
     def draw(self):
         self.prepare()
 
@@ -1172,8 +1187,6 @@ class BacktestChart(Minerva):
         # ---------------------------------------------------------------------
         self._set_format_parameters()
 
-        # plot the whole thing
-        plt.xlabel("date", color=self.tick[0], fontsize=self.fontsize)
         plt.tight_layout()
         plt.show()
 
@@ -1215,9 +1228,6 @@ class BacktestChart(Minerva):
             alpha=self.default_fill_alpha,
             zorder=-1
         )
-
-        # add legend to the benchmark plot
-        ax.legend(loc="upper left")
 
         # plot benchmark line shadow
         ax.plot(

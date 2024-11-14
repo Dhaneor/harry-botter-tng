@@ -130,6 +130,17 @@ trix = sg.SignalsDefinition(
     ],
 )
 
+# BTC long only min drawdown: (37, 17, 18) :: risk level 8 :: max leverage 1.5,
+# stats {'profit': 2354.18, 'max_drawdown': -21.785, 'sharpe_ratio': 1.836,
+# 'sortino_ratio': 1.171, 'kalmar_ratio': 3.237, 'annualized_volatility': 31.824}
+
+# BTC long-only (52, 2, 9) :: risk level 0 :: max leverage 1,
+# stats {'profit': 3022.464, 'max_drawdown': -27.908, 'sharpe_ratio': 1.533,
+# 'sortino_ratio': 1.124, 'kalmar_ratio': 2.777, 'annualized_volatility': 43.622}
+
+# BTC long-only max profit: (56, 6, 4) :: risk level 0 :: max leverage 1,
+# stats {'profit': 3901.009, 'max_drawdown': -34.671, 'sharpe_ratio': 1.571,
+# 'sortino_ratio': 1.235, 'kalmar_ratio': 2.451, 'annualized_volatility': 45.833}
 
 linreg_roc_btc_1d = sg.SignalsDefinition(
     name="ROC - Linear Regression",
@@ -138,20 +149,20 @@ linreg_roc_btc_1d = sg.SignalsDefinition(
             interval="1d",
             operand_a=(
                 "roc",
-                ("linearreg", "close", {"timeperiod": 42}),
-                {"timeperiod": 27},
+                ("linearreg", "close", {"timeperiod": 6}),
+                {"timeperiod": 56},
             ),
-            operand_b=(
-                "roc",
-                ("linearreg", "close", {"timeperiod": 130}),
-                {"timeperiod": 190},
-            ),
-            operand_c=("value", -6, [-21, 21, 1]),
-            operand_d=("value", -21, [-21, 21, 1]),
+            # operand_b=(
+            #     "roc",
+            #     ("linearreg", "close", {"timeperiod": 130}),
+            #     {"timeperiod": 190},
+            # ),
+            operand_c=("value", 4, [-21, 21, 3]),
+            # operand_d=("value", -21, [-21, 21, 1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "c"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "c"),
-            open_short=("b", cn.COMPARISON.IS_BELOW, "d"),
-            close_short=("b", cn.COMPARISON.IS_ABOVE, "d"),
+            # open_short=("b", cn.COMPARISON.IS_BELOW, "d"),
+            # close_short=("b", cn.COMPARISON.IS_ABOVE, "d"),
         ),
     ],
 )
@@ -399,9 +410,9 @@ s_linreg = sb.StrategyDefinition(
     sub_strategies=[
         sb.StrategyDefinition(
             strategy="Linear Regression",
-            symbol="ETHUSDT",
+            symbol="BTCUSDT",
             interval="1d",
-            signals_definition=linreg,
+            signals_definition=linreg_roc_btc_1d,
             weight=1,
         ),
     ]

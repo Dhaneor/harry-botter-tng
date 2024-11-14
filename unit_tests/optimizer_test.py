@@ -48,8 +48,8 @@ interval = "1d"
 start = int(-365*6)
 end = 'now UTC'
 
-strategy = s_test_er
-risk_levels = [4, 5, 6, 7, 8]
+strategy = s_linreg
+risk_levels = [0, 4, 5, 6, 7, 8]
 max_leverage_levels = (1, 1.25, 1.5, 1.75)
 max_drawdown = 30
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
