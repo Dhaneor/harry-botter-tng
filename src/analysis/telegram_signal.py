@@ -12,10 +12,6 @@ import requests
 from functools import wraps
 from typing import Callable, Dict, Any, List
 from functools import partial
-from dotenv import load_dotenv
-
-# Load environment variables
-load_dotenv()
 
 logger = logging.getLogger("main.telegram_signal")
 logger.setLevel(logging.DEBUG)

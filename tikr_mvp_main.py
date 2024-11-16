@@ -9,6 +9,7 @@ import logging
 import threading
 import asyncio
 import numpy as np
+import os
 import pandas as pd
 from queue import Queue, Empty
 from threading import Event
@@ -18,7 +19,7 @@ from src.analysis import strategy_builder as sb
 from src.analysis import strategy_backtest as bt
 from src.analysis.backtest import statistics as st
 from src.analysis.models.position import extract_positions, Position
-from src.analysis.telegram_signal import TelegramSignal, create_telegram_signal
+from src.analysis.telegram_signal import create_telegram_signal
 from src.analysis.strategies.definitions import s_breakout
 from src.backtest import result_stats as rs
 
@@ -47,7 +48,7 @@ ohlcv_request = {
 RISK_LEVEL = 7
 MAX_LEVERAGE = 1
 
-chat_id = "-1002318654276"
+chat_id = os.getenv('CHAT_ID')
 
 
 def display_results(df: pd.DataFrame) -> None:
