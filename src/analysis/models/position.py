@@ -5,11 +5,14 @@ Created on Nov 10 22:18:20 2024
 
 @author dhaneor
 """
+import logging
 import pandas as pd
 import numpy as np
 import time
 from dataclasses import dataclass
 from typing import Literal
+
+logger = logging.getLogger('main.position')
 
 Change = Literal['open', 'close', 'increase', 'decrease'] | None
 Action = Literal['buy', 'sell'] | None
@@ -111,11 +114,11 @@ class Position:
 
     @property
     def duration(self) -> pd.Timedelta:
-        # print(self.df["open time"].iloc[0])
-
         if self.is_open:
-            return time.time() - self.df["open time"].iloc[0]
-        return (self.df.index[-1] - self.df.index[0])  # .total_seconds()
+            logger.debug("position is open: %s" % self.is_open)
+            return time.time() - self.df['open time'].iloc[0] / 1000
+
+        return self.df['open time'].iloc[0] / 1000 - self.entry_time
 
     @property
     def entry_time(self) -> pd.Timestamp:
@@ -151,6 +154,8 @@ class Position:
             return self.df['b.base'].iloc[-1] > 0
         elif self.is_short:
             return self.df['b.base'].iloc[-1] < 0
+        else:
+            return False
 
     def display_df(self) -> pd.DataFrame:
         incl_cols = [
@@ -212,7 +217,7 @@ class Position:
             "max_drawdown": self.max_drawdown,
             "duration": self.duration,
             "entry_price": self.entry_price,
-            "entry_time": self.df.index[0].strftime("%d.%m. %H:%M"),
+            "entry_time": self.df.index[0].strftime("%B %d, %Y %H:%M"),
             "current_price": self.current_price,
             "exit_price": self.exit_price,
             "is_open": self.is_open,

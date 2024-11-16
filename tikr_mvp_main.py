@@ -182,6 +182,9 @@ def main():
     stop_event = Event()
 
     # Start the Async Event Loop in a Separate Thread
+    #
+    # NOTE: We need to run this in a thread because the ohlcv_repository
+    #       has been implemented with asnyc functions
     logger.debug("Starting Async Event Loop in thread ...")
     async_thread = threading.Thread(
         target=start_async_loop,
@@ -211,9 +214,6 @@ def main():
                 continue
             else:
                 df = process_data(ohlcv_data)
-                print(f"Shape of full DataFrame: {df.shape}")
-                # df = df[:-2]
-                print(f"Shape of DataFrame after removing last two rows: {df.shape}")
                 send_signal(df)
             finally:
                 ohlcv_queue.task_done()
