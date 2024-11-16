@@ -13,11 +13,10 @@ from functools import wraps
 from typing import Callable, Dict, Any, List
 from functools import partial
 
-logger = logging.getLogger("main.telegram_signal")
+logger = logging.getLogger('main.telegram_signal')
 logger.setLevel(logging.INFO)
 
 bot_token = os.getenv("BOT_TOKEN")
-logger.debug(f"Bot token: {bot_token}")
 
 UP_ARROW = "\U0001F4C8"  # "\U0001F53C"  # 🔼
 DOWN_ARROW = "\U0001F4C9"  # "\U0001F53D"  # 🔽
@@ -38,7 +37,7 @@ def add_position_overview(func):
             return f"`{str(value):<{width}}`"
 
     def entry_time(position: Dict[str, Any]) -> str:
-        return f"*Entry Time:*  \t{fv(position.get('entry_time'))}\n"
+        return f"*Entry:*  \t{fv(position.get('entry_time'))}\n"
 
     def duration(position: Dict[str, Any]) -> str:
         return f"*Duration:*  \t{fv(_format_duration(position.get('duration')))}\n"
@@ -316,11 +315,16 @@ def get_message_constructor(
 ) -> Callable[[Dict[str, Any]], str]:
     """Returns a function that constructs a message based on the given position data.
 
-    Args:
-        position (Dict[str, Any]): The position data.
-        chat_id (str): The chat ID for sending messages.
+    Arguments:
+    ----------
+        position (Dict[str, Any])
+            The position data.
+        chat_id (str)
+            The chat ID for sending messages.
     Returns:
-        Callable[[], None]: A function that sends a message based on the given position data.
+    -------
+        Callable[[], None]
+            A function that sends a message based on the given position data.
     """
     logger.debug(f"Creating message constructor for position: {position}")
 

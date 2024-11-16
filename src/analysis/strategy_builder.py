@@ -42,7 +42,6 @@ Created on Thu July 12 21:44:23 2023
 import abc
 import logging
 import numpy as np
-import sys
 from dataclasses import dataclass
 from typing import Any, NamedTuple, Optional, Sequence, Callable
 
@@ -558,7 +557,7 @@ def build_strategy(sdef: StrategyDefinition) -> IStrategy:
     # this allows sophisticated strategies to be built, that can contain
     # multiple sub_strategies, which can also be a composite strategy.
     else:
-        logger.debug("building composite strategy: %s - %s", sdef.strategy, sdef)
+        logger.debug("building composite strategy: %s \n%s\n", sdef.strategy, sdef)
 
         strategy = CompositeStrategy(sdef.symbol, sdef.interval, sdef.weight)
         strategy.name = sdef.strategy

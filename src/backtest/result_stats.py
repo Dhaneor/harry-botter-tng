@@ -6,7 +6,6 @@ Created on Oct 06 10:03:20 2021
 @author dhaneor
 """
 import pandas as pd
-import numpy as np
 import logging
 
 logger = logging.getLogger('main.result_stats')

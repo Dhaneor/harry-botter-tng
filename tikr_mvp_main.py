@@ -78,7 +78,7 @@ def display_results(df: pd.DataFrame) -> None:
         "hodl.value", "hodl.drawdown.max",
         ]
 
-    df = df[incl_cols]
+    df = df[incl_cols].copy()
 
     # Apply rounding and formatting to numeric columns
     numeric_cols = df.select_dtypes(include=[np.number]).columns
@@ -96,7 +96,9 @@ def display_results(df: pd.DataFrame) -> None:
     df.loc[df["position"] == "-1.0000", "position"] = "SHORT"
 
     # display the last 50 rows of the dataframe & the statistics
+    logger.info("-------------------------- Last 50 rows --------------------------")
     print(df.tail(50))
+    logger.info("--------------------------- Statistics ---------------------------")
     logger.info("stats strategy: %s" % stats)
     logger.info("stats hodl    : %s" % stats_hodl)
 

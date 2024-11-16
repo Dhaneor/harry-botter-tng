@@ -125,8 +125,8 @@ class Position:
         return self.df.index[0]
 
     @property
-    def open_time_utc(self):
-        return self.df.index[0].strftime("%Y-%m-%d %H:%M:%S")
+    def entty_time_utc(self):
+        return self.df.index[0].strftime("%B %d, %H:%M")
 
     @property
     def entry_price(self) -> float:
@@ -217,7 +217,7 @@ class Position:
             "max_drawdown": self.max_drawdown,
             "duration": self.duration,
             "entry_price": self.entry_price,
-            "entry_time": self.df.index[0].strftime("%B %d, %Y %H:%M"),
+            "entry_time": self.entty_time_utc,
             "current_price": self.current_price,
             "exit_price": self.exit_price,
             "is_open": self.is_open,
