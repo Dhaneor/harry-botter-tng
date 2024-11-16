@@ -61,7 +61,7 @@ class TradeAction:
                 or (self.row.action == 'BUY' and self.position_type == 'SHORT'):
             self.change = 'decrease'
         else:
-            self.change = ''
+            self.change = None
 
         if self.period == 0:
             self.change = 'open'
@@ -201,22 +201,6 @@ class Position:
     def get_signal(self) -> dict:
         lt = self.trades[-1]  # get the last trade
 
-        sell_size = float(self.df['sell_size'].iloc[-1])
-        buy_size = float(self.df['buy_size'].iloc[-1])
-        leverage = self.df['leverage'].iloc[-1]
-
-        if buy_size > 0:
-            change_percent = buy_size / self.df['b.base'].iloc[-2] * 100
-        elif sell_size > 0:
-            change_percent = sell_size / self.df['b.base'].iloc[-2] * 100
-        else:
-            change_percent = 0
-            leverage = 0
-
-        # entry_value = self.df['b.value'].iloc[0]
-        # exit_value = self.df['b.value'].iloc[-1]
-        # pnl_percentage = (exit_value - entry_value) / entry_value * 100
-
         return {
             "symbol": self.symbol,
             "position_type": self.position_type,
@@ -228,7 +212,7 @@ class Position:
             "max_drawdown": self.max_drawdown,
             "duration": self.duration,
             "entry_price": self.entry_price,
-            "entry_time": self.df.index[0].strftime("%Y-%m-%d %H:%M:%S"),
+            "entry_time": self.df.index[0].strftime("%d.%m. %H:%M"),
             "current_price": self.current_price,
             "exit_price": self.exit_price,
             "is_open": self.is_open,

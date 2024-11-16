@@ -56,7 +56,7 @@ start = int(-365*6)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
 strategy = s_linreg
-risk_level, max_leverage = 6, 1
+risk_level, max_leverage = 7, 1
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')

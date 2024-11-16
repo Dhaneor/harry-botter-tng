@@ -11,6 +11,7 @@
 **/keys
 .DS_Store
 .vscode
+.env
 playground.ipynb
 /zguide
 talib_src_latest/ta-lib-python

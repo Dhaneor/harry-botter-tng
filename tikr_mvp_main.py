@@ -18,7 +18,7 @@ from src.analysis import strategy_builder as sb
 from src.analysis import strategy_backtest as bt
 from src.analysis.backtest import statistics as st
 from src.analysis.models.position import extract_positions, Position
-from src.analysis.telegram_signal import TelegramSignal
+from src.analysis.telegram_signal import TelegramSignal, create_telegram_signal
 from src.analysis.strategies.definitions import s_breakout
 from src.backtest import result_stats as rs
 
@@ -46,6 +46,8 @@ ohlcv_request = {
 
 RISK_LEVEL = 7
 MAX_LEVERAGE = 1
+
+chat_id = "-1002318654276"
 
 
 def display_results(df: pd.DataFrame) -> None:
@@ -159,8 +161,13 @@ def send_signal(df: pd.DataFrame) -> None:
             .get_signal()
 
     try:
-        signal = TelegramSignal(get_current_position(df))
-        signal.send_signal()
+        # signal = TelegramSignal(get_current_position(df))
+        # signal.send_signal()
+        signal = create_telegram_signal(
+            position=get_current_position(df),
+            chat_id=chat_id
+            )
+        signal['send_signal']()
     except Exception as e:
         logger.exception("Error sending Telegram signal: %s", e)
 
@@ -185,7 +192,7 @@ def main():
     # Main Loop: Process OHLCV Data from the Queue
     counter = 0
     try:
-        while counter < 2:
+        while counter < 1:
             try:
                 # Wait for data with a timeout to allow graceful shutdown
                 ohlcv_data = ohlcv_queue.get()
