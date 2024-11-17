@@ -12,10 +12,10 @@ import time
 from dataclasses import dataclass
 from typing import Literal
 
-logger = logging.getLogger('main.position')
+logger = logging.getLogger("main.position")
 
-Change = Literal['open', 'close', 'increase', 'decrease'] | None
-Action = Literal['buy', 'sell'] | None
+Change = Literal["open", "close", "increase", "decrease"] | None
+Action = Literal["buy", "sell"] | None
 
 
 @dataclass
@@ -38,8 +38,11 @@ class TradeAction:
             else "\t"
         )
 
-        leverage = f"target leverage: {self.target_leverage:.2f}x" \
-            if not self.change == 'close' else ""
+        leverage = (
+            f"target leverage: {self.target_leverage:.2f}x"
+            if not self.change == "close"
+            else ""
+        )
 
         return (
             f"[{self.period:03d}][{self.time_utc}] {self.change} "
@@ -53,27 +56,29 @@ class TradeAction:
         self.period = self.row.period
 
         # determine position type (long or short)
-        is_long = self.row.position in (1, 'LONG')
-        self.position_type = 'LONG' if is_long else 'SHORT'
+        is_long = self.row.position in (1, "LONG")
+        self.position_type = "LONG" if is_long else "SHORT"
 
         # determine change type (open / close / increase / decrease)
-        if (self.row.action == 'BUY' and self.position_type == 'LONG') \
-                or (self.row.action == 'SELL' and self.position_type == 'SHORT'):
-            self.change = 'increase'
-        elif (self.row.action == 'SELL' and self.position_type == 'LONG') \
-                or (self.row.action == 'BUY' and self.position_type == 'SHORT'):
-            self.change = 'decrease'
+        if (self.row.action == "BUY" and self.position_type == "LONG") or (
+            self.row.action == "SELL" and self.position_type == "SHORT"
+        ):
+            self.change = "increase"
+        elif (self.row.action == "SELL" and self.position_type == "LONG") or (
+            self.row.action == "BUY" and self.position_type == "SHORT"
+        ):
+            self.change = "decrease"
         else:
             self.change = None
 
         if self.period == 0:
-            self.change = 'open'
+            self.change = "open"
 
         if self.row.change_percent == -100:
-            self.change = 'close'
+            self.change = "close"
 
         # determine the required action (buy or sell)
-        self.action = self.row.action if self.row.action != 'None' else None
+        self.action = self.row.action if self.row.action != "None" else None
         self.change_percent = self.row.change_percent
 
         self.target_leverage = self.row.leverage
@@ -92,7 +97,7 @@ class Position:
             f"pnl={self.pnl:.3f}\t:: max_drawdown={self.max_drawdown:.4f}, :: "
             f"duration={self.duration} :: entry_price={self.entry_price} :: "
             f"exit_price={self.exit_price}')"
-            )
+        )
 
     @property
     def is_long(self) -> bool:
@@ -104,41 +109,41 @@ class Position:
 
     @property
     def pnl(self) -> float:
-        return self.df['b.value'].iloc[-1] - self.df['b.value'].iloc[0]
+        return self.df["b.value"].iloc[-1] - self.df["b.value"].iloc[0]
 
     @property
     def max_drawdown(self) -> float:
-        self.df['peak'] = self.df['b.value'].cummax()
-        self.df['drawdown'] = (self.df['peak'] - self.df['b.value']) / self.df['peak']
-        return self.df['drawdown'].max()
+        self.df["peak"] = self.df["b.value"].cummax()
+        self.df["drawdown"] = (self.df["peak"] - self.df["b.value"]) / self.df["peak"]
+        return self.df["drawdown"].max()
 
     @property
     def duration(self) -> pd.Timedelta:
         if self.is_open:
             logger.debug("position is open: %s" % self.is_open)
-            return time.time() - self.df['open time'].iloc[0] / 1000
+            return time.time() - self.df["open time"].iloc[0] / 1000
 
-        return self.df['open time'].iloc[0] / 1000 - self.entry_time
+        return self.df["open time"].iloc[0] / 1000 - self.entry_time
 
     @property
     def entry_time(self) -> pd.Timestamp:
         return self.df.index[0]
 
     @property
-    def entty_time_utc(self):
+    def entry_time_utc(self):
         return self.df.index[0].strftime("%B %d, %H:%M")
 
     @property
     def entry_price(self) -> float:
-        return self.df['close'].iloc[0]
+        return self.df["close"].iloc[0]
 
     @property
     def current_price(self) -> float:
-        return self.df['close'].iloc[-1] if self.is_open else None
+        return self.df["close"].iloc[-1] if self.is_open else None
 
     @property
     def exit_price(self) -> float:
-        return self.df['close'].iloc[-1] if not self.is_open else None
+        return self.df["close"].iloc[-1] if not self.is_open else None
 
     @property
     def exit_time(self) -> pd.Timestamp:
@@ -151,44 +156,57 @@ class Position:
     @property
     def is_open(self) -> bool:
         if self.is_long:
-            return self.df['b.base'].iloc[-1] > 0
+            return self.df["b.base"].iloc[-1] > 0
         elif self.is_short:
-            return self.df['b.base'].iloc[-1] < 0
+            return self.df["b.base"].iloc[-1] < 0
         else:
             return False
 
     def display_df(self) -> pd.DataFrame:
         incl_cols = [
-            'close', 'position', 'buy', 'buy_size', 'sell', 'sell_size',
-            'leverage', 'change_percent',
-            'b.base', 'b.quote', 'b.value',
-            'period', 'action', 'pos_size_change', 'last_action_leverage',
-            'change_percent_1'
+            "close",
+            "position",
+            "buy",
+            "buy_size",
+            "sell",
+            "sell_size",
+            "leverage",
+            "change_percent",
+            "b.base",
+            "b.quote",
+            "b.value",
+            "period",
+            "action",
+            "pos_size_change",
+            "last_action_leverage",
+            "change_percent_1",
         ]
 
         return (
-            self.df
-            .copy()
-            .replace([0, 'None', np.nan], ['.', '', ''])
+            self.df.copy()
+            .replace([0, "None", np.nan], [".", "", ""])
             .drop(columns=[col for col in self.df.columns if col not in incl_cols])
             .round(5)
         )
 
     def to_dict(self) -> dict:
-        exit_time = self.df.index[-1].strftime("%Y-%m-%d %H:%M:%S") \
-            if not self.is_open else None
+        exit_time = (
+            self.df.index[-1].strftime("%Y-%m-%d %H:%M:%S")
+            if not self.is_open
+            else None
+        )
 
-        change_base_asset = self.df['b.base'].iloc[-1] - self.df['b.base'].iloc[-2]
-        change_quote_asset = self.df['b.quote'].iloc[-1] - self.df['b.quote'].iloc[-2]
+        change_base_asset = self.df["b.base"].iloc[-1] - self.df["b.base"].iloc[-2]
+        change_quote_asset = self.df["b.quote"].iloc[-1] - self.df["b.quote"].iloc[-2]
 
         return {
             "symbol": self.symbol,
             "position_type": self.position_type,
             "change_base_asset": change_base_asset,
             "change_quote_asset": change_quote_asset,
-            "total_base_asset": self.df['b.base'].iloc[-1],
-            "total_quote_asset": self.df['b.quote'].iloc[-1],
-            "total_value": self.df['b.value'].iloc[-1],
+            "total_base_asset": self.df["b.base"].iloc[-1],
+            "total_quote_asset": self.df["b.quote"].iloc[-1],
+            "total_value": self.df["b.value"].iloc[-1],
             "pnl": self.pnl,
             "max_drawdown": self.max_drawdown,
             "duration": self.duration.total_seconds(),
@@ -204,6 +222,40 @@ class Position:
         }
 
     def get_signal(self) -> dict:
+        """
+        Generate a signal dictionary containing current position
+        information and trading signals.
+
+        This method compiles various attributes of the current position,
+        including the most recent trade, into a dictionary format. This
+        information can be used for decision-making in trading strategies
+        or for position monitoring.
+
+        Returns:
+            dict: A dictionary containing the following keys:
+                - symbol (str): The trading symbol of the position.
+                - position_type (str): The type of position
+                (e.g., 'LONG' or 'SHORT').
+                - required_action (str): The action required based
+                on the last trade (e.g., 'BUY' or 'SELL').
+                - change (str): The type of change in the position
+                (e.g., 'open', 'close', 'increase', 'decrease').
+                - change_percent (float): The absolute percentage change
+                in the position size.
+                - leverage (float): The target leverage for the position.
+                - pnl_percentage (float): The percentage of profit or loss
+                for the position.
+                - max_drawdown (float): The maximum drawdown experienced
+                by the position.
+                - duration (pd.Timedelta): The duration of the position.
+                - entry_price (float): The entry price of the position.
+                - entry_time (str): The entry time of the position in UTC.
+                - current_price (float): The current price of the asset.
+                - exit_price (float): The exit price of the position
+                (if closed).
+                - is_open (bool): Whether the position is currently open.
+                - is_new (bool): Whether the position is newly opened.
+        """
         lt = self.trades[-1]  # get the last trade
 
         return {
@@ -217,7 +269,7 @@ class Position:
             "max_drawdown": self.max_drawdown,
             "duration": self.duration,
             "entry_price": self.entry_price,
-            "entry_time": self.entty_time_utc,
+            "entry_time": self.entry_time_utc,
             "current_price": self.current_price,
             "exit_price": self.exit_price,
             "is_open": self.is_open,
@@ -225,6 +277,25 @@ class Position:
         }
 
     def _extract_trade_actions(self, df: pd.DataFrame) -> list[TradeAction]:
+        """
+        Extract trade actions from a DataFrame and calculate various metrics.
+
+        This method processes the input DataFrame to extract trade actions and
+        calculate additional metrics such as period, action type, position size
+        changes, PNL, and drawdown.
+
+        Parameters:
+        df (pd.DataFrame): The input DataFrame containing trade data.
+                           Expected to have columns such as 'buy_size', 'sell_size',
+                           'b.base', and 'b.value'.
+
+        Returns:
+        list[TradeAction]: A list of TradeAction objects, each representing a trade
+                           action derived from the processed DataFrame.
+
+        Note:
+        This method modifies the input DataFrame by adding new columns.
+        """
         # add some columns that we will need later on in each single
         # TradeAction object for signal generation
 
@@ -232,26 +303,25 @@ class Position:
         df["period"] = np.arange(len(df))
 
         # which action (buy or sell) occurred in each row
-        df['action'] = np.where(
-            self.df['buy_size'] > 0, 'BUY',
-            np.where(df['sell_size'] > 0, 'SELL', 'None')
-            )
+        df["action"] = np.where(
+            self.df["buy_size"] > 0,
+            "BUY",
+            np.where(df["sell_size"] > 0, "SELL", "None"),
+        )
 
         # how much did the position size change
-        df['pos_size_change'] = df['b.base'].diff()
-        df['change_percent'] = (df.pos_size_change / df['b.base'].shift(1)) * 100
+        df["pos_size_change"] = df["b.base"].diff()
+        df["change_percent"] = (df.pos_size_change / df["b.base"].shift(1)) * 100
         df.change_percent = df.change_percent.replace(np.nan, 100)
 
         # what is the PNL for each row/period
-        df['pnl_percent'] = (df['b.value'].iloc[-1] / df['b.value'].iloc[0] - 1) * 100
-        df['max_drawdown'] = (df['b.value'].div(df['b.value'].cummax()) - 1) * 100
+        df["pnl_percent"] = (df["b.value"].iloc[-1] / df["b.value"].iloc[0] - 1) * 100
+        df["max_drawdown"] = (df["b.value"].div(df["b.value"].cummax()) - 1) * 100
 
         # return a list of all trade actions with a change in position size
         return [
-            ta for ta in
-            (TradeAction(row, self.symbol) for row in df.itertuples())
-            # if ta.change
-            ]
+            ta for ta in (TradeAction(row, self.symbol) for row in df.itertuples())
+        ]
 
 
 class PositionManager:
@@ -296,7 +366,7 @@ class PositionManager:
     def get_current_position(self, symbol: str, as_dict: bool) -> Position | None:
         position = next(
             (p for p in reversed(self.positions) if (p.symbol == symbol and p.is_open)),
-            None
+            None,
         )
 
         return position.to_dict() if as_dict and position else position
@@ -307,12 +377,12 @@ def extract_positions(backtest_df: pd.DataFrame, symbol: str) -> PositionManager
 
     # Group by position changes
     grouped = backtest_df.groupby(
-        (backtest_df['position'] != backtest_df['position'].shift()).cumsum()
-        )
+        (backtest_df["position"] != backtest_df["position"].shift()).cumsum()
+    )
 
     for _, group in grouped:
-        if group['position'].iloc[0] != 0:  # Ignore periods with no position
-            position_type = "long" if group['position'].iloc[0] == 1 else "short"
+        if group["position"].iloc[0] != 0:  # Ignore periods with no position
+            position_type = "long" if group["position"].iloc[0] == 1 else "short"
             position = Position(symbol, position_type, group)
             position_manager.add_position(position)
 

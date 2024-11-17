@@ -19,9 +19,10 @@ from src.analysis import strategy_builder as sb
 from src.analysis import strategy_backtest as bt
 from src.analysis.backtest import statistics as st
 from src.analysis.models.position import extract_positions, Position
-from src.analysis.telegram_signal import create_telegram_signal
+from src.analysis import telegram_signal as ts
 from src.analysis.strategies.definitions import s_breakout
 from src.backtest import result_stats as rs
+from src.plotting.minerva import BacktestChart as Chart
 
 # set up logging
 logger = logging.getLogger("main")
@@ -45,7 +46,7 @@ ohlcv_request = {
     "interval": strategy.interval,
 }
 
-RISK_LEVEL = 7
+RISK_LEVEL = 6
 MAX_LEVERAGE = 1
 
 chat_id = os.getenv('CHAT_ID')
@@ -103,38 +104,6 @@ def display_results(df: pd.DataFrame) -> None:
     logger.info("stats hodl    : %s" % stats_hodl)
 
 
-# ====================================================================================
-# Asynchronous Function to Fetch OHLCV Data
-async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
-    try:
-        while not stop_event.is_set():
-            try:
-                ohlcv_data = await repo.process_request(request)
-                if not ohlcv_data:
-                    logger.warning("No OHLCV data received. Retrying...")
-                queue.put(ohlcv_data)
-            except Exception as e:
-                logger.error(f"Error fetching OHLCV data: {e}")
-            finally:
-                await asyncio.sleep(5)  # Wait before retrying
-    except Exception as e:
-        logger.error(f"Error in Async Loop: {e}")
-
-    # await repo.exchange_factory(None)
-    # logger.info("Async Event Loop stopped.")
-
-
-# Function to Run the Async Event Loop in a Separate Thread
-def start_async_loop(queue, stop_event):
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    try:
-        loop.run_until_complete(fetch_ohlcv_data(ohlcv_request, queue, stop_event))
-    finally:
-        loop.run_until_complete(repo.exchange_factory(None))
-        loop.close()
-
-
 def process_data(ohlcv_data):
     logger.debug(ohlcv_data)
 
@@ -154,7 +123,27 @@ def process_data(ohlcv_data):
     return df
 
 
-def send_signal(df: pd.DataFrame) -> None:
+# ================================ Async Functions ===================================
+async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
+    try:
+        while not stop_event.is_set():
+            try:
+                ohlcv_data = await repo.process_request(request)
+                if not ohlcv_data:
+                    logger.warning("No OHLCV data received. Retrying...")
+                queue.put(ohlcv_data)
+            except Exception as e:
+                logger.error(f"Error fetching OHLCV data: {e}")
+            finally:
+                await asyncio.sleep(5)  # Wait before retrying
+    except Exception as e:
+        logger.error(f"Error in Async Loop: {e}")
+
+    # await repo.exchange_factory(None)
+    # logger.info("Async Event Loop stopped.")
+
+
+async def send_signal(df: pd.DataFrame) -> None:
     """Sends a trading signal to Telegram, based on the results DataFrame."""
 
     def get_current_position(df: pd.DataFrame) -> Position | None:
@@ -164,15 +153,43 @@ def send_signal(df: pd.DataFrame) -> None:
             .get_signal()
 
     try:
-        # signal = TelegramSignal(get_current_position(df))
-        # signal.send_signal()
-        signal = create_telegram_signal(
+        signal = await ts.create_telegram_signal(
             position=get_current_position(df),
             chat_id=chat_id
-            )
-        signal['send_signal']()
+        )
+        await signal['send_signal']()
     except Exception as e:
         logger.exception("Error sending Telegram signal: %s", e)
+
+
+async def send_performance_chart(df: pd.DataFrame) -> None:
+    chart = Chart(df, title="Safe HODL Strategy")
+
+    start_date = df.index.min()
+
+    # Use the function
+    await ts.send_message_with_picture(
+        chat_id=chat_id,
+        msg=f"Gregorovich performance since {start_date.strftime('%Y-%m-%d')}",
+        image=chart.get_image_bytes()
+    )
+
+
+async def notify_telegram(df: pd.DataFrame) -> None:
+    await send_signal(df)
+    await send_performance_chart(df)
+
+
+# ================================= Sync Functions ===================================
+# Function to Run the Async Event Loop in a Separate Thread
+def start_async_loop(queue, stop_event):
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        loop.run_until_complete(fetch_ohlcv_data(ohlcv_request, queue, stop_event))
+    finally:
+        loop.run_until_complete(repo.exchange_factory(None))
+        loop.close()
 
 
 # Main Function to Integrate Everything
@@ -216,7 +233,7 @@ def main():
                 continue
             else:
                 df = process_data(ohlcv_data)
-                send_signal(df)
+                asyncio.run(notify_telegram(df))
             finally:
                 ohlcv_queue.task_done()
                 counter += 1

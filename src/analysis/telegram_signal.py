@@ -5,25 +5,73 @@ Created on Nov 11 22:30:20 2024
 
 @author dhaneor
 """
+import asyncio
 import logging
 import os
-import requests
 
 from functools import wraps
-from typing import Callable, Dict, Any, List
-from functools import partial
+from io import BytesIO
+from telegram import Bot
+from typing import Callable, Dict, Any, List, Awaitable
 
 logger = logging.getLogger('main.telegram_signal')
 logger.setLevel(logging.INFO)
 
-bot_token = os.getenv("BOT_TOKEN")
+BOT_TOKEN = os.getenv("BOT_TOKEN")
+TG_API_URL = "https://api.telegram.org/bot"
+PARSE_MODE = "Markdown"
 
 UP_ARROW = "\U0001F4C8"  # "\U0001F53C"  # 🔼
 DOWN_ARROW = "\U0001F4C9"  # "\U0001F53D"  # 🔽
 
+# Initialize Telegram bot
+bot = Bot(token=BOT_TOKEN)
 
-# --------------------------------- Helper functions ---------------------------------
+
+# ------------------------------------------------------------------------------------
+async def send_message(chat_id: str, msg: str) -> None:
+    try:
+        await bot.send_message(chat_id=chat_id, text=msg, parse_mode=PARSE_MODE)
+        logger.info(f"Message sent successfully to chat {chat_id}")
+    except Exception as e:
+        logger.error(f"Error sending message: {e}")
+
+
+async def send_message_with_picture(
+    chat_id: str,
+    msg: str,
+    image: BytesIO = None
+) -> None:
+    try:
+        if image:
+            # If an image is provided, send it along with the message
+            image.seek(0)  # Ensure we're at the start of the BytesIO object
+            await bot.send_photo(
+                chat_id=chat_id,
+                photo=image,
+                caption=msg,
+                parse_mode=PARSE_MODE
+            )
+        else:
+            # If no image, send text message only
+            await bot.send_message(
+                chat_id=chat_id,
+                text=msg,
+                parse_mode=PARSE_MODE
+            )
+
+        logger.info(
+            f"Message {'with picture' if image else ''} sent "
+            f"successfully to chat {chat_id}"
+            )
+    except Exception as e:
+        logger.error(f"Error sending message {'with picture' if image else ''}: {e}")
+
+
+# ------------------------------------------------------------------------------------
 def add_position_overview(func):
+    """Wrapper function to add position overview to the message."""
+    # helper functions for formatting values
     def fv(value, width=6):
         """Format the value with the specified width,
         accounting for floats, integers, and None."""
@@ -36,6 +84,32 @@ def add_position_overview(func):
         else:
             return f"`{str(value):<{width}}`"
 
+    def _format_duration(seconds: int) -> str:
+        """
+        Convert duration from seconds to a human-readable format.
+
+        :param seconds: Duration in seconds
+        :return: Formatted string representing the duration
+        """
+        seconds = int(seconds)
+
+        minutes, seconds = divmod(seconds, 60)
+        hours, minutes = divmod(minutes, 60)
+        days, hours = divmod(hours, 24)
+
+        parts = []
+        if days > 0:
+            parts.append(f"{days}d")
+        if hours > 0:
+            parts.append(f"{hours}h")
+        if minutes > 0:
+            parts.append(f"{minutes}m")
+        if seconds > 0 or not parts:
+            parts.append(f"{seconds}s")
+
+        return " ".join(parts[:-1]) if len(parts) > 1 else parts[0]
+
+    # helper functions to build the overview message
     def entry_time(position: Dict[str, Any]) -> str:
         return f"*Entry:*  \t{fv(position.get('entry_time'))}\n"
 
@@ -43,13 +117,13 @@ def add_position_overview(func):
         return f"*Duration:*  \t{fv(_format_duration(position.get('duration')))}\n"
 
     def entry_price(position: Dict[str, Any]) -> str:
-        return f"\n*Entry Price:*  \t{fv(position.get('entry_price'))}\n"
+        return f"\n*Entry Price:   *  \t{fv(position.get('entry_price'))}\n"
 
     def current_price(position: Dict[str, Any]) -> str:
-        return f"*Current Price:* {fv(position.get('current_price'))}\n\n"
+        return f"*Current Price: * {fv(position.get('current_price'))}\n\n"
 
     def pnl(position: Dict[str, Any]) -> str:
-        return f"*Profit:* {fv(position.get('pnl_percentage'))}`%`\n"
+        return f"*Profit:       *   {fv(position.get('pnl_percentage'))}`%`\n"
 
     def max_drawdown(position: Dict[str, Any]) -> str:
         return f"*Drawdown:* {fv((position.get('max_drawdown') * 100))}`%`\n\n"
@@ -80,6 +154,7 @@ def add_position_overview(func):
             ]
     }
 
+    # main function to build the overview message
     def build_overview(position: Dict[str, Any], pipeline: List[Callable]) -> str:
         return (
             f"\n\n*{position.get('symbol')} - "
@@ -87,9 +162,10 @@ def add_position_overview(func):
             + "".join(func(position) for func in pipeline)
         )
 
+    # wrapper function for using this as a decorator
     @wraps(func)
-    def wrapper(position: Dict[str, Any]) -> str:
-        signal_message = func(position)
+    async def wrapper(position: Dict[str, Any]) -> str:
+        signal_message = await func(position)
         change = position.get('change', 'default')
         pipeline = pipelines.get(change, pipelines['default'])
         return signal_message + build_overview(position, pipeline)
@@ -98,7 +174,7 @@ def add_position_overview(func):
 
 
 # --------------------------------- Helper functions ---------------------------------
-def _base_asset(symbol: str) -> str | None:
+async def _base_asset(symbol: str) -> str | None:
     if '/' in symbol:
         return symbol.split('/')[0]
     else:
@@ -106,41 +182,15 @@ def _base_asset(symbol: str) -> str | None:
         return None
 
 
-def _format_duration(seconds: int) -> str:
-    """
-    Convert duration from seconds to a human-readable format.
-
-    :param seconds: Duration in seconds
-    :return: Formatted string representing the duration
-    """
-    seconds = int(seconds)
-
-    minutes, seconds = divmod(seconds, 60)
-    hours, minutes = divmod(minutes, 60)
-    days, hours = divmod(hours, 24)
-
-    parts = []
-    if days > 0:
-        parts.append(f"{days}d")
-    if hours > 0:
-        parts.append(f"{hours}h")
-    if minutes > 0:
-        parts.append(f"{minutes}m")
-    if seconds > 0 or not parts:
-        parts.append(f"{seconds}s")
-
-    return " ".join(parts[:-1]) if len(parts) > 1 else parts[0]
+async def _construct_buy_str(position: Dict[str, Any]) -> str:
+    return f'aqucire more shares of {await _base_asset(position.get("symbol"))}'
 
 
-def _construct_buy_str(position: Dict[str, Any]) -> str:
-    return f'aqucire more shares of {_base_asset(position.get("symbol"))}'
+async def _construct_sell_str(position: Dict[str, Any]) -> str:
+    return f'sell some shares of {await _base_asset(position.get("symbol"))}'
 
 
-def _construct_sell_str(position: Dict[str, Any]) -> str:
-    return f'sell some shares of {_base_asset(position.get("symbol"))}'
-
-
-def _construct_change_position_message(
+async def _construct_change_position_message(
     action: str,
     change: str,
     position_type: str,
@@ -161,27 +211,8 @@ def _construct_change_position_message(
 
 
 # ------------------------------------------------------------------------------------
-def send_message(chat_id: str, msg: str) -> None:
-    # Implementation of sending message to Telegram
-    logger.info(f"Sending to {chat_id}: {msg}")
-
-    send_text = "https://api.telegram.org/bot"
-    send_text += bot_token + "/sendMessage?chat_id=" + chat_id
-    send_text += f"&parse_mode=Markdown&text={msg}"
-
-    try:
-        response = requests.get(send_text)
-        response.raise_for_status()  # Raises a HTTPError if the status is 4xx, 5xx
-    except requests.exceptions.RequestException as e:
-        logger.exception(f"Unable to send Telegram intro: {e}")
-        logger.exception(
-            f"Unable to send Telegram intro. "
-            f"Response content: {e.response.content if e.response else 'No response'}"
-        )
-
-
 @add_position_overview
-def construct_open_long_message(position: Dict[str, Any]) -> str:
+async def construct_open_long_message(position: Dict[str, Any]) -> str:
     asset = position.get("symbol")
 
     return (
@@ -197,7 +228,7 @@ def construct_open_long_message(position: Dict[str, Any]) -> str:
 
 
 @add_position_overview
-def construct_close_long_message(position: Dict[str, Any]) -> str:
+async def construct_close_long_message(position: Dict[str, Any]) -> str:
     asset = position.get("symbol")
 
     return (
@@ -214,7 +245,7 @@ def construct_close_long_message(position: Dict[str, Any]) -> str:
 
 
 @add_position_overview
-def construct_open_short_message(position: Dict[str, Any]) -> str:
+async def construct_open_short_message(position: Dict[str, Any]) -> str:
     asset = position.get("symbol")
 
     return (
@@ -231,7 +262,7 @@ def construct_open_short_message(position: Dict[str, Any]) -> str:
 
 
 @add_position_overview
-def construct_close_short_message(position: Dict[str, Any]) -> str:
+async def construct_close_short_message(position: Dict[str, Any]) -> str:
     asset = position.get("symbol")
 
     return (
@@ -252,9 +283,9 @@ def construct_close_short_message(position: Dict[str, Any]) -> str:
 
 
 @add_position_overview
-def construct_increase_long_message(position: Dict[str, Any]) -> str:
+async def construct_increase_long_message(position: Dict[str, Any]) -> str:
     return _construct_change_position_message(
-        _construct_buy_str(position),
+        await _construct_buy_str(position),
         '*increasing*',
         'LONG',
         position.get('change_percent', 0)
@@ -262,9 +293,9 @@ def construct_increase_long_message(position: Dict[str, Any]) -> str:
 
 
 @add_position_overview
-def construct_decrease_long_message(position: Dict[str, Any]) -> str:
+async def construct_decrease_long_message(position: Dict[str, Any]) -> str:
     return _construct_change_position_message(
-        _construct_sell_str(position),
+        await _construct_sell_str(position),
         '*decreasing*',
         'LONG',
         position.get('change_percent', 0)
@@ -272,9 +303,9 @@ def construct_decrease_long_message(position: Dict[str, Any]) -> str:
 
 
 @add_position_overview
-def construct_increase_short_message(position: Dict[str, Any]) -> str:
+async def construct_increase_short_message(position: Dict[str, Any]) -> str:
     return _construct_change_position_message(
-        _construct_sell_str(position),
+        await _construct_sell_str(position),
         '*increasing*',
         'SHORT',
         position.get('change_percent', 0)
@@ -282,9 +313,9 @@ def construct_increase_short_message(position: Dict[str, Any]) -> str:
 
 
 @add_position_overview
-def construct_decrease_short_message(position: Dict[str, Any]) -> str:
+async def construct_decrease_short_message(position: Dict[str, Any]) -> str:
     return _construct_change_position_message(
-        _construct_buy_str(position),
+        await _construct_buy_str(position),
         '*decreasing*',
         'SHORT',
         position.get('change_percent', 0)
@@ -292,7 +323,7 @@ def construct_decrease_short_message(position: Dict[str, Any]) -> str:
 
 
 @add_position_overview
-def construct_do_nothing_message(position: Dict[str, Any]) -> str:
+async def construct_do_nothing_message(position: Dict[str, Any]) -> str:
     return (
         "On this fine day, I shan't undertake any endeavours or pursuits.\n"
         "I shall simply partake in the leisurely art of relaxation, "
@@ -300,7 +331,7 @@ def construct_do_nothing_message(position: Dict[str, Any]) -> str:
     )
 
 
-def construct_error_message(*args) -> str:
+async def construct_error_message(*args) -> str:
     return (
         "Woe is me, for I have stumbled upon a veritable labyrinth of "
         "tribulations. The path forward is shrouded in obscurity, "
@@ -310,22 +341,9 @@ def construct_error_message(*args) -> str:
 
 
 # ------------------------------------------------------------------------------------
-def get_message_constructor(
+async def get_message_constructor(
     position: Dict[str, Any]
-) -> Callable[[Dict[str, Any]], str]:
-    """Returns a function that constructs a message based on the given position data.
-
-    Arguments:
-    ----------
-        position (Dict[str, Any])
-            The position data.
-        chat_id (str)
-            The chat ID for sending messages.
-    Returns:
-    -------
-        Callable[[], None]
-            A function that sends a message based on the given position data.
-    """
+) -> Callable[[Dict[str, Any]], Awaitable[str]]:
     logger.debug(f"Creating message constructor for position: {position}")
 
     message_constructors = {
@@ -342,30 +360,30 @@ def get_message_constructor(
     }
     return message_constructors.get(
         (position["change"], position["position_type"]),
-        construct_error_message
-        )
+        construct_error_message   # default/fallback function
+    )
 
 
-def create_signal(position: Dict[str, Any], chat_id: str) -> Callable[[], None]:
-    if not (message_constructor := get_message_constructor(position)):
-        raise ValueError(f"Invalid position data: {position}")
+async def create_signal(position: Dict[str, Any], chat_id: str) -> Callable[[], None]:
+    message_constructor = await get_message_constructor(position)
+    message = await message_constructor(position)
+    return lambda: asyncio.create_task(send_message(chat_id, message))
 
-    return lambda: send_message(chat_id, message_constructor(position))
 
-
-def send_intro(chat_id: str) -> None:
+async def send_intro(chat_id: str) -> None:
     intro = """Ahoy, lads and lasses! I be Gregorovich, once a human sailor and
 now a ship mind aboard the Wallfish. Me words be naught but the whimsical
 ramblings of a brain in a box, meant for your amusement only. *Nay, ye won't
 find financial advice here, for me words be as untethered as me body.* So listen
 up, and I'll spin ye a yarn, just don't be staking your fortune on it, ya hear?"""
-    send_message(chat_id, intro)
+    await send_message(chat_id, intro)
 
 
-def create_telegram_signal(
-    position: Dict[str, Any], chat_id: str
+async def create_telegram_signal(
+    position: Dict[str, Any],
+    chat_id: str
 ) -> Dict[str, Callable[[], None]]:
     return {
-        "send_intro": partial(send_intro, chat_id),
-        "send_signal": create_signal(position, chat_id),
+        "send_signal": await create_signal(position, chat_id),
+        "send_intro": lambda: asyncio.create_task(send_intro(chat_id))
     }

@@ -32,7 +32,7 @@ The data must be provided in a pandas DataFrame with columns:
 }
 
 """
-import sys  # noqa: F401
+import io
 import logging
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -40,6 +40,10 @@ import numpy as np
 
 from matplotlib.axes import Axes
 from typing import Tuple, Optional, Union
+
+# import the styles as defined in the (mandatory) file mpl_schemes.py
+# which must reside in the same directory
+from .mpl_styles import schemes as s
 
 logger = logging.getLogger("main.minerva")
 logger.setLevel("DEBUG")
@@ -59,6 +63,8 @@ logger.addHandler(ch)
 class Minerva:
     def __init__(self):
         self.df: pd.DataFrame
+        self.plt = None
+
         self.height_top_chart: int = 7
         self.no_of_subplots: int
         self.title: str = ""
@@ -901,10 +907,6 @@ class Minerva:
         return self.fig, self.axes
 
     def _set_colors(self, color_scheme: str):
-        # import the styles as defined in the (mandatory) file mpl_schemes.py
-        # which must reside in the same directory
-        from plotting.mpl_styles import schemes as s
-
         allowed = [scheme for scheme in s.keys()]
 
         # set color scheme to 'day' (=default) if the given name for the color
@@ -1188,7 +1190,31 @@ class BacktestChart(Minerva):
         self._set_format_parameters()
 
         plt.tight_layout()
-        plt.show()
+
+        self.plt = plt
+
+        return plt
+
+    def show(self):
+        if not self.plt:
+            self.draw()
+
+        self.plt.show()
+
+    def get_image_bytes(self) -> io.BytesIO:
+        if not self.plt:
+            self.draw()
+
+        img_buffer = io.BytesIO()
+        self.plt.savefig(img_buffer, format='png')
+        img_buffer.seek(0)
+        return img_buffer
+
+    def save(self, filename: str = None):
+        if not self.plt:
+            self.draw()
+
+        self.plt.savefig(filename)
 
     def _relative_performance(self):
         # relative performance of strategy compared to HODL

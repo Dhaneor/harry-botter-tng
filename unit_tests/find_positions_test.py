@@ -252,7 +252,7 @@ def run(data, show=False, plot=False):
 
     if plot:
         plot_title = f'{strategy.name} - {symbol} ({interval})'
-        Chart(df=df, title=plot_title, color_scheme='night').draw()
+        Chart(df=df, title=plot_title, color_scheme='night').show()
 
 
 def test_find_positions(data: dict):
