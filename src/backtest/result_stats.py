@@ -21,7 +21,8 @@ def _calculate_capital(df: pd.DataFrame) -> pd.DataFrame:
     df.loc[df.index[0], 'cptl.b'] = df.at[df.index[0], 'b.value']
 
     # update capital for each row where a position is closed
-    df.loc[~(df['position'] == df['position'].shift()), 'cptl.b'] = df['b.value']
+    df.loc[(df.position == 0) & (df.position.shift(1) == 1), 'cptl.b'] = df['b.value']
+    df.loc[(df.position == 0) & (df.position.shift(1) == -1), 'cptl.b'] = df['b.value']
 
     # ffill values
     df['cptl.b'] = df['cptl.b'].ffill()

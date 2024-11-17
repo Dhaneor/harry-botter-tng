@@ -48,10 +48,10 @@ interval = "1d"
 start = int(-365*6)
 end = 'now UTC'
 
-strategy = s_linreg
-risk_levels = [0, 4, 5, 6, 7, 8]
-max_leverage_levels = (1, 1.25, 1.5, 1.75)
-max_drawdown = 30
+strategy = s_breakout
+risk_levels = 0,  # [0, 7, 8, 9]
+max_leverage_levels = [0.5, 0.6, 0.7, 0.8, 0.9, 1]  # (1, 1.25, 1.5, 1.75)
+max_drawdown = 25
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 
@@ -149,7 +149,7 @@ def test_optimize(data: dict | None):
 
     # sort results by kalmar ratio
     best_parameters.sort(
-        key=lambda x: x[3]['profit'],
+        key=lambda x: x[3]['kalmar_ratio'],
         reverse=True
         )
 

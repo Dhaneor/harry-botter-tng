@@ -71,6 +71,10 @@ kama_cross = sg.SignalsDefinition(
 # with leverage & REBALANCING: (21, 0.05, 67, 7) :: risk level 7(8) :: max leverage 1.5,
 # stats {'profit': 2173.039, 'max_drawdown': -19.811, 'sharpe_ratio': 1.803,
 # 'sortino_ratio': 1.28, 'kalmar_ratio': 3.45, 'annualized_volatility': 31.663}
+#
+# TIKR MVP: params: (90, 0.12, 7, 3) :: risk level 9 :: max leverage 1,
+# {'profit': 3838.216, 'max_drawdown': -25.471, 'sharpe_ratio': 1.80,
+# 'sortino_ratio': 1.39, 'kalmar_ratio': 3.31, 'annualized_volatility': 37.903}
 
 # ETHUSDT
 # best: params: params: (36, 0.07, 24, 7) :: risk level 6 :: max leverage 1,
@@ -86,8 +90,8 @@ breakout = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 21}),
-            operand_b=("trending", 0.05, [0.05, 0.55, 0.1]),
+            operand_a=("er", {"timeperiod": 90}),
+            operand_b=("trending", 0.12, [0.05, 0.55, 0.1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
@@ -96,8 +100,8 @@ breakout = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod": 67}),
-            operand_c=("min", {"timeperiod": 7}),
+            operand_b=("max", {"timeperiod": 7}),
+            operand_c=("min", {"timeperiod": 3}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
             close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
             # open_short=("a", cn.COMPARISON.IS_EQUAL, "d"),
@@ -278,8 +282,8 @@ test_er = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 49}),
-            operand_b=("trending", 0.15, [0.05, 0.55, 0.05]),
+            operand_a=("er", {"timeperiod": 70}),
+            operand_b=("trending", 0.2, [0.05, 0.55, 0.05]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
@@ -288,7 +292,7 @@ test_er = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a=("close"),
-            operand_b=("kama", {"timeperiod": 182}),
+            operand_b=("kama", {"timeperiod": 167}),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
@@ -420,12 +424,12 @@ s_linreg = sb.StrategyDefinition(
 
 s_test_er = sb.StrategyDefinition(
     strategy="KAMA with Noise Filter",
-    symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
+    symbol="BTC/USDT",
     interval="1d",
     sub_strategies=[
         sb.StrategyDefinition(
             strategy="Test ER",
-            symbol="ETHUSDT",
+            symbol="BTC/USDT",
             interval="1d",
             signals_definition=test_er,
             weight=1,

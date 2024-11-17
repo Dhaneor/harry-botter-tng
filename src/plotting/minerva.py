@@ -67,6 +67,7 @@ class Minerva:
 
         self.height_top_chart: int = 7
         self.no_of_subplots: int
+        self.height_ratios: list = [1 for _ in range(self.no_of_subplots)]
         self.title: str = ""
         self.color_scheme: str
 
@@ -134,9 +135,9 @@ class Minerva:
             self.title,
             y=1.0,
             pad=-14,
-            fontdict={'fontsize': 3},
+            fontdict={'fontsize': self.fontsize * 2, 'fontweight': 'bold'},
             color=self.line_colors[1],
-            alpha=0.5
+            alpha=0.6
         )
 
         width, width2 = self._get_linewidth(ax)
@@ -814,7 +815,7 @@ class Minerva:
         ax.plot(
             self.df["b.value"],
             color=self.line_colors[self.color_code_portfolio],
-            alpha=self.line_alphas[self.color_code_portfolio],
+            alpha=self.default_alpha,
             linewidth=self.default_linewidth,
             zorder=-1,
             label="strategy",
@@ -870,16 +871,16 @@ class Minerva:
 
         # Create the figure and axes
         self.fig, self.axes = plt.subplots(
-            nrows=6,
+            nrows=self.no_of_subplots,
             ncols=1,
             figsize=fig_size,
             dpi=desired_dpi,
             sharex=True,
-            gridspec_kw={'height_ratios': [7, 2, 1, 1, 2, 4]}
+            gridspec_kw={'height_ratios': self.height_ratios}
         )
 
         # Scale font sizes and line widths
-        base_fontsize = 5
+        base_fontsize = self.fontsize or 5
         base_linewidth = 0.2
 
         scaled_fontsize = base_fontsize / scale_factor
@@ -1104,11 +1105,10 @@ class Minerva:
 
         open_time = df.index.astype(int)
         timedelta = int((open_time[1] - open_time[0]) / 1_000_000_000)
-        print(f"{timedelta=}")
 
         _, ax_width = self._get_ax_size(ax)
         corr_factor = 86400 / timedelta
-        value_factor = values / 250
+        value_factor = values / 350
 
         width = round(((ax_width) / (values) * value_factor) / corr_factor, precision)
 
@@ -1155,18 +1155,17 @@ class BacktestChart(Minerva):
         title: str = "Unnamed Chart",
         color_scheme: str = "night",
     ):
+        self.no_of_subplots = 6
+
         Minerva.__init__(self)
 
         self.df = self._prepare_dataframe(df)
 
         self.title = title
-        self.counter = 1
-        self.no_of_subplots = 6
+        self.height_ratios = [7, 2, 1, 1, 3, 4]
         self.color_scheme = color_scheme
         self.fontsize = 5
         self.x = "human open time"
-
-        self.default_shadow_width: float = 0.75
 
     def draw(self):
         self.prepare()
@@ -1275,6 +1274,76 @@ class BacktestChart(Minerva):
             label="Relative Performance",
             zorder=0
         )
+
+
+# =============================================================================
+class TikrChart(Minerva):
+    def __init__(
+        self,
+        df: pd.DataFrame,
+        title: str,
+        color_scheme: str = "night",
+        with_leverage: bool = False,
+    ):
+        self.no_of_subplots = 4 if with_leverage else 3
+
+        Minerva.__init__(self)
+
+        self.df = self._prepare_dataframe(df)
+
+        self.title = title
+        self.with_leverage = with_leverage
+        self.height_ratios = [5, 2, 3, 5] if with_leverage else [5, 3, 3]
+        self.color_scheme = color_scheme
+        self.fontsize = 7
+        self.x = "human open time"
+
+    def draw(self):
+        self.prepare()
+
+        # ---------------------------------------------------------------------
+        self._channel()
+        self._positions()
+        self._stop_loss()
+        self._moving_averages()
+        self._ohlcv(with_market_state=False)
+        self._positions_rectangles(ax=self.axes[0], df=self.df)
+        self._buys_and_sells()
+
+        if self.with_leverage:
+            self._leverage()
+        self._drawdown()
+        self.portfolio_value()
+
+        # ---------------------------------------------------------------------
+        self._set_format_parameters()
+
+        plt.tight_layout()
+
+        self.plt = plt
+
+        return plt
+
+    def show(self):
+        if not self.plt:
+            self.draw()
+
+        self.plt.show()
+
+    def get_image_bytes(self) -> io.BytesIO:
+        if not self.plt:
+            self.draw()
+
+        img_buffer = io.BytesIO()
+        self.plt.savefig(img_buffer, format='png')
+        img_buffer.seek(0)
+        return img_buffer
+
+    def save(self, filename: str = None):
+        if not self.plt:
+            self.draw()
+
+        self.plt.savefig(filename)
 
 
 # =============================================================================

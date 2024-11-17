@@ -215,7 +215,7 @@ def run(
     # this makes sure that we do not miss any trading opportunities
     # that might have occurred before the cut-off.
     signals = data['signal'][:200]
-    mask = np.isnan(signals) | (signals == 0)
+    mask = np.isnan(signals)  # | (signals == 0)
     valid_indices = np.where(~mask)[0]
 
     if valid_indices.size > 0:

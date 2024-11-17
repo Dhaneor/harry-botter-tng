@@ -49,7 +49,7 @@ schemes = {
     "night": {
         "canvas": "#181818",
         "background": "#121212",  # "#181818",  # "#090004",
-        "tick": ("#5f616A", 0.5),
+        "tick": ("#7f818A", 0.5),
         "buy": ("limegreen", 0.9),
         "sell": ("crimson", 0.9),
         "bull": ("chartreuse", 0.5),

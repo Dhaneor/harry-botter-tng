@@ -52,11 +52,11 @@ from src.analysis.models import position  # noqa: E402, F401
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = int(-365*6)  # 'December 01, 2018 00:00:00'
+start = int(-365*3)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_linreg
-risk_level, max_leverage = 7, 1
+strategy = s_breakout
+risk_level, max_leverage = 0, 1
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -244,8 +244,15 @@ def run(data, show=False, plot=False):
 
     print(f"Total number of trades: {len(positions)}")
     print(f"Profit Factor: {positions.profit_factor:.2f}")
-    logger.info(st.calculate_statistics(df['b.value'].copy().to_numpy()))
-    logger.info(st.calculate_statistics(df['hodl.value'].copy().to_numpy()))
+
+    strategy_stats = st.calculate_statistics(df['b.value'].copy().to_numpy())
+    strategy_stats = {k: round(v, 3) for k, v in strategy_stats.items()}
+
+    hodl_stats = st.calculate_statistics(df['hodl.value'].copy().to_numpy())
+    hodl_stats = {k: round(v, 3) for k, v in hodl_stats.items()}
+
+    logger.info(strategy_stats)
+    logger.info(hodl_stats)
 
     # display_problematic_rows(df)
     # sys.exit()

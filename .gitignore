@@ -12,6 +12,7 @@
 .DS_Store
 .vscode
 .env
+tikr_mvp_strategy.py
 playground.ipynb
 /zguide
 talib_src_latest/ta-lib-python

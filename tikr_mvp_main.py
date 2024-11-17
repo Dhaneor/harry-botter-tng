@@ -20,9 +20,9 @@ from src.analysis import strategy_backtest as bt
 from src.analysis.backtest import statistics as st
 from src.analysis.models.position import extract_positions, Position
 from src.analysis import telegram_signal as ts
-from src.analysis.strategies.definitions import s_breakout
 from src.backtest import result_stats as rs
-from src.plotting.minerva import BacktestChart as Chart
+from src.plotting.minerva import TikrChart as Chart
+from tikr_mvp_strategy import mvp_strategy
 
 # set up logging
 logger = logging.getLogger("main")
@@ -38,7 +38,8 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # instantiate strategy
-strategy = sb.build_strategy(s_breakout)
+strategy = sb.build_strategy(mvp_strategy)
+strategy.name = "Safe HODL Strategy by Gregorovich"
 
 ohlcv_request = {
     "exchange": "binance",
@@ -46,7 +47,7 @@ ohlcv_request = {
     "interval": strategy.interval,
 }
 
-RISK_LEVEL = 6
+RISK_LEVEL = 0
 MAX_LEVERAGE = 1
 
 chat_id = os.getenv('CHAT_ID')
@@ -163,7 +164,7 @@ async def send_signal(df: pd.DataFrame) -> None:
 
 
 async def send_performance_chart(df: pd.DataFrame) -> None:
-    chart = Chart(df, title="Safe HODL Strategy")
+    chart = Chart(df, title=strategy.name)
 
     start_date = df.index.min()
 
