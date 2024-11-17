@@ -64,6 +64,7 @@ class Minerva:
     def __init__(self):
         self.df: pd.DataFrame
         self.plt = None
+        self.axes: list[Axes] = []
 
         self.height_top_chart: int = 7
         self.no_of_subplots: int
@@ -380,7 +381,7 @@ class Minerva:
 
         # Calculate marker size based on figure size
         fig_width_inches = self.fig.get_figwidth()
-        markersize = fig_width_inches * 0.025  # Adjust this factor as needed
+        markersize = fig_width_inches * 0.0125  # Adjust this factor as needed
 
         x = self.df.index.to_list()
 
@@ -860,7 +861,7 @@ class Minerva:
     def prepare(self):
         self._set_colors(color_scheme=self.color_scheme)
 
-        desired_dpi = 300  # You can adjust this value
+        desired_dpi = 600  # You can adjust this value
         base_fig_size = (15, 8)  # Base figure size in inches
 
         # Calculate the scaling factor based on DPI
@@ -966,7 +967,7 @@ class Minerva:
             if ax_.get_legend_handles_labels()[0]:
                 ax_.legend(
                     fancybox=True,
-                    framealpha=0.6,
+                    framealpha=1,
                     shadow=False,
                     borderpad=1,
                     labelcolor=self.tick[0],
@@ -1108,7 +1109,7 @@ class Minerva:
 
         _, ax_width = self._get_ax_size(ax)
         corr_factor = 86400 / timedelta
-        value_factor = values / 350
+        value_factor = values / 500
 
         width = round(((ax_width) / (values) * value_factor) / corr_factor, precision)
 

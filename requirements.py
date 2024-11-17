@@ -35,7 +35,7 @@ def get_clean_requirements():
 
 # Generate and save clean requirements
 clean_reqs = get_clean_requirements()
-with open("requirements.txt", "w") as f:
+with open("requirements_mvp.txt", "w") as f:
     f.write("\n".join(clean_reqs))
 
 print("Clean requirements.txt file has been generated.")

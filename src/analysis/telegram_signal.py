@@ -65,7 +65,11 @@ async def send_message_with_picture(
             f"successfully to chat {chat_id}"
             )
     except Exception as e:
-        logger.error(f"Error sending message {'with picture' if image else ''}: {e}")
+        logger.error(
+            f"Error sending message {'with picture' if image else ''}: {e}",
+            exc_info=True
+            )
+        logger.error("Token: %s / Chat ID: %s", BOT_TOKEN, chat_id)
 
 
 # ------------------------------------------------------------------------------------
