@@ -120,7 +120,6 @@ class Position:
     @property
     def duration(self) -> pd.Timedelta:
         if self.is_open:
-            logger.debug("position is open: %s" % self.is_open)
             return time.time() - self.df["open time"].iloc[0] / 1000
 
         return self.df["open time"].iloc[0] / 1000 - self.entry_time

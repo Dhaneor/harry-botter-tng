@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+
+
 Created on Nov 11 22:30:20 2024
 
 @author dhaneor
@@ -73,7 +75,7 @@ async def send_message_with_picture(
 
 
 # ------------------------------------------------------------------------------------
-def add_position_overview(func):
+def position_overview(func):
     """Wrapper function to add position overview to the message."""
     # helper functions for formatting values
     def fv(value, width=6):
@@ -138,23 +140,25 @@ def add_position_overview(func):
     def leverage(position: Dict[str, Any]) -> str:
         return f"*Leverage:* {fv(position.get('leverage'))}\n"
 
+    # function pipeline for each 'change' type for use in the subsequent
+    # build_overview function
     pipelines = {
         "open": [
             entry_time, entry_price, leverage
             ],
         "close": [
-            entry_time, duration, entry_price, exit_price, pnl, max_drawdown
+            pnl, max_drawdown, entry_time, duration, entry_price, exit_price,
             ],
         "increase": [
+            pnl, max_drawdown, leverage,
             entry_time, duration, entry_price, current_price,
-            pnl, max_drawdown, leverage
             ],
         "decrease": [
+            pnl, max_drawdown, leverage,
             entry_time, duration, entry_price, current_price,
-            pnl, max_drawdown, leverage
             ],
         "default": [
-            entry_time, duration, entry_price, current_price, pnl,  max_drawdown
+            pnl,  max_drawdown, entry_time, duration, entry_price, current_price,
             ]
     }
 
@@ -215,7 +219,7 @@ async def _construct_change_position_message(
 
 
 # ------------------------------------------------------------------------------------
-@add_position_overview
+@position_overview
 async def construct_open_long_message(position: Dict[str, Any]) -> str:
     asset = position.get("symbol")
 
@@ -231,7 +235,7 @@ async def construct_open_long_message(position: Dict[str, Any]) -> str:
     )
 
 
-@add_position_overview
+@position_overview
 async def construct_close_long_message(position: Dict[str, Any]) -> str:
     asset = position.get("symbol")
 
@@ -248,7 +252,7 @@ async def construct_close_long_message(position: Dict[str, Any]) -> str:
     )
 
 
-@add_position_overview
+@position_overview
 async def construct_open_short_message(position: Dict[str, Any]) -> str:
     asset = position.get("symbol")
 
@@ -265,7 +269,7 @@ async def construct_open_short_message(position: Dict[str, Any]) -> str:
     )
 
 
-@add_position_overview
+@position_overview
 async def construct_close_short_message(position: Dict[str, Any]) -> str:
     asset = position.get("symbol")
 
@@ -286,7 +290,7 @@ async def construct_close_short_message(position: Dict[str, Any]) -> str:
     )
 
 
-@add_position_overview
+@position_overview
 async def construct_increase_long_message(position: Dict[str, Any]) -> str:
     return _construct_change_position_message(
         await _construct_buy_str(position),
@@ -296,7 +300,7 @@ async def construct_increase_long_message(position: Dict[str, Any]) -> str:
         )
 
 
-@add_position_overview
+@position_overview
 async def construct_decrease_long_message(position: Dict[str, Any]) -> str:
     return _construct_change_position_message(
         await _construct_sell_str(position),
@@ -306,7 +310,7 @@ async def construct_decrease_long_message(position: Dict[str, Any]) -> str:
         )
 
 
-@add_position_overview
+@position_overview
 async def construct_increase_short_message(position: Dict[str, Any]) -> str:
     return _construct_change_position_message(
         await _construct_sell_str(position),
@@ -316,7 +320,7 @@ async def construct_increase_short_message(position: Dict[str, Any]) -> str:
     )
 
 
-@add_position_overview
+@position_overview
 async def construct_decrease_short_message(position: Dict[str, Any]) -> str:
     return _construct_change_position_message(
         await _construct_buy_str(position),
@@ -326,7 +330,7 @@ async def construct_decrease_short_message(position: Dict[str, Any]) -> str:
     )
 
 
-@add_position_overview
+@position_overview
 async def construct_do_nothing_message(position: Dict[str, Any]) -> str:
     return (
         "On this fine day, I shan't undertake any endeavours or pursuits.\n"

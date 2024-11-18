@@ -143,9 +143,9 @@ class Minerva:
 
         width, width2 = self._get_linewidth(ax)
 
-        bull, alpha_bull = self.bull[0], self.bull[1]
-        bear, alpha_bear = self.bear[0], self.bear[1]
-        flat, alpha_flat = self.flat[0], self.flat[1]
+        bull, alpha_bull = self.bull[0], 1  # self.bull[1]
+        bear, alpha_bear = self.bear[0], 1  # self.bear[1]
+        flat, alpha_flat = self.flat[0], 1  # self.flat[1]
 
         if with_market_state:
             # plot candles with color depending on market regime
@@ -329,6 +329,7 @@ class Minerva:
                         bottom=_close,
                         color=bull,
                         alpha=alpha_bull,
+                        zorder=0,
                     )
                     ax.bar(
                         x_,
@@ -337,6 +338,7 @@ class Minerva:
                         bottom=_low,
                         color=bull,
                         alpha=alpha_bull,
+                        zorder=0,
                     )
                     ax.bar(
                         x_,
@@ -345,6 +347,7 @@ class Minerva:
                         bottom=_open,
                         color=bull,
                         alpha=alpha_bull,
+                        zorder=0,
                     )
                 else:
                     ax.bar(
@@ -861,11 +864,11 @@ class Minerva:
     def prepare(self):
         self._set_colors(color_scheme=self.color_scheme)
 
-        desired_dpi = 600  # You can adjust this value
+        desired_dpi = 1200  # You can adjust this value
         base_fig_size = (15, 8)  # Base figure size in inches
 
         # Calculate the scaling factor based on DPI
-        scale_factor = desired_dpi / 100  # Assuming 100 DPI as base
+        scale_factor = desired_dpi / 300  # Assuming 100 DPI as base
 
         # Scale figure size
         fig_size = (base_fig_size[0] / scale_factor, base_fig_size[1] / scale_factor)
@@ -1109,7 +1112,7 @@ class Minerva:
 
         _, ax_width = self._get_ax_size(ax)
         corr_factor = 86400 / timedelta
-        value_factor = values / 500
+        value_factor = values / 750
 
         width = round(((ax_width) / (values) * value_factor) / corr_factor, precision)
 

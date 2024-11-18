@@ -25,8 +25,10 @@ from src.plotting.minerva import TikrChart as Chart
 from tikr_mvp_strategy import mvp_strategy
 
 # set up logging
+LOG_LEVEL = logging.DEBUG
+
 logger = logging.getLogger("main")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(LOG_LEVEL)
 
 ch = logging.StreamHandler()
 
@@ -51,6 +53,9 @@ RISK_LEVEL = 0
 MAX_LEVERAGE = 1
 
 chat_id = os.getenv('CHAT_ID')
+
+# number of retries when fetching data from the repository
+MAX_RETRIES = 3
 
 
 def display_results(df: pd.DataFrame) -> None:
@@ -98,8 +103,10 @@ def display_results(df: pd.DataFrame) -> None:
     df.loc[df["position"] == "-1.0000", "position"] = "SHORT"
 
     # display the last 50 rows of the dataframe & the statistics
-    logger.info("-------------------------- Last 50 rows --------------------------")
-    print(df.tail(50))
+    # if LOG_LEVEL == logging.DEBUG:
+    #     logger.info("------------------------ Last 50 rows -------------------------")
+    #     print(df.tail(50))
+
     logger.info("--------------------------- Statistics ---------------------------")
     logger.info("stats strategy: %s" % stats)
     logger.info("stats hodl    : %s" % stats_hodl)
@@ -126,6 +133,7 @@ def process_data(ohlcv_data):
 
 # ================================ Async Functions ===================================
 async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
+    logger.info("Async Event Loop started ...")
     try:
         while not stop_event.is_set():
             try:
@@ -135,13 +143,15 @@ async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
                 queue.put(ohlcv_data)
             except Exception as e:
                 logger.error(f"Error fetching OHLCV data: {e}")
-            finally:
                 await asyncio.sleep(5)  # Wait before retrying
+            else:
+                stop_event.set()
+                logger.debug("stop_event set.")
     except Exception as e:
         logger.error(f"Error in Async Loop: {e}")
 
-    # await repo.exchange_factory(None)
-    # logger.info("Async Event Loop stopped.")
+    await repo.exchange_factory(None)
+    logger.info("Async Event Loop stopped.")
 
 
 async def send_signal(df: pd.DataFrame) -> None:
@@ -164,15 +174,13 @@ async def send_signal(df: pd.DataFrame) -> None:
 
 
 async def send_performance_chart(df: pd.DataFrame) -> None:
-    chart = Chart(df, title=strategy.name)
-
     start_date = df.index.min()
 
     # Use the function
     await ts.send_message_with_picture(
         chat_id=chat_id,
         msg=f"Gregorovich performance since {start_date.strftime('%Y-%m-%d')}",
-        image=chart.get_image_bytes()
+        image=Chart(df, title=strategy.name).get_image_bytes()
     )
 
 
@@ -198,14 +206,15 @@ def main():
     # Create a Queue for Communication
     ohlcv_queue = Queue()
 
-    # Event to Signal the Async Thread to Stop
-    stop_event = Event()
-
     # Start the Async Event Loop in a Separate Thread
     #
     # NOTE: We need to run this in a thread because the ohlcv_repository
     #       has been implemented with asnyc functions
     logger.debug("Starting Async Event Loop in thread ...")
+
+    # Event to Signal the Async Thread to Stop
+    stop_event = Event()
+
     async_thread = threading.Thread(
         target=start_async_loop,
         args=(ohlcv_queue, stop_event),
@@ -216,10 +225,9 @@ def main():
     # Main Loop: Process OHLCV Data from the Queue
     counter = 0
     try:
-        while counter < 1:
+        while counter < MAX_RETRIES:
             try:
-                # Wait for data with a timeout to allow graceful shutdown
-                ohlcv_data = ohlcv_queue.get()
+                ohlcv_data = ohlcv_queue.get(timeout=10)
 
                 if not isinstance(ohlcv_data, repo.Response):
                     raise ValueError("Invalid data received")
@@ -231,12 +239,13 @@ def main():
                 print("No new data received. Waiting...")
             except ValueError as e:
                 logger.error("Error processing data: %s", e)
-                continue
             else:
+                stop_event.set()
                 df = process_data(ohlcv_data)
                 asyncio.run(notify_telegram(df))
-            finally:
                 ohlcv_queue.task_done()
+                break
+            finally:
                 counter += 1
 
     except KeyboardInterrupt:
