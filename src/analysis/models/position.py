@@ -118,19 +118,29 @@ class Position:
         return self.df["drawdown"].max()
 
     @property
-    def duration(self) -> pd.Timedelta:
-        if self.is_open:
-            return time.time() - self.df["open time"].iloc[0] / 1000
-
-        return self.df["open time"].iloc[0] / 1000 - self.entry_time
-
-    @property
     def entry_time(self) -> pd.Timestamp:
         return self.df.index[0]
 
     @property
     def entry_time_utc(self):
-        return self.df.index[0].strftime("%B %d, %H:%M")
+        try:
+            return self.entry_time.strftime("%B %d, %H:%M")
+        except Exception as e:
+            logger.exception(e)
+            logger.error("\n%s" % self.df)
+            raise
+
+    @property
+    def exit_time(self) -> pd.Timestamp:
+        return self.df.index[-1] if not self.is_open else None
+
+    @property
+    def duration(self) -> pd.Timedelta:
+        if self.is_open:
+            now = pd.Timestamp.now().as_unit("ms")
+            return (now - self.entry_time.as_unit("ms")).total_seconds()
+
+        return (self.exit_time - self.entry_time).total_seconds()
 
     @property
     def entry_price(self) -> float:
@@ -143,10 +153,6 @@ class Position:
     @property
     def exit_price(self) -> float:
         return self.df["close"].iloc[-1] if not self.is_open else None
-
-    @property
-    def exit_time(self) -> pd.Timestamp:
-        return self.df.index[-1] if not self.is_open else None
 
     @property
     def is_new(self) -> bool:
@@ -323,9 +329,10 @@ class Position:
         ]
 
 
-class PositionManager:
-    def __init__(self):
-        self.positions = []
+class Positions:
+    def __init__(self, df: pd.DataFrame, symbol: str):
+        self.symbol = symbol
+        self.positions = self._extract_positions(df, symbol)
 
     def __iter__(self):
         return iter(self.positions)
@@ -362,27 +369,22 @@ class PositionManager:
         durations = [pos.duration for pos in self.positions]
         return pd.Timedelta(np.mean(durations))
 
-    def get_current_position(self, symbol: str, as_dict: bool) -> Position | None:
-        position = next(
-            (p for p in reversed(self.positions) if (p.symbol == symbol and p.is_open)),
-            None,
+    def current(self, as_dict: bool = False) -> Position | None:
+        position = next((p for p in reversed(self.positions) if p.is_open), None)
+
+        return position.to_dict() if (as_dict and position) else position
+
+    def _extract_positions(self, backtest_df: pd.DataFrame, symbol: str) -> None:
+        positions = []
+
+        # Group by position changes
+        grouped = backtest_df.groupby(
+            (backtest_df["position"] != backtest_df["position"].shift()).cumsum()
         )
 
-        return position.to_dict() if as_dict and position else position
+        for _, group in grouped:
+            if group["position"].iloc[0] != 0:  # Ignore periods with no position
+                position_type = "long" if group["position"].iloc[0] == 1 else "short"
+                positions.append(Position(symbol, position_type, group))
 
-
-def extract_positions(backtest_df: pd.DataFrame, symbol: str) -> PositionManager:
-    position_manager = PositionManager()
-
-    # Group by position changes
-    grouped = backtest_df.groupby(
-        (backtest_df["position"] != backtest_df["position"].shift()).cumsum()
-    )
-
-    for _, group in grouped:
-        if group["position"].iloc[0] != 0:  # Ignore periods with no position
-            position_type = "long" if group["position"].iloc[0] == 1 else "short"
-            position = Position(symbol, position_type, group)
-            position_manager.add_position(position)
-
-    return position_manager
+        return positions

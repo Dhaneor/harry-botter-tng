@@ -143,9 +143,9 @@ class Minerva:
 
         width, width2 = self._get_linewidth(ax)
 
-        bull, alpha_bull = self.bull[0], 1  # self.bull[1]
-        bear, alpha_bear = self.bear[0], 1  # self.bear[1]
-        flat, alpha_flat = self.flat[0], 1  # self.flat[1]
+        bull, alpha_bull = self.bull[0], self.bull[1]
+        bear, alpha_bear = self.bear[0], self.bear[1]
+        flat, alpha_flat = self.flat[0], self.flat[1]
 
         if with_market_state:
             # plot candles with color depending on market regime

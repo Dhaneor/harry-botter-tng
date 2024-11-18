@@ -18,50 +18,41 @@ from src.rawi import ohlcv_repository as repo
 from src.analysis import strategy_builder as sb
 from src.analysis import strategy_backtest as bt
 from src.analysis.backtest import statistics as st
-from src.analysis.models.position import extract_positions, Position
+from src.analysis.models.position import Positions
 from src.analysis import telegram_signal as ts
 from src.backtest import result_stats as rs
 from src.plotting.minerva import TikrChart as Chart
 from tikr_mvp_strategy import mvp_strategy
 
 # set up logging
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 
 logger = logging.getLogger("main")
 logger.setLevel(LOG_LEVEL)
-
 ch = logging.StreamHandler()
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
+ch.setFormatter(
+    logging.Formatter(
+        "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
+    )
 )
-ch.setFormatter(formatter)
-
 logger.addHandler(ch)
 
+# ================================ Configuration =====================================
 # instantiate strategy
 strategy = sb.build_strategy(mvp_strategy)
 strategy.name = "Safe HODL Strategy by Gregorovich"
 
-ohlcv_request = {
-    "exchange": "binance",
-    "symbol": strategy.symbol,
-    "interval": strategy.interval,
-}
-
-RISK_LEVEL = 0
-MAX_LEVERAGE = 1
-
-chat_id = os.getenv('CHAT_ID')
-
-# number of retries when fetching data from the repository
-MAX_RETRIES = 3
+RISK_LEVEL = 0  # define the risk level for the strategy / position sizing
+MAX_LEVERAGE = 1  # define the maximum leverage for the strategy / position sizing
+CHAT_ID = os.getenv('CHAT_ID')  # Telegram chat ID (set as environment variable)
 
 
+MAX_RETRIES = 3  # number of retries when fetching data from the repository
+repo.RATE_LIMIT = False  # disable rate limit for the repository
+
+
+# ============================ Data Display & Processing =============================
 def display_results(df: pd.DataFrame) -> None:
-    # add drawdown information to dataframe
-    df = rs.calculate_stats(df, initial_capital=10_000)
-
     # calculate the statistics (like sharpe ratio, sortino ratio, ...)
     # for the strategy and HODL
     stats = st.calculate_statistics(df["b.value"].to_numpy())
@@ -73,10 +64,6 @@ def display_results(df: pd.DataFrame) -> None:
         }
 
     # preprocess the dataframe for display on std out
-    df["open time utc"] = pd.to_datetime(df["open time"], unit="ms")
-    df.index = pd.to_datetime(df["open time utc"])
-    df.drop(columns=["open time utc"], inplace=True)
-
     incl_cols = [
         "open", "high", "low", "close", "volume",
         "position", "leverage", "buy",
@@ -103,9 +90,8 @@ def display_results(df: pd.DataFrame) -> None:
     df.loc[df["position"] == "-1.0000", "position"] = "SHORT"
 
     # display the last 50 rows of the dataframe & the statistics
-    # if LOG_LEVEL == logging.DEBUG:
-    #     logger.info("------------------------ Last 50 rows -------------------------")
-    #     print(df.tail(50))
+    logger.info("------------------------ Last 50 rows -------------------------")
+    print(df.tail(50))
 
     logger.info("--------------------------- Statistics ---------------------------")
     logger.info("stats strategy: %s" % stats)
@@ -116,24 +102,30 @@ def process_data(ohlcv_data):
     logger.debug(ohlcv_data)
 
     ohlcv_data = bt.run(
-                    data=ohlcv_data.to_dict(),
-                    strategy=strategy,
-                    risk_level=RISK_LEVEL,
-                    max_leverage=MAX_LEVERAGE,
-                    initial_capital=10_000
-                    )
+        data=ohlcv_data.to_dict(),
+        strategy=strategy,
+        risk_level=RISK_LEVEL,
+        max_leverage=MAX_LEVERAGE,
+        initial_capital=10_000
+    )
 
-    # build a dataframe from the results
+    # build a dataframe from the results & set index to be the datetime
     df = pd.DataFrame.from_dict(ohlcv_data)
+    df.index = pd.to_datetime(df["open time"], unit="ms")
 
-    display_results(df)
+    # add drawdown information to dataframe
+    df = rs.calculate_stats(df, initial_capital=10_000)
+
+    if LOG_LEVEL == logging.DEBUG:
+        display_results(df)
 
     return df
 
 
 # ================================ Async Functions ===================================
 async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
-    logger.info("Async Event Loop started ...")
+    logger.debug("Async Event Loop started ...")
+
     try:
         while not stop_event.is_set():
             try:
@@ -145,41 +137,30 @@ async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
                 logger.error(f"Error fetching OHLCV data: {e}")
                 await asyncio.sleep(5)  # Wait before retrying
             else:
+                # we got our data and can stop the loop
                 stop_event.set()
                 logger.debug("stop_event set.")
     except Exception as e:
         logger.error(f"Error in Async Loop: {e}")
 
     await repo.exchange_factory(None)
-    logger.info("Async Event Loop stopped.")
+    logger.debug("Async Event Loop stopped.")
 
 
 async def send_signal(df: pd.DataFrame) -> None:
     """Sends a trading signal to Telegram, based on the results DataFrame."""
-
-    def get_current_position(df: pd.DataFrame) -> Position | None:
-        position_manager = extract_positions(df, strategy.symbol)
-        return position_manager\
-            .get_current_position(strategy.symbol, False)\
-            .get_signal()
-
-    try:
-        signal = await ts.create_telegram_signal(
-            position=get_current_position(df),
-            chat_id=chat_id
+    await ts.send_message(
+        chat_id=CHAT_ID,
+        msg=await ts.create_signal(
+            position=Positions(df=df, symbol=strategy.symbol).current().get_signal()
+            )
         )
-        await signal['send_signal']()
-    except Exception as e:
-        logger.exception("Error sending Telegram signal: %s", e)
 
 
 async def send_performance_chart(df: pd.DataFrame) -> None:
-    start_date = df.index.min()
-
-    # Use the function
-    await ts.send_message_with_picture(
-        chat_id=chat_id,
-        msg=f"Gregorovich performance since {start_date.strftime('%Y-%m-%d')}",
+    await ts.send_message(
+        chat_id=CHAT_ID,
+        msg=f"Gregorovich performance since {df.index.min().strftime('%Y-%m-%d')}",
         image=Chart(df, title=strategy.name).get_image_bytes()
     )
 
@@ -194,6 +175,14 @@ async def notify_telegram(df: pd.DataFrame) -> None:
 def start_async_loop(queue, stop_event):
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
+
+    # build ohlcv request
+    ohlcv_request = {
+        "exchange": "binance",
+        "symbol": strategy.symbol,
+        "interval": strategy.interval,
+    }
+
     try:
         loop.run_until_complete(fetch_ohlcv_data(ohlcv_request, queue, stop_event))
     finally:

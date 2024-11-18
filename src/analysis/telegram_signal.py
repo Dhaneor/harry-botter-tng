@@ -7,7 +7,6 @@ Created on Nov 11 22:30:20 2024
 
 @author dhaneor
 """
-import asyncio
 import logging
 import os
 
@@ -17,7 +16,6 @@ from telegram import Bot
 from typing import Callable, Dict, Any, List, Awaitable
 
 logger = logging.getLogger('main.telegram_signal')
-logger.setLevel(logging.INFO)
 
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 TG_API_URL = "https://api.telegram.org/bot"
@@ -31,15 +29,15 @@ bot = Bot(token=BOT_TOKEN)
 
 
 # ------------------------------------------------------------------------------------
-async def send_message(chat_id: str, msg: str) -> None:
-    try:
-        await bot.send_message(chat_id=chat_id, text=msg, parse_mode=PARSE_MODE)
-        logger.info(f"Message sent successfully to chat {chat_id}")
-    except Exception as e:
-        logger.error(f"Error sending message: {e}")
+# async def send_message(chat_id: str, msg: str) -> None:
+#     try:
+#         await bot.send_message(chat_id=chat_id, text=msg, parse_mode=PARSE_MODE)
+#         logger.info(f"Message sent successfully to chat {chat_id}")
+#     except Exception as e:
+#         logger.error(f"Error sending message: {e}")
 
 
-async def send_message_with_picture(
+async def send_message(
     chat_id: str,
     msg: str,
     image: BytesIO = None
@@ -172,10 +170,17 @@ def position_overview(func):
 
     # wrapper function for using this as a decorator
     @wraps(func)
-    async def wrapper(position: Dict[str, Any]) -> str:
+    async def wrapper(position: Dict[str, Any] | None) -> str:
         signal_message = await func(position)
+
+        # No need to build an overview if we have no position
+        if position is None:
+            return signal_message
+
+        # determine the appropriate pipeline based on the 'change' type
         change = position.get('change', 'default')
         pipeline = pipelines.get(change, pipelines['default'])
+
         return signal_message + build_overview(position, pipeline)
 
     return wrapper
@@ -190,15 +195,15 @@ async def _base_asset(symbol: str) -> str | None:
         return None
 
 
-async def _construct_buy_str(position: Dict[str, Any]) -> str:
+async def _build_buy_str(position: Dict[str, Any]) -> str:
     return f'aqucire more shares of {await _base_asset(position.get("symbol"))}'
 
 
-async def _construct_sell_str(position: Dict[str, Any]) -> str:
+async def _build_sell_str(position: Dict[str, Any]) -> str:
     return f'sell some shares of {await _base_asset(position.get("symbol"))}'
 
 
-async def _construct_change_position_message(
+async def _build_change_position_message(
     action: str,
     change: str,
     position_type: str,
@@ -220,7 +225,7 @@ async def _construct_change_position_message(
 
 # ------------------------------------------------------------------------------------
 @position_overview
-async def construct_open_long_message(position: Dict[str, Any]) -> str:
+async def build_open_long_message(position: Dict[str, Any]) -> str:
     asset = position.get("symbol")
 
     return (
@@ -236,7 +241,7 @@ async def construct_open_long_message(position: Dict[str, Any]) -> str:
 
 
 @position_overview
-async def construct_close_long_message(position: Dict[str, Any]) -> str:
+async def build_close_long_message(position: Dict[str, Any]) -> str:
     asset = position.get("symbol")
 
     return (
@@ -253,7 +258,7 @@ async def construct_close_long_message(position: Dict[str, Any]) -> str:
 
 
 @position_overview
-async def construct_open_short_message(position: Dict[str, Any]) -> str:
+async def build_open_short_message(position: Dict[str, Any]) -> str:
     asset = position.get("symbol")
 
     return (
@@ -270,7 +275,7 @@ async def construct_open_short_message(position: Dict[str, Any]) -> str:
 
 
 @position_overview
-async def construct_close_short_message(position: Dict[str, Any]) -> str:
+async def build_close_short_message(position: Dict[str, Any]) -> str:
     asset = position.get("symbol")
 
     return (
@@ -291,9 +296,9 @@ async def construct_close_short_message(position: Dict[str, Any]) -> str:
 
 
 @position_overview
-async def construct_increase_long_message(position: Dict[str, Any]) -> str:
-    return _construct_change_position_message(
-        await _construct_buy_str(position),
+async def build_increase_long_message(position: Dict[str, Any]) -> str:
+    return _build_change_position_message(
+        await _build_buy_str(position),
         '*increasing*',
         'LONG',
         position.get('change_percent', 0)
@@ -301,9 +306,9 @@ async def construct_increase_long_message(position: Dict[str, Any]) -> str:
 
 
 @position_overview
-async def construct_decrease_long_message(position: Dict[str, Any]) -> str:
-    return _construct_change_position_message(
-        await _construct_sell_str(position),
+async def build_decrease_long_message(position: Dict[str, Any]) -> str:
+    return _build_change_position_message(
+        await _build_sell_str(position),
         '*decreasing*',
         'LONG',
         position.get('change_percent', 0)
@@ -311,9 +316,9 @@ async def construct_decrease_long_message(position: Dict[str, Any]) -> str:
 
 
 @position_overview
-async def construct_increase_short_message(position: Dict[str, Any]) -> str:
-    return _construct_change_position_message(
-        await _construct_sell_str(position),
+async def build_increase_short_message(position: Dict[str, Any]) -> str:
+    return _build_change_position_message(
+        await _build_sell_str(position),
         '*increasing*',
         'SHORT',
         position.get('change_percent', 0)
@@ -321,9 +326,9 @@ async def construct_increase_short_message(position: Dict[str, Any]) -> str:
 
 
 @position_overview
-async def construct_decrease_short_message(position: Dict[str, Any]) -> str:
-    return _construct_change_position_message(
-        await _construct_buy_str(position),
+async def build_decrease_short_message(position: Dict[str, Any]) -> str:
+    return _build_change_position_message(
+        await _build_buy_str(position),
         '*decreasing*',
         'SHORT',
         position.get('change_percent', 0)
@@ -331,7 +336,7 @@ async def construct_decrease_short_message(position: Dict[str, Any]) -> str:
 
 
 @position_overview
-async def construct_do_nothing_message(position: Dict[str, Any]) -> str:
+async def build_do_nothing_message(position: Dict[str, Any] | None) -> str:
     return (
         "On this fine day, I shan't undertake any endeavours or pursuits.\n"
         "I shall simply partake in the leisurely art of relaxation, "
@@ -339,7 +344,16 @@ async def construct_do_nothing_message(position: Dict[str, Any]) -> str:
     )
 
 
-async def construct_error_message(*args) -> str:
+async def build_wait_for_opportunity_message(*args, **kwargs) -> str:
+    wait_str = (
+        "\n\nUnder the current market conditions, I find myself"
+        " unable to find any suitable opportunities. I shall continue to "
+        "awaiting for the next opportunity that may present itself."
+        )
+    return await build_do_nothing_message(None) + wait_str
+
+
+async def build_error_message(*args) -> str:
     return (
         "Woe is me, for I have stumbled upon a veritable labyrinth of "
         "tribulations. The path forward is shrouded in obscurity, "
@@ -350,32 +364,35 @@ async def construct_error_message(*args) -> str:
 
 # ------------------------------------------------------------------------------------
 async def get_message_constructor(
-    position: Dict[str, Any]
+    position: Dict[str, Any] | None
 ) -> Callable[[Dict[str, Any]], Awaitable[str]]:
     logger.debug(f"Creating message constructor for position: {position}")
 
+    if position is None:
+        return build_wait_for_opportunity_message  # default/fallback function
+
     message_constructors = {
-        ("open", "LONG"): construct_open_long_message,
-        ("increase", "LONG"): construct_increase_long_message,
-        ("decrease", "LONG"): construct_decrease_long_message,
-        ("close", "LONG"): construct_close_long_message,
-        ("open", "SHORT"): construct_open_short_message,
-        ("increase", "SHORT"): construct_increase_short_message,
-        ("decrease", "SHORT"): construct_decrease_short_message,
-        ("close", "SHORT"): construct_close_short_message,
-        (None, "LONG"): construct_do_nothing_message,
-        (None, "SHORT"): construct_do_nothing_message,
+        ("open", "LONG"): build_open_long_message,
+        ("increase", "LONG"): build_increase_long_message,
+        ("decrease", "LONG"): build_decrease_long_message,
+        ("close", "LONG"): build_close_long_message,
+        ("open", "SHORT"): build_open_short_message,
+        ("increase", "SHORT"): build_increase_short_message,
+        ("decrease", "SHORT"): build_decrease_short_message,
+        ("close", "SHORT"): build_close_short_message,
+        (None, "LONG"): build_do_nothing_message,
+        (None, "SHORT"): build_do_nothing_message,
     }
+
     return message_constructors.get(
         (position["change"], position["position_type"]),
-        construct_error_message   # default/fallback function
+        build_error_message   # default/fallback function
     )
 
 
-async def create_signal(position: Dict[str, Any], chat_id: str) -> Callable[[], None]:
+async def create_signal(position: Dict[str, Any]) -> Callable[[], None]:
     message_constructor = await get_message_constructor(position)
-    message = await message_constructor(position)
-    return lambda: asyncio.create_task(send_message(chat_id, message))
+    return await message_constructor(position)
 
 
 async def send_intro(chat_id: str) -> None:
@@ -385,13 +402,3 @@ ramblings of a brain in a box, meant for your amusement only. *Nay, ye won't
 find financial advice here, for me words be as untethered as me body.* So listen
 up, and I'll spin ye a yarn, just don't be staking your fortune on it, ya hear?"""
     await send_message(chat_id, intro)
-
-
-async def create_telegram_signal(
-    position: Dict[str, Any],
-    chat_id: str
-) -> Dict[str, Callable[[], None]]:
-    return {
-        "send_signal": await create_signal(position, chat_id),
-        "send_intro": lambda: asyncio.create_task(send_intro(chat_id))
-    }
