@@ -49,6 +49,7 @@ CHAT_ID = os.getenv('CHAT_ID')  # Telegram chat ID (set as environment variable)
 
 
 MAX_RETRIES = 3  # number of retries when fetching data from the repository
+RETRY_AFTER_SECS = 5  # time between retries in seconds
 repo.RATE_LIMIT = False  # disable rate limit for the repository
 
 DISPLAY_DF_ROWS = 10  # number of rows to display in the dataframe
@@ -166,22 +167,20 @@ def process_data(ohlcv_data):
 async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
     logger.debug("Async Event Loop started ...")
 
-    try:
-        while not stop_event.is_set():
-            try:
-                ohlcv_data = await repo.process_request(request)
-                if not ohlcv_data:
-                    logger.warning("No OHLCV data received. Retrying...")
-                queue.put(ohlcv_data)
-            except Exception as e:
-                logger.error(f"Error fetching OHLCV data: {e}")
-                await asyncio.sleep(5)  # Wait before retrying
-            else:
-                # we got our data and can stop the loop
-                stop_event.set()
-                logger.debug("stop_event set.")
-    except Exception as e:
-        logger.error(f"Error in Async Loop: {e}")
+    while not stop_event.is_set():
+        try:
+            ohlcv_data = await repo.process_request(request)
+            if not ohlcv_data:
+                logger.warning("No OHLCV data received. Retrying...")
+                raise Empty("empty response from OHLCV repository")
+            queue.put(ohlcv_data)
+        except Empty as e:
+            logger.error(f"Fethcing OHLCV failed: {e}")
+            await asyncio.sleep(RETRY_AFTER_SECS)  # Wait before retrying
+        except Exception as e:
+            logger.error(f"Unknown error while waiting for OHLCV data: {e}")
+            # no need to retry in this case
+            stop_event.set()
 
     await repo.exchange_factory(None)
     logger.debug("Async Event Loop stopped.")
@@ -263,23 +262,42 @@ def main():
     try:
         while counter < MAX_RETRIES:
             try:
-                ohlcv_data = ohlcv_queue.get(timeout=10)
-
+                ohlcv_data = ohlcv_queue.get(timeout=15)
+                # this should never happen and would indicate a bug in
+                # the fetch_ohlcv_data function above
                 if not isinstance(ohlcv_data, repo.Response):
                     raise ValueError("Invalid data received")
 
                 if not ohlcv_data.data:
-                    raise ValueError("No OHLCV data received")
+                    raise Empty()  # ValueError("No OHLCV data received")
 
             except Empty:
-                print("No new data received. Waiting...")
+                # keep trying if we got empty data and we did not reach MAX_RETRIES
+                # this can only happen when the network connection is not available
+                logger.warning(
+                    "<%s> No new data received. %s",
+                    counter,
+                    f"{"waiting" if counter + 1 < MAX_RETRIES else ""}"
+                    )
             except ValueError as e:
                 logger.error("Error processing data: %s", e)
+                # if this happens, it would make no sense to porcess
+                # the (same bc it is cached) faulty data again
+                break
+            except Exception as e:
+                # catch all other errors
+                logger.error("An unexpected error occured: %s", e, exc_info=True)
+                break
             else:
+                # signal the fetch_ohlcv_data that we are done.
+                # we need to do this here (additionally to doing at the
+                # end of the function), because sometimes the creation
+                # of the chart takes longer than
                 stop_event.set()
+                ohlcv_queue.task_done()
+                # process the OHLCV data & send signal
                 df = process_data(ohlcv_data)
                 asyncio.run(notify_telegram(df))
-                ohlcv_queue.task_done()
                 break
             finally:
                 counter += 1
@@ -287,9 +305,13 @@ def main():
     except KeyboardInterrupt:
         print("Received shutdown signal. Exiting...")
     finally:
+        logger.info("stopping async thread ...")
         # Signal the async thread to stop
-        stop_event.set()
-        async_thread.join(timeout=5)
+        if not stop_event.is_set():
+            stop_event.set()
+        async_thread.join(timeout=RETRY_AFTER_SECS + 3)
+
+    logger.info("shutdown complete: OK")
 
 
 # Run the Main Function
