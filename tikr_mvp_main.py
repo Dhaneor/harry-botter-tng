@@ -13,6 +13,7 @@ import os
 import pandas as pd
 from queue import Queue, Empty
 from threading import Event
+from typing import Any
 
 from src.rawi import ohlcv_repository as repo
 from src.analysis import strategy_builder as sb
@@ -50,19 +51,11 @@ CHAT_ID = os.getenv('CHAT_ID')  # Telegram chat ID (set as environment variable)
 MAX_RETRIES = 3  # number of retries when fetching data from the repository
 repo.RATE_LIMIT = False  # disable rate limit for the repository
 
+DISPLAY_DF_ROWS = 10  # number of rows to display in the dataframe
+
 
 # ============================ Data Display & Processing =============================
-def display_results(df: pd.DataFrame) -> None:
-    # calculate the statistics (like sharpe ratio, sortino ratio, ...)
-    # for the strategy and HODL
-    stats = st.calculate_statistics(df["b.value"].to_numpy())
-    stats = {k: f"{v:.2f}" if isinstance(v, float) else v for k, v in stats.items()}
-
-    stats_hodl = st.calculate_statistics(df["hodl.value"].to_numpy())
-    stats_hodl = {
-        k: f"{v:.2f}" if isinstance(v, float) else v for k, v in stats_hodl.items()
-        }
-
+def format_dataframe(df: pd.DataFrame) -> None:
     # preprocess the dataframe for display on std out
     incl_cols = [
         "open", "high", "low", "close", "volume",
@@ -89,13 +82,60 @@ def display_results(df: pd.DataFrame) -> None:
     df.loc[df["position"] == "1.0000", "position"] = "LONG"
     df.loc[df["position"] == "-1.0000", "position"] = "SHORT"
 
-    # display the last 50 rows of the dataframe & the statistics
-    logger.info("------------------------ Last 50 rows -------------------------")
-    print(df.tail(50))
+    return df
 
+
+def calculate_stats(value_series: pd.Series) -> dict[str, Any]:
+    return {
+        k: f"{v:.2f}" if isinstance(v, float) else v
+        for k, v in st.calculate_statistics(value_series.to_numpy()).items()
+        }
+
+
+def generate_comparison_table(df: pd.DataFrame) -> str:
+    strategy_stats = calculate_stats(df["b.value"])
+    hodl_stats = calculate_stats(df["hodl.value"])
+
+    metrics = [
+        ("Total Return %", "profit"),
+        ("Max Drawdown %", "max_drawdown"),
+        ("Sharpe Ratio", "sharpe_ratio"),
+        # ("Sortino Ratio", "sortino_ratio"),
+        # ("Kalmar Ratio", "kalmar_ratio"),
+        # ("Ann. Volatility %", "annualized_volatility")
+    ]
+
+    table = "```\n"  # Start of monospace block
+    table += "Performance Comparison:\n"
+    table += "━━━━━━━━━━━━━━━━━━━━━━━━\n"
+
+    for metric_name, metric_key in metrics:
+        strategy_value = strategy_stats[metric_key]
+        hodl_value = hodl_stats[metric_key]
+        table += f"{metric_name}:\n"
+        table += f"  Strategy: {strategy_value}\n"
+        table += f"  HODL:     {hodl_value}\n"
+        table += "――――――――――――――――――――――――\n"
+
+    table = table.rstrip("―\n")  # Remove last separator
+    table += "\n```"  # End of monospace block
+
+    return table
+
+
+def display_stats(df: pd.DataFrame) -> None:
     logger.info("--------------------------- Statistics ---------------------------")
-    logger.info("stats strategy: %s" % stats)
-    logger.info("stats hodl    : %s" % stats_hodl)
+    logger.info("stats strategy: %s" % calculate_stats(df["b.value"]))
+    logger.info("stats hodl    : %s" % calculate_stats(df["hodl.value"]))
+
+
+def display_results(df: pd.DataFrame) -> None:
+    # display the dataframe & statistics
+    logger.info("------------------------ Results ---------------------------")
+    # display the last 50 rows of the dataframe & the statistics
+    print(format_dataframe(df).tail(DISPLAY_DF_ROWS))
+
+    display_stats(df)
 
 
 def process_data(ohlcv_data):
@@ -113,7 +153,7 @@ def process_data(ohlcv_data):
     df = pd.DataFrame.from_dict(ohlcv_data)
     df.index = pd.to_datetime(df["open time"], unit="ms")
 
-    # add drawdown information to dataframe
+    # add drawdown & other additional information to dataframe
     df = rs.calculate_stats(df, initial_capital=10_000)
 
     if LOG_LEVEL == logging.DEBUG:
@@ -158,9 +198,16 @@ async def send_signal(df: pd.DataFrame) -> None:
 
 
 async def send_performance_chart(df: pd.DataFrame) -> None:
+    comparison_table = generate_comparison_table(df)
+
+    msg = (
+        f"Gregorovich performance since {df.index.min().strftime('%Y-%m-%d')}\n\n"
+        f"{comparison_table}"
+    )
+
     await ts.send_message(
         chat_id=CHAT_ID,
-        msg=f"Gregorovich performance since {df.index.min().strftime('%Y-%m-%d')}",
+        msg=msg,
         image=Chart(df, title=strategy.name).get_image_bytes()
     )
 

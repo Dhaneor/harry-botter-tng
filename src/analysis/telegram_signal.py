@@ -28,20 +28,33 @@ DOWN_ARROW = "\U0001F4C9"  # "\U0001F53D"  # 🔽
 bot = Bot(token=BOT_TOKEN)
 
 
-# ------------------------------------------------------------------------------------
-# async def send_message(chat_id: str, msg: str) -> None:
-#     try:
-#         await bot.send_message(chat_id=chat_id, text=msg, parse_mode=PARSE_MODE)
-#         logger.info(f"Message sent successfully to chat {chat_id}")
-#     except Exception as e:
-#         logger.error(f"Error sending message: {e}")
-
-
 async def send_message(
     chat_id: str,
     msg: str,
     image: BytesIO = None
 ) -> None:
+    """
+    Sends a message to a specified Telegram chat, optionally including an image.
+
+    This function attempts to send a text message to a Telegram chat identified by
+    the chat_id. If an image is provided, it sends the image along with the message
+    as a caption. In case of any errors during the sending process, it logs the error
+    details.
+
+    Parameters:
+    chat_id (str): The unique identifier of the Telegram chat to send the message to.
+    msg (str): The text content of the message to be sent.
+    image (BytesIO, optional): A BytesIO object containing the image data to be sent
+                               along with the message. Defaults to None.
+
+    Returns:
+    None: This function doesn't return any value, but it logs the outcome of the
+          message sending process.
+
+    Raises:
+    Exception: Any exception raised during the message sending process is caught
+               and logged, but not re-raised.
+    """
     try:
         if image:
             # If an image is provided, send it along with the message
