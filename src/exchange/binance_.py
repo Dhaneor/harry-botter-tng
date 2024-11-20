@@ -4,6 +4,29 @@
 Created on Sat Feb 6 23:54:28 2022
 
 @author: dhaneor
+
+
+    "rateLimits": [{
+                        "rateLimitType": "REQUEST_WEIGHT",
+                        "interval": "MINUTE",
+                        "intervalNum": 1,
+                        "limit": 1200
+                    }, {
+                        "rateLimitType": "ORDERS",
+                        "interval": "SECOND",
+                        "intervalNum": 10,
+                        "limit": 50
+                    }, {
+                        "rateLimitType": "ORDERS",
+                        "interval": "DAY",
+                        "intervalNum": 1,
+                        "limit": 160000
+                    }, {
+                        "rateLimitType": "RAW_REQUESTS",
+                        "interval": "MINUTE",
+                        "intervalNum": 5,
+                        "limit": 6100
+                    }]
 """
 
 import os
@@ -30,10 +53,13 @@ sys.path.append(parent)
 # -----------------------------------------------------------------------------
 
 # from mock_responses.binance_client import Client
-from binance.client import Client
-from binance.exceptions import BinanceAPIException, BinanceRequestException
-from .util.ohlcv_download_prepper import OhlcvDownloadPrepper
-from helpers.timeops import (
+from binance.client import Client  # noqa: E402
+from binance.exceptions import (  # noqa: E402
+    BinanceAPIException,
+    BinanceRequestException,
+)
+from .util.ohlcv_download_prepper import OhlcvDownloadPrepper  # noqa: E402
+from helpers.timeops import (  # noqa: E402
     unix_to_utc,
     utc_to_unix,
     get_start_and_end_timestamp,
@@ -66,7 +92,7 @@ class call_wrapper:
             try:
                 short = self.client.get("x-mbx-used-weight-1m", 0)
                 long = self.client.get("x-mbx-used-weight")
-            except:
+            except Exception:
                 return 10000, 10000
         else:
             with Lock():
@@ -86,9 +112,7 @@ class call_wrapper:
         out += f"(workers: {MAX_WORKERS})"
 
         # calculate the delay we need to prevent 'too many requests'
-        limit = 700
-        hard_limit = 1000
-        barrier_limit = 1100
+        limit, hard_limit, barrier_limit = 700, 1000, 1200
         d_short, d_long = 0, 0
 
         if weight_used_1m >= limit:
@@ -300,7 +324,7 @@ class BinancePublic:
         res = self.client.get_server_time()
         try:
             res = res["serverTime"]
-        except:
+        except Exception:
             pass
         return res
 
@@ -322,7 +346,7 @@ class BinancePublic:
         # convert status code to string (for compatibility with Kucoin format)
         try:
             res["status"] = "open" if res["status"] == 0 else "close"
-        except:
+        except Exception:
             pass
 
         return res
@@ -353,7 +377,7 @@ class BinancePublic:
             'isLegalMoney': False,
             'locked': '0',
             'name': 'Monero',
-            'networkList': [{'addressRegex': '^[48][a-zA-Z|\\d]{94}([a-zA-Z|\\d]{11})?$',
+            'networkList': [{'addressRegex': '^[48][a-zA-Z|\\d]{94}([a-zA-Z|\\d]{11})?$',  # noqa E501
                             'addressRule': '',
                             'coin': 'XMR',
                             'depositDesc': '',
@@ -388,7 +412,6 @@ class BinancePublic:
     #       doesn't have something like this at all.
     @call_wrapper(debug=False)
     def get_markets(self):
-
         all_symbols = self.client.get_exchange_info()
         return set([s["quoteAsset"] for s in all_symbols["symbols"]])
 
@@ -601,9 +624,6 @@ class BinancePublic:
     def _klines_to_dataframe(self, klines: list) -> pd.DataFrame:
         """This method converts the list that we got from the
         Binance API to a dataframe"""
-
-        _st = time()
-
         # set column names
         columns = [
             "open time",
@@ -650,7 +670,7 @@ class BinancePublic:
             ts = self.client._get_earliest_valid_timestamp(
                 symbol=symbol, interval=interval
             )
-        except:
+        except Exception:
             logger.warning(
                 f"Could not get earliest valid timestamp "
                 f"for {symbol} ({interval}) on Binance"
@@ -712,7 +732,7 @@ class BinanceSpot:
 
         try:
             accounts = res["balances"]
-        except:
+        except Exception:
             return res
 
         res = [self._standardize_account(acc) for acc in accounts]
@@ -725,7 +745,7 @@ class BinanceSpot:
         try:
             accounts = res["balances"]
             balance = [acc for acc in accounts if acc["asset"] == asset][0]
-        except:
+        except Exception:
             return res
 
         return self._standardize_account(balance)
@@ -899,7 +919,7 @@ class BinanceSpot:
                 "exception": "General Exception",
                 "status code": 400,
                 "execution time": round((time() - _st) * 1000),
-                "arguments": f"symbol",
+                "arguments": f"symbol {symbol}",
             }
 
         base_asset = filters["base asset"]
@@ -1383,28 +1403,3 @@ class Binance(BinancePublic, BinanceSpot, OhlcvDownloadPrepper):
             "base step": base_step,
             "base precision": base_precision,
         }
-
-
-"""
-    "rateLimits": [{
-                        "rateLimitType": "REQUEST_WEIGHT",
-                        "interval": "MINUTE",
-                        "intervalNum": 1,
-                        "limit": 1200
-                    }, {
-                        "rateLimitType": "ORDERS",
-                        "interval": "SECOND",
-                        "intervalNum": 10,
-                        "limit": 50
-                    }, {
-                        "rateLimitType": "ORDERS",
-                        "interval": "DAY",
-                        "intervalNum": 1,
-                        "limit": 160000
-                    }, {
-                        "rateLimitType": "RAW_REQUESTS",
-                        "interval": "MINUTE",
-                        "intervalNum": 5,
-                        "limit": 6100
-                    }]
-"""

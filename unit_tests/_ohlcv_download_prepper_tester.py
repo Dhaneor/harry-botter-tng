@@ -5,57 +5,66 @@ Created on Thu Mar 04 15:17:53 2022
 
 @author: dhaneor
 """
-
-import sys
 import os
-from time import time
+import sys
+import time
 from pprint import pprint
+from cProfile import Profile
+from pstats import SortKey, Stats
 
 # ------------------------------------------------------------------------------
-# getting the name of the directory
-# where the this file is present.
 current = os.path.dirname(os.path.realpath(__file__))
-  
-# Getting the parent directory name
-# where the current directory is present.
 parent = os.path.dirname(current)
 sys.path.append(parent)
 # ------------------------------------------------------------------------------
-from exchange.kucoin_ import Kucoin
-from exchange.binance_ import Binance
-from helpers.timeops import execution_time
+from src.exchange.util import ohlcv_download_prepper as odp  # noqa: E402
+from src.helpers.timeops import execution_time  # noqa: E402
 
-# ==============================================================================
-class PrepperTester:
-    def __init__(self):
-        self.exchange = Binance()
-    
-    @execution_time    
-    def prepare(self, symbol:str, interval:str, start, end):
-        return self.exchange._prepare_request(symbol=symbol,
-                                             interval=interval,
-                                             start=start,
-                                             end=end)
+dp = odp.OhlcvDownloadPrepper()
 
-    
+
 # ==============================================================================
 def test_prepare_single():
-    symbol = 'XRP-USDT'
-    intervals = ['1h', '6h', '12h' ,'1d']
-    start = '2021-01-01 00:00:00'
-    end = '2021-12-31 00:00:00'    
-    pt = PrepperTester()
-    
+    symbol = "XRP-USDT"
+    intervals = ["1h", "6h", "12h", "1d"]
+    start = -1000  # 2021-01-01 00:00:00"
+    end = None  # "2023-12-31 00:00:00"
+
+    @execution_time
+    def execute(symbol, interval, start, end):
+        return dp._prepare_request(symbol, interval, start, end)
+
     for interval in intervals:
         try:
-            pprint(pt.prepare(symbol, interval, start, end))
+            pprint(execute(symbol, interval, start, end))
         except Exception as e:
             print(e)
-        
+
+
 # ==============================================================================
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_prepare_single()
-        
-    
-    
-    
+
+    sys.exit()
+
+    runs = 1_000
+    st = time.time()
+
+    with Profile(timeunit=0.001) as p:
+        for i in range(runs):
+            dp._prepare_request(
+                "XRP-USDT", "1d", -1000, None
+                )
+
+    (
+        Stats(p)
+        .strip_dirs()
+        .sort_stats(SortKey.CUMULATIVE)  # (SortKey.CALLS)
+        # .reverse_order()
+        .print_stats(40)
+
+    )
+
+    print(
+        f"execution time: {((time.time() - st) * 1_000_000 / runs):.2f} microseconds"
+        )
