@@ -11,6 +11,7 @@ import asyncio
 import numpy as np
 import os
 import pandas as pd
+import time
 from queue import Queue, Empty
 from threading import Event
 from typing import Any
@@ -38,6 +39,8 @@ ch.setFormatter(
 )
 logger.addHandler(ch)
 
+start_time = time.time()
+
 # ================================ Configuration =====================================
 # instantiate strategy: the mvp_strategy is not available in the
 # Github  repository, you can implement your own strategy
@@ -48,10 +51,10 @@ RISK_LEVEL = 0  # define the risk level for the strategy / position sizing
 MAX_LEVERAGE = 1  # define the maximum leverage for the strategy / position sizing
 CHAT_ID = os.getenv('CHAT_ID')  # Telegram chat ID (set as environment variable)
 
-TIMEOUT = 15  # time in seconds to wait for the data to be available in the repository
-MAX_RETRIES = 3  # number of retries when fetching data from the repository
+TIMEOUT = 60  # time in seconds to wait for the data to be available in the repository
 RETRY_AFTER_SECS = 5  # time between retries in seconds
 repo.RATE_LIMIT = False  # disable rate limit for the repository
+repo.LOG_STATUS = True  # enable logging status messages
 
 DISPLAY_DF_ROWS = 10  # number of rows to display in the dataframe
 
@@ -295,6 +298,7 @@ def main():
         stop_event.set()
         async_thread.join(timeout=RETRY_AFTER_SECS + 3)
 
+    logger.info("exection time: %s seconds" % f"{(time.time() - start_time):.2f}")
     logger.info("shutdown complete: OK")
 
 

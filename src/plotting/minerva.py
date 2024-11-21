@@ -567,7 +567,7 @@ class Minerva:
             )
 
     def _leverage(self):
-        self.df["leverage"] = self.df["leverage"].replace("", np.NaN)
+        self.df["leverage"] = self.df["leverage"].replace("", np.nan)
         self.df = self.df.replace({'buy_at': {0: np.nan}})
         self.df.loc[self.df["position"] == 0, "leverage"] = 0
 
@@ -661,11 +661,11 @@ class Minerva:
 
     def _drawdown(self):
         ax = self.axes[-2]
-        self.df["cptl.drawdown"] = self.df["cptl.drawdown"].replace("", np.NaN)
+        self.df["cptl.drawdown"] = self.df["cptl.drawdown"].replace("", np.nan)
         self.df["cptl.drawdown"] = self.df["cptl.drawdown"] * 100 * -1
-        self.df["b.drawdown"] = self.df["b.drawdown"].replace("", np.NaN)
+        self.df["b.drawdown"] = self.df["b.drawdown"].replace("", np.nan)
         self.df["b.drawdown"] = self.df["b.drawdown"] * 100 * -1
-        self.df["hodl.drawdown"] = self.df["hodl.drawdown"].replace("", np.NaN)
+        self.df["hodl.drawdown"] = self.df["hodl.drawdown"].replace("", np.nan)
         self.df["hodl.drawdown"] = self.df["hodl.drawdown"] * 100 * -1
 
         hodl_color = self.line_colors[self.color_code_hodl]
