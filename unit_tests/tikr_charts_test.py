@@ -11,20 +11,25 @@ import asyncio
 import numpy as np
 import os
 import pandas as pd
+import sys
 import time
 from queue import Queue, Empty
 from threading import Event
 from typing import Any
 
-from src.rawi import ohlcv_repository as repo
-from src.analysis import strategy_builder as sb
-from src.analysis import strategy_backtest as bt
-from src.analysis.backtest import statistics as st
-from src.analysis.models.position import Positions
-from src.analysis import telegram_signal as ts
-from src.backtest import result_stats as rs
-from src.plotting.tikr_charts import TikrChart as Chart
-from tikr_mvp_strategy import mvp_strategy
+# ------------------------------------------------------------------------------------
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
+# ------------------------------------------------------------------------------------
+
+from src.rawi import ohlcv_repository as repo  # noqa: E402
+from src.analysis import strategy_builder as sb  # noqa: E402
+from src.analysis import strategy_backtest as bt  # noqa: E402
+from src.analysis.backtest import statistics as st  # noqa: E402
+from src.backtest import result_stats as rs  # noqa: E402
+from src.plotting.tikr_charts import TikrChart as Chart  # noqa: E402
+from tikr_mvp_strategy import mvp_strategy  # noqa: E402
 
 # set up logging
 LOG_LEVEL = logging.INFO
@@ -54,7 +59,7 @@ CHAT_ID = os.getenv('CHAT_ID')  # Telegram chat ID (set as environment variable)
 TIMEOUT = 60  # time in seconds to wait for the data to be available in the repository
 RETRY_AFTER_SECS = 5  # time between retries in seconds
 repo.RATE_LIMIT = False  # disable rate limit for the repository
-repo.LOG_STATUS = True  # enable logging of server status and server time
+repo.LOG_STATUS = False  # enable logging of server status and server time
 
 DISPLAY_DF_ROWS = 10  # number of rows to display in the dataframe
 
@@ -200,7 +205,7 @@ async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
     await repo.exchange_factory(None)  # this signals the exchange to close
 
 
-async def draw_charts(df: pd.DataFrame):
+def draw_chart(df: pd.DataFrame):
     chart = Chart(df, title=f"{strategy.symbol}")
     chart.draw()
 
@@ -267,7 +272,7 @@ def main():
 
     else:
         df = run_backtest(response)
-        asyncio.run(notify_telegram(df))
+        draw_chart(df)
     finally:
         ohlcv_queue.task_done()
         stop_event.set()

@@ -10,10 +10,16 @@ logger = logging.getLogger(f"main.{__name__}")
 
 
 class TikrChartBase:
-    def __init__(self, data_source, ticker):
-        self.data_source = data_source
-        self.ticker = ticker
+    def __init__(self, df, title):
+        self.data_source = df
+        self.title = title
         self.chart_data = None
 
     def draw(self):
-        ...
+        logger.info(f"Drawing chart for {self.title}")
+
+
+class TikrChart(TikrChartBase):
+    def __init__(self, df, title):
+        super().__init__(df, title)
+        # self.chart_data = self._generate_chart_data()
