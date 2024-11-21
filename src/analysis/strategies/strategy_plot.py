@@ -18,10 +18,10 @@ Created on Sat Aug 05 22:39:50 2023
 
 @author: dhaneor
 """
-import itertools
 import logging
 import pandas as pd
 import plotly.graph_objects as go
+from dataclasses import dataclass
 from plotly.subplots import make_subplots
 from typing import NamedTuple, Sequence, Optional
 
@@ -29,30 +29,76 @@ from ..indicators.indicator import PlotDescription
 from ..util import proj_types as tp
 
 logger = logging.getLogger("main.strategy_plot")
-logger.setLevel(logging.DEBUG)
 
 template = "presentation"  # 'plotly_dark'
 font_family = "Raleway"  # "Gravitas One"
-bg_color = "antiquewhite"
+font_size = 10
+fig_color = "antiquewhite"
+bg_color = "blanchedalmond"
 buy_color = "chartreuse"
 sell_color = "red"
 line_color = "thistle"
+line_width = 1
+grid_color = "rgba(200, 200, 200, 0.2)"
 marker_size = 10
 marker_opacity = 0.8
 
 
-# ======================================================================================
+# ====================================================================================
 class PlotDefinition(NamedTuple):
     name: str
     main: Optional[PlotDescription] = None
     sub: Optional[Sequence[PlotDescription]] = None
 
 
-def _prepare_data(data: pd.DataFrame | tp.Data) -> pd.DataFrame:
-    if isinstance(data, dict):
-        data = pd.DataFrame.from_dict(data)
+@dataclass
+class LineDefinition:
+    label: str
+    color: str | None = None
+    width: float = 1
+    opacity: float = 1
+    shape: str = "linear"
 
-    return data
+    def as_dict(self) -> dict:
+        return {
+            "color": self.color,
+            "width": self.width,
+            "shape": self.shape,
+        }
+
+
+class TriggerDefinition(LineDefinition):
+    #
+    #  super().__init__()
+    value: float
+
+    def as_dict(self) -> dict:
+        return super().as_dict()
+
+
+@dataclass
+class ChannelDefinition:
+    label: str
+    upper: LineDefinition | str | float | None = None
+    lower: LineDefinition | str | float | None = None
+    color: str | None = None
+    fillmethod: str = "tozeroy"
+    opacity: float = 1
+
+    def __post_init__(self):
+        for line in [self.upper, self.lower]:
+            match line:
+                case str():
+                    line = LineDefinition(line)
+                case LineDefinition() | None:
+                    pass
+                case _:
+                    raise ValueError(f"Invalid line definition: {line}")
+
+
+# ================================= Plot Functions ===================================
+def _prepare_data(data: pd.DataFrame | tp.Data) -> pd.DataFrame:
+    return pd.DataFrame.from_dict(data) if isinstance(data, dict) else data
 
 
 def _prepare_fig(p_def: PlotDefinition, no_of_subplots: int):
@@ -63,25 +109,22 @@ def _prepare_fig(p_def: PlotDefinition, no_of_subplots: int):
     p_def : PlotDefinition
         plot parameters for a strategy
     """
-    rows, row_heights, subplot_titles = no_of_subplots + 1, [8], [p_def.name]
+    rows, row_heights, subplot_titles = no_of_subplots + 1, [6], [p_def.name]
 
     [subplot_titles.append(sub.label) for sub in p_def.sub]
-    [row_heights.append(2) for _ in range(rows - 1)]
+    [row_heights.append(3) for _ in range(rows - 1)]
     main_specs = [{"secondary_y": True}]
+
+    row_heights[-2] = 2
 
     if no_of_subplots == 0:
         fig = make_subplots(
-            rows=rows,
-            cols=1,
-            specs=[main_specs],
-            subplot_titles=subplot_titles
+            rows=rows, cols=1, specs=[main_specs], subplot_titles=subplot_titles
         )
 
     else:
         specs = [[{"secondary_y": False}]] * (rows - 1)
         specs.insert(0, main_specs)
-
-        print(specs)
 
         fig = make_subplots(
             rows=rows,
@@ -93,7 +136,16 @@ def _prepare_fig(p_def: PlotDefinition, no_of_subplots: int):
             specs=specs,
         )
 
+    add_gridlines(fig)
+
     return fig
+
+
+def add_gridlines(fig):
+    fig.update_layout(
+        xaxis=dict(showgrid=True, gridwidth=1, gridcolor=grid_color),
+        yaxis=dict(showgrid=True, gridwidth=1, gridcolor=grid_color),
+    )
 
 
 def _draw_ohlcv(fig, data: pd.DataFrame, name: str = "uh! oh! we have no name!"):
@@ -130,60 +182,71 @@ def _draw_main_data(fig, data: pd.DataFrame, desc: PlotDescription):
 def _draw_indicator(fig, data: pd.DataFrame, desc: PlotDescription, row: int):
     logger.debug(f"drawing indicator {desc.label} in row {row}")
 
-    # draw channel, if there is one
-    for upper, lower in itertools.pairwise(desc.channel):
-        chan_line_def = {
-            "shape": "linear",
-            "color": line_color,
-            "width": 0.1,
-        }
+    default_line_def = LineDefinition(
+        label=desc.label,
+        color=line_color,
+        width=0,
+        opacity=0,
+        shape="spline",
+    )
 
-        logger.debug("drawing channel: {0}".format(upper))
-        logger.debug("drawing channel: {0}".format(lower))
+    for channel in desc.channel:
 
-        fig.append_trace(
-            go.Scatter(
-                x=data.index,  # ["human open time"],
-                y=data[upper],
-                visible=True,
-                name=upper,
-                line=chan_line_def,
-                opacity=0.3,
-            ),
-            row=row + 1,
-            col=1,
-        )
+        # convert tuples to ChannelDefinition objects
+        if isinstance(desc.channel, tuple):
+            desc.channel = ChannelDefinition(
+                label=f"{desc.channel[0]} - {desc.channel[1]}",
+                upper=default_line_def,
+                lower=default_line_def,
+            )
 
-        fig.append_trace(
-            go.Scatter(
-                x=data.index,  # ["human open time"],
-                y=data[lower],
-                visible=True,
-                name=lower,
-                fill="tonexty",
-                line=chan_line_def,
-                opacity=0.3,
-            ),
-            row=row + 1,
-            col=1,
-        )
+        logger.debug("drawing channel: {0}".format(channel))
+
+        if channel.upper:
+            # draw upper line
+            fig.append_trace(
+                go.Scatter(
+                    x=data.index,
+                    y=data[channel.upper.label],
+                    visible=True,
+                    name=channel.upper.label,
+                    line=channel.upper.as_dict(),
+                    opacity=channel.upper.opacity,
+                ),
+                row=row + 1,
+                col=1,
+            )
+
+        if channel.lower:
+            # draw lower line & fill area
+            fig.append_trace(
+                go.Scatter(
+                    x=data.index,
+                    y=data[channel.lower.label],
+                    visible=True,
+                    name=channel.lower.label,
+                    fill=channel.fillmethod,
+                    fillcolor=channel.color,
+                    line=channel.lower.as_dict(),
+                    opacity=channel.lower.opacity,
+                ),
+                row=row + 1,
+                col=1,
+            )
 
     for line in desc.lines:
         logger.debug("drawing line: {0} in row {1}".format(line, row))
 
-        if row == 0:
-            line_def = dict(width=1)
-        else:
-            line_def = dict(width=1)
-            # line_def = dict(color='red', width=1)
+        if isinstance(line, tuple):
+            line = LineDefinition(line[0])
 
         fig.append_trace(
             go.Scatter(
                 mode="lines",
                 x=data.index,
-                y=data[line[0]],
-                name=desc.label,
-                line=line_def,
+                y=data[line.label],
+                name=line.label,
+                line=line.as_dict(),
             ),
             row=row + 1,
             col=1,
@@ -258,17 +321,16 @@ def _draw_signal(fig, data: pd.DataFrame, signal_column: str = "signal"):
 
 
 def _update_layout(fig, rows: int):
-    fig.update_traces(opacity=0.7, selector=dict(type="scatter"))
-    fig.update_traces(line_width=0.5, selector=dict(type="scatter"))
+    # fig.update_traces(opacity=0.7, selector=dict(type="scatter"))
+    # fig.update_traces(line_width=0.5, selector=dict(type="scatter"))
     fig.update_traces(line_width=0.5, selector=dict(type="candlestick"))
 
     # maybe we can use this to color the candlesticks?
     # fig.update_traces(decreasing_line_color="red", selector=dict(type="candlestick"))
 
-    fig.update_layout(plot_bgcolor=bg_color, paper_bgcolor=bg_color)
+    fig.update_layout(plot_bgcolor=fig_color, paper_bgcolor=bg_color)
     fig.update_layout(template=template, yaxis_type="log", hovermode="x")
-    fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(showgrid=False)
+
     fig.update_yaxes(
         tickfont=dict(
             family=font_family,
@@ -278,17 +340,17 @@ def _update_layout(fig, rows: int):
     )
     fig.update_xaxes(row=1, col=1, rangeslider_visible=False)
     fig.update_xaxes(row=2, col=1, rangeslider_visible=False)
-    fig.update_xaxes(rangeslider={"visible": True}, row=rows, col=1)
+    fig.update_xaxes(rangeslider={"visible": False}, row=rows, col=1)
     fig.update_xaxes(row=rows, col=1, rangeslider_thickness=0.02)
 
     fig.update_layout(
         font_family=font_family,
         font_color="grey",
-        font_size=10,
+        font_size=font_size,
         title_font_family=font_family,
         title_font_color="red",
         legend_title_font_color="green",
-        showlegend=False,
+        showlegend=True,
     )
 
     return fig
@@ -321,7 +383,7 @@ def plot(data: pd.DataFrame | tp.Data, p_def: PlotDefinition):
     if no_of_subplots:
 
         for row, sub in enumerate(p_def.sub, 1):
-            logger.info("drawing subplot: %s", sub)
+            logger.debug("drawing subplot: %s", sub)
             fig = _draw_indicator(fig, data, sub, row)
 
     _update_layout(fig, no_of_subplots + 1)
