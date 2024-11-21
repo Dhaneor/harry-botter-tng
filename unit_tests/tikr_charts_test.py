@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Nov 10 15:15:20 2024
+Created on Nov 21 12:08:20 2024
 
 @author dhaneor
 """
@@ -23,7 +23,7 @@ from src.analysis.backtest import statistics as st
 from src.analysis.models.position import Positions
 from src.analysis import telegram_signal as ts
 from src.backtest import result_stats as rs
-from src.plotting.minerva import TikrChart as Chart
+from src.plotting.tikr_charts import TikrChart as Chart
 from tikr_mvp_strategy import mvp_strategy
 
 # set up logging
@@ -200,34 +200,9 @@ async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
     await repo.exchange_factory(None)  # this signals the exchange to close
 
 
-async def send_signal(df: pd.DataFrame) -> None:
-    """Sends a trading signal to Telegram, based on the results DataFrame."""
-    await ts.send_message(
-        chat_id=CHAT_ID,
-        msg=await ts.create_signal(
-            position=Positions(df=df, symbol=strategy.symbol).current().get_signal()
-            )
-        )
-
-
-async def send_performance_chart(df: pd.DataFrame) -> None:
-    comparison_table = generate_comparison_table(df)
-
-    msg = (
-        f"Gregorovich performance since {df.index.min().strftime('%Y-%m-%d')}\n\n"
-        f"{comparison_table}"
-    )
-
-    await ts.send_message(
-        chat_id=CHAT_ID,
-        msg=msg,
-        image=Chart(df, title=strategy.name).get_image_bytes()
-    )
-
-
-async def notify_telegram(df: pd.DataFrame) -> None:
-    await send_signal(df)
-    await send_performance_chart(df)
+async def draw_charts(df: pd.DataFrame):
+    chart = Chart(df, title=f"{strategy.symbol}")
+    chart.draw()
 
 
 # ================================= Sync Functions ===================================
