@@ -7,39 +7,59 @@ Created on Nov 21 21:55:20 2024
 """
 from dataclasses import dataclass
 from typing import Sequence
+from pprint import pprint
 
 
 class Color:
-    def __init__(self, hex_color: str, alpha: float = 1.0):
-        self._hex_color = hex_color
-        self.alpha = alpha
+    def __init__(self, red=0, green=0, blue=0, alpha=1.0):
+        self.r: int = red
+        self.g: int = green
+        self.b: int = blue
+        self.a: float = alpha
 
     def __str__(self) -> str:
         return self.rgba
 
     def __repr__(self) -> str:
-        return f"{self.rgba}"
+        return self.rgba
 
+    def set_alpha(self, alpha: float) -> None:
+        self.a = alpha
+        return self
+
+    # ................................................................................
     @property
     def hex(self) -> str:
-        return self._hex_color
+        return f"#{hex(self.r)[2:]}{hex(self.g)[2:]}{hex(self.b)[2:]}"
+
+    @property
+    def rgb(self) -> str:
+        return f"rgb({self.r}, {self.g}, {self.b})"
 
     @property
     def rgba(self) -> str:
-        r, g, b, a = self.to_rgba_tuple()
+        r, g, b, a = self.rgba_tuple
         return f"rgba({r}, {g}, {b}, {a})"
 
-    def _hex_to_rgb(self, hex_color: str) -> tuple[int, int, int]:
-        hex_color = hex_color.lstrip("#")
-        return tuple(int(hex_color[i: i + 2], 16) for i in (0, 2, 4))
+    @property
+    def rgba_tuple(self) -> tuple[int, int, int, float]:
+        return (self.r, self.g, self.b, self.a)
 
-    def to_rgba_tuple(self) -> tuple[int, int, int, float]:
-        r, g, b = self._hex_to_rgb(self._hex_color)
-        return (r, g, b, self.alpha)
+    # ................................................................................
+    @classmethod
+    def from_hex(cls, hex_color: str, alpha: float = 1.0) -> "Color":
 
-    def to_rgba_255(self) -> tuple[int, int, int, int]:
-        r, g, b = self._hex_to_rgb(self._hex_color)
-        return (r, g, b, int(self.alpha * 255))
+        def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
+            hex_color = hex_color.lstrip("#")
+            return tuple(int(hex_color[i: i + 2], 16) for i in (0, 2, 4))
+
+        color = cls(*hex_to_rgb(hex_color))
+        color.set_alpha(alpha)
+        return color
+
+    @classmethod
+    def from_rgb(cls, r: int, g: int, b: int, alpha: float = 1.0) -> "Color":
+        return cls(r, g, b, alpha)
 
 
 @dataclass
@@ -64,23 +84,26 @@ class Colors:
 
     def __post_init__(self):
         # turn the colors into Color objects
-        self.strategy = Color(self.strategy)
-        self.capital = Color(self.capital)
-        self.hodl = Color(self.hodl)
-        self.candle_up = Color(self.candle_up)
-        self.candle_down = Color(self.candle_down)
-        self.buy = Color(self.buy)
-        self.sell = Color(self.sell)
+        self.strategy = Color.from_hex(self.strategy)
+        self.capital = Color.from_hex(self.capital)
+        self.hodl = Color.from_hex(self.hodl)
+        self.candle_up = Color.from_hex(self.candle_up)
+        self.candle_down = Color.from_hex(self.candle_down)
+        self.buy = Color.from_hex(self.buy)
+        self.sell = Color.from_hex(self.sell)
 
-        self.canvas = Color(self.canvas)
-        self.background = Color(self.background)
-        self.grid = Color(self.grid)
-        self.text = Color(self.text)
+        self.canvas = Color.from_hex(self.canvas)
+        self.background = Color.from_hex(self.background)
+        self.grid = Color.from_hex(self.grid)
+        self.text = Color.from_hex(self.text)
+
+        pprint(self)
 
     def add_fill_colors(self, fill_alpha) -> None:
-        self.strategy_fill = Color(self.strategy.hex, fill_alpha)
-        self.capital_fill = Color(self.capital.hex, fill_alpha)
-        self.hodl_fill = Color(self.hodl.hex, fill_alpha)
+        print("adding fill colors with alpha", fill_alpha)
+        self.strategy_fill = Color(*self.strategy.rgba_tuple).set_alpha(fill_alpha)
+        self.capital_fill = Color(*self.capital.rgba_tuple).set_alpha(fill_alpha)
+        self.hodl_fill = Color(*self.hodl.rgba_tuple).set_alpha(fill_alpha)
 
     def update_line_alpha(self, alpha: float) -> None:
         self.strategy.alpha = alpha
@@ -91,6 +114,7 @@ class Colors:
         self.buy.alpha = alpha
         self.sell.alpha = alpha
 
+    # ................................................................................
     @classmethod
     def from_palette(self, palette: Sequence[str]) -> "Colors":
         return Colors(
@@ -124,6 +148,7 @@ class TikrStyle:
     font_size: int = 12
 
     def __post_init__(self):
+        print("running color updates ...")
         self.colors.add_fill_colors(self.fill_alpha)
         self.colors.update_line_alpha(self.line_alpha)
 
@@ -279,9 +304,11 @@ styles = {
 
 
 if __name__ == "__main__":
-    color = Color("#d4e09b", 0.5)
+    color = Color.from_hex("#d4e09b", 0.5)
+    print(color)
+
     print(f"Hex color: {color.hex}")
     print(f"RGBA color string: {color.rgba}")
-    print(f"RGBA tuple (0-1 alpha): {color.to_rgba_tuple()}")
-    print(f"RGBA tuple (0-255 alpha): {color.to_rgba_255()}")
-    print(tikr_day_style)
+    print(f"RGBA tuple (0-1 alpha): {color.rgba_tuple}")
+
+    pprint(tikr_day_style.colors)

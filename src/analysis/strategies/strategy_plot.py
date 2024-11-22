@@ -74,6 +74,20 @@ class LineDefinition:
     opacity: float = 1
     shape: str = "linear"
 
+    def add_trace(self, fig, x, y, row=1, col=1, fill=None, fillcolor=None, alpha=None):
+        fillcolor = self.color.set_alpha(alpha) if alpha is not None else self.color
+        trace = go.Scatter(
+            x=x,
+            y=y,
+            name=self.label,
+            line=self.as_dict(),
+            opacity=self.opacity,
+            fill=fill,
+            fillcolor=fillcolor,
+        )
+        fig.add_trace(trace, row=row, col=col)
+        return fig
+
     def as_dict(self) -> dict:
         return {
             "color": self.color,
