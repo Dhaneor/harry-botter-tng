@@ -236,7 +236,7 @@ tikr_day_colors = Colors(
     canvas="#e8e9eb",  # Light warm gray
     background="#f7f9fb",  # Soft off-white
     grid="#d6d6d6",  # Subtle light gray
-    text="#2d2d2d",  # Darker gray
+    text="#a8a8ab",  # Darker gray
 )
 
 tikr_day_style = TikrStyle(

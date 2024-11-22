@@ -198,6 +198,13 @@ def prepare_fig(p_def: PlotDefinition):
         showlegend=False,
     )
 
+    # adjust the margins
+    fig.update_layout(
+        margin=dict(l=50, r=5, t=40, b=30),  # Adjust these values as needed
+        autosize=False,
+        # width=1200,  # Adjust as needed
+        # height=800   # Adjust as needed
+    )
     return fig
 
 

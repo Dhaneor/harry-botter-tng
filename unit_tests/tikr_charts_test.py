@@ -27,6 +27,7 @@ from src.rawi import ohlcv_repository as repo  # noqa: E402
 from src.analysis import strategy_builder as sb  # noqa: E402
 from src.analysis import strategy_backtest as bt  # noqa: E402
 from src.analysis.backtest import statistics as st  # noqa: E402
+from src.analysis import telegram_signal as ts  # noqa: E402
 from src.backtest import result_stats as rs  # noqa: E402
 from src.plotting.tikr_charts import TikrChart as Chart  # noqa: E402
 from tikr_mvp_strategy import mvp_strategy  # noqa: E402
@@ -211,6 +212,21 @@ def draw_chart(df: pd.DataFrame, style='night'):
     logger.info("Chart ready: OK")
 
 
+async def send_chart(df: pd.DataFrame) -> None:
+    comparison_table = generate_comparison_table(df)
+
+    msg = (
+        f"Gregorovich performance since {df.index.min().strftime('%Y-%m-%d')}\n\n"
+        f"{comparison_table}"
+    )
+
+    await ts.send_message(
+        chat_id=CHAT_ID,
+        msg=msg,
+        image=Chart(df, style='day', title=strategy.name).get_image_bytes()
+    )
+
+
 # ================================= Sync Functions ===================================
 # Function to Run the Async Event Loop in a Separate Thread
 def start_async_loop(queue, stop_event):
@@ -273,7 +289,7 @@ def main():
 
     else:
         df = run_backtest(response)
-        draw_chart(df, 'day')
+        asyncio.run(send_chart(df))
     finally:
         ohlcv_queue.task_done()
         stop_event.set()

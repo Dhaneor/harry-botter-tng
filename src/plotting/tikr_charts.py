@@ -5,10 +5,14 @@ Created on Nov 21 12:08:20 2024
 
 @author dhaneor
 """
+import io
 import logging
+
 from abc import abstractmethod
+from plotly.io import to_image
 
 from src.analysis.strategies import strategy_plot as sp
+
 # from src.analysis.models import positions as pos
 from src.analysis.indicators.indicator import PlotDescription
 from src.plotting.plotly_styles import styles, TikrStyle
@@ -32,12 +36,31 @@ class TikrChartBase:
         return self._plot_definition
 
     @abstractmethod
-    def draw(self):
-        ...
+    def draw(self): ...
+
+    def get_image_bytes(
+        self, format="png", scale=3, width=1200, height=800
+    ) -> io.BytesIO:
+        """
+        Generate a high-quality BytesIO object containing the chart image.
+
+        Args:
+            format (str): Image format ('png', 'jpeg', 'webp', 'svg', 'pdf')
+            scale (int): Scale factor for the image (default 3 for high quality)
+            width (int): Base width of the image in pixels (default 1200)
+            height (int): Base height of the image in pixels (default 800)
+
+        Returns:
+            io.BytesIO: BytesIO object containing the high-quality image
+        """
+        fig = sp.build_figure(data=self.data, p_def=self.plot_definition)
+        img_bytes = to_image(
+            fig, format=format, scale=scale, width=width, height=height
+        )
+        return io.BytesIO(img_bytes)
 
     @abstractmethod
-    def _build_plot_definition(self):
-        ...
+    def _build_plot_definition(self): ...
 
     def prepare_data(self, data):
         for col in data.columns:
@@ -106,7 +129,7 @@ class TikrChart(TikrChartBase):
                 hodl_drawdown_fill_area,
                 strategy_drawdown_fill_area,
                 capital_drawdown_fill_area,
-                ],
+            ],
             hist=[],
             level="indicator",
         )
@@ -118,19 +141,19 @@ class TikrChart(TikrChartBase):
                 sp.LineDefinition(
                     label="hodl.value",
                     color=self.style.colors.hodl.rgba,
-                    width=self.style.line_width
+                    width=self.style.line_width,
                 ),
                 sp.LineDefinition(
                     label="cptl.b",
                     color=self.style.colors.capital.rgba,
-                    width=self.style.line_width
+                    width=self.style.line_width,
                 ),
                 sp.LineDefinition(
                     label="b.value",
                     color=self.style.colors.strategy.rgba,
-                    width=self.style.line_width
+                    width=self.style.line_width,
                 ),
-                ],
+            ],
             triggers=[],
             channel=[],
             hist=[],
@@ -141,6 +164,9 @@ class TikrChart(TikrChartBase):
         return sp.PlotDefinition(
             name="Tikr Chart",
             main=None,
-            sub=(drawdown, portfolio,),
+            sub=(
+                drawdown,
+                portfolio,
+            ),
             style=self.style,
         )
