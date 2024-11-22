@@ -26,7 +26,7 @@ from plotly.subplots import make_subplots
 from typing import NamedTuple, Sequence, Optional
 
 from ..indicators.indicator import PlotDescription
-from src.plotting.plotly_styles import TikrStyle
+from src.plotting.plotly_styles import TikrStyle, Color
 from ..util import proj_types as tp
 
 logger = logging.getLogger("main.strategy_plot")
@@ -67,18 +67,29 @@ class PlotDefinition(NamedTuple):
 
 
 @dataclass
-class LineDefinition:
+class Line:
     label: str
-    color: str | None = None
+    color: Color = None
     width: float = 1
     opacity: float = 1
     shape: str = "linear"
 
-    def add_trace(self, fig, x, y, row=1, col=1, fill=None, fillcolor=None, alpha=None):
-        fillcolor = self.color.set_alpha(alpha) if alpha is not None else self.color
+    def add_trace(
+        self,
+        fig: go.Figure,
+        data: pd.DataFrame,
+        row: int = 1,
+        col: int = 1,
+        fill: str | None = None,
+        fillcolor: str | None = None,
+        alpha: float | None = None
+    ) -> go.Figure:
+
+        fillcolor = fillcolor.rgba if fillcolor is not None else self.color
+
         trace = go.Scatter(
-            x=x,
-            y=y,
+            x=data.index,
+            y=data[self.label],
             name=self.label,
             line=self.as_dict(),
             opacity=self.opacity,
@@ -96,9 +107,7 @@ class LineDefinition:
         }
 
 
-class TriggerDefinition(LineDefinition):
-    #
-    #  super().__init__()
+class TriggerDefinition(Line):
     value: float
 
     def as_dict(self) -> dict:
@@ -106,11 +115,11 @@ class TriggerDefinition(LineDefinition):
 
 
 @dataclass
-class ChannelDefinition:
+class Channel:
     label: str
-    upper: LineDefinition | str | float | None = None
-    lower: LineDefinition | str | float | None = None
-    color: str | None = None
+    upper: Line | str | float | None = None
+    lower: Line | str | float | None = None
+    color: Color | None = None
     fillmethod: str = "tozeroy"
     opacity: float = 1
 
@@ -118,11 +127,29 @@ class ChannelDefinition:
         for line in [self.upper, self.lower]:
             match line:
                 case str():
-                    line = LineDefinition(line)
-                case LineDefinition() | None:
+                    line = Line(line)
+                case Line() | None:
                     pass
                 case _:
                     raise ValueError(f"Invalid line definition: {line}")
+
+    def add_trace(self, fig, data, row=1, col=1, fill_alpha=None) -> go.Figure:
+        if self.upper is not None:
+            self.upper.add_trace(fig, data, row=row, col=col)
+
+        fill_alpha = fill_alpha if fill_alpha is not None else self.color.a
+
+        if self.lower is not None:
+            self.lower.add_trace(
+                fig,
+                data,
+                row=row,
+                col=col,
+                fill=self.fillmethod,
+                fillcolor=self.color  # .set_alpha(fill_alpha),
+            )
+
+        return fig
 
 
 # ================================= Plot Functions ===================================
@@ -415,7 +442,7 @@ def draw_main_data(fig, data: pd.DataFrame, p_def: PlotDefinition):
 def draw_indicator(fig, data: pd.DataFrame, desc: PlotDescription, row: int):
     logger.debug(f"drawing indicator {desc.label} in row {row}")
 
-    default_line_def = LineDefinition(
+    default_line_def = Line(
         label=desc.label,
         color=line_color,
         width=0,
@@ -425,9 +452,9 @@ def draw_indicator(fig, data: pd.DataFrame, desc: PlotDescription, row: int):
 
     for channel in desc.channel:
 
-        # convert tuples to ChannelDefinition objects
+        # convert tuples to Channel objects
         if isinstance(desc.channel, tuple):
-            desc.channel = ChannelDefinition(
+            desc.channel = Channel(
                 label=f"{desc.channel[0]} - {desc.channel[1]}",
                 upper=default_line_def,
                 lower=default_line_def,
@@ -435,55 +462,44 @@ def draw_indicator(fig, data: pd.DataFrame, desc: PlotDescription, row: int):
 
         logger.debug("drawing channel: {0}".format(channel))
 
-        if channel.upper:
-            # draw upper line
-            fig.append_trace(
-                go.Scatter(
-                    x=data.index,
-                    y=data[channel.upper.label],
-                    visible=True,
-                    name=channel.upper.label,
-                    line=channel.upper.as_dict(),
-                    opacity=channel.upper.opacity,
-                ),
-                row=row + 1,
-                col=1,
-            )
+        # if channel.upper:
+        #     # draw upper line
+        #     fig.append_trace(
+        #         go.Scatter(
+        #             x=data.index,
+        #             y=data[channel.upper.label],
+        #             visible=True,
+        #             name=channel.upper.label,
+        #             line=channel.upper.as_dict(),
+        #             opacity=channel.upper.opacity,
+        #         ),
+        #         row=row + 1,
+        #         col=1,
+        #     )
 
-        if channel.lower:
-            # draw lower line & fill area
-            fig.append_trace(
-                go.Scatter(
-                    x=data.index,
-                    y=data[channel.lower.label],
-                    visible=True,
-                    name=channel.lower.label,
-                    fill=channel.fillmethod,
-                    fillcolor=channel.color,
-                    line=channel.lower.as_dict(),
-                    opacity=channel.lower.opacity,
-                ),
-                row=row + 1,
-                col=1,
-            )
+        # if channel.lower:
+        #     # draw lower line & fill area
+        #     fig.append_trace(
+        #         go.Scatter(
+        #             x=data.index,
+        #             y=data[channel.lower.label],
+        #             visible=True,
+        #             name=channel.lower.label,
+        #             fill=channel.fillmethod,
+        #             fillcolor=channel.color.rgba,
+        #             line=channel.lower.as_dict(),
+        #             opacity=channel.lower.opacity,
+        #         ),
+        #         row=row + 1,
+        #         col=1,
+        #     )
+
+        channel.add_trace(fig=fig, data=data, row=row + 1)
 
     for line in desc.lines:
         logger.debug("drawing line: {0} in row {1}".format(line, row))
-
-        if isinstance(line, tuple):
-            line = LineDefinition(line[0])
-
-        fig.append_trace(
-            go.Scatter(
-                mode="lines",
-                x=data.index,
-                y=data[line.label],
-                name=line.label,
-                line=line.as_dict(),
-            ),
-            row=row + 1,
-            col=1,
-        )
+        line = Line(line[0]) if isinstance(line, tuple) else line
+        line.add_trace(fig=fig, data=data, row=row + 1)
 
     for trig in desc.triggers:
         logger.debug("drawing line: {0}".format(trig))

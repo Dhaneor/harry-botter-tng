@@ -86,36 +86,36 @@ class TikrChart(TikrChartBase):
 
     def _build_plot_definition(self):
         # ...................... Line/Fill Area Definitions ..........................
-        hodl_drawdown_fill_area = sp.ChannelDefinition(
+        hodl_drawdown_fill_area = sp.Channel(
             label="hodl.drawdown",
-            lower=sp.LineDefinition(
+            lower=sp.Line(
                 label="hodl.drawdown",
                 color=self.style.colors.hodl.rgba,
                 width=self.style.line_width,
             ),
-            color=self.style.colors.hodl_fill.rgba,  # fill_color
+            color=self.style.colors.hodl_fill,  # fill_color
             opacity=0.1,
         )
 
-        strategy_drawdown_fill_area = sp.ChannelDefinition(
+        strategy_drawdown_fill_area = sp.Channel(
             label="b.drawdown",
-            lower=sp.LineDefinition(
+            lower=sp.Line(
                 label="b.drawdown",
                 color=self.style.colors.strategy.rgba,
                 width=self.style.line_width,
             ),
-            color=self.style.colors.strategy_fill.rgba,  # semi-transparent color,
+            color=self.style.colors.strategy_fill,  # semi-transparent color,
             opacity=0.1,
         )
 
-        capital_drawdown_fill_area = sp.ChannelDefinition(
+        capital_drawdown_fill_area = sp.Channel(
             label="cptl.drawdown",
-            lower=sp.LineDefinition(
+            lower=sp.Line(
                 label="cptl.drawdown",
                 color=self.style.colors.capital.rgba,
                 width=self.style.line_width,
             ),
-            color=self.style.colors.capital_fill.rgba,  # fill_color
+            color=self.style.colors.capital_fill,  # fill_color
             opacity=0.1,
         )
 
@@ -138,17 +138,17 @@ class TikrChart(TikrChartBase):
             label="Portfolio",
             is_subplot=True,
             lines=[
-                sp.LineDefinition(
+                sp.Line(
                     label="hodl.value",
                     color=self.style.colors.hodl.rgba,
                     width=self.style.line_width,
                 ),
-                sp.LineDefinition(
+                sp.Line(
                     label="cptl.b",
                     color=self.style.colors.capital.rgba,
                     width=self.style.line_width,
                 ),
-                sp.LineDefinition(
+                sp.Line(
                     label="b.value",
                     color=self.style.colors.strategy.rgba,
                     width=self.style.line_width,

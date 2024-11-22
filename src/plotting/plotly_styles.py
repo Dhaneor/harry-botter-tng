@@ -17,13 +17,19 @@ class Color:
         self.b: int = blue
         self.a: float = alpha
 
-    def __str__(self) -> str:
-        return self.rgba
+    # def __str__(self) -> str:
+    #     return self.rgba
 
     def __repr__(self) -> str:
-        return self.rgba
+        return f"Color(r={self.r}, g={self.g}, b={self.b}, a={self.a})"
 
-    def set_alpha(self, alpha: float) -> None:
+    def set_alpha(self, alpha: float) -> "Color":
+        if alpha is None:
+            return self
+
+        if not 0 <= alpha <= 1.0:
+            raise ValueError("Alpha value must be between 0.0 and 1.0")
+
         self.a = alpha
         return self
 
