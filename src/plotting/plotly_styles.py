@@ -114,10 +114,10 @@ class Colors:
 @dataclass
 class TikrStyle:
     colors: Colors
-    line_width: float = 0.75
+    line_width: float = 1.5
 
-    line_alpha: float = 0.75
-    fill_alpha: float = 0.2
+    line_alpha: float = 1
+    fill_alpha: float = 0.5
     shadow_alpha: float = 0.2
 
     candle_up_alpha: float = 1
@@ -128,21 +128,45 @@ class TikrStyle:
 
     def __post_init__(self):
         self.colors.add_fill_colors(self.fill_alpha)
+        self.colors.update_line_alpha(self.line_alpha)
 
 
 # ==================================== tikr styles ===================================
 palette_1 = [
-    "#196630", "#1b53a6", "#a44a3f",
+    "#f19c79", "#fbdcbd", "#a44a3f",
     "#57ae1a", "#a42f0e", "#6cef0f", "#e8491d",
     "#eae7de", "#cdc3a9", "#BBBBBB", "#636363"
 ]
 
-tikr_day_colors = Colors.from_palette(palette_1)
+palette_2 = [
+    "#f1c40f", "#2ae088", "#e74c3c",
+    "#2ecc71", "#9b59b6", "#34495e", "#e67e22",
+    "#ecf0f1", "#95a5a6", "#f9f9f9", "#cccccc"
+]
+
+palette_3 = [
+    "#2A9D8F", "#3fde54", "#E76F51",
+    "#2ecc71", "#9e2a2b", "#57ae1a", "#e8491d",
+    "#540b0e", "#794a3a", "#9b59b6", "#636363"
+    ]
+
+tikr_day_colors = Colors.from_palette(palette_3)
 tikr_day_style = TikrStyle(colors=tikr_day_colors)
 
+palette_4 = [
+    "#d87c26", "#f7b538", "#c32f27",
+    "#2ecc71", "#9e2a2b", "#57ae1a", "#e8491d",
+    "#181818", "#121212", "#535353", "#7f818a"
+    ]
+
+tikr_night_colors = Colors.from_palette(palette_4)
+tikr_night_style = TikrStyle(colors=tikr_night_colors)
+
+# =============================== build styles dictionary ============================
 styles = {
     "default": tikr_day_style,  # default style for tikr charting
     "day": tikr_day_style,
+    "night": tikr_night_style,
     # add more styles here...
 }
 

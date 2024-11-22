@@ -206,7 +206,7 @@ async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
 
 
 def draw_chart(df: pd.DataFrame):
-    chart = Chart(df, style="day", title=f"{strategy.symbol} {strategy.interval}")
+    chart = Chart(df, style="night", title=f"{strategy.symbol} {strategy.interval}")
     chart.draw()
     logger.info("Chart ready: OK")
 

@@ -26,6 +26,7 @@ from plotly.subplots import make_subplots
 from typing import NamedTuple, Sequence, Optional
 
 from ..indicators.indicator import PlotDescription
+from src.plotting.plotly_styles import TikrStyle
 from ..util import proj_types as tp
 
 logger = logging.getLogger("main.strategy_plot")
@@ -49,6 +50,7 @@ class PlotDefinition(NamedTuple):
     name: str
     main: Optional[PlotDescription] = None
     sub: Optional[Sequence[PlotDescription]] = None
+    style: TikrStyle = None
 
 
 @dataclass
@@ -320,16 +322,30 @@ def _draw_signal(fig, data: pd.DataFrame, signal_column: str = "signal"):
     return fig
 
 
-def _update_layout(fig, rows: int):
+def _update_layout(fig, rows: int, style: TikrStyle = None) -> go.Figure:
     # fig.update_traces(opacity=0.7, selector=dict(type="scatter"))
     # fig.update_traces(line_width=0.5, selector=dict(type="scatter"))
     fig.update_traces(line_width=0.5, selector=dict(type="candlestick"))
 
     # maybe we can use this to color the candlesticks?
     # fig.update_traces(decreasing_line_color="red", selector=dict(type="candlestick"))
-
-    fig.update_layout(plot_bgcolor=fig_color, paper_bgcolor=bg_color)
     fig.update_layout(template=template, yaxis_type="log", hovermode="x")
+
+    if style is not None:
+        logger.info(f"Applying style: {style}")
+        fig.update_layout(
+            plot_bgcolor=style.colors.background.rgba,
+            paper_bgcolor=style.colors.canvas.rgba,
+            # font_family=style.font_family,
+            # font_color=style.font_color,
+            font_size=style.font_size,
+            # title_font_family=style.font_family,
+            # title_font_color=style.title_font_color,
+            # legend_title_font_color=style.legend_title_font_color,
+            # showlegend=style.show_legend,
+        )
+    else:
+        fig.update_layout(plot_bgcolor=fig_color, paper_bgcolor=bg_color)
 
     fig.update_yaxes(
         tickfont=dict(
@@ -386,7 +402,7 @@ def plot(data: pd.DataFrame | tp.Data, p_def: PlotDefinition):
             logger.debug("drawing subplot: %s", sub)
             fig = _draw_indicator(fig, data, sub, row)
 
-    _update_layout(fig, no_of_subplots + 1)
+    _update_layout(fig, no_of_subplots + 1, p_def.style)
 
     fig.show()
 

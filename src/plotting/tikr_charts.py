@@ -15,10 +15,6 @@ from src.plotting.plotly_styles import styles, TikrStyle
 
 logger = logging.getLogger(f"main.{__name__}")
 
-FILL_ALPHA = 0.2
-DEFAULT_LINE_WIDTH = 0.75
-DEFAULT_LINE_ALPHA = 0.75
-
 
 # ============================= Define plot descriptions =============================
 class TikrChartBase:
@@ -45,7 +41,7 @@ class TikrChartBase:
 
     def prepare_data(self, data):
         for col in data.columns:
-            data[col] = data[col] * -1 if "drawdown" in col else data[col]
+            data[col] = data[col] * -100 if "drawdown" in col else data[col]
         return data
 
     def _set_style(self, style: str):
@@ -53,6 +49,7 @@ class TikrChartBase:
             logger.error(f"Style '{style}' not found. Using default style.")
             self.style = styles["default"]
 
+        logger.info(f"Using style '{style}'")
         self.style = styles[style]
 
 
@@ -124,13 +121,13 @@ class TikrChart(TikrChartBase):
                     width=self.style.line_width
                 ),
                 sp.LineDefinition(
-                    label="b.value",
-                    color=self.style.colors.strategy.rgba,
+                    label="cptl.b",
+                    color=self.style.colors.capital.rgba,
                     width=self.style.line_width
                 ),
                 sp.LineDefinition(
-                    label="cptl.b",
-                    color=self.style.colors.capital.rgba,
+                    label="b.value",
+                    color=self.style.colors.strategy.rgba,
                     width=self.style.line_width
                 ),
                 ],
@@ -145,4 +142,5 @@ class TikrChart(TikrChartBase):
             name="Tikr Chart",
             main=None,
             sub=(drawdown, portfolio,),
+            style=self.style,
         )
