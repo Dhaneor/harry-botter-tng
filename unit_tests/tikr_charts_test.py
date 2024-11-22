@@ -205,8 +205,8 @@ async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
     await repo.exchange_factory(None)  # this signals the exchange to close
 
 
-def draw_chart(df: pd.DataFrame):
-    chart = Chart(df, style="night", title=f"{strategy.symbol} {strategy.interval}")
+def draw_chart(df: pd.DataFrame, style='night'):
+    chart = Chart(df, style=style, title=f"{strategy.symbol} {strategy.interval}")
     chart.draw()
     logger.info("Chart ready: OK")
 
@@ -273,7 +273,7 @@ def main():
 
     else:
         df = run_backtest(response)
-        draw_chart(df)
+        draw_chart(df, 'day')
     finally:
         ohlcv_queue.task_done()
         stop_event.set()
