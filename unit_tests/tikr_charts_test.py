@@ -223,7 +223,7 @@ async def send_chart(df: pd.DataFrame) -> None:
     await ts.send_message(
         chat_id=CHAT_ID,
         msg=msg,
-        image=Chart(df, style='day', title=strategy.name).get_image_bytes()
+        image=Chart(df, style='night', title=strategy.name).get_image_bytes()
     )
 
 

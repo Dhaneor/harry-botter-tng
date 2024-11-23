@@ -19,6 +19,7 @@ Created on Sat Aug 05 22:39:50 2023
 @author: dhaneor
 """
 import logging
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from dataclasses import dataclass
@@ -43,6 +44,8 @@ line_width = 1
 grid_color = "rgba(200, 200, 200, 0.2)"
 marker_size = 10
 marker_opacity = 0.8
+
+DEFAULT_ROW_HEIGHT = 2
 
 
 # ====================================================================================
@@ -137,7 +140,7 @@ class Channel:
         if self.upper is not None:
             self.upper.add_trace(fig, data, row=row, col=col)
 
-        fill_alpha = fill_alpha if fill_alpha is not None else self.color.a
+        # fill_alpha = fill_alpha if fill_alpha is not None else self.color.a
 
         if self.lower is not None:
             self.lower.add_trace(
@@ -146,7 +149,53 @@ class Channel:
                 row=row,
                 col=col,
                 fill=self.fillmethod,
-                fillcolor=self.color  # .set_alpha(fill_alpha),
+                fillcolor=self.color.set_alpha(fill_alpha),
+            )
+
+        return fig
+
+
+@dataclass
+class Drawdown:
+    label: str
+    upper: Line | str | float | None = None
+    lower: Line | str | float | None = None
+    color: Color | None = None
+    fillmethod: str = "tozeroy"
+    opacity: float = 1
+
+    def __post_init__(self):
+        for line in [self.upper, self.lower]:
+            match line:
+                case str():
+                    line = Line(line)
+                case Line() | None:
+                    pass
+                case _:
+                    raise ValueError(f"Invalid line definition: {line}")
+
+    def add_drawdown_levels(df, column='drawdown', step=0.1, max_level=0.5):
+        for level in np.arange(step, max_level + step, step):
+            col_name = f'drawdown_{int(level*100)}'
+            df[col_name] = df[column].clip(lower=-level, upper=-level+step)
+        return df
+
+    def add_trace(self, fig, data, row=1, col=1, fill_alpha=None) -> go.Figure:
+        if self.upper is not None:
+            self.upper.add_trace(fig, data, row=row, col=col)
+
+        df = self.add_drawdown_levels(data.copy())
+
+        # fill_alpha = fill_alpha if fill_alpha is not None else self.color.a
+
+        if self.lower is not None:
+            self.lower.add_trace(
+                fig,
+                data,
+                row=row,
+                col=col,
+                fill=self.fillmethod,
+                fillcolor=self.color.set_alpha(fill_alpha),
             )
 
         return fig
@@ -166,7 +215,7 @@ def prepare_fig(p_def: PlotDefinition):
         plot parameters for a strategy
     """
     rows = p_def.number_of_rows
-    row_heights = [4] + [3 for _ in range(rows - 1)]
+    row_heights = [4] + [DEFAULT_ROW_HEIGHT for _ in range(rows - 1)]
     subplot_titles = [p_def.name] + [sub.label for sub in p_def.sub]
 
     # secondary y axis for main plot
@@ -429,7 +478,7 @@ def draw_positions(fig: go.Figure, data: pd.DataFrame, row=1, col=1):
 
 def draw_main_data(fig, data: pd.DataFrame, p_def: PlotDefinition):
     if p_def.main:
-        draw_indicator(fig, data, p_def.main, 0)
+        draw_subplot(fig, data, p_def.main, 0)
 
     for row in range(1, p_def.number_of_rows + 1):
         draw_positions(fig, data, row=row)
@@ -439,8 +488,8 @@ def draw_main_data(fig, data: pd.DataFrame, p_def: PlotDefinition):
     # _draw_signal(fig, data)
 
 
-def draw_indicator(fig, data: pd.DataFrame, desc: PlotDescription, row: int):
-    logger.debug(f"drawing indicator {desc.label} in row {row}")
+def draw_subplot(fig, data: pd.DataFrame, desc: PlotDescription, row: int):
+    logger.debug(f"drawing subplot {desc.label} in row {row}")
 
     default_line_def = Line(
         label=desc.label,
@@ -451,7 +500,6 @@ def draw_indicator(fig, data: pd.DataFrame, desc: PlotDescription, row: int):
     )
 
     for channel in desc.channel:
-
         # convert tuples to Channel objects
         if isinstance(desc.channel, tuple):
             desc.channel = Channel(
@@ -476,7 +524,6 @@ def draw_indicator(fig, data: pd.DataFrame, desc: PlotDescription, row: int):
         #         row=row + 1,
         #         col=1,
         #     )
-
         # if channel.lower:
         #     # draw lower line & fill area
         #     fig.append_trace(
@@ -529,7 +576,7 @@ def build_figure(data: pd.DataFrame | tp.Data, p_def: PlotDefinition):
     if p_def.number_of_subplots:
         for row, sub in enumerate(p_def.sub, 1):
             logger.debug("drawing subplot: %s", sub)
-            fig = draw_indicator(fig, data, sub, row)
+            fig = draw_subplot(fig, data, sub, row)
 
     return fig
 

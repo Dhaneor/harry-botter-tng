@@ -23,7 +23,7 @@ logger = logging.getLogger(f"main.{__name__}")
 # ============================= Define plot descriptions =============================
 class TikrChartBase:
     def __init__(self, df, style, title=None):
-        self.data = self.prepare_data(df.copy())
+        self.data = self._prepare_data(df.copy())
         self.title = title
 
         self.style: TikrStyle
@@ -54,25 +54,31 @@ class TikrChartBase:
             io.BytesIO: BytesIO object containing the high-quality image
         """
         fig = sp.build_figure(data=self.data, p_def=self.plot_definition)
+
         img_bytes = to_image(
-            fig, format=format, scale=scale, width=width, height=height
+            fig,
+            format=format,
+            scale=scale,
+            width=width,
+            height=height
         )
+
         return io.BytesIO(img_bytes)
 
+    # ................................. Helper Methods ...............................
     @abstractmethod
     def _build_plot_definition(self): ...
 
-    def prepare_data(self, data):
+    def _prepare_data(self, data):
         for col in data.columns:
             data[col] = data[col] * -100 if "drawdown" in col else data[col]
         return data
 
     def _set_style(self, style: str):
         if style not in styles:
-            logger.error(f"Style '{style}' not found. Using default style.")
-            self.style = styles["default"]
+            logger.warning(f"Style '{style}' not found. Using default style.")
+            style = "default"
 
-        logger.info(f"Using style '{style}'")
         self.style = styles[style]
 
 
@@ -104,7 +110,7 @@ class TikrChart(TikrChartBase):
                 color=self.style.colors.strategy.rgba,
                 width=self.style.line_width,
             ),
-            color=self.style.colors.strategy_fill,  # semi-transparent color,
+            color=self.style.colors.strategy_fill,
             opacity=0.1,
         )
 

@@ -103,10 +103,7 @@ class Colors:
         self.grid = Color.from_hex(self.grid)
         self.text = Color.from_hex(self.text)
 
-        pprint(self)
-
     def add_fill_colors(self, fill_alpha) -> None:
-        print("adding fill colors with alpha", fill_alpha)
         self.strategy_fill = Color(*self.strategy.rgba_tuple).set_alpha(fill_alpha)
         self.capital_fill = Color(*self.capital.rgba_tuple).set_alpha(fill_alpha)
         self.hodl_fill = Color(*self.hodl.rgba_tuple).set_alpha(fill_alpha)
@@ -154,7 +151,6 @@ class TikrStyle:
     font_size: int = 12
 
     def __post_init__(self):
-        print("running color updates ...")
         self.colors.add_fill_colors(self.fill_alpha)
         self.colors.update_line_alpha(self.line_alpha)
 
