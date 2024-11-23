@@ -92,22 +92,25 @@ class TikrChart(TikrChartBase):
 
     def _build_plot_definition(self):
         # ...................... Line/Fill Area Definitions ..........................
-        hodl_drawdown_fill_area = sp.Channel(
-            label="hodl.drawdown",
-            lower=sp.Line(
+        hodl_drawdown_fill_area = sp.Drawdown(
+            label="HODL drawdown",
+            column="hodl.drawdown",
+            line=sp.Line(
                 label="hodl.drawdown",
-                color=self.style.colors.hodl.rgba,
+                color=self.style.colors.hodl,
                 width=self.style.line_width,
             ),
             color=self.style.colors.hodl_fill,  # fill_color
             opacity=0.1,
         )
 
+        print(hodl_drawdown_fill_area)
+
         strategy_drawdown_fill_area = sp.Channel(
             label="b.drawdown",
             lower=sp.Line(
                 label="b.drawdown",
-                color=self.style.colors.strategy.rgba,
+                color=self.style.colors.strategy,
                 width=self.style.line_width,
             ),
             color=self.style.colors.strategy_fill,
@@ -118,7 +121,7 @@ class TikrChart(TikrChartBase):
             label="cptl.drawdown",
             lower=sp.Line(
                 label="cptl.drawdown",
-                color=self.style.colors.capital.rgba,
+                color=self.style.colors.capital,
                 width=self.style.line_width,
             ),
             color=self.style.colors.capital_fill,  # fill_color
@@ -146,17 +149,17 @@ class TikrChart(TikrChartBase):
             lines=[
                 sp.Line(
                     label="hodl.value",
-                    color=self.style.colors.hodl.rgba,
+                    color=self.style.colors.hodl,
                     width=self.style.line_width,
                 ),
                 sp.Line(
                     label="cptl.b",
-                    color=self.style.colors.capital.rgba,
+                    color=self.style.colors.capital,
                     width=self.style.line_width,
                 ),
                 sp.Line(
                     label="b.value",
-                    color=self.style.colors.strategy.rgba,
+                    color=self.style.colors.strategy,
                     width=self.style.line_width,
                 ),
             ],

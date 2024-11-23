@@ -24,7 +24,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from dataclasses import dataclass
 from plotly.subplots import make_subplots
-from typing import NamedTuple, Sequence, Optional
+from typing import NamedTuple, Sequence, Optional, Iterable
 
 from ..indicators.indicator import PlotDescription
 from src.plotting.plotly_styles import TikrStyle, Color
@@ -71,11 +71,11 @@ class PlotDefinition(NamedTuple):
 
 @dataclass
 class Line:
-    label: str
-    color: Color = None
+    label: str | None = None
+    color: Color | None = None
     width: float = 1
     opacity: float = 1
-    shape: str = "linear"
+    shape: str = "spline"
 
     def add_trace(
         self,
@@ -85,10 +85,11 @@ class Line:
         col: int = 1,
         fill: str | None = None,
         fillcolor: str | None = None,
-        alpha: float | None = None
     ) -> go.Figure:
 
-        fillcolor = fillcolor.rgba if fillcolor is not None else self.color
+        logger.info(f"Adding line '{self.label}' to plot.")
+
+        fillcolor = fillcolor.rgba if fillcolor is not None else self.color.rgba
 
         trace = go.Scatter(
             x=data.index,
@@ -104,7 +105,7 @@ class Line:
 
     def as_dict(self) -> dict:
         return {
-            "color": self.color,
+            "color": self.color.rgba,
             "width": self.width,
             "shape": self.shape,
         }
@@ -158,47 +159,73 @@ class Channel:
 @dataclass
 class Drawdown:
     label: str
-    upper: Line | str | float | None = None
-    lower: Line | str | float | None = None
+    column: str
+    line: Line | str | float | None = None  # line for the dd levels
     color: Color | None = None
     fillmethod: str = "tozeroy"
     opacity: float = 1
 
-    def __post_init__(self):
-        for line in [self.upper, self.lower]:
-            match line:
-                case str():
-                    line = Line(line)
-                case Line() | None:
-                    pass
-                case _:
-                    raise ValueError(f"Invalid line definition: {line}")
-
-    def add_drawdown_levels(df, column='drawdown', step=0.1, max_level=0.5):
-        for level in np.arange(step, max_level + step, step):
-            col_name = f'drawdown_{int(level*100)}'
-            df[col_name] = df[column].clip(lower=-level, upper=-level+step)
-        return df
-
     def add_trace(self, fig, data, row=1, col=1, fill_alpha=None) -> go.Figure:
-        if self.upper is not None:
-            self.upper.add_trace(fig, data, row=row, col=col)
-
-        df = self.add_drawdown_levels(data.copy())
-
         # fill_alpha = fill_alpha if fill_alpha is not None else self.color.a
 
-        if self.lower is not None:
-            self.lower.add_trace(
-                fig,
-                data,
-                row=row,
-                col=col,
-                fill=self.fillmethod,
-                fillcolor=self.color.set_alpha(fill_alpha),
-            )
+        # self.line.add_trace(
+        #         fig,
+        #         data,
+        #         row=row,
+        #         col=col,
+        #         fill=self.fillmethod,
+        #         fillcolor=self.color.set_alpha(fill_alpha),
+        #     )
+
+        base_alpha = self.color.a
+
+        dd = go.Scatter(
+            x=data.index,
+            y=data[self.column],
+            fill=self.fillmethod,
+            line=self.line.as_dict(),
+            fillgradient=dict(
+                type="vertical",
+                colorscale=[
+                    (0, self.color.set_alpha(self.line.color.a).rgba),
+                    (0.1, self.color.set_alpha(self.line.color.a).rgba),
+                    (0.8, self.color.set_alpha(base_alpha).rgba),
+                    (1, self.color.set_alpha(base_alpha).rgba),
+                ],
+            ),
+        )
+
+        # dd = go.Scatter(
+        #     x=data.index,
+        #     y=data[self.column],
+        #     fill=self.fillmethod,
+        #     line=self.line.as_dict(),
+        #     fillgradient=dict(
+        #         type="vertical",
+        #         colorscale=[
+        #             (0, self.color.set_alpha(1).rgba),
+        #             (0.8, self.color.set_alpha(1).rgba),
+        #             (1, self.color.set_alpha(base_alpha).rgba),
+        #         ],
+        #     ),
+        # )
+
+        fig.add_trace(dd, row=row, col=col)
 
         return fig
+
+    # def _add_drawdown_levels(self, df, column='drawdown', step=0.1, max_level=0.5):
+    #     for level in np.arange(max_level + step, 0, step):
+    #         x_values = df.loc[self.column].clip(level, df[self.column].min())
+
+    #         trace = go.Scatter(
+    #             x=x_values.index,
+    #             y=x_values,
+    #             line=dict(color=self.color.rgba, width=0),
+    #             fillcolor=None,
+    #         )
+
+    #     return df
 
 
 # ================================= Plot Functions ===================================
@@ -509,38 +536,6 @@ def draw_subplot(fig, data: pd.DataFrame, desc: PlotDescription, row: int):
             )
 
         logger.debug("drawing channel: {0}".format(channel))
-
-        # if channel.upper:
-        #     # draw upper line
-        #     fig.append_trace(
-        #         go.Scatter(
-        #             x=data.index,
-        #             y=data[channel.upper.label],
-        #             visible=True,
-        #             name=channel.upper.label,
-        #             line=channel.upper.as_dict(),
-        #             opacity=channel.upper.opacity,
-        #         ),
-        #         row=row + 1,
-        #         col=1,
-        #     )
-        # if channel.lower:
-        #     # draw lower line & fill area
-        #     fig.append_trace(
-        #         go.Scatter(
-        #             x=data.index,
-        #             y=data[channel.lower.label],
-        #             visible=True,
-        #             name=channel.lower.label,
-        #             fill=channel.fillmethod,
-        #             fillcolor=channel.color.rgba,
-        #             line=channel.lower.as_dict(),
-        #             opacity=channel.lower.opacity,
-        #         ),
-        #         row=row + 1,
-        #         col=1,
-        #     )
-
         channel.add_trace(fig=fig, data=data, row=row + 1)
 
     for line in desc.lines:
