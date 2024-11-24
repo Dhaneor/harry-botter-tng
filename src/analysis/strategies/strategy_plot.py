@@ -19,12 +19,11 @@ Created on Sat Aug 05 22:39:50 2023
 @author: dhaneor
 """
 import logging
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from dataclasses import dataclass
 from plotly.subplots import make_subplots
-from typing import NamedTuple, Sequence, Optional, Iterable
+from typing import NamedTuple, Sequence, Optional
 
 from ..indicators.indicator import PlotDescription
 from src.plotting.plotly_styles import TikrStyle, Color
@@ -76,6 +75,7 @@ class Line:
     width: float = 1
     opacity: float = 1
     shape: str = "spline"
+    legendgroup: str | None = None
 
     def add_trace(
         self,
@@ -87,7 +87,7 @@ class Line:
         fillcolor: str | None = None,
     ) -> go.Figure:
 
-        logger.info(f"Adding line '{self.label}' to plot.")
+        logger.debug(f"Adding line '{self.label}' to plot.")
 
         fillcolor = fillcolor.rgba if fillcolor is not None else self.color.rgba
 
@@ -99,6 +99,8 @@ class Line:
             opacity=self.opacity,
             fill=fill,
             fillcolor=fillcolor,
+            showlegend=True if self.label is not None else False,
+            legendgroup=self.legendgroup,
         )
         fig.add_trace(trace, row=row, col=col)
         return fig
@@ -124,7 +126,7 @@ class Channel:
     upper: Line | str | float | None = None
     lower: Line | str | float | None = None
     color: Color | None = None
-    fillmethod: str = "tozeroy"
+    fillmethod: str = "tonexty"
     opacity: float = 1
 
     def __post_init__(self):
@@ -160,72 +162,129 @@ class Channel:
 class Drawdown:
     label: str
     column: str
+    legendgroup: str | None = None
     line: Line | str | float | None = None  # line for the dd levels
     color: Color | None = None
-    fillmethod: str = "tozeroy"
+    gradient: bool = True,
+    critical: float | None = None
     opacity: float = 1
+    color_scale: list[tuple[float, str]] | None = None
+
+    def __post_init__(self):
+        for line in [self.line]:
+            match line:
+                case str():
+                    line = Line(line)
+                case Line() | None:
+                    pass
+                case _:
+                    raise ValueError(f"Invalid line definition: {line}")
+
+        if not self.color_scale:
+            self.color_scale = [
+                (0, self.color.set_alpha(self.line.color.a).rgba),
+                (0.1, self.color.set_alpha(self.line.color.a).rgba),
+                (0.8, self.color.reset().rgba),
+                (1, self.color.reset().rgba),
+            ]
+
+        if self.critical is not None:
+            if self.critical > 0:
+                if self.critical > 1:
+                    logger.warning(
+                        f"Critical drawdown level {self.critical} is greater than 1."
+                        )
+
+                    self.critical = min(self.critical, 100) / -100
+
+                    logger.warning(
+                        f"setting the critical drawdown level to {self.critical} "
+                        )
+
+            elif self.critical < 0:
+                if self.critical < -1:
+                    logger.warning(
+                        f"Critical drawdown level {self.critical} is less than -1."
+                        )
+
+                    self.critical = max(self.critical, -100) / 100
+
+                    logger.warning(
+                        f"setting the critical drawdown level to {self.critical} "
+                        )
+
+        # self.line.label = self.label if self.label is not None else self.line.label
+        self.line.legendgroup = self.legendgroup if self.legendgroup is not None \
+            else self.line.legendgroup
 
     def add_trace(self, fig, data, row=1, col=1, fill_alpha=None) -> go.Figure:
-        # fill_alpha = fill_alpha if fill_alpha is not None else self.color.a
+        if self.gradient:
 
-        # self.line.add_trace(
-        #         fig,
-        #         data,
-        #         row=row,
-        #         col=col,
-        #         fill=self.fillmethod,
-        #         fillcolor=self.color.set_alpha(fill_alpha),
-        #     )
+            dd = go.Scatter(
+                x=data.index,
+                y=data[self.column],
+                fill="tozeroy",
+                line=self.line.as_dict(),
+                fillgradient=dict(type="vertical", colorscale=self.color_scale),
+                showlegend=True if self.label is not None else False,
+                legendgroup=self.legendgroup if self.legendgroup is not None else None,
+                opacity=self.opacity,
+            )
+            fig.add_trace(dd, row=row, col=col)
 
-        base_alpha = self.color.a
+        else:
+            fill_alpha = fill_alpha if fill_alpha is not None else self.color.a
 
-        dd = go.Scatter(
-            x=data.index,
-            y=data[self.column],
-            fill=self.fillmethod,
-            line=self.line.as_dict(),
-            fillgradient=dict(
-                type="vertical",
-                colorscale=[
-                    (0, self.color.set_alpha(self.line.color.a).rgba),
-                    (0.1, self.color.set_alpha(self.line.color.a).rgba),
-                    (0.8, self.color.set_alpha(base_alpha).rgba),
-                    (1, self.color.set_alpha(base_alpha).rgba),
-                ],
-            ),
-        )
+            self.line.add_trace(
+                    fig,
+                    data,
+                    row=row,
+                    col=col,
+                    fill="tozeroy",
+                    fillcolor=self.color.set_alpha(fill_alpha)
+                )
 
-        # dd = go.Scatter(
-        #     x=data.index,
-        #     y=data[self.column],
-        #     fill=self.fillmethod,
-        #     line=self.line.as_dict(),
-        #     fillgradient=dict(
-        #         type="vertical",
-        #         colorscale=[
-        #             (0, self.color.set_alpha(1).rgba),
-        #             (0.8, self.color.set_alpha(1).rgba),
-        #             (1, self.color.set_alpha(base_alpha).rgba),
-        #         ],
-        #     ),
-        # )
+        if self.critical is not None:
+            try:
+                critical_level = round(
+                    self.critical / (data[self.column].min() / 100),
+                    2
+                )
 
-        fig.add_trace(dd, row=row, col=col)
+                threshhold = round(
+                    (self.critical + 0.05) / (data[self.column].min() / 100),
+                    2
+                )
+
+            except ZeroDivisionError:
+                # Critical level cannot be calculated (= there was no
+                # drawdown at all), so do not add a 'critical' fill area
+                return fig
+
+            if critical_level >= 1:
+                logger.info("Critical level is below the max drawdown level")
+                return fig
+
+            critical = go.Scatter(
+                x=data.index,
+                y=data[self.column],
+                fill="tozeroy",
+                line=dict(width=0),  # self.line.as_dict(),
+                fillgradient=dict(
+                    type="vertical",
+                    colorscale=[
+                        (0, "red"),
+                        (threshhold, "rgba(255, 0, 0, 0.75)"),
+                        (critical_level, self.color.set_alpha(0.75).rgba),
+                        (1, self.color.reset().rgba),
+                    ],
+                ),
+                showlegend=False
+            )
+
+            fig.add_trace(critical, row=row, col=col)
 
         return fig
-
-    # def _add_drawdown_levels(self, df, column='drawdown', step=0.1, max_level=0.5):
-    #     for level in np.arange(max_level + step, 0, step):
-    #         x_values = df.loc[self.column].clip(level, df[self.column].min())
-
-    #         trace = go.Scatter(
-    #             x=x_values.index,
-    #             y=x_values,
-    #             line=dict(color=self.color.rgba, width=0),
-    #             fillcolor=None,
-    #         )
-
-    #     return df
 
 
 # ================================= Plot Functions ===================================
@@ -254,7 +313,7 @@ def prepare_fig(p_def: PlotDefinition):
             rows=rows,
             cols=1,
             specs=[specs],
-            subplot_titles=subplot_titles
+            subplot_titles=subplot_titles,
         )
     else:
         fig = make_subplots(
@@ -515,7 +574,7 @@ def draw_main_data(fig, data: pd.DataFrame, p_def: PlotDefinition):
     # _draw_signal(fig, data)
 
 
-def draw_subplot(fig, data: pd.DataFrame, desc: PlotDescription, row: int):
+def draw_subplot(fig, data: pd.DataFrame, desc: PlotDescription, row: int) -> go.Figure:
     logger.debug(f"drawing subplot {desc.label} in row {row}")
 
     default_line_def = Line(
@@ -588,7 +647,10 @@ def plot(data: pd.DataFrame | tp.Data, p_def: PlotDefinition):
     p_def : PlotDefinition
         plot parameters for a strategy
     """
-    build_figure(data=data, p_def=p_def).show()
+    config = {"autosizable": True, "responsive": True, "displaylogo": False}
+
+    fig = build_figure(data=data, p_def=p_def)
+    fig.show(config=config)
 
 
 __all__ = ["PlotDefinition", "plot"]

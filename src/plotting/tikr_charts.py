@@ -18,6 +18,7 @@ from src.analysis.indicators.indicator import PlotDescription
 from src.plotting.plotly_styles import styles, TikrStyle
 
 logger = logging.getLogger(f"main.{__name__}")
+logger.setLevel(logging.DEBUG)
 
 
 # ============================= Define plot descriptions =============================
@@ -39,7 +40,7 @@ class TikrChartBase:
     def draw(self): ...
 
     def get_image_bytes(
-        self, format="png", scale=3, width=1200, height=800
+        self, format="png", scale=2, width=1400, height=1600
     ) -> io.BytesIO:
         """
         Generate a high-quality BytesIO object containing the chart image.
@@ -104,28 +105,46 @@ class TikrChart(TikrChartBase):
             opacity=0.1,
         )
 
-        print(hodl_drawdown_fill_area)
-
-        strategy_drawdown_fill_area = sp.Channel(
-            label="b.drawdown",
-            lower=sp.Line(
+        strategy_drawdown_fill_area = sp.Drawdown(
+            label="Strategy drawdown",
+            column="b.drawdown",
+            line=sp.Line(
                 label="b.drawdown",
                 color=self.style.colors.strategy,
                 width=self.style.line_width,
             ),
             color=self.style.colors.strategy_fill,
+            gradient=True,
+            critical=-10,
             opacity=0.1,
         )
 
-        capital_drawdown_fill_area = sp.Channel(
-            label="cptl.drawdown",
-            lower=sp.Line(
+        capital_drawdown_fill_area = sp.Drawdown(
+            label="Equity drawdown",
+            column="cptl.drawdown",
+            line=sp.Line(
                 label="cptl.drawdown",
                 color=self.style.colors.capital,
                 width=self.style.line_width,
             ),
             color=self.style.colors.capital_fill,  # fill_color
-            opacity=0.1,
+            gradient=False,
+            critical=-5,
+        )
+
+        equity_channel = sp.Channel(
+            label="Equity channel",
+            upper=sp.Line(
+                label="b.value",
+                color=self.style.colors.strategy,
+                width=self.style.line_width + 1,
+            ),
+            lower=sp.Line(
+                label="cptl.b",
+                color=self.style.colors.capital.set_alpha(self.style.fill_alpha),
+                width=self.style.line_width,
+            ),
+            color=self.style.colors.strategy_fill
         )
 
         # ............................ Plot Descriptions .............................
@@ -152,19 +171,19 @@ class TikrChart(TikrChartBase):
                     color=self.style.colors.hodl,
                     width=self.style.line_width,
                 ),
-                sp.Line(
-                    label="cptl.b",
-                    color=self.style.colors.capital,
-                    width=self.style.line_width,
-                ),
-                sp.Line(
-                    label="b.value",
-                    color=self.style.colors.strategy,
-                    width=self.style.line_width,
-                ),
+                # sp.Line(
+                #     label="cptl.b",
+                #     color=self.style.colors.capital.set_alpha(self.style.fill_alpha),
+                #     width=self.style.line_width,
+                # ),
+                # sp.Line(
+                #     label="b.value",
+                #     color=self.style.colors.strategy,
+                #     width=self.style.line_width + 1,
+                # ),
             ],
             triggers=[],
-            channel=[],
+            channel=[equity_channel],
             hist=[],
             level="indicator",
         )

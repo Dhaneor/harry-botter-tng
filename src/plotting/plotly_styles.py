@@ -5,6 +5,7 @@ Created on Nov 21 21:55:20 2024
 
 @author dhaneor
 """
+from copy import deepcopy
 from dataclasses import dataclass
 from typing import Sequence
 from pprint import pprint
@@ -15,13 +16,30 @@ class Color:
         self.r: int = red
         self.g: int = green
         self.b: int = blue
-        self.a: float = alpha
+        self._a: float = alpha
+
+        self.initial: tuple = (self.r, self.g, self.b, self.a)
 
     # def __str__(self) -> str:
     #     return self.rgba
 
     def __repr__(self) -> str:
         return f"Color(r={self.r}, g={self.g}, b={self.b}, a={self.a})"
+
+    @property
+    def a(self) -> float:
+        return self._a
+
+    @a.setter
+    def a(self, alpha: float) -> None:
+        if alpha is None:
+            return
+
+        if not 0 <= alpha <= 1.0:
+            raise ValueError("Alpha value must be between 0.0 and 1.0")
+
+        self._a = alpha
+        self.initial = (self.r, self.g, self.b, self._a)
 
     def set_alpha(self, alpha: float) -> "Color":
         if alpha is None:
@@ -30,7 +48,11 @@ class Color:
         if not 0 <= alpha <= 1.0:
             raise ValueError("Alpha value must be between 0.0 and 1.0")
 
-        self.a = alpha
+        # self.a = alpha
+        return Color(self.r, self.g, self.b, alpha)
+
+    def reset(self) -> "Color":
+        self.r, self.g, self.b, self.a = self.initial
         return self
 
     # ................................................................................
@@ -59,8 +81,8 @@ class Color:
             hex_color = hex_color.lstrip("#")
             return tuple(int(hex_color[i: i + 2], 16) for i in (0, 2, 4))
 
-        color = cls(*hex_to_rgb(hex_color))
-        color.set_alpha(alpha)
+        color = cls(*(*hex_to_rgb(hex_color), alpha))
+        color.a = alpha
         return color
 
     @classmethod
@@ -313,4 +335,8 @@ if __name__ == "__main__":
     print(f"RGBA color string: {color.rgba}")
     print(f"RGBA tuple (0-1 alpha): {color.rgba_tuple}")
 
-    pprint(tikr_day_style.colors)
+    # pprint(tikr_day_style.colors)
+
+    print(color)
+    print(color.set_alpha(1.0))
+    print(color.reset())
