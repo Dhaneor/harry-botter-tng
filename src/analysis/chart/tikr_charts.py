@@ -17,13 +17,15 @@ from abc import abstractmethod
 from plotly.io import to_image
 from plotly.subplots import make_subplots
 
-from .plot_definition import PlotDescription, PlotDefinition, Line, Channel, Drawdown
+from .plot_definition import SubPlot, PlotDefinition, Line, Channel, Drawdown
 from .plotly_styles import styles, TikrStyle
 from .util import config
 
 logger = logging.getLogger(f"main.{__name__}")
 
 Data = dict[str, npt.NDArray[np.flexible]]
+
+STYLES = styles
 
 
 class ChartArtist:
@@ -68,28 +70,34 @@ class ChartArtist:
         p_def : PlotDefinition
             plot parameters for a strategy
         """
-        rows = p_def.number_of_rows
+        rows = p_def.layout.number_of_rows
+        cols = p_def.layout.number_of_columns
         # row_heights = [4] + [DEFAULT_ROW_HEIGHT for _ in range(rows - 1)]
         row_heights = [8, 5, 3]
+        column_widths = tuple(1 for _ in range(cols))
         subplot_titles = [p_def.name] + [sub.label for sub in p_def.sub]
 
         # secondary y axis for main plot
-        specs = [[{"secondary_y": True}]] + [
-            [{"secondary_y": False}] for _ in range(rows - 1)
+        specs = [
+            [
+                {"secondary_y": True if i == 0 and j == 0 else False}
+                for j in range(cols)]
+            for i in range(rows)
         ]
 
         if p_def.number_of_subplots == 0:
             fig = make_subplots(
                 rows=rows,
                 cols=1,
-                specs=[specs],
+                specs=specs,
                 subplot_titles=subplot_titles,
             )
         else:
             fig = make_subplots(
                 rows=rows,
-                cols=1,
+                cols=cols,
                 row_heights=row_heights,
+                column_widths=column_widths,
                 vertical_spacing=0.05,
                 shared_xaxes=True,
                 subplot_titles=subplot_titles,
@@ -112,16 +120,6 @@ class ChartArtist:
         # remove the zeroline
         fig.update_layout(yaxis=dict(zeroline=False), yaxis2=dict(zeroline=False))
 
-        # set tick font family, size and color
-        tick_font_definition = dict(
-            family=self.style.font_family,
-            color=self.style.colors.text.rgba,
-            size=self.style.tick_font_size,
-        )
-
-        fig.update_yaxes(tickfont=tick_font_definition)
-        fig.update_xaxes(tickfont=tick_font_definition)
-
         # disable range sliders
         fig.update_xaxes(row=1, col=1, rangeslider_visible=False)
         fig.update_xaxes(row=2, col=1, rangeslider_visible=False)
@@ -131,16 +129,34 @@ class ChartArtist:
         fig.update_xaxes(row=p_def.number_of_rows, col=1, rangeslider_thickness=0.02)
 
         # set the font family, size, etc.
+        font_color = self.style.colors.text.set_alpha(self.style.font_opacity).rgba
+
+        logger.info("using font color: %s" % font_color)
+        logger.info("font opacity is set to: %s" % self.style.font_opacity)
+        logger.info("title font size is set to: %s" % self.style.title_font_size)
+
         fig.update_layout(
             font_family=self.style.font_family,
-            font_color=self.style.colors.text.set_alpha(0.6).rgba,
+            font_color=font_color,
             font_size=self.style.font_size,
             title_font_family=self.style.font_family,
-            title_font_color=self.style.colors.text.set_alpha(0.6).rgba,
-            title_font_size=self.style.font_size,
-            legend_title_font_color=self.style.colors.text.rgba,
+            title_font_color=font_color,
+            title_font_size=self.style.title_font_size,
+            legend_title_font_color=font_color,
             showlegend=False,
         )
+
+        fig.update_annotations(font_size=self.style.font_size)
+
+        # set tick font family, size and color
+        tick_font_definition = dict(
+            family=self.style.font_family,
+            color=font_color,
+            size=self.style.tick_font_size,
+        )
+
+        fig.update_yaxes(tickfont=tick_font_definition)
+        fig.update_xaxes(tickfont=tick_font_definition)
 
         # adjust the margins
         fig.update_layout(
@@ -148,8 +164,11 @@ class ChartArtist:
             autosize=False,
         )
 
+        # this is somehow necessary to avoid a mright side margin
+        # that is larger than what was defined in the previous step
         fig.update_xaxes(domain=[0, 1])
 
+        # set the background/overlay image, if defined in the style
         if self.style.canvas_image is not None:
 
             try:
@@ -369,6 +388,7 @@ class ChartArtist:
 
         return fig
 
+    # --------------------------------------------------------------------------------
     def draw_main_plot(self, fig, data: pd.DataFrame, p_def: PlotDefinition):
         if p_def.main:
             self.draw_subplot(fig, data, p_def.main, 0)
@@ -383,7 +403,7 @@ class ChartArtist:
         self,
         fig: go.Figure,
         data: pd.DataFrame,
-        desc: PlotDescription,
+        desc: SubPlot,
         row: int
     ) -> go.Figure:
         logger.debug(f"drawing subplot {desc.label} in row {row}")
@@ -435,6 +455,20 @@ class ChartArtist:
                 col=1,
             )
 
+        if desc.secondary_y_axis:
+            _, yaxis_key = self.get_axis_keys(fig, row, 1)
+            axis_key_number = int(yaxis_key[-1])
+
+            # Configure axes for the second subplot
+            fig.update_layout({
+                yaxis_key: dict(
+                    title="desc.label", anchor="x", domain=[0, 0.5]
+                    ),
+                f'yaxis{axis_key_number + 1}': dict(
+                    overlaying=f'y{axis_key_number}', side='right', showline=True
+                    )
+            })
+
         return fig
 
     def build_figure(self, data: pd.DataFrame | Data, p_def: PlotDefinition):
@@ -449,7 +483,41 @@ class ChartArtist:
                 logger.debug("drawing subplot: %s", sub)
                 fig = self.draw_subplot(fig, data, sub, row)
 
+        print(fig.get_subplot(2, 1))
+
         return fig
+
+    # --------------------------------------------------------------------------------
+    from plotly.subplots import make_subplots
+
+    def get_axis_keys(self, fig, row, col):
+        """
+        Retrieve the x-axis and y-axis keys for a specific subplot.
+
+        Parameters:
+            fig: The Plotly figure object created using make_subplots.
+            row: The row number of the desired subplot (1-based index).
+            col: The column number of the desired subplot (1-based index).
+
+        Returns:
+            A tuple containing the x-axis key and y-axis key as strings.
+        """
+        # Get the subplot grid dimensions
+        rows = fig._grid_ref[0]  # Total number of rows
+        cols = fig._grid_ref[1]  # Total number of columns
+
+        for elem, i in enumerate(fig._grid_ref):
+            logger.debug('-' * 120)
+            logger.debug("elem [%s]: %s" % (i, elem))
+
+        # Calculate the subplot number (1-based index)
+        subplot_number = (row - 1) * cols + col
+
+        # Determine axis keys
+        xaxis_key = f'xaxis{"" if subplot_number == 1 else subplot_number}'
+        yaxis_key = f'yaxis{"" if subplot_number == 1 else subplot_number}'
+
+        return xaxis_key, yaxis_key
 
 
 # ================================= Chart classes ====================================
@@ -521,11 +589,11 @@ class Chart:
         return data
 
     def _set_style(self, style: str):
-        if style not in styles:
+        if style not in STYLES:
             logger.warning(f"Style '{style}' not found. Using default style.")
             style = "default"
 
-        self.style = styles[style]
+        self.style = STYLES[style]
 
     # ........................ Define Portfolio Components ...........................
     def _equity_channel(self):
@@ -601,18 +669,17 @@ class Chart:
         )
 
     # ........................... (Sub-)Plot Descriptions ............................
-    def portfolio_plot_description(self):
-        return PlotDescription(
+    def subplot_portfolio(self) -> SubPlot:
+        return SubPlot(
             label="Portfolio",
-            is_subplot=True,
             lines=[self._hodl_equity()],
             channel=[self._equity_channel()],
+            secondary_y_axis=True
         )
 
-    def drawdown_plot_description(self):
-        return PlotDescription(
+    def subplot_drawdown(self) -> SubPlot:
+        return SubPlot(
             label="Drawdown",
-            is_subplot=True,
             channel=[
                 self._hodl_drawdown(),
                 self._strategy_drawdown(),
@@ -631,11 +698,11 @@ class TikrChart(Chart):
 
     def _build_plot_definition(self):
         return PlotDefinition(
-            name="Tikr Chart",
+            name=self.title or "Tikr Chart",
             main=None,
             sub=(
-                self.portfolio_plot_description(),
-                self.drawdown_plot_description(),
+                self.subplot_portfolio(),
+                self.subplot_drawdown(),
             ),
             style=self.style,
         )

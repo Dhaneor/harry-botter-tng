@@ -33,7 +33,7 @@ from src.analysis.chart.tikr_charts import TikrChart as Chart  # noqa: E402
 from tikr_mvp_strategy import mvp_strategy  # noqa: E402
 
 # set up logging
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.DEBUG
 
 logger = logging.getLogger("main")
 logger.setLevel(LOG_LEVEL)
@@ -207,7 +207,8 @@ async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
 
 
 def draw_chart(df: pd.DataFrame, style='night'):
-    chart = Chart(df, style=style, title=f"{strategy.symbol} {strategy.interval}")
+    title = f"{strategy.name} ({strategy.symbol} {strategy.interval})"
+    chart = Chart(df, style=style, title=title)
     chart.draw()
     logger.info("Chart ready: OK")
 
