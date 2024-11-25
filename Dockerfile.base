@@ -24,6 +24,8 @@ RUN wget https://github.com/TA-Lib/ta-lib/releases/download/v0.4.0/ta-lib-0.4.0-
     cd .. && \
     rm -rf ta-lib-0.4.0-src.tar.gz ta-lib/
 
+RUN apt-get install fonts-georgian fonts-dejavu fonts-liberation
+
 # Set the working directory in the container
 WORKDIR /app
 

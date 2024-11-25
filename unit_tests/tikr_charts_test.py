@@ -29,7 +29,7 @@ from src.analysis import strategy_backtest as bt  # noqa: E402
 from src.analysis.backtest import statistics as st  # noqa: E402
 from src.analysis import telegram_signal as ts  # noqa: E402
 from src.backtest import result_stats as rs  # noqa: E402
-from src.plotting.tikr_charts import TikrChart as Chart  # noqa: E402
+from src.analysis.chart.tikr_charts import TikrChart as Chart  # noqa: E402
 from tikr_mvp_strategy import mvp_strategy  # noqa: E402
 
 # set up logging
@@ -223,7 +223,7 @@ async def send_chart(df: pd.DataFrame) -> None:
     await ts.send_message(
         chat_id=CHAT_ID,
         msg=msg,
-        image=Chart(df, style='day', title=strategy.name).get_image_bytes()
+        image=Chart(df, style='night', title=strategy.name).get_image_bytes()
     )
 
 
@@ -290,7 +290,7 @@ def main():
     else:
         df = run_backtest(response)
         # asyncio.run(send_chart(df))
-        draw_chart(df)
+        draw_chart(df, style='night')
     finally:
         ohlcv_queue.task_done()
         stop_event.set()
