@@ -8,6 +8,11 @@ Created on Nov 24 21:30:20 2024
 import os
 import yaml
 
+FILE_NAME = './config.yaml'
+
+# if not os.path.isfile(FILE_NAME):
+#     raise FileNotFoundError(f'config.yaml file not found at {FILE_NAME}')
+
 
 class DotDict(dict):
     def __getattr__(self, item):
@@ -52,7 +57,7 @@ def load_yaml_as_dotdict(file_path):
 
 # Determine the script's directory and ensure config.yaml is loaded from there
 script_dir = os.path.dirname(os.path.abspath(__file__))  # Directory of the script
-config_file = os.path.join(script_dir, 'config.yaml')    # Full path to config.yaml
+config_file = os.path.join(script_dir, FILE_NAME)    # Full path to config.yaml
 
 config = load_yaml_as_dotdict(config_file)
 

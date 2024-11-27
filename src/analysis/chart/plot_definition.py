@@ -6,31 +6,37 @@ Created on Nov 21 12:08:20 2024
 @author dhaneor
 """
 import logging
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import sys
 
-from collections import OrderedDict
-from itertools import chain
-from pprint import pprint
+from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from random import random, choice
-from typing import Sequence, List, Dict, Tuple
+from typing import Sequence, List, Dict, Tuple, Literal, Iterator
 from dataclasses import dataclass, field
 
-from layout_validator import validate_layout
+if __name__ == "__main__":
+    from layout_validator import validate_layout
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
 
-# Create a StreamHandler to output log messages to the console
-handler = logging.StreamHandler(sys.stdout)
+    # Create a StreamHandler to output log messages to the console
+    handler = logging.StreamHandler(sys.stdout)
 
-# Create a formatter and add it to the handler
-formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-handler.setFormatter(formatter)
+    # Create a formatter and add it to the handler
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    handler.setFormatter(formatter)
 
-# Add the handler to the logger
-logger.addHandler(handler)
+    # Add the handler to the logger
+    logger.addHandler(handler)
+else:
+    from .layout_validator import validate_layout
+
+    logger = logging.getLogger(f"main.{__name__}")
+
 
 VALIDATION_LEVEL = "basic"
 
@@ -218,33 +224,116 @@ class TikrStyle:
         self.colors.update_line_alpha(self.line_alpha)
 
 
-# ========================== Classes for chart components ============================
+# ======================= Classes for basic chart components =========================
 @dataclass
-class Line:
+class ChartElement(ABC):
     label: str | None = None
     column: str | None = None
     legendgroup: str | None = None
-    color: Color | None = None
-    width: float = 1
-    opacity: float = 1
-    shape: str = "spline"
-    zorder: int | None = 0
 
-    def add_trace(
-        self,
-        fig: go.Figure,
-        data: pd.DataFrame,
-        row: int = 1,
-        col: int = 1,
-        fill: str | None = None,
-        fillcolor: str | None = None,
-    ) -> go.Figure:
+    row: int = 1
+    col: int = 1
+
+    width: float = 1
+    color: Color | None = None
+    opacity: float = 1
+    zorder: int | None = 0
+    secondary_y: bool = False
+
+    @abstractmethod
+    def apply_style(self, style: TikrStyle) -> None:
+        ...
+
+    @abstractmethod
+    def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
+        ...
+
+
+@dataclass
+class Candlestick(ChartElement):
+    color_up: Color | None = None
+    color_down: Color | None = None
+
+    def apply_style(self, style: TikrStyle) -> None:
+        self.color_up = style.colors.candle_up
+        self.color_down = style.colors.candle_down
+
+    def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
+        logger.debug(f"Adding candlestick '{self.label}' to plot.")
+
+        fig.add_trace(
+            go.Candlestick(
+                x=data.index,
+                open=data.open,
+                high=data.high,
+                low=data.low,
+                close=data.close,
+                name=self.label or "Candlestick",
+                line=dict(width=0.75),
+                opacity=1,
+                showlegend=False,
+                legendgroup=self.label,
+                zorder=self.zorder,
+            ),
+            row=self.row,
+            col=self.col,
+        )
+
+        return fig
+
+
+@dataclass
+class Signal(ChartElement):
+    type: Literal['up', 'down', 'neutral'] = 'neutral'
+    marker_size: int = 10
+    marker_type: str = "circle"
+
+    def apply_style(self, style: TikrStyle) -> None:
+        raise NotImplementedError(
+            f"apply_style method not implemented for {self.label} class")
+
+    def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
+        logger.debug(f"Adding {self.type}s '{self.label}' to plot.")
+
+        fig.add_trace(
+            go.Scatter(
+                x=data.index,
+                y=data[self.column or self.label],
+                name=self.label or self.column,
+                mode="markers",
+                marker=dict(color=self.color, size=self.marker_size),
+                opacity=self.opacity,
+                legendgroup=self.legendgroup,
+                showlegend=True if self.label is not None else False,
+                marker_symbol=self.marker_type,
+                zorder=self.zorder,
+            ),
+            row=self.row,
+            col=self.col,
+        )
+
+        return fig
+
+
+@dataclass
+class Line(ChartElement):
+    shape: str = "spline"
+    fillmethod: str | None = None
+    fillcolor: Color | None = None
+
+    shadow: bool = True
+    glow: bool = False
+
+    def apply_style(self, style: TikrStyle) -> None:
+        self.width = style.line_width if not self.width else self.width
+
+    def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
 
         logger.debug(f"Adding line '{self.label}' to plot.")
 
-        fillcolor = fillcolor.rgba if fillcolor is not None else self.color.rgba
-
-        self._add_line_shadow(fig, data, row, col)
+        if self.shadow:
+            logger.debug(f"Adding line shadow for '{self.label}'")
+            self._add_line_shadow(fig, data)
 
         trace = go.Scatter(
             x=data.index,
@@ -252,26 +341,29 @@ class Line:
             name=self.label or self.column,
             line=self.as_dict(),
             opacity=self.opacity,
-            fill=fill,
-            fillcolor=fillcolor,
+            fill=self.fillmethod,
+            fillcolor=self.fillcolor.rgba if self.fillcolor else None,
             showlegend=True if self.label is not None else False,
             legendgroup=self.legendgroup,
             zorder=self.zorder,
         )
-        fig.add_trace(trace, row=row, col=col)
+        fig.add_trace(trace, row=self.row, col=self.col)
 
         return fig
 
-    def _add_line_shadow(self, fig, data, row=1, col=1) -> go.Figure:
-        # shadow_color = self.color.rgba.replace(f"{self.color.a}", "0.1")
-        for factor in (3, 2):
+    def _add_line_shadow(self, fig, data) -> go.Figure:
+        for factor in (5, 2.5, 1.5):
             color = Color(
                 self.color.r / factor,
                 self.color.g / factor,
                 self.color.b / factor,
-                self.color.a / factor).rgba  # replace with lighter color
+                self.color.a / factor).rgba  # replace with darker color
 
-            line = dict(color=color, width=self.width + factor, shape=self.shape)
+            line = dict(
+                color=color,
+                width=self.width + factor,
+                shape=self.shape,
+                smoothing=1.3 if self.shape == 'spline' else None,)
 
             shadow_trace = go.Scatter(
                 x=data.index,
@@ -280,9 +372,9 @@ class Line:
                 opacity=self.opacity,
                 hoverinfo='skip',
                 showlegend=False,
-                zorder=self.zorder - factor,
+                zorder=round(self.zorder - factor),
             )
-            fig.add_trace(shadow_trace, row=row, col=col)
+            fig.add_trace(shadow_trace, row=self.row, col=self.col)
 
         return fig
 
@@ -307,16 +399,20 @@ class Channel:
     upper: Line | str | float | None = None
     lower: Line | str | float | None = None
 
-    color: Color | None = None
+    color: Color = None
     fillmethod: str = "tonexty"
-    opacity: float = 1
 
-    _legendgroup: str | None = None
+    _legendgroup: str = None
+    _row: int = None
+    _col: int = None
 
     def __repr__(self) -> str:
         return (
             f"Channel {self.label}\n\t\tupper: {self.upper}\n\t\tlower: {self.lower}"
         )
+
+    def __post_init__(self):
+        self.lower.fillmethod = self.fillmethod
 
     @property
     def legendgroup(self) -> str:
@@ -331,9 +427,47 @@ class Channel:
         self.upper.legendgroup = value
         self.lower.legendgroup = value
 
-    def __post_init__(self):
+    @property
+    def row(self) -> int:
+        return self._row
+
+    @row.setter
+    def row(self, value: int):
+        if not isinstance(value, int):
+            raise ValueError(f"Invalid row: {value}")
+
+        self._row = value
+        self.upper.row = value
+        self.lower.row = value
+
+    @property
+    def col(self) -> int:
+        return self._col
+
+    @col.setter
+    def col(self, value: int):
+        if not isinstance(value, int):
+            raise ValueError(f"Invalid col: {value}")
+
+        self._col = value
+        self.upper.col = value
+        self.lower.col = value
+
+    def apply_style(self, style: TikrStyle) -> None:
+        self.upper.apply_style(style)
+        self.lower.apply_style(style)
+
+        self.lower.fillcolor = self.color \
+            if self.color \
+            else self.lower.color.set_alpha(style.fill_alpha)
+
+    def add_trace(self, fig, data, row=1, col=1, fill_alpha=None) -> go.Figure:
         for line in [self.upper, self.lower]:
             match line:
+                case float():
+                    data['__upper'] = np.full_like(data['close'], fill_value=line)
+                    line_obj = Line(label=line, column=f'{line}')
+                    setattr(self, line, line_obj)
                 case str():
                     line = Line(label=line, column=line)
                 case Line() | None:
@@ -341,100 +475,147 @@ class Channel:
                 case _:
                     raise ValueError(f"Invalid line definition: {line}")
 
-    def add_trace(self, fig, data, row=1, col=1, fill_alpha=None) -> go.Figure:
         if self.upper is not None:
-            self.upper.add_trace(fig, data, row=row, col=col)
+            self.upper.add_trace(fig, data)
 
         # fill_alpha = fill_alpha if fill_alpha is not None else self.color.a
 
         if self.lower is not None:
-            self.lower.add_trace(
-                fig,
-                data,
-                row=row,
-                col=col,
-                fill=self.fillmethod,
-                fillcolor=self.color.set_alpha(fill_alpha),
-            )
+            self.lower.add_trace(fig, data)
+
+        return fig
+
+
+# ========================== Classes for chart components ============================
+@dataclass
+class Volume(ChartElement):
+    border_color: Color | None = None
+    secondary_y: bool = True
+    zorder: int = -1
+
+    def apply_style(self, style: TikrStyle) -> None:
+        self.color = style.colors.volume.set_alpha(style.volume_opacity)
+        self.border_color = style.colors.volume.set_alpha(self.color.a / 2)
+
+    def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
+        logger.debug(f"Adding volume '{self.label}' to plot.")
+
+        fig.add_trace(
+            go.Bar(
+                x=data.index,
+                y=data[self.column or self.label],
+                name=self.label or self.column,
+                showlegend=False,
+                marker={
+                    "color": self.color.rgba,
+                    "line": {"color": self.border_color.rgba, "width": self.width}
+                },
+                opacity=self.opacity,
+                legendgroup=self.legendgroup,
+                zorder=self.zorder
+            ),
+            secondary_y=self.secondary_y,
+            row=self.row,
+            col=self.col,
+        )
 
         return fig
 
 
 @dataclass
-class Drawdown:
-    label: str
-    column: str
-    _legendgroup: str | None = None
-    line: Line | str | float | None = None  # line for the dd levels
-    color: Color | None = None
+class Positions(ChartElement):
+    long_color: Color | None = None
+    short_color: Color | None = None
+    zorder: int = -5
+
+    def apply_style(self, style: TikrStyle) -> None:
+        self.long_color = style.colors.buy.set_alpha(style.fill_alpha)
+        self.short_color = style.colors.sell.set_alpha(style.fill_alpha)
+
+    def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
+        # Identify segments where 'position' remains the same
+        positions = data["position"]
+        segments = positions.ne(positions.shift()).cumsum()
+
+        # Iterate over each group to draw rectangles
+        for _, group in data.groupby(segments):
+            pos_value = group["position"].iloc[0]
+            if pos_value != 0:
+                fillcolor = self.long_color \
+                    if pos_value == 1 else self.short_color
+
+                fillcolor = fillcolor.set_alpha(fillcolor.a / 2).rgba
+
+                fig.add_shape(
+                    type="rect",
+                    x0=group.index[0],
+                    x1=group.index[-1],
+                    y0=0,  # Use 0 for bottom of subplot
+                    y1=1,  # Use 1 for top of subplot
+                    xref=f"x{self.row}" if self.row > 1 else "x",
+                    yref=f"y{self.row} domain" if self.row > 1 else "y domain",
+                    fillcolor=fillcolor,
+                    layer="below",
+                    line_width=0,
+                    row=self.row,
+                    col=self.col,
+                )
+
+        return fig
+
+
+@dataclass
+class Drawdown(Line):
     gradient: bool = True,
     critical: float | None = None
-    opacity: float = 1
     color_scale: list[tuple[float, str]] | None = None
 
-    @property
-    def legendgroup(self) -> str:
-        return self._legendgroup or self.label
-
-    @legendgroup.setter
-    def legendgroup(self, value: str):
-        if not isinstance(value, str):
-            raise ValueError(f"Invalid legendgroup: {value}")
-
-        self._legendgroup = value
-        self.line.legendgroup = value
-
     def __post_init__(self):
-        for line in [self.line]:
-            match line:
-                case str():
-                    line = Line(line)
-                case Line() | None:
-                    pass
-                case _:
-                    raise ValueError(f"Invalid line definition: {line}")
-
         if not self.color_scale:
             self.color_scale = [
-                (0, self.color.set_alpha(self.line.color.a).rgba),
-                (0.1, self.color.set_alpha(self.line.color.a).rgba),
+                (0, self.color.set_alpha(self.color.a).rgba),
+                (0.1, self.color.set_alpha(self.color.a).rgba),
                 (0.8, self.color.reset().rgba),
                 (1, self.color.reset().rgba),
             ]
 
-        self.line.label = self.label
-        self.line.column = self.column
-        self.line.legendgroup = self.legendgroup if self.legendgroup is not None \
-            else self.line.legendgroup
+        self.fillmethod = "tozeroy"
 
-    def add_trace(self, fig, data, row=1, col=1, fill_alpha=None) -> go.Figure:
+    def apply_style(self, style: TikrStyle) -> None:
+        super().apply_style(style)
+
+        self.fillcolor = self.color.set_alpha(style.fill_alpha) \
+            if not self.fillcolor else self.fillcolor
+
+    def add_trace(self, fig, data) -> go.Figure:
+        if self.shadow:
+            self._add_line_shadow(fig, data)
+
         if self.gradient:
-
-            dd = go.Scatter(
-                x=data.index,
-                y=data[self.column],
-                name=self.label,
-                fill="tozeroy",
-                line=self.line.as_dict(),
-                fillgradient=dict(type="vertical", colorscale=self.color_scale),
-                showlegend=True if self.label is not None else False,
-                legendgroup=self.legendgroup if self.legendgroup is not None else None,
-                opacity=self.opacity,
-            )
-            fig.add_trace(dd, row=row, col=col)
-
+            fillgradient = dict(type="vertical", colorscale=self.color_scale)
+            fillcolor = None
         else:
-            fill_alpha = fill_alpha if fill_alpha is not None else self.color.a
+            fillgradient = None
+            if self.fillcolor is None:
+                raise ValueError(f"Fill color must be defined for {self.label}")
+            else:
+                fillcolor = self.fillcolor.rgba
 
-            self.line.add_trace(
-                    fig,
-                    data,
-                    row=row,
-                    col=col,
-                    fill="tozeroy",
-                    fillcolor=self.color.set_alpha(fill_alpha)
-                )
+        dd = go.Scatter(
+            x=data.index,
+            y=data[self.column],
+            name=self.label,
+            fill=self.fillmethod,
+            line=self.as_dict(),
+            fillcolor=fillcolor,
+            fillgradient=fillgradient,
+            showlegend=True if self.label is not None else False,
+            legendgroup=self.legendgroup,
+            opacity=self.opacity,
+        )
+        fig.add_trace(dd, row=self.row, col=self.col)
 
+        # add critical level fill area, if critical level is defined
         if self.critical is not None:
             logger.info(f"Critical drawdown level: {self.critical}")
             logger.info(f"Minimum drawdown level: {data[self.column].min()}")
@@ -471,7 +652,7 @@ class Drawdown:
                 x=data.index,
                 y=data[self.column],
                 fill="tozeroy",
-                line=dict(width=0),  # self.line.as_dict(),
+                line=dict(width=0),
                 fillgradient=dict(
                     type="vertical",
                     colorscale=[
@@ -485,13 +666,13 @@ class Drawdown:
                 hoverinfo='skip'
             )
 
-            fig.add_trace(critical, row=row, col=col)
+            fig.add_trace(critical, row=self.row, col=self.col)
 
         return fig
 
 
 # ====================================================================================
-@dataclass(frozen=True)
+@dataclass
 class SubPlot:
     """Plot description for one indicator.
 
@@ -529,13 +710,12 @@ class SubPlot:
     """
 
     label: str
-    lines: Sequence[tuple[str, str]] = field(default_factory=list)
-    triggers: Sequence[tuple[str, str]] = field(default_factory=list)
-    channels: Sequence[str] = field(default_factory=list)
-    hist: Sequence[str] = field(default_factory=list)
+    elements: Sequence[tuple[str, str]] = field(default_factory=list)
     level: str = field(default="indicator")
-    is_subplot: bool = True
+
     secondary_y: bool = False
+    _row: int = 1
+    _col: int = 1
 
     def __repr__(self) -> str:
         lines = 'lines:\n' + '\n'.join(['\t' + str(line) for line in self.lines])\
@@ -558,23 +738,45 @@ class SubPlot:
             f"{lines}{triggers}{channels}{hist}\n\n",
         ))
 
+    def __iter__(self) -> Iterator[Tuple[str, str]]:
+        return iter(self.elements)
+
     def __post_init__(self):
-        for idx in range(len(self.lines)):
-            line = self.lines[idx]
-            if isinstance(line, tuple) and len(line) == 2:
-                self.lines[idx] = Line(label=self.label)
-
-            logger.debug(line)
-
-        logger.debug('-' * 150)
-
-        # set all elements contained in this subplot to have the
-        # same legendgroup
-        for elem in chain(self.lines, self.triggers, self.channels, self.hist):
-            logger.debug("setting legendgroup for %s" % elem.label)
+        # set the legendgroup for all elements in the subplot
+        for elem in self.elements:
             elem.legendgroup = self.label
             logger.debug(elem)
             logger.debug('-' * 150)
+
+    @property
+    def row(self) -> int:
+        return self._row
+
+    @row.setter
+    def row(self, value: int):
+        self._row = value
+        for element in self.elements:
+            element.row = value
+
+    @property
+    def col(self) -> int:
+        return self._col
+
+    @col.setter
+    def col(self, value: int):
+        self._col = value
+        for element in self.elements:
+            element.col = value
+
+    def apply_style(self, style):
+        for element in self.elements:
+            element.apply_style(style)
+
+    def draw_subplot(self, fig, data) -> go.Figure:
+        """Draw the subplot."""
+        for element in self.elements:
+            element.add_trace(fig, data)
+        return fig
 
 
 @validate_layout(validation_level=VALIDATION_LEVEL)
@@ -613,23 +815,21 @@ class Layout:
 
         def build_spec(id_, elem: dict) -> Dict:
             """Builds a spec for a single subplot."""
-            subplot = next(
-                filter(lambda x: x.label == id_, subplots),
-                None
-            )
+            subplot = next(filter(lambda x: x.label == id_, subplots),  None)
 
-            return OrderedDict(
+            return dict(
                 row=elem.get('row'),
                 col=elem.get('col'),
                 rowspan=elem.get('rowspan', 1),
                 colspan=elem.get('colspan', 1),
                 name=subplot.label,
                 secondary_y=subplot.secondary_y
-            ) if subplot else OrderedDict()
+            ) if subplot else {}
 
         def build_specs_for_row(row):
             """Builds specs for a single row of subplots."""
-            return tuple(build_spec(key, elem) for key, elem in row.items())
+            items = (build_spec(key, elem) for key, elem in row.items())
+            return tuple(sorted(items, key=lambda x: x["col"], reverse=False))
 
         return tuple(build_specs_for_row(row) for row in self.rows)
 
@@ -640,7 +840,7 @@ class Layout:
 
         return self.rows[row_number]
 
-    def get_subplot_position(self) -> Dict[str, Tuple[int, int]]:
+    def get_subplot_positions(self) -> Dict[str, Tuple[int, int]]:
         """Get the position of each subplot."""
         positions = {}
         for key, spec in self.layout.items():
@@ -701,13 +901,15 @@ class Layout:
         for subplot, spec in self.layout.items():
             print(f"{subplot}: {spec}")
 
+        print('\n')
+
 
 @dataclass(frozen=True)
 class PlotDefinition:
     name: str
-    subplots: Sequence[Sequence[SubPlot]]
+    subplots: Sequence[SubPlot]
     layout: Layout
-    style: TikrStyle = None
+    style: TikrStyle
 
     def __repr__(self) -> str:
         subplots = '\n' + '\n'.join(
@@ -723,14 +925,55 @@ class PlotDefinition:
             f"[{self.number_of_subplots}] subplots:\n{subplots}\n",
         ))
 
+    def __post_init__(self):
+        positions = self.layout.get_subplot_positions()
+
+        for subplot in self.subplots:
+            try:
+                subplot.row, subplot.col = positions[subplot.label]
+            except KeyError:
+                raise ValueError(f"Subplot '{subplot.label}' not found in layout.")
+
+        for element in self.elements:
+            element.apply_style(self.style)
+
     @property
     def number_of_subplots(self) -> int:
         """Calculate the number of subplots needed for the plot."""
         return len(self.subplots)
 
     @property
+    def subplot_titles(self) -> List[str]:
+        return [subplot.label for subplot in self.subplots]
+
+    @property
     def specs(self) -> Specs:
         return self.layout.build_specs(self.subplots)
+
+    @property
+    def elements(self) -> List[ChartElement]:
+        return [elem for subplot in self.subplots for elem in subplot.elements]
+
+    @contextmanager
+    def style_context(self):
+        previous_style = getattr(PlotDefinition, '_current_style', None)
+        PlotDefinition._current_style = self.style
+        try:
+            yield
+        finally:
+            PlotDefinition._current_style = previous_style
+
+    @staticmethod
+    def get_current_style():
+        return getattr(PlotDefinition, '_current_style', None)
+
+    def apply_style(self, element):
+        style = self.get_current_style()
+        if style:
+            element.apply_style(style)
+
+    def add_trace(self, fig, data):
+        ...
 
 
 if __name__ == "__main__":
@@ -753,19 +996,20 @@ if __name__ == "__main__":
         name="Test Plot",
         subplots=[
 
-                SubPlot(label="1-1", lines=[choice(lines) for _ in range(3)]),
-                SubPlot(label="1-2", lines=[("Value", "close")]),
-                SubPlot(label="2-1", channels=[channels[0]]),
-                SubPlot(label="2-2", channels=[channels[1]]),
+                SubPlot(label="1-1", elements=[choice(lines) for _ in range(3)]),
+                SubPlot(label="2-1", elements=[choice(lines) for _ in range(2)]),
+                SubPlot(label="2-2", elements=[channels[0]]),
+                SubPlot(label="3-1", elements=[channels[1]]),
         ],
         layout=Layout(
             {
                 "1-1": {"row": 1, "col": 1, "rowspan": 2, "colspan": 3},
-                "1-2": {"row": 2, "col": 1},
-                "2-1": {"row": 2, "col": 2},
-                "2-2": {"row": 4, "col": 1, "colspan": 2},
+                "2-2": {"row": 3, "col": 2, "colspan": 2},
+                "2-1": {"row": 3, "col": 1},
+                "3-1": {"row": 4, "col": 1, "colspan": 3},
             }
-        )
+        ),
+        style=None
     )
 
     # print('=' * 150)
@@ -782,9 +1026,14 @@ if __name__ == "__main__":
         )
 
     plot_definition.layout.show_layout()
-    logger.info(plot_definition.layout.rows)
 
     for row in plot_definition.specs:
         print(row)
 
-    # print(plot_definition.layout.build_specs(plot_definition.subplots))
+    cs = Candlestick(
+        label='OHLCV',
+        color_up=Color(255, 0, 0, 1),
+        color_down=Color(0, 255, 0, 1)
+    )
+
+    print(cs)

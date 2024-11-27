@@ -17,7 +17,11 @@ from abc import abstractmethod
 from plotly.io import to_image
 from plotly.subplots import make_subplots
 
-from .plot_definition import SubPlot, PlotDefinition, Line, Channel, Drawdown
+from .plot_definition import (
+    PlotDefinition, SubPlot, Layout,
+    Candlestick, Volume, Positions, Signal,
+    Line, Channel, Drawdown
+)
 from .plotly_styles import styles, TikrStyle
 from .util import config
 
@@ -59,8 +63,16 @@ class ChartArtist:
         """
         config = {"autosizable": True, "responsive": True, "displaylogo": False}
 
-        fig = self.build_figure(data=data, p_def=p_def)
+        fig = self.create_fig(p_def)
+
+        # draw subplots
+        for subplot in p_def.subplots:
+            subplot.draw_subplot(fig, data)
+
         fig.show(width=2400, height=1600, config=config)
+
+        p_def.layout.show_layout()
+        print(p_def)
 
     def create_fig(self, p_def: PlotDefinition):
         """Prepare a figure for plotting.
@@ -72,10 +84,9 @@ class ChartArtist:
         """
         rows = p_def.layout.number_of_rows
         cols = p_def.layout.number_of_columns
-        # row_heights = [4] + [DEFAULT_ROW_HEIGHT for _ in range(rows - 1)]
+
         row_heights = [8, 5, 3]
         column_widths = tuple(1 for _ in range(cols))
-        subplot_titles = [p_def.name] + [sub.label for sub in p_def.sub]
 
         # secondary y axis for main plot
         specs = [
@@ -90,7 +101,7 @@ class ChartArtist:
                 rows=rows,
                 cols=1,
                 specs=specs,
-                subplot_titles=subplot_titles,
+                subplot_titles=p_def.subplot_titles,
             )
         else:
             fig = make_subplots(
@@ -100,7 +111,7 @@ class ChartArtist:
                 column_widths=column_widths,
                 vertical_spacing=0.05,
                 shared_xaxes=True,
-                subplot_titles=subplot_titles,
+                subplot_titles=p_def.subplot_titles,
                 specs=specs,
             )
 
@@ -123,10 +134,8 @@ class ChartArtist:
         # disable range sliders
         fig.update_xaxes(row=1, col=1, rangeslider_visible=False)
         fig.update_xaxes(row=2, col=1, rangeslider_visible=False)
-        fig.update_xaxes(
-            rangeslider={"visible": False}, row=p_def.number_of_rows, col=1
-        )
-        fig.update_xaxes(row=p_def.number_of_rows, col=1, rangeslider_thickness=0.02)
+        fig.update_xaxes(row=3, col=1, rangeslider_visible=False)
+        fig.update_xaxes(row=rows, col=1, rangeslider_thickness=0.02)
 
         # set the font family, size, etc.
         font_color = self.style.colors.text.set_alpha(self.style.font_opacity).rgba
@@ -203,7 +212,7 @@ class ChartArtist:
         # add_gridlines(fig, color=self.style.colors.grid.rgba)
         # make sure the grid is drwan first for all subplots
         # Update grid for all subplots
-        rows = p_def.number_of_rows
+        rows = p_def.layout.number_of_rows
         color = self.style.colors.grid.rgba
         update_params = dict(
             showgrid=True, gridwidth=0.5, gridcolor=color, zeroline=False,
@@ -390,9 +399,6 @@ class ChartArtist:
 
     # --------------------------------------------------------------------------------
     def draw_main_plot(self, fig, data: pd.DataFrame, p_def: PlotDefinition):
-        if p_def.main:
-            self.draw_subplot(fig, data, p_def.main, 0)
-
         for row in range(1, p_def.number_of_rows + 1):
             self.draw_positions(fig, data, row=row)
 
@@ -468,22 +474,6 @@ class ChartArtist:
                     overlaying=f'y{axis_key_number}', side='right', showline=True
                     )
             })
-
-        return fig
-
-    def build_figure(self, data: pd.DataFrame | Data, p_def: PlotDefinition):
-        fig = self.create_fig(p_def)
-
-        # draw main data/plot (candlesticks, buy/sell signals, etc.)
-        self.draw_main_plot(fig, data, p_def)
-
-        # draw subplots (if any)
-        if p_def.number_of_subplots:
-            for row, sub in enumerate(p_def.sub, 1):
-                logger.debug("drawing subplot: %s", sub)
-                fig = self.draw_subplot(fig, data, sub, row)
-
-        print(fig.get_subplot(2, 1))
 
         return fig
 
@@ -604,7 +594,7 @@ class Chart:
                 column=config.strategy.equity.column,
                 color=self.style.colors.strategy,
                 width=self.style.line_width + 1,
-                zorder=1,
+                zorder=0,
             ),
             lower=Line(
                 label=config.capital.equity.label,
@@ -613,6 +603,7 @@ class Chart:
                     self.style.colors.capital.a / 2
                 ),
                 width=self.style.line_width + 1,
+                fillmethod="tonexty",
                 zorder=0,
             ),
             color=self.style.colors.strategy_fill,
@@ -622,7 +613,8 @@ class Chart:
         return Line(
             label=config.hodl.equity.label,
             column=config.hodl.equity.column,
-            color=self.style.colors.hodl
+            color=self.style.colors.hodl,
+            zorder=-1,
         )
 
     # ......................... Define Drawdown Components ...........................
@@ -630,26 +622,23 @@ class Chart:
         return Drawdown(
             label=config.hodl.drawdown.label,
             column=config.hodl.drawdown.column,
-            line=Line(
-                label=config.hodl.drawdown.label,
-                color=self.style.colors.hodl,
-                width=self.style.line_width,
-            ),
-            color=self.style.colors.hodl_fill,  # fill_color
+            color=self.style.colors.hodl,
+            fillcolor=self.style.colors.hodl_fill,  # fill_color
             opacity=0.1,
+            color_scale=[
+                (0, self.style.colors.hodl_fill.set_alpha(self.style.colors.hodl.a).rgba),
+                (0.1, self.style.colors.hodl_fill.set_alpha(self.style.colors.hodl.a).rgba),
+                (0.8, self.style.colors.hodl_fill.reset().rgba),
+                (1, self.style.colors.hodl_fill.reset().rgba),
+            ]
         )
 
     def _strategy_drawdown(self):
         return Drawdown(
             label=config.strategy.drawdown.label,
             column=config.strategy.drawdown.column,
-            line=Line(
-                label=config.strategy.drawdown.label,
-                column=config.strategy.drawdown.column,
-                color=self.style.colors.strategy,
-                width=self.style.line_width,
-            ),
-            color=self.style.colors.strategy_fill,
+            color=self.style.colors.strategy,
+            fillcolor=self.style.colors.strategy_fill,
             gradient=False,
             critical=-25,
         )
@@ -658,12 +647,8 @@ class Chart:
         return Drawdown(
             label=config.capital.drawdown.label,
             column=config.capital.drawdown.column,
-            line=Line(
-                label=config.capital.drawdown.column,
-                color=self.style.colors.capital,
-                width=self.style.line_width,
-            ),
-            color=self.style.colors.capital_fill,
+            color=self.style.colors.capital,
+            fillcolor=self.style.colors.capital_fill,
             gradient=False,
             critical=-15,
         )
@@ -672,15 +657,16 @@ class Chart:
     def subplot_portfolio(self) -> SubPlot:
         return SubPlot(
             label="Portfolio",
-            lines=[self._hodl_equity()],
-            channel=[self._equity_channel()],
-            secondary_y_axis=True
+            elements=[
+                self._equity_channel(),
+                self._hodl_equity(),
+            ],
         )
 
     def subplot_drawdown(self) -> SubPlot:
         return SubPlot(
             label="Drawdown",
-            channel=[
+            elements=[
                 self._hodl_drawdown(),
                 self._strategy_drawdown(),
                 self._capital_drawdown(),
@@ -691,19 +677,40 @@ class Chart:
 class TikrChart(Chart):
     def __init__(self, df, style: str, title=None):
         super().__init__(df, style, title)
+
+        self.layout = Layout(
+            {
+                "OHLCV": {"row": 1, "col": 1, "secondary_y": True},
+                "Portfolio": {"row": 2, "col": 1},
+                "Drawdown": {"row": 3, "col": 1},
+            }
+        )
+        self.layout.show_layout()
         self._plot_definition = self._build_plot_definition()
 
     def draw(self):
         self.artist.plot(data=self.data, p_def=self.plot_definition)
 
+    def subplot_ohlcv(self):
+        return SubPlot(
+            label="OHLCV",
+            elements=(
+                Candlestick(),
+                # Volume(label='Volume', column=config.ohlcv.volume),
+                Positions(column=config.ohlcv.volume, opacity=self.style.fill_alpha),
+            ),
+            secondary_y=True,
+        )
+
     def _build_plot_definition(self):
         return PlotDefinition(
             name=self.title or "Tikr Chart",
-            main=None,
-            sub=(
+            subplots=(
+                self.subplot_ohlcv(),
                 self.subplot_portfolio(),
                 self.subplot_drawdown(),
             ),
+            layout=self.layout,
             style=self.style,
         )
 

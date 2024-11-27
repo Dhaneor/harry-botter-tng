@@ -22,3 +22,6 @@ hodl:
     column: hodl.drawdown
     label: Hodl Drawdown
 
+ohlcv:
+  volume: volume
+
