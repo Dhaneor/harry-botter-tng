@@ -27,7 +27,9 @@ if __name__ == "__main__":
     handler = logging.StreamHandler(sys.stdout)
 
     # Create a formatter and add it to the handler
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
     handler.setFormatter(formatter)
 
     # Add the handler to the logger
@@ -230,6 +232,10 @@ class ChartElement(ABC):
     label: str | None = None
     column: str | None = None
     legendgroup: str | None = None
+    legend: str | None = None
+
+    font: str | None = None
+    font_size: int | None = None
 
     row: int = 1
     col: int = 1
@@ -241,22 +247,27 @@ class ChartElement(ABC):
     secondary_y: bool = False
 
     @abstractmethod
-    def apply_style(self, style: TikrStyle) -> None:
-        ...
+    def apply_style(self, style: TikrStyle) -> None: ...
 
     @abstractmethod
-    def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
-        ...
+    def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure: ...
 
 
 @dataclass
 class Candlestick(ChartElement):
     color_up: Color | None = None
     color_down: Color | None = None
+    candle_up_alpha: float = 1
+    candle_down_alpha: float = 1
 
     def apply_style(self, style: TikrStyle) -> None:
         self.color_up = style.colors.candle_up
         self.color_down = style.colors.candle_down
+
+        self.candle_up_alpha = style.candle_up_alpha
+        self.candle_down_alpha = style.candle_down_alpha
+
+        self.opacity = self.candle_up_alpha
 
     def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
         logger.debug(f"Adding candlestick '{self.label}' to plot.")
@@ -270,7 +281,7 @@ class Candlestick(ChartElement):
                 close=data.close,
                 name=self.label or "Candlestick",
                 line=dict(width=0.75),
-                opacity=1,
+                opacity=self.opacity,
                 showlegend=False,
                 legendgroup=self.label,
                 zorder=self.zorder,
@@ -284,33 +295,92 @@ class Candlestick(ChartElement):
 
 @dataclass
 class Signal(ChartElement):
-    type: Literal['up', 'down', 'neutral'] = 'neutral'
-    marker_size: int = 10
-    marker_type: str = "circle"
+    """Base class for signals.
+
+    Subclasses should implement the apply_style method.
+
+    Arguments:
+    ----------
+    Inherited from ChartElement:
+        label: str, optional
+            The label for the signal that is is used for the legend
+        column: str
+            The column that contains the signal data (=y position)
+        color: Color, optional
+            A Color instance representing the color of the signal.
+            NOTE: The color will be set by the container when applying
+            the style if no color is set durin ginstantiation of the
+            class.
+        opacity: float, optional
+            This is intended to increase or decrease the opacity for
+            all elements within a SubPlot, controlled by an external
+            method. Use the Color and RGBA values to set the color
+            and the base transparancy and leave this at the default
+            value of 1.0.
+        zorder: int, optional
+            The z-order determines the order in which traces and shapes
+            are drawn. This determines which trace appears on top of
+            other traces and shapes. The default is 0.
+        secondary_y: bool, optional
+            Inherited, but not applicabgle for this class.
+
+    type: Literal['up', 'down', 'neutral']
+        Sets the type of signal (up, down, neutral), default 'neutral'
+    marker_size: int, optional
+        The size of the marker for the signal, default 10
+    marker_type: str, optional
+        The type of marker for the signal, default 'circle'. See the
+        Plotly documentation for more marker types.
+
+    Returns:
+    --------
+    Signal
+        Instance of Signal
+
+    Raises:
+    -------
+    NotImplementedError:
+        When used directly, without implementing the apply_style method.
+    """
+
+    type: Literal["up", "down", "neutral"] = "neutral"
+    marker_size: int | None = None
+    marker_symbol_up: str = "circle-dot"
+    marker_symbol_down: str = "circle-dot"
+    marker_symbol_neutral: str = "circle-dot"
 
     def apply_style(self, style: TikrStyle) -> None:
         raise NotImplementedError(
-            f"apply_style method not implemented for {self.label} class")
+            f"apply_style method not implemented for {self.label} class"
+        )
 
     def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
         logger.debug(f"Adding {self.type}s '{self.label}' to plot.")
 
-        fig.add_trace(
-            go.Scatter(
-                x=data.index,
-                y=data[self.column or self.label],
-                name=self.label or self.column,
-                mode="markers",
-                marker=dict(color=self.color, size=self.marker_size),
-                opacity=self.opacity,
-                legendgroup=self.legendgroup,
-                showlegend=True if self.label is not None else False,
-                marker_symbol=self.marker_type,
-                zorder=self.zorder,
-            ),
-            row=self.row,
-            col=self.col,
+        match self.type:
+            case "up":
+                marker_symbol = self.marker_symbol_up
+            case "down":
+                marker_symbol = self.marker_symbol_down
+            case "neutral":
+                marker_symbol = self.marker_symbol_neutral
+            case _:
+                raise ValueError(f"Invalid signal type: {self.type}")
+
+        marker = go.Scatter(
+            x=data.index,
+            y=data[self.column or self.label],
+            name=self.label or self.column,
+            mode="markers",
+            marker=dict(color=self.color.rgba, size=self.marker_size),
+            opacity=self.opacity,
+            legend=self.legend,
+            legendgroup=self.legendgroup,
+            showlegend=True if self.label is not None else False,
+            marker_symbol=marker_symbol,
+            zorder=self.zorder,
         )
+        fig.add_trace(marker, row=self.row, col=self.col)
 
         return fig
 
@@ -326,10 +396,17 @@ class Line(ChartElement):
 
     def apply_style(self, style: TikrStyle) -> None:
         self.width = style.line_width if not self.width else self.width
+        self.font = style.font_family if not self.font else self.font
+        self.font_size = style.tick_font_size if not self.font_size else self.font_size
 
     def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
 
-        logger.debug(f"Adding line '{self.label}' to plot.")
+        logger.debug(
+            f"Adding line '{self.label}' with fill "
+            f"({self.fillmethod}: {self.fillcolor}) to plot."
+            )
+
+        logger.debug(self)
 
         if self.shadow:
             logger.debug(f"Adding line shadow for '{self.label}'")
@@ -349,6 +426,23 @@ class Line(ChartElement):
         )
         fig.add_trace(trace, row=self.row, col=self.col)
 
+        end_marker = go.Scatter(
+            x=[data.index[-1]],
+            y=[int(data[self.column or self.label].astype(int).iloc[-1])],
+            mode="markers+text",
+            marker=dict(color=self.color.rgba, size=5),
+            text=[data[self.column or self.label].iloc[-1].astype(int)],
+            textfont=dict(
+                family=self.font,
+                size=self.font_size,  # Use the font_size attribute here
+                color=self.color.rgba,
+            ),
+            textposition="middle right",
+            showlegend=False,
+        )
+
+        fig.add_trace(end_marker, row=self.row, col=self.col)
+
         return fig
 
     def _add_line_shadow(self, fig, data) -> go.Figure:
@@ -357,20 +451,22 @@ class Line(ChartElement):
                 self.color.r / factor,
                 self.color.g / factor,
                 self.color.b / factor,
-                self.color.a / factor).rgba  # replace with darker color
+                self.color.a / factor,
+            ).rgba  # replace with darker color
 
             line = dict(
                 color=color,
                 width=self.width + factor,
                 shape=self.shape,
-                smoothing=1.3 if self.shape == 'spline' else None,)
+                smoothing=1.3 if self.shape == "spline" else None,
+            )
 
             shadow_trace = go.Scatter(
                 x=data.index,
                 y=data[self.column or self.label],
                 line=line,
                 opacity=self.opacity,
-                hoverinfo='skip',
+                hoverinfo="skip",
                 showlegend=False,
                 zorder=round(self.zorder - factor),
             )
@@ -407,9 +503,7 @@ class Channel:
     _col: int = None
 
     def __repr__(self) -> str:
-        return (
-            f"Channel {self.label}\n\t\tupper: {self.upper}\n\t\tlower: {self.lower}"
-        )
+        return f"Channel {self.label}\n\t\tupper: {self.upper}\n\t\tlower: {self.lower}"
 
     def __post_init__(self):
         self.lower.fillmethod = self.fillmethod
@@ -457,36 +551,71 @@ class Channel:
         self.upper.apply_style(style)
         self.lower.apply_style(style)
 
-        self.lower.fillcolor = self.color \
-            if self.color \
-            else self.lower.color.set_alpha(style.fill_alpha)
+        self.lower.fillcolor = (
+            self.color if self.color else self.lower.color.set_alpha(style.fill_alpha)
+        )
 
-    def add_trace(self, fig, data, row=1, col=1, fill_alpha=None) -> go.Figure:
-        for line in [self.upper, self.lower]:
-            match line:
-                case float():
-                    data['__upper'] = np.full_like(data['close'], fill_value=line)
-                    line_obj = Line(label=line, column=f'{line}')
-                    setattr(self, line, line_obj)
-                case str():
-                    line = Line(label=line, column=line)
-                case Line() | None:
-                    pass
-                case _:
-                    raise ValueError(f"Invalid line definition: {line}")
-
+    def add_trace(self, fig, data) -> go.Figure:
         if self.upper is not None:
             self.upper.add_trace(fig, data)
 
-        # fill_alpha = fill_alpha if fill_alpha is not None else self.color.a
-
         if self.lower is not None:
             self.lower.add_trace(fig, data)
+
+        fig.add_trace(
+            go.Scatter(
+                x=[data.index[-1]],
+                y=data[self.upper.column],
+                mode="lines",
+                fill=self.fillmethod,
+                fillcolor=self.color.rgba,
+                line=dict(width=0, color=self.lower.color.rgba),
+                hoverinfo="skip",
+                legendgroup=self.legendgroup,
+                name=self.label,
+                showlegend=False,
+            ),
+            row=self.row,
+            col=self.col,
+        )
 
         return fig
 
 
 # ========================== Classes for chart components ============================
+@dataclass
+class Buy(Signal):
+    type = "up"
+    label: str = "BUY"
+    column: str = "buy_at"
+
+    def apply_style(self, style: TikrStyle) -> None:
+        self.color = self.color or style.colors.buy.set_alpha(style.marker_opacity)
+        self.marker_size = self.marker_size or style.marker_size
+
+
+@dataclass
+class Sell(Signal):
+    type = "down"
+    label: str = "SELL"
+    column: str = "sell_at"
+
+    def apply_style(self, style: TikrStyle) -> None:
+        self.color = self.color or style.colors.sell.set_alpha(style.marker_opacity)
+        self.marker_size = self.marker_size or style.marker_size
+
+
+@dataclass
+class Sells(Signal):
+    type = "down"
+    label: str = "SELL"
+    column: str = "sell_at"
+
+    def apply_style(self, style: TikrStyle) -> None:
+        self.color = style.colors.buy.set_alpha(style.marker_opacity)
+        self.marker_size = style.marker_size
+
+
 @dataclass
 class Volume(ChartElement):
     border_color: Color | None = None
@@ -508,11 +637,11 @@ class Volume(ChartElement):
                 showlegend=False,
                 marker={
                     "color": self.color.rgba,
-                    "line": {"color": self.border_color.rgba, "width": self.width}
+                    "line": {"color": self.border_color.rgba, "width": self.width},
                 },
                 opacity=self.opacity,
                 legendgroup=self.legendgroup,
-                zorder=self.zorder
+                zorder=self.zorder,
             ),
             secondary_y=self.secondary_y,
             row=self.row,
@@ -541,8 +670,7 @@ class Positions(ChartElement):
         for _, group in data.groupby(segments):
             pos_value = group["position"].iloc[0]
             if pos_value != 0:
-                fillcolor = self.long_color \
-                    if pos_value == 1 else self.short_color
+                fillcolor = self.long_color if pos_value == 1 else self.short_color
 
                 fillcolor = fillcolor.set_alpha(fillcolor.a / 2).rgba
 
@@ -566,7 +694,7 @@ class Positions(ChartElement):
 
 @dataclass
 class Drawdown(Line):
-    gradient: bool = True,
+    gradient: bool = (True,)
     critical: float | None = None
     color_scale: list[tuple[float, str]] | None = None
 
@@ -584,8 +712,11 @@ class Drawdown(Line):
     def apply_style(self, style: TikrStyle) -> None:
         super().apply_style(style)
 
-        self.fillcolor = self.color.set_alpha(style.fill_alpha) \
-            if not self.fillcolor else self.fillcolor
+        self.fillcolor = (
+            self.color.set_alpha(style.fill_alpha)
+            if not self.fillcolor
+            else self.fillcolor
+        )
 
     def add_trace(self, fig, data) -> go.Figure:
         if self.shadow:
@@ -644,9 +775,7 @@ class Drawdown(Line):
                 critical_level = 0.001
                 overshoot = critical_level - 1
 
-            logger.info(
-                f"Critical level: {critical_level} | Threshhold: {threshhold}"
-                )
+            logger.info(f"Critical level: {critical_level} | Threshhold: {threshhold}")
 
             critical = go.Scatter(
                 x=data.index,
@@ -663,7 +792,7 @@ class Drawdown(Line):
                     ],
                 ),
                 showlegend=False,
-                hoverinfo='skip'
+                hoverinfo="skip",
             )
 
             fig.add_trace(critical, row=self.row, col=self.col)
@@ -718,25 +847,20 @@ class SubPlot:
     _col: int = 1
 
     def __repr__(self) -> str:
-        lines = 'lines:\n' + '\n'.join(['\t' + str(line) for line in self.lines])\
-            if self.lines else ''
-        triggers = 'triggers:\n' + '\n'\
-            .join(['\t' + str(trigger) for trigger in self.triggers])\
-            if self.triggers else ''
-        hist = 'hist:\n' + '\n'\
-            .join(['\t' + str(hist) for hist in self.hist])\
-            if self.hist else ''
-        channels = 'channels:\n' + '\n'\
-            .join(['\t' + str(chan) for chan in self.channels])\
-            if self.channels else ''
+        elements = (
+            "elements:\n" + "\n".join(["\t" + str(chan) for chan in self.elements])
+            if self.elements
+            else ""
+        )
 
-        return "\n".join((
-            f"<<<<< SubPlot {self.label} >>>>>\n",
-            f"level='{self.level}'",
-            f"is_subplot={self.is_subplot}",
-            f"secondary_y_axis={self.secondary_y_axis})\n",
-            f"{lines}{triggers}{channels}{hist}\n\n",
-        ))
+        return "\n".join(
+            (
+                f"<<<<< {self.label} >>>>>\n",
+                f"level='{self.level}'",
+                f"secondary_y={self.secondary_y})\n",
+                f"{elements}\n\n",
+            )
+        )
 
     def __iter__(self) -> Iterator[Tuple[str, str]]:
         return iter(self.elements)
@@ -746,7 +870,7 @@ class SubPlot:
         for elem in self.elements:
             elem.legendgroup = self.label
             logger.debug(elem)
-            logger.debug('-' * 150)
+            logger.debug("-" * 150)
 
     @property
     def row(self) -> int:
@@ -773,10 +897,19 @@ class SubPlot:
             element.apply_style(style)
 
     def draw_subplot(self, fig, data) -> go.Figure:
-        """Draw the subplot."""
+        """Draw the subplot and add a legend within the subplot"""
         for element in self.elements:
             element.add_trace(fig, data)
-        return fig
+
+    def get_axis_keys(self, fig, row, col):
+        """Get the axis keys for a specific subplot."""
+        subplot_refs = fig._grid_ref
+
+        ref = subplot_refs[row - 1][0][0]
+
+        print(ref)
+
+        return ref.layout_keys[0], ref.layout_keys[1]
 
 
 @validate_layout(validation_level=VALIDATION_LEVEL)
@@ -784,26 +917,32 @@ class SubPlot:
 class Layout:
     layout: Dict[str, Dict] = field(default_factory=dict)
 
+    row_heights: List[float] = field(default_factory=list)
+    col_widths: List[float] = field(default_factory=list)
+
+    vertical_spacing: float = 0.05
+    horizontal_spacing: float = 0.05
+
     @property
     def number_of_rows(self) -> int:
-        return max((cell.get('row', 1) for cell in self.layout.values()))
+        return max((cell.get("row", 1) for cell in self.layout.values()))
 
     @property
     def number_of_columns(self) -> int:
-        return max((cell.get('col', 1) for cell in self.layout.values()))
+        return max((cell.get("col", 1) for cell in self.layout.values()))
 
     @property
     def rows(self) -> Tuple[Tuple[Dict]]:
         """Get all layout definitions in the layout as rows."""
         return tuple(
-            {k: v for k, v in self.layout.items() if v.get('row') == row_number}
+            {k: v for k, v in self.layout.items() if v.get("row") == row_number}
             for row_number in range(1, self.number_of_rows + 1)
         )
 
     @property
     def columns(self) -> Tuple[Tuple[Dict]]:
         """Get all layout definitions in the layout as rows."""
-        cond = lambda x, column: x.get('row', None) == column  # noqa: E731
+        cond = lambda x, column: x.get("row", None) == column  # noqa: E731
 
         return tuple(
             tuple(filter(lambda x: cond(x, row_number), self.layout.values()))
@@ -815,16 +954,20 @@ class Layout:
 
         def build_spec(id_, elem: dict) -> Dict:
             """Builds a spec for a single subplot."""
-            subplot = next(filter(lambda x: x.label == id_, subplots),  None)
+            subplot = next(filter(lambda x: x.label == id_, subplots), None)
 
-            return dict(
-                row=elem.get('row'),
-                col=elem.get('col'),
-                rowspan=elem.get('rowspan', 1),
-                colspan=elem.get('colspan', 1),
-                name=subplot.label,
-                secondary_y=subplot.secondary_y
-            ) if subplot else {}
+            return (
+                dict(
+                    row=elem.get("row"),
+                    col=elem.get("col"),
+                    rowspan=elem.get("rowspan", 1),
+                    colspan=elem.get("colspan", 1),
+                    name=subplot.label,
+                    secondary_y=subplot.secondary_y,
+                )
+                if subplot
+                else {}
+            )
 
         def build_specs_for_row(row):
             """Builds specs for a single row of subplots."""
@@ -844,8 +987,8 @@ class Layout:
         """Get the position of each subplot."""
         positions = {}
         for key, spec in self.layout.items():
-            row = spec.get('row', 1)
-            col = spec.get('col', 1)
+            row = spec.get("row", 1)
+            col = spec.get("col", 1)
             positions[key] = (row, col)
         return positions
 
@@ -859,49 +1002,49 @@ class Layout:
         max_row = 0
         max_col = 0
         for spec in self.layout.values():
-            row = spec.get('row', 1)
-            col = spec.get('col', 1)
-            rowspan = spec.get('rowspan', 1)
-            colspan = spec.get('colspan', 1)
+            row = spec.get("row", 1)
+            col = spec.get("col", 1)
+            rowspan = spec.get("rowspan", 1)
+            colspan = spec.get("colspan", 1)
             max_row = max(max_row, row + rowspan - 1)
             max_col = max(max_col, col + colspan - 1)
 
         # Create an empty grid with extra space for borders
         grid = [
-            [' ' for _ in range(max_col * cell_width + 1)]
+            [" " for _ in range(max_col * cell_width + 1)]
             for _ in range(max_row * 2 + 1)
         ]
 
         # Fill in the grid
         for subplot, spec in self.layout.items():
-            row = spec.get('row', 1) - 1
-            col = spec.get('col', 1) - 1
-            rowspan = spec.get('rowspan', 1)
-            colspan = spec.get('colspan', 1)
+            row = spec.get("row", 1) - 1
+            col = spec.get("col", 1) - 1
+            rowspan = spec.get("rowspan", 1)
+            colspan = spec.get("colspan", 1)
 
             # Draw the box
             for r in range(row * 2, (row + rowspan) * 2 + 1):
                 for c in range(col * cell_width, (col + colspan) * cell_width + 1):
                     if r % 2 == 0:
-                        grid[r][c] = '-'
+                        grid[r][c] = "-"
                     elif c % cell_width == 0:
-                        grid[r][c] = '|'
+                        grid[r][c] = "|"
 
             # Add the subplot label
             label_row = row * 2 + 1
             label_col = col * cell_width + 2
-            label = subplot[:colspan * cell_width - 2]  # Truncate label if too long
-            grid[label_row][label_col:label_col + len(label)] = label
+            label = subplot[: colspan * cell_width - 2]  # Truncate label if too long
+            grid[label_row][label_col: label_col + len(label)] = label
 
         # Print the grid
         for row in grid:
-            print(''.join(row))
+            print("".join(row))
 
         print("\nLayout specifications:")
         for subplot, spec in self.layout.items():
             print(f"{subplot}: {spec}")
 
-        print('\n')
+        print("\n")
 
 
 @dataclass(frozen=True)
@@ -912,18 +1055,20 @@ class PlotDefinition:
     style: TikrStyle
 
     def __repr__(self) -> str:
-        subplots = '\n' + '\n'.join(
+        subplots = "\n" + "\n".join(
             [
-                '' + '\n'.join(['' + str(sub) for sub in subplot])
+                "" + "\n".join(["" + str(sub) for sub in subplot])
                 for subplot in self.subplots
             ]
         )
 
-        return "\n".join((
-            f"PlotDefinition name: {self.name}\n",
-            f"style={self.style}\n",
-            f"[{self.number_of_subplots}] subplots:\n{subplots}\n",
-        ))
+        return "\n".join(
+            (
+                f"PlotDefinition name: {self.name}\n",
+                f"style={self.style}\n",
+                f"[{self.number_of_subplots}] subplots:\n{subplots}\n",
+            )
+        )
 
     def __post_init__(self):
         positions = self.layout.get_subplot_positions()
@@ -956,7 +1101,7 @@ class PlotDefinition:
 
     @contextmanager
     def style_context(self):
-        previous_style = getattr(PlotDefinition, '_current_style', None)
+        previous_style = getattr(PlotDefinition, "_current_style", None)
         PlotDefinition._current_style = self.style
         try:
             yield
@@ -965,23 +1110,21 @@ class PlotDefinition:
 
     @staticmethod
     def get_current_style():
-        return getattr(PlotDefinition, '_current_style', None)
+        return getattr(PlotDefinition, "_current_style", None)
 
     def apply_style(self, element):
         style = self.get_current_style()
         if style:
             element.apply_style(style)
 
-    def add_trace(self, fig, data):
-        ...
-
 
 if __name__ == "__main__":
     lines = [
         Line(
             label=f"Line {int(random() * 100)}",
-            column=choice(["open", "high", "low", "close", "volume"])
-        ) for _ in range(100)
+            column=choice(["open", "high", "low", "close", "volume"]),
+        )
+        for _ in range(100)
     ]
 
     channels = [
@@ -989,17 +1132,17 @@ if __name__ == "__main__":
             label=f"Channel {int(random() * 100)}",
             upper=choice(lines),
             lower=choice(lines),
-        ) for _ in range(100)
+        )
+        for _ in range(100)
     ]
 
     plot_definition = PlotDefinition(
         name="Test Plot",
         subplots=[
-
-                SubPlot(label="1-1", elements=[choice(lines) for _ in range(3)]),
-                SubPlot(label="2-1", elements=[choice(lines) for _ in range(2)]),
-                SubPlot(label="2-2", elements=[channels[0]]),
-                SubPlot(label="3-1", elements=[channels[1]]),
+            SubPlot(label="1-1", elements=[choice(lines) for _ in range(3)]),
+            SubPlot(label="2-1", elements=[choice(lines) for _ in range(2)]),
+            SubPlot(label="2-2", elements=[channels[0]]),
+            SubPlot(label="3-1", elements=[channels[1]]),
         ],
         layout=Layout(
             {
@@ -1009,7 +1152,7 @@ if __name__ == "__main__":
                 "3-1": {"row": 4, "col": 1, "colspan": 3},
             }
         ),
-        style=None
+        style=None,
     )
 
     # print('=' * 150)
@@ -1023,7 +1166,7 @@ if __name__ == "__main__":
         "rows: %s / columns: %s",
         layout.number_of_rows,
         layout.number_of_columns,
-        )
+    )
 
     plot_definition.layout.show_layout()
 
@@ -1031,9 +1174,7 @@ if __name__ == "__main__":
         print(row)
 
     cs = Candlestick(
-        label='OHLCV',
-        color_up=Color(255, 0, 0, 1),
-        color_down=Color(0, 255, 0, 1)
+        label="OHLCV", color_up=Color(255, 0, 0, 1), color_down=Color(0, 255, 0, 1)
     )
 
     print(cs)

@@ -199,13 +199,16 @@ palette_4 = [
 tikr_night_colors = Colors.from_palette(palette_4)
 tikr_night_style = TikrStyle(
     colors=tikr_night_colors,
+    candle_up_alpha=0.6,  # Full opacity for positive candles
+    candle_down_alpha=0.6,  # Full opacity for negative candles
     font_family="Fira Code, Console, monospace",
     font_size=24,
     title_font_size=36,
     tick_font_size=12,
     font_opacity=0.6,
     volume_opacity=0.3,
-    marker_size=12,
+    marker_size=5,
+    marker_opacity=1,
     canvas_image="./assets/chart_bg_noise.png",
     canvas_image_opacity=0.2
     )

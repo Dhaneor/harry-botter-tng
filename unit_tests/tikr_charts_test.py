@@ -54,7 +54,7 @@ strategy = sb.build_strategy(mvp_strategy)
 strategy.name = "Safe HODL Strategy by Gregorovich"
 
 RISK_LEVEL = 0  # define the risk level for the strategy / position sizing
-MAX_LEVERAGE = 1  # define the maximum leverage for the strategy / position sizing
+MAX_LEVERAGE = 1.5  # define the maximum leverage for the strategy / position sizing
 CHAT_ID = os.getenv('CHAT_ID')  # Telegram chat ID (set as environment variable)
 
 TIMEOUT = 60  # time in seconds to wait for the data to be available in the repository
@@ -224,7 +224,7 @@ async def send_chart(df: pd.DataFrame) -> None:
     await ts.send_message(
         chat_id=CHAT_ID,
         msg=msg,
-        image=Chart(df, style='night', title=strategy.name).get_image_bytes()
+        image=Chart(df, style='day', title=strategy.name).get_image_bytes()
     )
 
 

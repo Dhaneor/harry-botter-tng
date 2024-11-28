@@ -12,15 +12,24 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import plotly.graph_objects as go
+import time
 
 from abc import abstractmethod
 from plotly.io import to_image
 from plotly.subplots import make_subplots
 
 from .plot_definition import (
-    PlotDefinition, SubPlot, Layout,
-    Candlestick, Volume, Positions, Signal,
-    Line, Channel, Drawdown
+    PlotDefinition,
+    SubPlot,
+    Layout,
+    Candlestick,
+    Volume,
+    Positions,
+    Buy,
+    Sell,
+    Line,
+    Channel,
+    Drawdown,
 )
 from .plotly_styles import styles, TikrStyle
 from .util import config
@@ -48,8 +57,9 @@ class ChartArtist:
 
     def __init__(self, style: TikrStyle):
         self.style = style
+        self.plot_definition: PlotDefinition = None
 
-    def plot(self, data: pd.DataFrame | Data, p_def: PlotDefinition):
+    def build_figure(self, data: pd.DataFrame | Data, p_def: PlotDefinition):
         """
         Plots a strategy and opens the image in a browser.
 
@@ -61,18 +71,39 @@ class ChartArtist:
         p_def : PlotDefinition
             plot parameters for a strategy
         """
+        self.plot_definition = p_def
+        self.fig = self.create_fig(p_def)
+
+        # draw subplots, including their legends
+        for subplot_no, subplot in enumerate(p_def.subplots):
+            subplot.draw_subplot(self.fig, data)
+
+            # the legend names need to start from 'legend_2' to avoid
+            # overwriting the main plot legend
+            legend_name = f"legend{subplot_no + 2}"
+
+            # update all traces in the current subplot with the legend name
+            self.fig.update_traces(row=subplot.row, col=subplot.col, legend=legend_name)
+
+            # add legend to subplot
+            self.position_legend_in_subplot(
+                legend_name=legend_name,
+                row=subplot.row,
+                col=subplot.col,
+                legend_position='lower right'
+            )
+
+        return self.fig
+
+    def plot(self, data: pd.DataFrame | Data, p_def: PlotDefinition) -> None:
+        self.build_figure(data, p_def)
+
+        # display the chart
         config = {"autosizable": True, "responsive": True, "displaylogo": False}
+        self.fig.show(width=2400, height=1600, config=config)
 
-        fig = self.create_fig(p_def)
-
-        # draw subplots
-        for subplot in p_def.subplots:
-            subplot.draw_subplot(fig, data)
-
-        fig.show(width=2400, height=1600, config=config)
-
-        p_def.layout.show_layout()
-        print(p_def)
+        # print the layout of the chart to the terminal
+        self.plotdefinition.layout.show_layout()
 
     def create_fig(self, p_def: PlotDefinition):
         """Prepare a figure for plotting.
@@ -82,38 +113,30 @@ class ChartArtist:
         p_def : PlotDefinition
             plot parameters for a strategy
         """
-        rows = p_def.layout.number_of_rows
-        cols = p_def.layout.number_of_columns
+        rows = self.plot_definition.layout.number_of_rows
+        cols = self.plot_definition.layout.number_of_columns
 
-        row_heights = [8, 5, 3]
-        column_widths = tuple(1 for _ in range(cols))
+        row_heights = self.plot_definition.layout.row_heights
+        column_widths = self.plot_definition.layout.col_widths
 
         # secondary y axis for main plot
         specs = [
-            [
-                {"secondary_y": True if i == 0 and j == 0 else False}
-                for j in range(cols)]
+            [{"secondary_y": True if i == 0 and j == 0 else False} for j in range(cols)]
             for i in range(rows)
         ]
 
-        if p_def.number_of_subplots == 0:
-            fig = make_subplots(
-                rows=rows,
-                cols=1,
-                specs=specs,
-                subplot_titles=p_def.subplot_titles,
-            )
-        else:
-            fig = make_subplots(
-                rows=rows,
-                cols=cols,
-                row_heights=row_heights,
-                column_widths=column_widths,
-                vertical_spacing=0.05,
-                shared_xaxes=True,
-                subplot_titles=p_def.subplot_titles,
-                specs=specs,
-            )
+        fig = make_subplots(
+            rows=rows,
+            cols=cols,
+            row_heights=row_heights,
+            column_widths=column_widths,
+            vertical_spacing=self.plot_definition.layout.vertical_spacing,
+            horizontal_spacing=self.plot_definition.layout.horizontal_spacing,
+            shared_yaxes=True,
+            shared_xaxes=True,
+            subplot_titles=None,  # self.plot_definition.subplot_titles,
+            specs=specs,
+        )
 
         fig = self.add_gridlines(fig, p_def)
 
@@ -152,7 +175,7 @@ class ChartArtist:
             title_font_color=font_color,
             title_font_size=self.style.title_font_size,
             legend_title_font_color=font_color,
-            showlegend=False,
+            showlegend=True,
         )
 
         fig.update_annotations(font_size=self.style.font_size)
@@ -215,12 +238,18 @@ class ChartArtist:
         rows = p_def.layout.number_of_rows
         color = self.style.colors.grid.rgba
         update_params = dict(
-            showgrid=True, gridwidth=0.5, gridcolor=color, zeroline=False,
+            showgrid=True,
+            gridwidth=0.5,
+            gridcolor=color,
+            zeroline=False,
             ticklen=20,  # showticklabels=False,
-            )
+        )
         no_grid_params = dict(
-            showgrid=False, zeroline=False, ticklen=10, showticklabels=True,
-            )
+            showgrid=False,
+            zeroline=False,
+            ticklen=10,
+            showticklabels=True,
+        )
 
         # Update x-axes for all rows
         for i in range(1, rows + 1):
@@ -236,278 +265,125 @@ class ChartArtist:
 
         return fig
 
-    def draw_ohlcv(self, fig: go.Figure, data: pd.DataFrame):
-        vol_alpha = self.style.volume_opacity
-        vol_color = self.style.colors.volume.set_alpha(vol_alpha).rgba
-        border_color = self.style.colors.volume.set_alpha(vol_alpha / 2).rgba
-
-        fig.add_trace(
-            go.Bar(
-                x=data.index,
-                y=data["volume"],
-                name="Volume",
-                showlegend=False,
-                marker={
-                    "color": vol_color,
-                    "line": {"color": border_color, "width": 1}
-                },
-                zorder=-1
-            ),
-            secondary_y=True,
-        )
-
-        fig.add_trace(
-            go.Candlestick(
-                x=data.index,
-                open=data.open,
-                high=data.high,
-                low=data.low,
-                close=data.close,
-                name="OHLC",
-                line=dict(width=0.75),
-                showlegend=False,
-                opacity=1,
-                zorder=0
-            ),
-            secondary_y=False,
-        )
-
-        return fig
-
-    def _draw_signal(self, fig, data: pd.DataFrame):
-        # if "buy_at" not in data.columns:
-        #     data.loc[
-        #         (data[signal_column] >= 1) & (data[signal_column] <= 20),
-        #         "buy_at"
-        #     ] = data.open
-
-        # if "sell_at" not in data.columns:
-        #     data.loc[
-        #         (data[signal_column] <= -1) & (data[signal_column] >= -20),
-        #         "sell_at"
-        #     ] = data.open
-
-        data.loc[data.open_long.shift() == 1, "open_long_at"] = data.open
-        data.loc[data.open_short.shift() == 1, "open_short_at"] = data.open
-
-        fig.add_trace(
-            go.Scatter(
-                mode="markers",
-                x=data.index,
-                y=data.open_long_at,
-                marker=dict(
-                    symbol="triangle-up",
-                    color=self.style.colors.buy.rgba,
-                    size=self.style.marker_size,
-                    opacity=self.style.marker_opacity,
-                    line=dict(color=self.style.colors.buy.rgba, width=1),
-                ),
-                showlegend=False,
-            )
-        )
-
-        fig.add_trace(
-            go.Scatter(
-                mode="markers",
-                x=data.index,
-                y=data.open_short_at,
-                marker=dict(
-                    symbol="triangle-down",
-                    color=self.style.colors.sell.rgba,
-                    size=self.style.marker_size,
-                    opacity=self.style.marker_opacity,
-                    line=dict(color=self.style.colors.sell.rgba, width=1),
-                ),
-                showlegend=False,
-            )
-        )
-
-        return fig
-
-    def draw_buys_and_sells(self, fig, data: pd.DataFrame):
-        fig.add_trace(
-            go.Scatter(
-                mode="markers",
-                x=data.index,
-                y=data.buy_at,
-                marker=dict(
-                    symbol="triangle-up",
-                    color=self.style.colors.buy.rgba,
-                    size=self.style.marker_size,
-                    opacity=self.style.marker_opacity,
-                    line=dict(color=self.style.colors.buy.rgba, width=1),
-                ),
-                showlegend=False,
-            )
-        )
-
-        fig.add_trace(
-            go.Scatter(
-                mode="markers",
-                x=data.index,
-                y=data.sell_at,
-                marker=dict(
-                    symbol="triangle-down",
-                    color=self.style.colors.sell.rgba,
-                    size=self.style.marker_size,
-                    opacity=self.style.marker_opacity,
-                    line=dict(color=self.style.colors.sell.rgba, width=1),
-                ),
-                showlegend=False,
-            )
-        )
-
-        return fig
-
-    def draw_positions(self, fig: go.Figure, data: pd.DataFrame, row=1, col=1):
-        # Ensure the dataframe is sorted by index
-        data = data.sort_index()
-
-        # Get the 'position' column
-        positions = data["position"]
-
-        # Identify segments where 'position' remains the same
-        segments = positions.ne(positions.shift()).cumsum()
-
-        # Group the dataframe by these segments
-        grouped = data.groupby(segments)
-
-        # Define colors for long and short positions
-        bull_color = "rgba(0, 125, 0, 0.1)"  # Green with low opacity
-        bear_color = "rgba(125, 0, 0, 0.1)"  # Red with low opacity
-
-        # Iterate over each group to draw rectangles
-        for _, group in grouped:
-            pos_value = group["position"].iloc[0]
-            if pos_value != 0:
-                fig.add_shape(
-                    type="rect",
-                    x0=group.index[0],
-                    x1=group.index[-1],
-                    y0=0,  # Use 0 for bottom of subplot
-                    y1=1,  # Use 1 for top of subplot
-                    xref=f"x{row}" if row > 1 else "x",
-                    yref=f"y{row} domain" if row > 1 else "y domain",
-                    fillcolor=bull_color if pos_value == 1 else bear_color,
-                    layer="below",
-                    line_width=0,
-                    row=row,
-                    col=col,
-                )
-
-        return fig
-
     # --------------------------------------------------------------------------------
-    def draw_main_plot(self, fig, data: pd.DataFrame, p_def: PlotDefinition):
-        for row in range(1, p_def.number_of_rows + 1):
-            self.draw_positions(fig, data, row=row)
+    def get_subplot_domain(self, row, col):
+        def normalize(values):
+            total = sum(values)
+            return [v / total for v in values]
 
-        self.draw_ohlcv(fig, data)
-        self.draw_buys_and_sells(fig, data)
+        rows = self.plot_definition.layout.number_of_rows
+        cols = self.plot_definition.layout.number_of_columns
 
-    def draw_subplot(
+        row_heights_normalized = normalize(self.plot_definition.layout.row_heights)
+        column_widths_normalized = normalize(self.plot_definition.layout.col_widths)
+
+        vertical_spacing = self.plot_definition.layout.vertical_spacing
+        horizontal_spacing = self.plot_definition.layout.horizontal_spacing
+
+        # Calculate total spacings
+        total_vertical_spacing = vertical_spacing * (rows - 1)
+        total_horizontal_spacing = horizontal_spacing * (cols - 1)
+
+        # Adjust heights and widths to account for spacing
+        adjusted_row_heights = [
+            h * (1 - total_vertical_spacing) for h in row_heights_normalized
+        ]
+        adjusted_column_widths = [
+            w * (1 - total_horizontal_spacing) for w in column_widths_normalized
+        ]
+
+        # Calculate cumulative positions
+        y_positions = []
+        y = 1.0  # Start from the top
+        for idx, h in enumerate(adjusted_row_heights):
+            y_start = y - h
+            y_positions.append((y_start, y))
+            if idx < rows - 1:
+                y = y_start - vertical_spacing
+            else:
+                y = y_start
+
+        x_positions = []
+        x = 0.0  # Start from the left
+        for idx, w in enumerate(adjusted_column_widths):
+            x_end = x + w
+            x_positions.append((x, x_end))
+            if idx < cols - 1:
+                x = x_end + horizontal_spacing
+            else:
+                x = x_end
+
+        # Get the domain for the specific subplot
+        x_start, x_end = x_positions[col - 1]
+        y_start, y_end = y_positions[row - 1]  # Rows are indexed from top to bottom
+
+        return (x_start, x_end), (y_start, y_end)
+
+    def position_legend_in_subplot(
         self,
-        fig: go.Figure,
-        data: pd.DataFrame,
-        desc: SubPlot,
-        row: int
-    ) -> go.Figure:
-        logger.debug(f"drawing subplot {desc.label} in row {row}")
+        legend_name,
+        row=1,
+        col=1,
+        legend_position="upper left",
+        xoffset=0.02,
+        yoffset=0.02,
+        legend_kwargs=None,
+    ):
+        # Get the subplot domain
+        (x_start, x_end), (y_start, y_end) = self.get_subplot_domain(row, col)
 
-        default_line_def = Line(
-            label=desc.label,
-            color=self.style.colors.strategy.rgba,
-            width=0,
-            opacity=0,
-            shape="spline",
+        # Adjust xoffset and yoffset relative to the subplot size
+        x_range = x_end - x_start
+        y_range = y_end - y_start
+
+        xoffset_abs = xoffset * x_range
+        yoffset_abs = yoffset * y_range
+
+        # Determine legend position within the subplot domain
+        if legend_position == 'upper left':
+            x = x_start + xoffset_abs
+            y = y_end - yoffset_abs
+            xanchor = 'left'
+            yanchor = 'top'
+        elif legend_position == 'upper right':
+            x = x_end - xoffset_abs
+            y = y_end - yoffset_abs
+            xanchor = 'right'
+            yanchor = 'top'
+        elif legend_position == 'lower left':
+            x = x_start + xoffset_abs
+            y = y_start + yoffset_abs
+            xanchor = 'left'
+            yanchor = 'bottom'
+        elif legend_position == 'lower right':
+            x = x_end - xoffset_abs
+            y = y_start + yoffset_abs
+            xanchor = 'right'
+            yanchor = 'bottom'
+        else:
+            # Default to upper left
+            x = x_start + xoffset_abs
+            y = y_end - yoffset_abs
+            xanchor = 'left'
+            yanchor = 'top'
+
+        # Build the legend dictionary
+        legend_dict = dict(
+            x=x,
+            y=y,
+            xanchor=xanchor,
+            yanchor=yanchor,
+            bgcolor=self.style.colors.canvas.set_alpha(0.1).rgba,
+            font=dict(size=self.style.tick_font_size),
+            tracegroupgap=5
         )
 
-        for channel in desc.channel:
-            # convert tuples to Channel objects
-            if isinstance(desc.channel, tuple):
-                desc.channel = Channel(
-                    label=f"{desc.channel[0]} - {desc.channel[1]}",
-                    upper=default_line_def,
-                    lower=default_line_def,
-                )
+        if legend_kwargs:
+            legend_dict.update(legend_kwargs)
 
-            logger.debug("drawing channel: {0}".format(channel))
-            try:
-                channel.add_trace(fig=fig, data=data, row=row + 1)
-            except Exception as e:
-                logger.error(channel)
-                logger.error(
-                    "unable to draw channel: '%s' -> %s"
-                    % (channel.label, e),
-                    exc_info=True
-                    )
-
-        for line in desc.lines:
-            logger.debug("drawing line: {0} in row {1}".format(line, row))
-            line = Line(line[0]) if isinstance(line, tuple) else line
-            line.add_trace(fig=fig, data=data, row=row + 1)
-
-        for trig in desc.triggers:
-            logger.debug("drawing line: {0}".format(trig))
-            fig.add_trace(
-                go.Scatter(
-                    mode="lines",
-                    x=data.index,
-                    y=data[trig[0]],
-                    line=dict(color="blue", width=0.5),
-                    opacity=0.3,
-                ),
-                row=row + 1,
-                col=1,
-            )
-
-        if desc.secondary_y_axis:
-            _, yaxis_key = self.get_axis_keys(fig, row, 1)
-            axis_key_number = int(yaxis_key[-1])
-
-            # Configure axes for the second subplot
-            fig.update_layout({
-                yaxis_key: dict(
-                    title="desc.label", anchor="x", domain=[0, 0.5]
-                    ),
-                f'yaxis{axis_key_number + 1}': dict(
-                    overlaying=f'y{axis_key_number}', side='right', showline=True
-                    )
-            })
-
-        return fig
-
-    # --------------------------------------------------------------------------------
-    from plotly.subplots import make_subplots
-
-    def get_axis_keys(self, fig, row, col):
-        """
-        Retrieve the x-axis and y-axis keys for a specific subplot.
-
-        Parameters:
-            fig: The Plotly figure object created using make_subplots.
-            row: The row number of the desired subplot (1-based index).
-            col: The column number of the desired subplot (1-based index).
-
-        Returns:
-            A tuple containing the x-axis key and y-axis key as strings.
-        """
-        # Get the subplot grid dimensions
-        rows = fig._grid_ref[0]  # Total number of rows
-        cols = fig._grid_ref[1]  # Total number of columns
-
-        for elem, i in enumerate(fig._grid_ref):
-            logger.debug('-' * 120)
-            logger.debug("elem [%s]: %s" % (i, elem))
-
-        # Calculate the subplot number (1-based index)
-        subplot_number = (row - 1) * cols + col
-
-        # Determine axis keys
-        xaxis_key = f'xaxis{"" if subplot_number == 1 else subplot_number}'
-        yaxis_key = f'yaxis{"" if subplot_number == 1 else subplot_number}'
-
-        return xaxis_key, yaxis_key
+        # Update figure layout
+        logger.info("updating legend '%s' with %s", legend_name, legend_dict)
+        self.fig.update_layout({legend_name: legend_dict})
 
 
 # ================================= Chart classes ====================================
@@ -516,7 +392,7 @@ class Chart:
 
     default_format: str = "png"
     default_width: int = 2400
-    default_height: int = 1600
+    default_height: int = 1200
     default_scale: int = 1
 
     def __init__(self, data, style, title=None):
@@ -556,13 +432,18 @@ class Chart:
         Returns:
             io.BytesIO: BytesIO object containing the high-quality image
         """
+        start_time = time.time()
+
         img_bytes = to_image(
             fig=self.artist.build_figure(data=self.data, p_def=self.plot_definition),
             format=format,
             scale=scale,
             width=width,
-            height=height
+            height=height,
         )
+
+        execution_time = round(time.time() - start_time)
+        logger.info(f"Chart image generation took {execution_time} seconds.")
 
         return io.BytesIO(img_bytes)
 
@@ -594,7 +475,7 @@ class Chart:
                 column=config.strategy.equity.column,
                 color=self.style.colors.strategy,
                 width=self.style.line_width + 1,
-                zorder=0,
+                zorder=1,
             ),
             lower=Line(
                 label=config.capital.equity.label,
@@ -603,9 +484,9 @@ class Chart:
                     self.style.colors.capital.a / 2
                 ),
                 width=self.style.line_width + 1,
-                fillmethod="tonexty",
-                zorder=0,
+                zorder=1,
             ),
+            fillmethod="tonexty",
             color=self.style.colors.strategy_fill,
         )
 
@@ -626,11 +507,21 @@ class Chart:
             fillcolor=self.style.colors.hodl_fill,  # fill_color
             opacity=0.1,
             color_scale=[
-                (0, self.style.colors.hodl_fill.set_alpha(self.style.colors.hodl.a).rgba),
-                (0.1, self.style.colors.hodl_fill.set_alpha(self.style.colors.hodl.a).rgba),
+                (
+                    0,
+                    self.style.colors.hodl_fill.set_alpha(
+                        self.style.colors.hodl.a
+                    ).rgba,
+                ),
+                (
+                    0.1,
+                    self.style.colors.hodl_fill.set_alpha(
+                        self.style.colors.hodl.a
+                    ).rgba,
+                ),
                 (0.8, self.style.colors.hodl_fill.reset().rgba),
                 (1, self.style.colors.hodl_fill.reset().rgba),
-            ]
+            ],
         )
 
     def _strategy_drawdown(self):
@@ -640,7 +531,7 @@ class Chart:
             color=self.style.colors.strategy,
             fillcolor=self.style.colors.strategy_fill,
             gradient=False,
-            critical=-25,
+            critical=-20,
         )
 
     def _capital_drawdown(self):
@@ -650,7 +541,7 @@ class Chart:
             color=self.style.colors.capital,
             fillcolor=self.style.colors.capital_fill,
             gradient=False,
-            critical=-15,
+            critical=-10,
         )
 
     # ........................... (Sub-)Plot Descriptions ............................
@@ -679,14 +570,17 @@ class TikrChart(Chart):
         super().__init__(df, style, title)
 
         self.layout = Layout(
-            {
+            layout={
                 "OHLCV": {"row": 1, "col": 1, "secondary_y": True},
                 "Portfolio": {"row": 2, "col": 1},
                 "Drawdown": {"row": 3, "col": 1},
-            }
+            },
+            row_heights=[8, 5, 3],
+            col_widths=[1]
         )
         self.layout.show_layout()
         self._plot_definition = self._build_plot_definition()
+        self.artist.plot_definition = self._plot_definition
 
     def draw(self):
         self.artist.plot(data=self.data, p_def=self.plot_definition)
@@ -695,9 +589,11 @@ class TikrChart(Chart):
         return SubPlot(
             label="OHLCV",
             elements=(
-                Candlestick(),
-                # Volume(label='Volume', column=config.ohlcv.volume),
                 Positions(column=config.ohlcv.volume, opacity=self.style.fill_alpha),
+                Volume(label='Volume', column=config.ohlcv.volume),
+                Candlestick(),
+                Buy(),
+                Sell(),
             ),
             secondary_y=True,
         )
@@ -713,7 +609,3 @@ class TikrChart(Chart):
             layout=self.layout,
             style=self.style,
         )
-
-
-if __name__ == "__main__":
-    print(config.equity)
