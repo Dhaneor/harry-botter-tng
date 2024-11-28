@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 from itertools import product

@@ -22,6 +22,14 @@ hodl:
     column: hodl.drawdown
     label: Hodl Drawdown
 
+position:
+  size:
+    column: b.base
+    label: Position Size
+  leverage:
+    column: leverage
+    label: Leverage
+
 ohlcv:
   volume: volume
 

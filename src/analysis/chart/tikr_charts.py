@@ -30,6 +30,8 @@ from .plot_definition import (
     Line,
     Channel,
     Drawdown,
+    Leverage,
+    PositionSize,
 )
 from .plotly_styles import styles, TikrStyle
 from .util import config
@@ -103,7 +105,7 @@ class ChartArtist:
         self.fig.show(width=2400, height=1600, config=config)
 
         # print the layout of the chart to the terminal
-        self.plotdefinition.layout.show_layout()
+        self.plot_definition.layout.show_layout()
 
     def create_fig(self, p_def: PlotDefinition):
         """Prepare a figure for plotting.
@@ -157,8 +159,8 @@ class ChartArtist:
         # disable range sliders
         fig.update_xaxes(row=1, col=1, rangeslider_visible=False)
         fig.update_xaxes(row=2, col=1, rangeslider_visible=False)
-        fig.update_xaxes(row=3, col=1, rangeslider_visible=False)
-        fig.update_xaxes(row=rows, col=1, rangeslider_thickness=0.02)
+        fig.update_xaxes(rangeslider_visible=False)
+        # fig.update_xaxes(row=rows, col=1, rangeslider_thickness=0.02)
 
         # set the font family, size, etc.
         font_color = self.style.colors.text.set_alpha(self.style.font_opacity).rgba
@@ -382,7 +384,7 @@ class ChartArtist:
             legend_dict.update(legend_kwargs)
 
         # Update figure layout
-        logger.info("updating legend '%s' with %s", legend_name, legend_dict)
+        logger.debug("updating legend '%s' with %s", legend_name, legend_dict)
         self.fig.update_layout({legend_name: legend_dict})
 
 
@@ -465,6 +467,30 @@ class Chart:
             style = "default"
 
         self.style = STYLES[style]
+
+    # ......................... Define Position Components ...........................
+    def subplot_position_size(self) -> SubPlot:
+        return SubPlot(
+            label="Position size",
+            elements=[
+                PositionSize(
+                    label=config.position.size.label,
+                    column=config.position.size.column,
+                    color=self.style.colors.strategy,
+                )
+            ],
+        )
+
+    def subplot_leverage(self) -> SubPlot:
+        return SubPlot(
+            label="Leverage",
+            elements=[
+                Leverage(
+                    label=config.position.leverage.label,
+                    column=config.position.leverage.column,
+                )
+            ],
+        )
 
     # ........................ Define Portfolio Components ...........................
     def _equity_channel(self):
@@ -590,6 +616,53 @@ class TikrChart(Chart):
             label="OHLCV",
             elements=(
                 Positions(column=config.ohlcv.volume, opacity=self.style.fill_alpha),
+                Candlestick(),
+                Buy(),
+                Sell(),
+            ),
+            secondary_y=True,
+        )
+
+    def _build_plot_definition(self):
+        return PlotDefinition(
+            name=self.title or "Tikr Chart",
+            subplots=(
+                self.subplot_ohlcv(),
+                self.subplot_portfolio(),
+                self.subplot_drawdown(),
+            ),
+            layout=self.layout,
+            style=self.style,
+        )
+
+
+class BackTestChart(Chart):
+    def __init__(self, df, style: str, title=None):
+        super().__init__(df, style, title)
+
+        self.layout = Layout(
+            layout={
+                "OHLCV": {"row": 1, "col": 1, "secondary_y": True},
+                "Portfolio": {"row": 2, "col": 1},
+                "Drawdown": {"row": 3, "col": 1},
+                "Leverage": {"row": 4, "col": 1},
+                "Position size": {"row": 5, "col": 1},
+            },
+            row_heights=[8, 5, 3, 2, 1],
+            col_widths=[1]
+        )
+        self.layout.show_layout()
+        self._plot_definition = self._build_plot_definition()
+        self.artist.plot_definition = self._plot_definition
+
+    def draw(self):
+        self.artist.plot(data=self.data, p_def=self.plot_definition)
+
+    def subplot_ohlcv(self):
+        return SubPlot(
+            label="OHLCV",
+            elements=(
+                Positions(column=config.ohlcv.volume, opacity=self.style.fill_alpha),
                 Volume(label='Volume', column=config.ohlcv.volume),
                 Candlestick(),
                 Buy(),
@@ -605,6 +678,8 @@ class TikrChart(Chart):
                 self.subplot_ohlcv(),
                 self.subplot_portfolio(),
                 self.subplot_drawdown(),
+                self.subplot_leverage(),
+                self.subplot_position_size(),
             ),
             layout=self.layout,
             style=self.style,

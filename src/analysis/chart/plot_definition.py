@@ -114,7 +114,7 @@ class Color:
 
         def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
             hex_color = hex_color.lstrip("#")
-            return tuple(int(hex_color[i: i + 2], 16) for i in (0, 2, 4))
+            return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
 
         color = cls(*(*hex_to_rgb(hex_color), alpha))
         color.a = alpha
@@ -240,7 +240,7 @@ class ChartElement(ABC):
     row: int = 1
     col: int = 1
 
-    width: float = 1
+    width: float | None = None
     color: Color | None = None
     opacity: float = 1
     zorder: int | None = 0
@@ -251,6 +251,83 @@ class ChartElement(ABC):
 
     @abstractmethod
     def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure: ...
+
+    def adjust_and_convert_colorscale(
+        self, color_scale, max_leverage
+    ) -> list[list[float, Color]]:
+        """
+        Adjusts a colorscale based on the maximum leverage value
+        and converts it to Plotly's relative format.
+
+        Parameters:
+        -----------
+        color_scale: List[Tuple[float, str]],
+            List of tuples [(value, color), ...] with absolute values.
+        max_leverage: float
+            Maximum leverage value.
+
+        Returns:
+        plotly_colorscale:
+            List of [relative_position, color] suitable for Plotly.
+        """
+        # Sort the color scale by value
+        color_scale = sorted(color_scale, key=lambda x: x[0])
+
+        # Remove color stops beyond max_leverage and interpolate if necessary
+        adjusted_scale = []
+        for i, (value, color) in enumerate(color_scale):
+            if value < max_leverage:
+                adjusted_scale.append((value, color))
+            elif value == max_leverage:
+                adjusted_scale.append((value, color))
+                break
+            else:
+                # Interpolate color at max_leverage
+                if i == 0:
+                    # Max leverage is less than the first value; use the first color
+                    adjusted_scale.append((max_leverage, color))
+                else:
+                    prev_value, prev_color = color_scale[i - 1]
+                    fraction = (max_leverage - prev_value) / (value - prev_value)
+                    color_interp = self.interpolate_color(
+                        prev_color, color, fraction
+                        )
+                    adjusted_scale.append((max_leverage, color_interp))
+                break
+
+        # Normalize the adjusted colorscale values to [0, 1]
+        min_value = adjusted_scale[0][0]
+        max_value = adjusted_scale[-1][0]
+        value_range = max_value - min_value if max_value != min_value else 1  # Avoid division by zero
+
+        plotly_colorscale = []
+        for value, color in adjusted_scale:
+            relative_position = (value - min_value) / value_range
+            plotly_colorscale.append([relative_position, color])
+
+        return plotly_colorscale
+
+    def interpolate_color(self, color_1: Color, color_2: Color, fraction: float):
+        """
+        Interpolates between two colors by a given fraction.
+
+        Parameters:
+        - color_1: Starting color string.
+        - color_2: Ending color string.
+        - fraction: Fraction between 0 and 1 representing the interpolation amount.
+
+        Returns:
+        - color_str: Interpolated color string in 'rgba(r, g, b, a)' format.
+        """
+        color1 = color_1.rgba_tuple
+        color2 = color_2.rgba_tuple
+
+        r = color1[0] + (color2[0] - color1[0]) * fraction
+        g = color1[1] + (color2[1] - color1[1]) * fraction
+        b = color1[2] + (color2[2] - color1[2]) * fraction
+        a = color1[3] + (color2[3] - color1[3]) * fraction
+
+        return Color(r, g, b, a)
 
 
 @dataclass
@@ -393,6 +470,7 @@ class Line(ChartElement):
 
     shadow: bool = True
     glow: bool = False
+    end_marker: bool = True
 
     def apply_style(self, style: TikrStyle) -> None:
         self.width = style.line_width if not self.width else self.width
@@ -404,7 +482,7 @@ class Line(ChartElement):
         logger.debug(
             f"Adding line '{self.label}' with fill "
             f"({self.fillmethod}: {self.fillcolor}) to plot."
-            )
+        )
 
         logger.debug(self)
 
@@ -426,22 +504,23 @@ class Line(ChartElement):
         )
         fig.add_trace(trace, row=self.row, col=self.col)
 
-        end_marker = go.Scatter(
-            x=[data.index[-1]],
-            y=[int(data[self.column or self.label].astype(int).iloc[-1])],
-            mode="markers+text",
-            marker=dict(color=self.color.rgba, size=5),
-            text=[data[self.column or self.label].iloc[-1].astype(int)],
-            textfont=dict(
-                family=self.font,
-                size=self.font_size,  # Use the font_size attribute here
-                color=self.color.rgba,
-            ),
-            textposition="middle right",
-            showlegend=False,
-        )
+        if self.end_marker:
+            end_marker = go.Scatter(
+                x=[data.index[-1]],
+                y=[int(data[self.column or self.label].astype(int).iloc[-1])],
+                mode="markers+text",
+                marker=dict(color=self.color.rgba, size=5),
+                text=[data[self.column or self.label].iloc[-1].astype(int)],
+                textfont=dict(
+                    family=self.font,
+                    size=self.font_size,  # Use the font_size attribute here
+                    color=self.color.rgba,
+                ),
+                textposition="middle right",
+                showlegend=False,
+            )
 
-        fig.add_trace(end_marker, row=self.row, col=self.col)
+            fig.add_trace(end_marker, row=self.row, col=self.col)
 
         return fig
 
@@ -800,6 +879,142 @@ class Drawdown(Line):
         return fig
 
 
+@dataclass
+class Leverage(ChartElement):
+    fillcolor: Color | None = None
+    fillmethod: str = "tozeroy"
+    fillstep: float = 0.25
+    alphastep: float = 0.1
+
+    no_leverage_area_color: Color | None = None
+
+    zorder: int = 1
+
+    def apply_style(self, style: TikrStyle) -> None:
+        self.width = style.line_width if not self.width else self.width
+        self.color = self.color if self.color else style.colors.strategy
+        self.fillcolor = self.fillcolor \
+            if self.fillcolor else style.colors.strategy_fill
+
+        self.no_leverage_area_color = self.no_leverage_area_color \
+            if self.no_leverage_area_color \
+            else style.colors.buy.set_alpha(style.fill_alpha / 2)
+
+    def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
+        # set leverage to zero for times where we had no position
+        data.loc[data['position'] == 0, 'leverage'] = 0
+
+        # draw a filled rectangular area that goes across the whole
+        # length of te subplot and from 0 to 1, which has the same
+        # color as the position rectangles
+        fig.add_shape(
+            type="rect",
+            x0=data.index[0],
+            x1=data.index[-1],
+            y0=0,
+            y1=min(1 / data[self.column].max(), 1),
+            xref=f"x{self.row}" if self.row > 1 else "x",
+            yref=f"y{self.row} domain" if self.row > 1 else "y domain",
+            fillcolor=self.no_leverage_area_color.rgba,
+            layer="below",
+            line_width=0,
+            row=self.row,
+            col=self.col,
+        )
+
+        # define the colors for the different zones
+        safe_zone_color_start = Color(0, 200, 0, 0.6)
+        safe_zone_color_stop = Color(0, 200, 0, 0.3)
+        less_safe_color_start = Color(255, 255, 0, 0.4)
+        less_safe_color_stop = Color(255, 128, 0, 0.6)
+        danger_color_start = Color(255, 64, 0, 0.6)
+        danger_color_stop = Color(200, 32, 0, 0.8)
+
+        # a color scale that represents the increasing danger
+        # of higher leverage
+        color_scale = [
+            (0, safe_zone_color_start),
+            (1, safe_zone_color_stop),
+            (1.5, less_safe_color_start),
+            (2, less_safe_color_stop),
+            (2.5, danger_color_start),
+            (3, danger_color_stop),
+            (10, danger_color_stop.set_alpha(1)),
+        ]
+
+        color_scale = self.adjust_and_convert_colorscale(
+            color_scale,
+            data['leverage'].max()
+        )
+
+        # convert all Color objects to RGBA strings
+        color_scale = [(stop, color.rgba) for stop, color in color_scale]
+
+        # draw the fill area without a surrounding line
+        leverage = go.Scatter(
+            x=data.index,
+            y=data[self.column],
+            name=self.label,
+            mode="lines",
+            line=dict(width=0, shape="hv"),
+            fillcolor=None,  # self.fillcolor,
+            fillgradient=dict(type="vertical", colorscale=color_scale),
+            fill="tozeroy",
+            showlegend=False,
+            hoverinfo="skip",
+            zorder=self.zorder,
+            opacity=0.5
+        )
+
+        fig.add_trace(leverage, row=self.row, col=self.col)
+
+        # draw a line (with shadow) on top of the fill area
+        Line(
+            label=self.label,
+            column=self.column,
+            color=self.color,
+            shape='hv',
+            width=self.width - 1,
+            fillcolor=None,
+            fillmethod=None,
+            row=self.row,
+            col=self.col,
+            end_marker=False,
+            zorder=self.zorder + 1
+        ).add_trace(fig, data)
+
+        return fig
+
+
+@dataclass
+class PositionSize(ChartElement):
+    fillcolor: Color | None = None
+    fillmethod: str = "tozeroy"
+
+    zorder: int = 0
+
+    def apply_style(self, style: TikrStyle) -> None:
+        self.width = style.line_width if not self.width else self.width
+        self.color = self.color if self.color else style.colors.strategy
+        self.fillcolor = self.fillcolor \
+            if self.fillcolor else style.colors.strategy_fill
+
+    def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
+        Line(
+            label=self.label,
+            column=self.column,
+            color=self.color,
+            shape='hv',
+            width=self.width - 1,
+            fillcolor=self.fillcolor,
+            fillmethod=self.fillmethod,
+            row=self.row,
+            col=self.col,
+            end_marker=False,
+            zorder=self.zorder
+        ).add_trace(fig, data)
+
+
 # ====================================================================================
 @dataclass
 class SubPlot:
@@ -1034,7 +1249,7 @@ class Layout:
             label_row = row * 2 + 1
             label_col = col * cell_width + 2
             label = subplot[: colspan * cell_width - 2]  # Truncate label if too long
-            grid[label_row][label_col: label_col + len(label)] = label
+            grid[label_row][label_col : label_col + len(label)] = label
 
         # Print the grid
         for row in grid:

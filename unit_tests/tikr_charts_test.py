@@ -33,7 +33,7 @@ from src.analysis.chart.tikr_charts import TikrChart as Chart  # noqa: E402
 from tikr_mvp_strategy import mvp_strategy  # noqa: E402
 
 # set up logging
-LOG_LEVEL = logging.DEBUG
+LOG_LEVEL = logging.INFO
 
 logger = logging.getLogger("main")
 logger.setLevel(LOG_LEVEL)
@@ -54,7 +54,7 @@ strategy = sb.build_strategy(mvp_strategy)
 strategy.name = "Safe HODL Strategy by Gregorovich"
 
 RISK_LEVEL = 0  # define the risk level for the strategy / position sizing
-MAX_LEVERAGE = 1.5  # define the maximum leverage for the strategy / position sizing
+MAX_LEVERAGE = 0.75  # define the maximum leverage for the strategy / position sizing
 CHAT_ID = os.getenv('CHAT_ID')  # Telegram chat ID (set as environment variable)
 
 TIMEOUT = 60  # time in seconds to wait for the data to be available in the repository

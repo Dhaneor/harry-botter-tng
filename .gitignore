@@ -16,3 +16,4 @@ tikr_mvp_strategy.py
 playground.ipynb
 /zguide
 talib_src_latest/ta-lib-python
+src/analysis/chart/plotly_multiple_legends_test.py
