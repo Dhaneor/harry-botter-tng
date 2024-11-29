@@ -38,4 +38,4 @@ clean_reqs = get_clean_requirements()
 with open("requirements_mvp.txt", "w") as f:
     f.write("\n".join(clean_reqs))
 
-print("Clean requirements.txt file has been generated.")
+print("Clean requirements_mvp.txt file has been generated.")

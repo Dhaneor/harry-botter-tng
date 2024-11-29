@@ -6,7 +6,6 @@ Created on Nov 21 12:08:20 2024
 @author dhaneor
 """
 import logging
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import sys
@@ -114,7 +113,7 @@ class Color:
 
         def hex_to_rgb(hex_color: str) -> tuple[int, int, int]:
             hex_color = hex_color.lstrip("#")
-            return tuple(int(hex_color[i : i + 2], 16) for i in (0, 2, 4))
+            return tuple(int(hex_color[i: i + 2], 16) for i in (0, 2, 4))
 
         color = cls(*(*hex_to_rgb(hex_color), alpha))
         color.a = alpha
@@ -298,7 +297,7 @@ class ChartElement(ABC):
         # Normalize the adjusted colorscale values to [0, 1]
         min_value = adjusted_scale[0][0]
         max_value = adjusted_scale[-1][0]
-        value_range = max_value - min_value if max_value != min_value else 1  # Avoid division by zero
+        value_range = max_value - min_value if max_value != min_value else 1
 
         plotly_colorscale = []
         for value, color in adjusted_scale:
@@ -827,8 +826,8 @@ class Drawdown(Line):
 
         # add critical level fill area, if critical level is defined
         if self.critical is not None:
-            logger.info(f"Critical drawdown level: {self.critical}")
-            logger.info(f"Minimum drawdown level: {data[self.column].min()}")
+            logger.debug(f"Critical drawdown level: {self.critical}")
+            logger.debug(f"Minimum drawdown level: {data[self.column].min()}")
 
             try:
                 critical_level = round(
@@ -847,14 +846,14 @@ class Drawdown(Line):
             overshoot = abs(critical_level) if critical_level < 0 else 0
 
             if critical_level < 0 and threshhold < 0:
-                logger.info("Critical level is below the max drawdown level")
+                logger.debug("Critical level is below the max drawdown level")
                 return fig
 
             if critical_level <= 0 and threshhold > 0:
                 critical_level = 0.001
                 overshoot = critical_level - 1
 
-            logger.info(f"Critical level: {critical_level} | Threshhold: {threshhold}")
+            logger.debug(f"Critical level: {critical_level} | Threshhold: {threshhold}")
 
             critical = go.Scatter(
                 x=data.index,
@@ -1000,11 +999,28 @@ class PositionSize(ChartElement):
             if self.fillcolor else style.colors.strategy_fill
 
     def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
+        # Ensure column is numeric
+        data[self.column] = pd.to_numeric(data[self.column], errors="coerce")
+
+        if data[self.column].isna().any():
+            logger.warning(
+                f"NaN values found in {self.column}. Handling missing values."
+                )
+            data[self.column] = data[self.column].ffill()
+
+        # Ensure data is sorted and aligned
+        if data.index.duplicated().any():
+            logger.warning("Duplicated x-values detected; sorting index.")
+            data = data.sort_index()
+
+        assert pd.api.types.is_numeric_dtype(data[self.column]), \
+            "Column must be numeric!"
+
         Line(
             label=self.label,
             column=self.column,
             color=self.color,
-            shape='hv',
+            shape='linear',
             width=self.width - 1,
             fillcolor=self.fillcolor,
             fillmethod=self.fillmethod,
@@ -1249,7 +1265,7 @@ class Layout:
             label_row = row * 2 + 1
             label_col = col * cell_width + 2
             label = subplot[: colspan * cell_width - 2]  # Truncate label if too long
-            grid[label_row][label_col : label_col + len(label)] = label
+            grid[label_row][label_col: label_col + len(label)] = label
 
         # Print the grid
         for row in grid:

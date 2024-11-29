@@ -11,6 +11,7 @@ import os
 from functools import wraps
 from io import BytesIO
 from telegram import Bot
+from telegram.error import InvalidToken
 from typing import Callable, Dict, Any, List, Awaitable
 
 logger = logging.getLogger('main.telegram_signal')
@@ -23,7 +24,13 @@ UP_ARROW = "\U0001F4C8"  # "\U0001F53C"  # 🔼
 DOWN_ARROW = "\U0001F4C9"  # "\U0001F53D"  # 🔽
 
 # Initialize Telegram bot
-bot = Bot(token=BOT_TOKEN)
+try:
+    bot = Bot(token=BOT_TOKEN)
+except InvalidToken as e:
+    print(BOT_TOKEN)
+    logger.error(f"Invalid Telegram bot token: {e}")
+    logger.error("Failed to initialize Telegram bot with token: %s." % BOT_TOKEN)
+    raise
 
 
 async def send_message(

@@ -165,9 +165,9 @@ class ChartArtist:
         # set the font family, size, etc.
         font_color = self.style.colors.text.set_alpha(self.style.font_opacity).rgba
 
-        logger.info("using font color: %s" % font_color)
-        logger.info("font opacity is set to: %s" % self.style.font_opacity)
-        logger.info("title font size is set to: %s" % self.style.title_font_size)
+        logger.debug("using font color: %s" % font_color)
+        logger.debug("font opacity is set to: %s" % self.style.font_opacity)
+        logger.debug("title font size is set to: %s" % self.style.title_font_size)
 
         fig.update_layout(
             font_family=self.style.font_family,
@@ -636,7 +636,7 @@ class TikrChart(Chart):
         )
 
 
-class BackTestChart(Chart):
+class BacktestChart(Chart):
     def __init__(self, df, style: str, title=None):
         super().__init__(df, style, title)
 
@@ -648,15 +648,21 @@ class BackTestChart(Chart):
                 "Leverage": {"row": 4, "col": 1},
                 "Position size": {"row": 5, "col": 1},
             },
-            row_heights=[8, 5, 3, 2, 1],
+            row_heights=[13, 8, 5, 3, 1],
             col_widths=[1]
         )
-        self.layout.show_layout()
+
+        if logger.level == logging.DEBUG:
+            self.layout.show_layout()
+
         self._plot_definition = self._build_plot_definition()
         self.artist.plot_definition = self._plot_definition
 
     def draw(self):
         self.artist.plot(data=self.data, p_def=self.plot_definition)
+
+    def show(self) -> None:
+        self.draw()
 
     def subplot_ohlcv(self):
         return SubPlot(

@@ -90,8 +90,8 @@ breakout = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 90}),
-            operand_b=("trending", 0.12, [0.05, 0.55, 0.1]),
+            operand_a=("er", {"timeperiod": 8}),
+            operand_b=("trending", 0.29, [0.05, 0.55, 0.1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
@@ -100,8 +100,8 @@ breakout = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod": 7}),
-            operand_c=("min", {"timeperiod": 3}),
+            operand_b=("max", {"timeperiod": 58}),
+            operand_c=("min", {"timeperiod": 12}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
             close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
             # open_short=("a", cn.COMPARISON.IS_EQUAL, "d"),
@@ -176,20 +176,20 @@ linreg_roc_eth_1d = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=(
-                "roc",
-                ("linearreg", "close", {"timeperiod": 37}),
-                {"timeperiod": 22},
-            ),
+            # operand_a=(
+            #     "roc",
+            #     ("linearreg", "close", {"timeperiod": 37}),
+            #     {"timeperiod": 22},
+            # ),
             operand_b=(
                 "roc",
                 ("linearreg", "close", {"timeperiod": 42}),
                 {"timeperiod": 27},
             ),
-            operand_c=("value", -7, [-21, 21, 1]),
+            # operand_c=("value", -7, [-21, 21, 1]),
             operand_d=("value", -11, [-21, 21, 1]),
-            open_long=("a", cn.COMPARISON.IS_ABOVE, "c"),
-            close_long=("a", cn.COMPARISON.IS_BELOW, "c"),
+            # open_long=("a", cn.COMPARISON.IS_ABOVE, "c"),
+            # close_long=("a", cn.COMPARISON.IS_BELOW, "c"),
             open_short=("b", cn.COMPARISON.IS_BELOW, "d"),
             close_short=("b", cn.COMPARISON.IS_ABOVE, "d"),
         ),
@@ -204,7 +204,7 @@ linreg = sg.SignalsDefinition(
             operand_a=(
                 "linearreg_slope",
                 "close",
-                {"timeperiod": 22},
+                {"timeperiod": 37},
             ),
             operand_b=(
                 "linearreg_slope",
@@ -245,10 +245,10 @@ tema_cross = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("tema", {"timeperiod": 7}),
-            operand_b=("tema", {"timeperiod": 82}),
+            operand_a=("tema", {"timeperiod": 18}),
+            operand_b=("tema", {"timeperiod": 179}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
-            open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+            close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
     ]
 )
@@ -282,8 +282,8 @@ test_er = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 70}),
-            operand_b=("trending", 0.2, [0.05, 0.55, 0.05]),
+            operand_a=("er", {"timeperiod": 7}),
+            operand_b=("trending", 0.45, [0.05, 0.55, 0.05]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
@@ -292,7 +292,7 @@ test_er = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a=("close"),
-            operand_b=("kama", {"timeperiod": 167}),
+            operand_b=("kama", {"timeperiod": 37}),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
@@ -416,7 +416,7 @@ s_linreg = sb.StrategyDefinition(
             strategy="Linear Regression",
             symbol="BTCUSDT",
             interval="1d",
-            signals_definition=linreg_roc_btc_1d,
+            signals_definition=linreg,
             weight=1,
         ),
     ]

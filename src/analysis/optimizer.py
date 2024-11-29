@@ -235,6 +235,7 @@ def filter_results_by_profit_and_leverage(results_list, rel_tol=1e-9):
     """
     # Create a dictionary to collect results for each (params, risk_level)
     results_by_key = defaultdict(list)
+
     for result in results_list:
         params, risk_level, max_leverage, stats = result
         key = (params, risk_level)
@@ -543,7 +544,7 @@ def optimize(
     data: OhlcvData,
     interval: str = '1d',
     risk_levels: Iterable[float] = (1,),
-    max_leverage_levels: tuple[float, ...] = (1, 1.5, 2, 2.5, 3),
+    max_leverage_levels: tuple[float, ...] = (1,),
     backtest_fn: Callable = bt.run
 ) -> List[Tuple[tuple[int | float, ...], int, int, Dict[str, float]]]:
     """Runs backtests for different parameter combinations.

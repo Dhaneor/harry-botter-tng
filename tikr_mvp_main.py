@@ -23,7 +23,7 @@ from src.analysis.backtest import statistics as st
 from src.analysis.models.position import Positions
 from src.analysis import telegram_signal as ts
 from src.backtest import result_stats as rs
-from src.plotting.minerva import TikrChart as Chart
+from src.analysis.chart.tikr_charts import TikrChart as Chart
 from tikr_mvp_strategy import mvp_strategy
 
 # set up logging
@@ -49,7 +49,11 @@ strategy.name = "Safe HODL Strategy by Gregorovich"
 
 RISK_LEVEL = 0  # define the risk level for the strategy / position sizing
 MAX_LEVERAGE = 1  # define the maximum leverage for the strategy / position sizing
+
+# <<<<< SET THESE ENVIRONMENT VARIABLES! >>>>>
 CHAT_ID = os.getenv('CHAT_ID')  # Telegram chat ID (set as environment variable)
+SEND_SIGNAL = os.getenv('SEND_SIGNAL')  # set as environment variable
+SEND_CHART = os.getenv('SEND_CHART')  # set as environment variable
 
 TIMEOUT = 60  # time in seconds to wait for the data to be available in the repository
 RETRY_AFTER_SECS = 5  # time between retries in seconds
@@ -221,13 +225,18 @@ async def send_performance_chart(df: pd.DataFrame) -> None:
     await ts.send_message(
         chat_id=CHAT_ID,
         msg=msg,
-        image=Chart(df, title=strategy.name).get_image_bytes()
+        image=Chart(df, title=strategy.name, style='day').get_image_bytes()
     )
 
 
 async def notify_telegram(df: pd.DataFrame) -> None:
-    await send_signal(df)
-    await send_performance_chart(df)
+    if SEND_SIGNAL:
+        logger.info("Sending trading signal to Telegram...")
+        await send_signal(df)
+
+    if SEND_CHART:
+        logger.info("Sending performance chart to Telegram...")
+        await send_performance_chart(df)
 
 
 # ================================= Sync Functions ===================================
