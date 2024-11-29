@@ -11,6 +11,7 @@ import asyncio
 import numpy as np
 import os
 import pandas as pd
+import sys
 import time
 from queue import Queue, Empty
 from threading import Event
@@ -50,17 +51,30 @@ strategy.name = "Safe HODL Strategy by Gregorovich"
 RISK_LEVEL = 0  # define the risk level for the strategy / position sizing
 MAX_LEVERAGE = 1  # define the maximum leverage for the strategy / position sizing
 
-# <<<<< SET THESE ENVIRONMENT VARIABLES! >>>>>
-CHAT_ID = os.getenv('CHAT_ID')  # Telegram chat ID (set as environment variable)
-SEND_SIGNAL = os.getenv('SEND_SIGNAL')  # set as environment variable
-SEND_CHART = os.getenv('SEND_CHART')  # set as environment variable
-
 TIMEOUT = 60  # time in seconds to wait for the data to be available in the repository
 RETRY_AFTER_SECS = 5  # time between retries in seconds
 repo.RATE_LIMIT = False  # disable rate limit for the repository
 repo.LOG_STATUS = True  # enable logging of server status and server time
 
 DISPLAY_DF_ROWS = 10  # number of rows to display in the dataframe
+
+
+# ================== <<<<< SET THESE ENVIRONMENT VARIABLES! >>>>> ====================
+CHAT_ID = os.getenv('CHAT_ID')  # Telegram chat ID (set as environment variable)
+SEND_SIGNAL = os.getenv('SEND_SIGNAL')  # set as environment variable
+SEND_CHART = os.getenv('SEND_CHART')  # set as environment variable
+
+if not CHAT_ID:
+    logger.error("CHAT_ID environment variable must be set!")
+    sys.exit(1)
+
+if not SEND_CHART and not SEND_SIGNAL:
+    logger.error(
+        "SEND_SIGNAL and SEND_CHART environment variables must be set, "
+        "and at least one of them should be set to True!")
+    sys.exit(1)
+
+logger.info("starting: SEND_SIGNAL: %s / SEND_CHART: %s", SEND_SIGNAL, SEND_CHART)
 
 
 # ============================ Data Display & Processing =============================
@@ -230,11 +244,16 @@ async def send_performance_chart(df: pd.DataFrame) -> None:
 
 
 async def notify_telegram(df: pd.DataFrame) -> None:
-    if SEND_SIGNAL:
+    # the environment variables for sending messages
+    # need to be explicitly converted to boolean values
+    def str_to_bool(value):
+        return value.lower() in ('true', 't', 'yes', 'y', '1')
+
+    if str_to_bool(SEND_SIGNAL):
         logger.info("Sending trading signal to Telegram...")
         await send_signal(df)
 
-    if SEND_CHART:
+    if str_to_bool(SEND_CHART):
         logger.info("Sending performance chart to Telegram...")
         await send_performance_chart(df)
 
