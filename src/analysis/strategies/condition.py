@@ -262,10 +262,14 @@ class ConditionResult:
     close_long: np.ndarray | None = None
     close_short: np.ndarray | None = None
 
-    def __postinit__(self):
-        logger.error("Initializing ConditionResult ...")
+    def __post_init__(self):
+        logger.debug("Initializing ConditionResult ...")
 
-        not_none = next(filter(lambda x: x is not None, self.all_actions), None)
+        all_actions = (
+            self.open_long, self.open_short, self.close_long, self.close_short
+        )
+
+        not_none = next(filter(lambda x: x is not None, all_actions), None)
 
         if not_none is None:
             raise ValueError(
@@ -273,11 +277,12 @@ class ConditionResult:
                 "at least one action needs to be an array."
                 )
 
-        for elem in self.all_actions:
-            if elem is None:
+        for action in (
+            "open_long", "open_short", "close_long", "close_short"
+        ):
+            if (elem := getattr(self, action)) is None:
                 elem = np.zeros_like(not_none, dtype=np.float64)
-
-            elem = np.nan_to_num(elem)
+            setattr(self, action, np.nan_to_num(elem).astype(np.float64))
 
     def __add__(self, other) -> "ConditionResult":
         res = []
@@ -322,12 +327,6 @@ class ConditionResult:
             open_short=res[1],
             close_long=res[2],
             close_short=res[3],
-        )
-
-    @property
-    def all_actions(self) -> Generator:
-        return (
-            self.open_long, self.open_short, self.close_long, self.close_short
         )
 
     def apply_weight(self, weight: float) -> 'ConditionResult':
