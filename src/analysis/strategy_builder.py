@@ -358,10 +358,6 @@ class CompositeStrategy(IStrategy):
         tp.Data
             data with added 'signal' key/values
         """
-        # for key in sg.SignalGenerator.dict_keys:
-        #     if key not in data:
-        #         logger.debug("creating key '%s' in data", key)
-        #         data[key] = np.zeros(data['open'].shape)
 
         [strat.speak(data) for strat, _ in self.sub_strategies.values()]
 

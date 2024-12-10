@@ -251,8 +251,7 @@ if __name__ == "__main__":
     print("-" * 200)
     print(s)
 
-
-    # test_strategy_run(s, True)
+    test_strategy_run(s, True)
 
     # ..........................................................................
     sys.exit()

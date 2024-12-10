@@ -56,7 +56,7 @@ import itertools
 import logging
 from enum import Enum, unique
 from dataclasses import dataclass
-from typing import Callable, NamedTuple, Iterable, Optional
+from typing import Callable, NamedTuple, Iterable, Optional, TypeAlias
 import numpy as np
 
 from ..util import proj_types as tp
@@ -113,6 +113,21 @@ cmp_funcs = {
     COMPARISON.CROSSED_ABOVE: cmp.crossed_above,
     COMPARISON.CROSSED_BELOW: cmp.crossed_below,
 }
+
+# Within the Condition class each arm or branch (for opening/closing
+# long or short positions), is defined as a tuple with three elements:
+# 1) a string for the comparison, e.g. CROSSED_ABOVE
+# 2) another tuple that holds the names of the dictionary keys for the
+#   values that should be compared against each other
+# 3) the actual function object that is used to do the comparison,
+#   which will be on eof the functions frim the cmp_funcs dictionary
+#   defined above.
+#
+# These values are used in the execute method of the Condition class.
+# They are set by the ConditionFactory - this explanation is just
+# provided for better understanding of the .execute() method and the
+# following TypeAlias:
+ConditionBranch: TypeAlias = tuple[str, tuple[str, str], Callable]
 
 
 # ======================================================================================
@@ -233,12 +248,16 @@ class ConditionResult(NamedTuple):
     close_long: np.ndarray | None = None
     close_short: np.ndarray | None = None
 
-    def __add__(self, other):
+    def __add__(self, other) -> "ConditionResult":
         res = []
 
         for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
-            if (getattr(self, attr) is None) | (getattr(other, attr) is None):
+            if (getattr(self, attr) is None) and (getattr(other, attr) is None):
                 res.append(None)
+            elif getattr(self, attr) is None:
+                res.append(getattr(other, attr))
+            elif getattr(other, attr) is None:
+                res.append(getattr(self, attr))
             else:
                 res.append(np.add(getattr(self, attr), getattr(other, attr)))
 
@@ -249,7 +268,7 @@ class ConditionResult(NamedTuple):
             close_short=res[3],
         )
 
-    def __and__(self, other):
+    def __and__(self, other) -> "ConditionResult":
         res = []
 
         for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
@@ -265,7 +284,7 @@ class ConditionResult(NamedTuple):
             close_short=res[3],
         )
 
-    def __or__(self, other):
+    def __or__(self, other) -> "ConditionResult":
         res = []
 
         for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
@@ -282,19 +301,11 @@ class ConditionResult(NamedTuple):
         )
 
     def apply_weight(self, weight: float) -> 'ConditionResult':
-        res = []
-
-        for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
-            if getattr(self, attr) is None:
-                res.append(None)
-            else:
-                res.append(np.multiply(getattr(self, attr), weight))
-
         return ConditionResult(
-            open_long=res[0],
-            open_short=res[1],
-            close_long=res[2],
-            close_short=res[3],
+            open_long=self.open_long * weight if self.open_long else None,
+            open_short=self.open_short * weight if self.open_short else None,
+            close_long=self.close_long * weight if self.close_long else None,
+            close_short=self.close_short * weight if self.close_short else None
         )
 
     def as_dict(self):
@@ -342,10 +353,10 @@ class Condition:
     comparand_c: Optional[str] = None
     comparand_d: Optional[str] = None
 
-    open_long: tuple[str, op.Operand, str] | None = None
-    open_short: tuple[str, op.Operand, str] | None = None
-    close_long: tuple[str, op.Operand, str] | None = None
-    close_short: tuple[str, op.Operand, str] | None = None
+    open_long: ConditionBranch | None = None
+    open_short: ConditionBranch | None = None
+    close_long: ConditionBranch | None = None
+    close_short: ConditionBranch | None = None
 
     def __repr__(self) -> str:
         out = ["Condition("]
@@ -407,13 +418,19 @@ class Condition:
         )
 
     # ..................................................................................
-    def execute(self, data: tp.Data) -> None:
+    def execute(self, data: tp.Data) -> ConditionResult:
         """Execute the condition.
 
         Parameters
         ----------
         data: tp.Data
             the OHLCV data dictionary
+
+        Returns:
+        --------
+        ConditionResult
+            A condition result object with four attached arrays for each of:
+            open_long, open_short, close_long, close_short
         """
         for operand in (self.operand_a, self.operand_b, self.operand_c, self.operand_d):
             if operand is not None:
@@ -425,25 +442,32 @@ class Condition:
             open_long=self.open_long[2](
                 data[self.open_long[1][0]],
                 data[self.open_long[1][1]]
-            ) if self.open_long is not None
+            )
+            if self.open_long is not None
             else np.full_like(data["close"], False, dtype=bool),
+
             # open short
             open_short=self.open_short[2](
                 data[self.open_short[1][0]],
                 data[self.open_short[1][1]]
-            ) if self.open_short is not None
+            )
+            if self.open_short is not None
             else np.full_like(data["close"], False, dtype=bool),
+
             # close long
             close_long=self.close_long[2](
                 data[self.close_long[1][0]],
                 data[self.close_long[1][1]]
-            ) if self.close_long is not None
+            )
+            if self.close_long is not None
             else np.full_like(data["close"], False, dtype=bool),
+
             # close short
             close_short=self.close_short[2](
                 data[self.close_short[1][0]],
                 data[self.close_short[1][1]]
-            ) if self.close_short is not None
+            )
+            if self.close_short is not None
             else np.full_like(data["close"], False, dtype=bool),
         )
 
@@ -454,19 +478,22 @@ class Condition:
         test_res = self.execute(TEST_DATA)
 
         output_matches_size_input = all(
-            arg
-            for arg in (
-                (tr.shape == TEST_DATA["close"].shape for tr in test_res.values())
+            arg for arg in (
+                (
+                    tr.shape == TEST_DATA["close"].shape
+                    for tr in (
+                        test_res.open_long,
+                        test_res.open_short,
+                        test_res.close_short,
+                        test_res.close_long,
+                    )
+                )
             )
         )
 
         return all(
-            arg
-            for arg in (
-                isinstance(test_res, dict),
-                len(test_res) >= 3,
-                "signal" in test_res,
-                isinstance(test_res["signal"], np.ndarray),
+            arg for arg in (
+                isinstance(test_res, ConditionResult),
                 output_matches_size_input,
             )
         )

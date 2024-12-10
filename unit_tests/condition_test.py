@@ -208,26 +208,23 @@ if __name__ == "__main__":
         if comp:
             print(comp.indicators)
 
-    print(c.indicators)
+    # print(c.indicators)
 
-    for ind in c.indicators:
-        print(f"{ind} -> {ind.parameters} ... {ind.parameter_space}")
+    # sys.exit()
 
-    sys.exit()
-
-    # # test_condition_is_working(c)
+    test_condition_is_working(c)
     logger.debug("~-*-~" * 30)
     logger.debug("condition: %s", c)
-    # logger.debug("indicators: %s", test_condition_indicators(c))
+    logger.debug("indicators: %s", test_condition_indicators(c))
 
     pprint(c.__dict__)
     print('-' * 80)
-    pprint(c.operand_a.plot_desc)
-    pprint(c.operand_b.plot_desc)
-    pprint(c.operand_c.plot_desc)
-    pprint(c.operand_d.plot_desc)
-    print('-' * 80)
-    pprint(c.plot_desc)
+    # pprint(c.operand_a.plot_desc)
+    # pprint(c.operand_b.plot_desc)
+    # pprint(c.operand_c.plot_desc)
+    # pprint(c.operand_d.plot_desc)
+    # print('-' * 80)
+    # pprint(c.plot_desc)
 
     # print(c)
     # test_execute_condition(data, c, True)
@@ -239,7 +236,7 @@ if __name__ == "__main__":
     factory = cn.ConditionFactory()
 
     logger.setLevel(logging.ERROR)
-    runs = 1_000
+    runs = 1_000_000
     data = data
     st = time.time()
 
