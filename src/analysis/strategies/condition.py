@@ -56,7 +56,7 @@ import itertools
 import logging
 from enum import Enum, unique
 from dataclasses import dataclass
-from typing import Callable, NamedTuple, Iterable, Optional, TypeAlias
+from typing import Callable, NamedTuple, Iterable, Optional, TypeAlias, Generator
 import numpy as np
 
 from ..util import proj_types as tp
@@ -64,7 +64,7 @@ from ..util import comp_funcs as cmp
 from . import operand as op
 
 logger = logging.getLogger("main.condition")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 # data for testing the correct functioning of a Condition class
 TEST_DATA_SIZE = 500
@@ -242,24 +242,48 @@ class ConditionDefinition(NamedTuple):
     close_short: Optional[str] = None
 
 
-class ConditionResult(NamedTuple):
+@dataclass
+class ConditionResult:
+    """
+    Class that represents the result of one or more conditions.
+
+    It is possible to combine multiple ConditionResult instances by:
+    • Addition
+    • Logical AND
+    • Logical OR
+
+    Raises:
+    -------
+    ValueError
+        If initialized empty.
+    """
     open_long: np.ndarray | None = None
     open_short: np.ndarray | None = None
     close_long: np.ndarray | None = None
     close_short: np.ndarray | None = None
 
+    def __postinit__(self):
+        logger.error("Initializing ConditionResult ...")
+
+        not_none = next(filter(lambda x: x is not None, self.all_actions), None)
+
+        if not_none is None:
+            raise ValueError(
+                "ConditionResult is empty - "
+                "at least one action needs to be an array."
+                )
+
+        for elem in self.all_actions:
+            if elem is None:
+                elem = np.zeros_like(not_none, dtype=np.float64)
+
+            elem = np.nan_to_num(elem)
+
     def __add__(self, other) -> "ConditionResult":
         res = []
 
         for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
-            if (getattr(self, attr) is None) and (getattr(other, attr) is None):
-                res.append(None)
-            elif getattr(self, attr) is None:
-                res.append(getattr(other, attr))
-            elif getattr(other, attr) is None:
-                res.append(getattr(self, attr))
-            else:
-                res.append(np.add(getattr(self, attr), getattr(other, attr)))
+            res.append(np.add(getattr(self, attr), getattr(other, attr)))
 
         return ConditionResult(
             open_long=res[0],
@@ -300,16 +324,21 @@ class ConditionResult(NamedTuple):
             close_short=res[3],
         )
 
+    @property
+    def all_actions(self) -> Generator:
+        return (
+            self.open_long, self.open_short, self.close_long, self.close_short
+        )
+
     def apply_weight(self, weight: float) -> 'ConditionResult':
         return ConditionResult(
-            open_long=self.open_long * weight if self.open_long else None,
-            open_short=self.open_short * weight if self.open_short else None,
-            close_long=self.close_long * weight if self.close_long else None,
-            close_short=self.close_short * weight if self.close_short else None
+            open_long=np.multiply(self.open_long, weight),
+            open_short=np.multiply(self.open_short, weight),
+            close_long=np.multiply(self.close_long, weight),
+            close_short=np.multiply(self.close_short, weight),
         )
 
     def as_dict(self):
-
         return {
             "open_long": self.open_long,
             "open_short": self.open_short,

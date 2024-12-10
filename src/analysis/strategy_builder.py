@@ -42,6 +42,7 @@ Created on Thu July 12 21:44:23 2023
 import abc
 import logging
 import numpy as np
+import sys
 from dataclasses import dataclass
 from typing import Any, NamedTuple, Optional, Sequence, Callable
 
@@ -234,6 +235,18 @@ class SubStrategy(IStrategy):
         """
         raise NotImplementedError(f"optimize() not implemented for {self.name}")
 
+    def get_signals(self, data: tp.Data) -> sg.cnd.ConditionResult:
+        """Gets the signals as ConditionResult object.
+
+        Instead of adding keys/values to the original data structure,
+        this method returns a ConditionResult object which allows further
+        processing, and or combining of multiple signals/strategies.
+        """
+        return self\
+            ._signal_generator\
+            .execute(data)\
+            .apply_weight(self.weight)
+
     # --------------------------------------------------------------------------
     def _add_positions(self, data: tp.Data) -> None:
         """Calculates positions and adds them to the data dictionary.
@@ -251,7 +264,7 @@ class SubStrategy(IStrategy):
         :return: _description_
         :rtype: _type_
         """
-        return self._signal_generator.execute(data, self.weight)
+        return data.update(self.get_signals(data).as_dict())
 
     def _add_stop_loss(self, data: tp.Data) -> tp.Data:
         """Calculates stop loss and adds it to the data dictionary.
@@ -282,7 +295,6 @@ class SubStrategy(IStrategy):
         tp.Data
             the dict with added 'take profit' series
         """
-        return data
         return super()._add_take_profit(data)
 
 
@@ -358,14 +370,28 @@ class CompositeStrategy(IStrategy):
         tp.Data
             data with added 'signal' key/values
         """
+        combined_signal = list(
+            strat.get_signals(data) for strat, _ in self.sub_strategies.values()
+            )
 
-        [strat.speak(data) for strat, _ in self.sub_strategies.values()]
+        logger.info(combined_signal)
 
-        # result = np.array(arrays[0])
+        try:
+            combined_signal = sum(
+                strat.get_signals(data) for strat, _ in self.sub_strategies.values()
+                )
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            for strat, _ in self.sub_strategies.values():
+                logger.error(
+                    "expected ConditionResult for %s, got %s",
+                    strat.name, type(strat.get_signals(data))
+                )
+                logger.error(strat.get_signals(data))
+            sys.exit(1)
 
-        # for array in arrays[1:]:
-        #     result = np.add(result, array)
-        # return result
+
+        data.update(combined_signal.as_dict())
 
         return data
 

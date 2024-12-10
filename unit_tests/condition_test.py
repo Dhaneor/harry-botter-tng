@@ -202,6 +202,10 @@ def test_condition_result():
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
+    test_condition_result()
+
+    sys.exit()
+
     c = cn.factory(c_defs["golden_cross"])
 
     for comp in (c.operand_a, c.operand_b, c.operand_c, c.operand_d):

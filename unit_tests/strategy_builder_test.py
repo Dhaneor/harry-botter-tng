@@ -254,7 +254,7 @@ if __name__ == "__main__":
     test_strategy_run(s, True)
 
     # ..........................................................................
-    sys.exit()
+    # sys.exit()
 
     logger.setLevel(logging.ERROR)
     runs = 1_000
