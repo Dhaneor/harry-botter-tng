@@ -177,13 +177,15 @@ def test_condition_indicators(condition: cn.Condition):
 
 
 def test_condition_result():
-    def get_random_array(length=5):
-        return np.array(tuple(choice([True, False]) for _ in range(5)))
+    def get_random_array(length=10):
+        return np.array(tuple(choice([True, False]) for _ in range(length)))
 
     def get_random_condition_result():
         return cn.ConditionResult(
             open_long=get_random_array(),
             close_long=get_random_array(),
+            open_short=get_random_array(),
+            close_short=get_random_array(),
         )
 
     cr1 = get_random_condition_result()
@@ -193,19 +195,43 @@ def test_condition_result():
     res1 = tuple(it.accumulate([cr1, cr2, cr3], lambda x, y: x & y))[-1]
     res2 = reduce(lambda x, y: x + y, [cr1, cr2, cr3])
 
-    print(cr1)
-    print(cr2)
-    print(cr3)
-    print('\n')
-    # print(res1)
-    print(res2)
+    # print(cr1)
+    # print(cr2)
+    # print(cr3)
+    # print('\n')
+    # # print(res1)
+    # print(res2)
+
+    print(cr1.open_long)
+    print(cr1.close_long)
+    print(cr1.open_short)
+    print(cr1.close_short)
+    print
+    print('-' * 120)
+    print(cr1.combined())
+
+
+def test_condition_result_from_combined():
+    s1 = np.array(tuple(choice([1., 0., -1., np.nan]) for _ in range(10)))
+    s2 = np.array(tuple(choice([1., 0., -1., np.nan]) for _ in range(10)))
+
+    combined = s1 + s2
+
+    cr = cn.ConditionResult.from_combined(combined)
+
+    print(combined)
+    print('-' * 50)
+    print(cr.open_long)
+    print(cr.open_short)
+    print(cr.close_long)
+    print(cr.close_short)
 
 
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    test_condition_result()
+    test_condition_result_from_combined()
 
     sys.exit()
 

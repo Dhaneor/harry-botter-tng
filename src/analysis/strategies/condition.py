@@ -56,6 +56,7 @@ import itertools
 import logging
 from enum import Enum, unique
 from dataclasses import dataclass
+from numba import jit
 from typing import Callable, NamedTuple, Iterable, Optional, TypeAlias
 import numpy as np
 
@@ -128,6 +129,44 @@ cmp_funcs = {
 # provided for better understanding of the .execute() method and the
 # following TypeAlias:
 ConditionBranch: TypeAlias = tuple[str, tuple[str, str], Callable]
+
+
+@jit(nopython=True)
+def merge_signals_nb(open_long, open_short, close_long, close_short):
+    n = len(open_long)
+    signal = np.zeros(n, dtype=np.float64)
+    position = np.zeros(n, dtype=np.float64)
+
+    for i in range(n):
+        if i == 0:
+            if open_long[i] > 0:
+                signal[i] = open_long[i]
+                position[i] = 1
+            elif open_short[i] > 0:
+                signal[i] = open_short[i]
+                position[i] = -1
+        else:
+            prev_position = position[i-1]
+
+            if open_long[i] > 0:
+                signal[i] = open_long[1]
+                position[i] = 1
+            elif open_short[i] > 0:
+                signal[i] = -1
+                position[i] = open_short[i]
+            elif close_long[i] > 0:
+                if prev_position > 0:
+                    signal[i] = 0
+                    position[i] = 0
+            elif close_short[i] > 0:
+                if prev_position < 0:
+                    signal[i] = 0
+                    position[i] = 0
+            else:
+                signal[i] = 0  # np.nan
+                position[i] = prev_position
+
+    return signal, position
 
 
 # ======================================================================================
@@ -280,8 +319,11 @@ class ConditionResult:
             "open_long", "open_short", "close_long", "close_short"
         ):
             if (elem := getattr(self, action)) is None:
-                elem = np.zeros_like(not_none, dtype=np.float64)
+                elem = np.full_like(not_none, fill_value=0, dtype=np.float64)
             setattr(self, action, elem.astype(np.float64))
+
+    def __len__(self):
+        return len(self.open_long)
 
     def __add__(self, other) -> "ConditionResult":
         res = []
@@ -328,6 +370,21 @@ class ConditionResult:
             close_short=res[3],
         )
 
+    def __ffill_array(self, arr):
+        for idx in range(1, len(arr)):
+            if arr[idx] == 0:
+                arr[idx] = arr[idx - 1]
+        return arr
+
+    def ffill(self):
+        for action in (
+            "open_long", "open_short", "close_long", "close_short"
+        ):
+            arr = self.__ffill_array(getattr(self, action))
+            setattr(self, action, arr)
+
+        return self
+
     def apply_weight(self, weight: float) -> 'ConditionResult':
         return ConditionResult(
             open_long=np.multiply(self.open_long, weight),
@@ -343,6 +400,43 @@ class ConditionResult:
             "close_long": self.close_long,
             "close_short": self.close_short,
         }
+
+    def combined(self):
+        signal, _ = merge_signals_nb(
+            self.open_long, self.open_short, self.close_long, self.close_short)
+
+        return signal
+
+    @classmethod
+    def from_combined(cls, combined: np.ndarray):
+        """Method to build a ConditionResult object from an array.
+
+        This helps to reverse the result from the .combined() method
+        (see above) which produces a single column/array with the
+        signals from a ConditionResult object.
+        """
+        open_long = np.zeros_like(combined, dtype=np.float64)
+        close_long = np.zeros_like(combined, dtype=np.float64)
+        open_short = np.zeros_like(combined, dtype=np.float64)
+        close_short = np.zeros_like(combined, dtype=np.float64)
+
+        position = 0
+
+        for i in range(combined.shape[0]):
+            if combined[i] > 0:
+                open_long[i] = combined[i]
+                position = 1
+            elif combined[i] < 0:
+                open_short[i] = abs(combined[i])
+                position = -1
+            else:
+                if position == 1:
+                    close_long[i] = 1
+                elif position == -1:
+                    close_short[i] = 1
+                position = 0
+
+        return ConditionResult(open_long, open_short, close_long, close_short)
 
 
 @dataclass

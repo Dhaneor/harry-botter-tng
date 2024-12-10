@@ -20,10 +20,10 @@ cci = sg.SignalsDefinition(
     conditions=cn.ConditionDefinition(
         interval="1d",
         operand_a=("cci", {"timeperiod": 70}),
-        operand_b=("cci_oversold", -200, [-200, -70, 15]),
-        operand_c=("cci_overbought", 67, [70, 200, 15]),
-        open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
-        open_short=("a", cn.COMPARISON.CROSSED_BELOW, "c"),
+        operand_b=("cci_oversold", -125, [-200, -70, 15]),
+        operand_c=("cci_overbought", 125, [70, 200, 15]),
+        open_long=("a", cn.COMPARISON.IS_BELOW, "b"),
+        open_short=("a", cn.COMPARISON.IS_ABOVE, "c"),
     ),
 )
 
@@ -34,10 +34,10 @@ rsi = sg.SignalsDefinition(
     conditions=cn.ConditionDefinition(
         interval="1d",
         operand_a=("rsi", {"timeperiod": 2}),
-        operand_b=("rsi_oversold", 182, [5, 35, 2]),
-        operand_c=("rsi_overbought", 127, [65, 95, 2]),
-        open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
-        open_short=("a", cn.COMPARISON.CROSSED_BELOW, "c"),
+        operand_b=("rsi_oversold", 20, [5, 35, 2]),
+        operand_c=("rsi_overbought", 80, [65, 95, 2]),
+        open_long=("a", cn.COMPARISON.IS_BELOW, "b"),
+        open_short=("a", cn.COMPARISON.IS_ABOVE, "c"),
     ),
 )
 

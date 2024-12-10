@@ -42,7 +42,6 @@ Created on Thu July 12 21:44:23 2023
 import abc
 import logging
 import numpy as np
-import sys
 from dataclasses import dataclass
 from functools import reduce
 from typing import Any, NamedTuple, Optional, Sequence, Callable
@@ -50,6 +49,7 @@ from typing import Any, NamedTuple, Optional, Sequence, Callable
 from .util import proj_types as tp
 from .strategies import signal_generator as sg
 from .strategies import exit_order_strategies as es
+from .strategies.condition import ConditionResult
 
 logger = logging.getLogger("main.strategy_builder")
 
@@ -371,28 +371,23 @@ class CompositeStrategy(IStrategy):
         tp.Data
             data with added 'signal' key/values
         """
-        combined_signal = list(
-            strat.get_signals(data) for strat, _ in self.sub_strategies.values()
-            )
-
-        logger.info(combined_signal)
 
         try:
             combined_signal = reduce(
                 lambda x, y: x + y,
-                (strat.get_signals(data) for strat, _ in self.sub_strategies.values())
+                (
+                    strat.get_signals(data).combined()
+                    for strat, _ in self.sub_strategies.values()
+                )
                 )
         except Exception as e:
             logger.error(e, exc_info=True)
-            for strat, _ in self.sub_strategies.values():
-                logger.error(
-                    "expected ConditionResult for %s, got %s",
-                    strat.name, type(strat.get_signals(data))
-                )
-                logger.error(strat.get_signals(data))
-            sys.exit(1)
 
-        data.update(combined_signal.as_dict())
+        data.update(
+            ConditionResult.from_combined(combined_signal).as_dict()
+            )
+
+        data["combined_signal"] = combined_signal
 
         return data
 

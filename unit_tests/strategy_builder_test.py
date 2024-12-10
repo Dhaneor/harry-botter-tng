@@ -216,15 +216,15 @@ def test_strategy_run(s, show=False):
     s.speak(data)
 
     if show:
-        df1 = pd.DataFrame.from_dict(data)
+        df = pd.DataFrame.from_dict(data)
 
-        df1.replace(False, ".", inplace=True)
-        df1.replace(np.nan, ".", inplace=True)
-        df1.replace(0.0, ".", inplace=True)
+        df.replace(False, ".", inplace=True)
+        df.replace(np.nan, ".", inplace=True)
+        df.replace(0.0, ".", inplace=True)
 
-        print(df1.info())
+        print(df.info())
         print(sys.getsizeof(data))
-        print(df1.tail(50))
+        print(df.tail(50))
 
 
 # ============================================================================ #
@@ -254,7 +254,7 @@ if __name__ == "__main__":
     test_strategy_run(s, True)
 
     # ..........................................................................
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
     runs = 1_000
