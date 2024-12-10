@@ -44,6 +44,7 @@ import logging
 import numpy as np
 import sys
 from dataclasses import dataclass
+from functools import reduce
 from typing import Any, NamedTuple, Optional, Sequence, Callable
 
 from .util import proj_types as tp
@@ -377,8 +378,9 @@ class CompositeStrategy(IStrategy):
         logger.info(combined_signal)
 
         try:
-            combined_signal = sum(
-                strat.get_signals(data) for strat, _ in self.sub_strategies.values()
+            combined_signal = reduce(
+                lambda x, y: x + y,
+                (strat.get_signals(data) for strat, _ in self.sub_strategies.values())
                 )
         except Exception as e:
             logger.error(e, exc_info=True)
@@ -389,7 +391,6 @@ class CompositeStrategy(IStrategy):
                 )
                 logger.error(strat.get_signals(data))
             sys.exit(1)
-
 
         data.update(combined_signal.as_dict())
 

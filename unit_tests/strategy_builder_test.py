@@ -115,7 +115,7 @@ def __get_composite_strategy_definition():
                 symbol="BTCUSDT",
                 interval="1d",
                 signals_definition=cci,
-                weight=0.3,
+                weight=0.7,
             ),
             sb.StrategyDefinition(
                 strategy="RSI",

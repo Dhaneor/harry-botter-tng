@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 from typing import Iterable
 from pprint import pprint  # noqa: F401
+from random import choice
 
 # profiler imports
 from cProfile import Profile  # noqa: F401
@@ -176,25 +177,27 @@ def test_condition_indicators(condition: cn.Condition):
 
 
 def test_condition_result():
-    cr1 = cn.ConditionResult(
-        open_long=np.array([False, False, False, True, True, True])
-    )
-    cr2 = cn.ConditionResult(
-        open_long=np.array([False, False, True, True, True, False])
-    )
+    def get_random_array(length=5):
+        return np.array(tuple(choice([True, False]) for _ in range(5)))
 
-    cr3 = cn.ConditionResult(
-        open_long=np.array([False, False, True, True, True, False])
-    )
+    def get_random_condition_result():
+        return cn.ConditionResult(
+            open_long=get_random_array(),
+            close_long=get_random_array(),
+        )
+
+    cr1 = get_random_condition_result()
+    cr2 = get_random_condition_result()
+    cr3 = get_random_condition_result()
 
     res1 = tuple(it.accumulate([cr1, cr2, cr3], lambda x, y: x & y))[-1]
-    res2 = reduce(lambda x, y: x & y, [cr1, cr2, cr3])
+    res2 = reduce(lambda x, y: x + y, [cr1, cr2, cr3])
 
     print(cr1)
     print(cr2)
     print(cr3)
     print('\n')
-    print(res1)
+    # print(res1)
     print(res2)
 
 

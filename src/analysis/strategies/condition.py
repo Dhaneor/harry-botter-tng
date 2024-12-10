@@ -56,7 +56,7 @@ import itertools
 import logging
 from enum import Enum, unique
 from dataclasses import dataclass
-from typing import Callable, NamedTuple, Iterable, Optional, TypeAlias, Generator
+from typing import Callable, NamedTuple, Iterable, Optional, TypeAlias
 import numpy as np
 
 from ..util import proj_types as tp
@@ -64,7 +64,7 @@ from ..util import comp_funcs as cmp
 from . import operand as op
 
 logger = logging.getLogger("main.condition")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # data for testing the correct functioning of a Condition class
 TEST_DATA_SIZE = 500
@@ -263,7 +263,6 @@ class ConditionResult:
     close_short: np.ndarray | None = None
 
     def __post_init__(self):
-        logger.debug("Initializing ConditionResult ...")
 
         all_actions = (
             self.open_long, self.open_short, self.close_long, self.close_short
@@ -282,7 +281,7 @@ class ConditionResult:
         ):
             if (elem := getattr(self, action)) is None:
                 elem = np.zeros_like(not_none, dtype=np.float64)
-            setattr(self, action, np.nan_to_num(elem).astype(np.float64))
+            setattr(self, action, elem.astype(np.float64))
 
     def __add__(self, other) -> "ConditionResult":
         res = []
