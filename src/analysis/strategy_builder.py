@@ -50,7 +50,6 @@ from .strategies import signal_generator as sg
 from .strategies import exit_order_strategies as es
 
 logger = logging.getLogger("main.strategy_builder")
-# logger.setLevel(logging.INFO)
 
 
 # ======================================================================================
