@@ -96,11 +96,13 @@ class PlotDescription:
             )
         )
 
+        elements = itertools.chain(self.elements, other.elements)
+
         # combine the lines
-        lines = list(set(itertools.chain(self.lines, other.lines)))
+        lines = list(set(elem for elem in elements if not elem.is_triger))
 
         # combine the triggers
-        triggers = list(set(itertools.chain(self.triggers, other.triggers)))
+        triggers = list(set(elem for elem in elements if not elem.is_triger))
 
         if triggers:
             trig_channel = [

@@ -212,6 +212,7 @@ class SignalGenerator:
         # remove duplicates from the result
         sub = [sub[x] for x in range(len(sub)) if not (sub[x] in sub[:x])]
 
+        return [main].extend(sub)
         return main, sub
 
     def execute(self, data: tp.Data) -> cnd.ConditionResult:

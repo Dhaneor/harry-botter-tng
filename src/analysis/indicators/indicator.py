@@ -37,6 +37,9 @@ from talib import MA_Type, abstract
 from .iindicator import IIndicator, PlotDescription
 from .indicators_custom import custom_indicators
 from .indicator_parameter import Parameter
+from src.analysis.chart.plot_definition import (
+    Line, Channel, SubPlot
+)
 
 logger = logging.getLogger("main.indicator")
 logger.setLevel(logging.ERROR)
@@ -142,12 +145,47 @@ class Indicator(IIndicator):
     def __init__(self) -> None:
         super().__init__()
         self._is_subplot: bool = self._name.upper() not in Indicator.not_subplot
+        self._plot_desc: Dict[str, Tuple[str, Any]] = OrderedDict()
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} - {self.parameters}"
 
     @property
-    def plot_desc(self) -> PlotDescription:
+    def plot_desc(self) -> SubPlot:
+        elements = []
+        number_of_lines = len(self._plot_desc.keys())
+
+        for k, v in self._plot_desc.items():
+            v = v[0]
+
+            if "upper" in k or "lower" in k:
+                elements.append(self.unique_name + "_" + k)
+
+            elif v == "Histogram":
+                elements.append(self.unique_name + "_" + k)
+
+            else:
+                if number_of_lines == 1:
+                    line = Line(
+                        label=self.unique_name,
+                        column=self.unique_name,
+                        end_marker=False
+                        )
+                    elements.append(line)
+                else:
+                    line = Line(
+                        label=f"{self.unique_name}_{k}",
+                        column=self.unique_name,
+                        end_marker=False
+                        )
+                    elements.append(line)
+
+        return SubPlot(
+            label=f"{self.unique_name} - {self.parameters}",
+            elements=elements,
+        )
+
+        # ............................................................................
         lines, channel, hist, count_lines = [], [], [], len(self._plot_desc.keys())
 
         for k, v in self._plot_desc.items():
@@ -248,11 +286,13 @@ class FixedIndicator(IIndicator):
 
     # ..................................................................................
     @property
-    def plot_desc(self) -> PlotDescription:
+    def plot_desc(self) -> SubPlot:
         return PlotDescription(
             label=self.unique_name,
             is_subplot=self._is_subplot,
-            triggers=[tuple((self.unique_name, "Line"))],
+            elements=[
+                Line(label=self.unique_name, column=self.unique_name, end_marker=False)
+            ],
             level="indicator",
         )
 

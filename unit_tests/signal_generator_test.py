@@ -33,7 +33,7 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
     linreg_roc_btc_1d, linreg_roc_eth_1d, test_er
 )
-from analysis.chart import strategy_plot as sp  # noqa: E402
+from src.analysis.chart import strategy_plot as sp  # noqa: E402
 from helpers_ import get_sample_data, get_ohlcv  # noqa: E402, F401
 
 logger = logging.getLogger("main")
@@ -161,13 +161,13 @@ def test_factory_from_existing(sig_gen):
     return sig_gen_new
 
 
-def test_execute(sig_gen, data, weight, show=False, plot=False):
+def test_execute(sig_gen: sg.SignalGenerator, data, weight, show=False, plot=False):
     for key in sg.SignalGenerator.dict_keys:
         if key not in data:
             logger.debug("signal key '%s' not in data", key)
             data[key] = np.zeros(data['open'].shape)
 
-    sig_gen.execute(data, weight)
+    sig_gen.execute(data)
     logger.info(sig_gen)
     logger.info(sig_gen.plot_desc)
 

@@ -5,6 +5,7 @@ Created on Nov 21 12:08:20 2024
 
 @author dhaneor
 """
+import itertools
 import logging
 import pandas as pd
 import plotly.graph_objects as go
@@ -470,6 +471,8 @@ class Line(ChartElement):
     shadow: bool = True
     glow: bool = False
     end_marker: bool = True
+
+    is_trigger: bool = False
 
     def apply_style(self, style: TikrStyle) -> None:
         self.width = style.line_width if not self.width else self.width
@@ -1073,6 +1076,8 @@ class SubPlot:
     elements: Sequence[tuple[str, str]] = field(default_factory=list)
     level: str = field(default="indicator")
 
+    is_subplot: bool = False
+
     secondary_y: bool = False
     _row: int = 1
     _col: int = 1
@@ -1095,6 +1100,63 @@ class SubPlot:
 
     def __iter__(self) -> Iterator[Tuple[str, str]]:
         return iter(self.elements)
+
+    def __add__(self, other: "SubPlot") -> "SubPlot":
+        res_levels = {
+            0: "indicator",
+            1: "operand",
+            2: "condition",
+            3: "signal generator",
+        }
+
+        # determine the 'level' of the new description after addition
+        level = max(
+            (
+                k
+                for k, v in res_levels.items()
+                for candidate in (self.level, other.level)
+                if v == candidate
+            )
+        )
+
+        elements = itertools.chain(self.elements, other.elements)
+
+        # combine the lines
+        lines = list(set(elem for elem in elements if not elem.is_triger))
+
+        # combine the triggers
+        triggers = list(set(elem for elem in elements if not elem.is_triger))
+
+        if triggers:
+            trig_channel = [
+                elem[0]
+                for pair in itertools.pairwise(triggers)
+                if pair[0][0].split("_")[0] == pair[1][0].split("_")[0]
+                for elem in pair
+            ]
+        else:
+            trig_channel = []
+
+        # combine the channels ... include the triggers, so we can
+        # plot a chnnel between 'overbought' and 'oversold' for example
+        channel = trig_channel
+
+        # sometimes the addition can cause a line to be both a line
+        # and a trigger, so we need to remove it from the lines
+        lines = [line for line in lines if line not in triggers]
+
+        return SubPlot(
+            label=self.label,
+            is_subplot=self.is_subplot & other.is_subplot,
+            elements=itertools.chain(channel, triggers, lines),
+            level=res_levels[min(level + 1, 3)],
+        )
+
+    def __radd__(self, other: "SubPlot") -> "SubPlot":
+        if other == 0:
+            return self
+        else:
+            return self.__add__(other)
 
     def __post_init__(self):
         # set the legendgroup for all elements in the subplot

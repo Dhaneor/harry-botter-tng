@@ -25,9 +25,10 @@ import plotly.graph_objects as go
 
 from plotly.subplots import make_subplots
 
-from plot_definition import Line, Channel
-from plotly_styles import PlotDescription, PlotDefinition
+from .plot_definition import Line, Channel, PlotDefinition
 from ..util import proj_types as tp
+
+from src.analysis.indicators.iindicator import PlotDescription
 
 logger = logging.getLogger("main.strategy_plot")
 

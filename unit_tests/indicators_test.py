@@ -85,13 +85,13 @@ defs = {
         "src": "talib",
         "params": {
             "fastk_period": 14,
-            "slowk_period": 5,
-            "slowd_period": 5,
+            "slowk_period": 10,
+            "slowd_period": 10,
             "slowk_matype": 0,
             "slowd_matype": 0,
         },
         "plot_desc": indicator.PlotDescription(
-            label='stoch_14_5_0_5_0',
+            label='stoch_14_10_0_10_0',
             is_subplot=True,
             lines=[
                 ('stoch_14_5_0_5_0_slowk', 'Dashed Line'),
@@ -371,12 +371,12 @@ if __name__ == '__main__':
     # )
 
     ind = test_indicator_factory(
-        'LINEARREG', params={'timeperiod': 20}, show=True
+        'LINEARREG', params={'timeperiod': 20}, show=False
         )
 
-    ind = test_indicator_factory(
-        'ER', params={"timeperiod": 30}, show=True
-        )
+    # ind = test_indicator_factory(
+    #     'ER', params={"timeperiod": 30}, show=False
+    #     )
 
     # ind = test_indicator_factory('SMA', {'timeperiod': 20}, show=False)
 
@@ -392,8 +392,7 @@ if __name__ == '__main__':
     # ind.parameters = {'value': 80, 'parameter_space': [40, 70]}
 
     # print(ind.help())
-
-    # print(ind)
+    pprint(ind.plot_desc)
     # pprint(ind.__dict__)
     # print(ind.unique_output)
     # print(ind.plot_desc)
