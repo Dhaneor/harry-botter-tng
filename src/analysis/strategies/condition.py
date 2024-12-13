@@ -56,7 +56,8 @@ import itertools
 import logging
 from enum import Enum, unique
 from dataclasses import dataclass
-from typing import Callable, NamedTuple, Iterable, Optional
+from numba import jit
+from typing import Callable, NamedTuple, Iterable, Optional, TypeAlias
 import numpy as np
 
 from ..util import proj_types as tp
@@ -64,7 +65,7 @@ from ..util import comp_funcs as cmp
 from . import operand as op
 
 logger = logging.getLogger("main.condition")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 
 # data for testing the correct functioning of a Condition class
 TEST_DATA_SIZE = 500
@@ -113,6 +114,62 @@ cmp_funcs = {
     COMPARISON.CROSSED_ABOVE: cmp.crossed_above,
     COMPARISON.CROSSED_BELOW: cmp.crossed_below,
 }
+
+# Within the Condition class each arm or branch (for opening/closing
+# long or short positions), is defined as a tuple with three elements:
+# 1) a string for the comparison, e.g. CROSSED_ABOVE
+# 2) another tuple that holds the names of the dictionary keys for the
+#   values that should be compared against each other
+# 3) the actual function object that is used to do the comparison,
+#   which will be on eof the functions frim the cmp_funcs dictionary
+#   defined above.
+#
+# These values are used in the execute method of the Condition class.
+# They are set by the ConditionFactory - this explanation is just
+# provided for better understanding of the .execute() method and the
+# following TypeAlias:
+ConditionBranch: TypeAlias = tuple[str, tuple[str, str], Callable]
+
+
+@jit(nopython=True)
+def merge_signals_nb(open_long, open_short, close_long, close_short):
+    """Merges the four possible signals into one column."""
+    n = len(open_long)
+    signal = np.zeros(n, dtype=np.float64)
+    position = np.zeros(n, dtype=np.float64)
+
+    for i in range(n):
+        if i == 0:
+            if open_long[i] > 0:
+                signal[i] = open_long[i]
+                position[i] = 1
+            elif open_short[i] > 0:
+                signal[i] = open_short[i] * -1
+                position[i] = -1
+        else:
+            prev_position = position[i-1]
+            signal[i] = signal[i-1]
+            position[i] = prev_position
+
+            if open_long[i] > 0:
+                signal[i] = open_long[i]
+                position[i] = 1
+
+            elif close_long[i] > 0:
+                if prev_position > 0:
+                    signal[i] = 0
+                    position[i] = 0
+
+            elif open_short[i] > 0:
+                signal[i] = open_short[i] * -1
+                position[i] = -1
+
+            elif close_short[i] > 0:
+                if prev_position < 0:
+                    signal[i] = 0
+                    position[i] = 0
+
+    return signal, position
 
 
 # ======================================================================================
@@ -227,20 +284,57 @@ class ConditionDefinition(NamedTuple):
     close_short: Optional[str] = None
 
 
-class ConditionResult(NamedTuple):
+@dataclass
+class ConditionResult:
+    """
+    Class that represents the result of one or more conditions.
+
+    It is possible to combine multiple ConditionResult instances by:
+    • Addition
+    • Logical AND
+    • Logical OR
+
+    Raises:
+    -------
+    ValueError
+        If initialized empty.
+    """
     open_long: np.ndarray | None = None
     open_short: np.ndarray | None = None
     close_long: np.ndarray | None = None
     close_short: np.ndarray | None = None
 
-    def __add__(self, other):
+    combined_signal: np.ndarray | None = None
+
+    def __post_init__(self):
+
+        all_actions = (
+            self.open_long, self.open_short, self.close_long, self.close_short
+        )
+
+        not_none = next(filter(lambda x: x is not None, all_actions), None)
+
+        if not_none is None:
+            raise ValueError(
+                "ConditionResult is empty - "
+                "at least one action needs to be an array."
+                )
+
+        for action in (
+            "open_long", "open_short", "close_long", "close_short"
+        ):
+            if (elem := getattr(self, action)) is None:
+                elem = np.full_like(not_none, fill_value=0, dtype=np.float64)
+            setattr(self, action, elem.astype(np.float64))
+
+    def __len__(self):
+        return len(self.open_long)
+
+    def __add__(self, other) -> "ConditionResult":
         res = []
 
         for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
-            if (getattr(self, attr) is None) | (getattr(other, attr) is None):
-                res.append(None)
-            else:
-                res.append(np.add(getattr(self, attr), getattr(other, attr)))
+            res.append(np.add(getattr(self, attr), getattr(other, attr)))
 
         return ConditionResult(
             open_long=res[0],
@@ -249,7 +343,7 @@ class ConditionResult(NamedTuple):
             close_short=res[3],
         )
 
-    def __and__(self, other):
+    def __and__(self, other) -> "ConditionResult":
         res = []
 
         for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
@@ -265,7 +359,7 @@ class ConditionResult(NamedTuple):
             close_short=res[3],
         )
 
-    def __or__(self, other):
+    def __or__(self, other) -> "ConditionResult":
         res = []
 
         for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
@@ -281,30 +375,99 @@ class ConditionResult(NamedTuple):
             close_short=res[3],
         )
 
+    def __ffill_array(self, arr):
+        for idx in range(1, len(arr)):
+            if arr[idx] == 0:
+                arr[idx] = arr[idx - 1]
+        return arr
+
+    def ffill(self):
+        for action in (
+            "open_long", "open_short", "close_long", "close_short"
+        ):
+            arr = self.__ffill_array(getattr(self, action))
+            setattr(self, action, arr)
+
+        return self
+
     def apply_weight(self, weight: float) -> 'ConditionResult':
-        res = []
-
-        for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
-            if getattr(self, attr) is None:
-                res.append(None)
-            else:
-                res.append(np.multiply(getattr(self, attr), weight))
-
         return ConditionResult(
-            open_long=res[0],
-            open_short=res[1],
-            close_long=res[2],
-            close_short=res[3],
+            open_long=np.multiply(self.open_long, weight),
+            open_short=np.multiply(self.open_short, weight),
+            close_long=np.multiply(self.close_long, weight),
+            close_short=np.multiply(self.close_short, weight),
         )
 
     def as_dict(self):
-
         return {
             "open_long": self.open_long,
             "open_short": self.open_short,
             "close_long": self.close_long,
             "close_short": self.close_short,
+            "combined": self.combined_signal
+            if self.combined_signal is not None
+            else self.combined()
         }
+
+    def combined(self):
+        signal, _ = merge_signals_nb(
+            self.open_long,
+            self.open_short,
+            self.close_long,
+            self.close_short
+        )
+
+        return np.nan_to_num(signal)  # self._fill_nan_with_last(signal)
+
+    @classmethod
+    def from_combined(cls, combined: np.ndarray):
+        """Method to build a ConditionResult object from an array.
+
+        This helps to reverse the result from the .combined() method
+        (see above) which produces a single column/array with the
+        signals from a ConditionResult object.
+        """
+        open_long = np.zeros_like(combined, dtype=np.float64)
+        close_long = np.zeros_like(combined, dtype=np.float64)
+        open_short = np.zeros_like(combined, dtype=np.float64)
+        close_short = np.zeros_like(combined, dtype=np.float64)
+
+        position = 0
+
+        for i in range(combined.shape[0]):
+            if combined[i] > 0:
+                open_long[i] = combined[i]
+                position = 1
+            elif combined[i] < 0:
+                open_short[i] = abs(combined[i])
+                position = -1
+            else:
+                if position == 1:
+                    close_long[i] = 1
+                elif position == -1:
+                    close_short[i] = 1
+                position = 0
+
+        cr = ConditionResult(open_long, open_short, close_long, close_short)
+        cr.combined_signal = combined
+
+        return cr
+
+    def _fill_nan_with_last(self, arr):
+        mask = np.isnan(arr)
+        idx = np.where(~mask, np.arange(len(arr)), 0)
+        np.maximum.accumulate(idx, out=idx)
+        return arr[idx]
+
+    def _add_arrays_with_nan_handling(self, arr1, arr2):
+        # Fill NaN values in both arrays
+        filled_arr1 = self._fill_nan_with_last(arr1)
+        filled_arr2 = self._fill_nan_with_last(arr2)
+
+        # Add the filled arrays
+        result = filled_arr1 + filled_arr2
+
+        return result
 
 
 @dataclass
@@ -342,10 +505,10 @@ class Condition:
     comparand_c: Optional[str] = None
     comparand_d: Optional[str] = None
 
-    open_long: tuple[str, op.Operand, str] | None = None
-    open_short: tuple[str, op.Operand, str] | None = None
-    close_long: tuple[str, op.Operand, str] | None = None
-    close_short: tuple[str, op.Operand, str] | None = None
+    open_long: ConditionBranch | None = None
+    open_short: ConditionBranch | None = None
+    close_long: ConditionBranch | None = None
+    close_short: ConditionBranch | None = None
 
     def __repr__(self) -> str:
         out = ["Condition("]
@@ -407,13 +570,19 @@ class Condition:
         )
 
     # ..................................................................................
-    def execute(self, data: tp.Data) -> None:
+    def execute(self, data: tp.Data) -> ConditionResult:
         """Execute the condition.
 
         Parameters
         ----------
         data: tp.Data
             the OHLCV data dictionary
+
+        Returns:
+        --------
+        ConditionResult
+            A condition result object with four attached arrays for each of:
+            open_long, open_short, close_long, close_short
         """
         for operand in (self.operand_a, self.operand_b, self.operand_c, self.operand_d):
             if operand is not None:
@@ -425,25 +594,32 @@ class Condition:
             open_long=self.open_long[2](
                 data[self.open_long[1][0]],
                 data[self.open_long[1][1]]
-            ) if self.open_long is not None
+            )
+            if self.open_long is not None
             else np.full_like(data["close"], False, dtype=bool),
+
             # open short
             open_short=self.open_short[2](
                 data[self.open_short[1][0]],
                 data[self.open_short[1][1]]
-            ) if self.open_short is not None
+            )
+            if self.open_short is not None
             else np.full_like(data["close"], False, dtype=bool),
+
             # close long
             close_long=self.close_long[2](
                 data[self.close_long[1][0]],
                 data[self.close_long[1][1]]
-            ) if self.close_long is not None
+            )
+            if self.close_long is not None
             else np.full_like(data["close"], False, dtype=bool),
+
             # close short
             close_short=self.close_short[2](
                 data[self.close_short[1][0]],
                 data[self.close_short[1][1]]
-            ) if self.close_short is not None
+            )
+            if self.close_short is not None
             else np.full_like(data["close"], False, dtype=bool),
         )
 
@@ -454,19 +630,22 @@ class Condition:
         test_res = self.execute(TEST_DATA)
 
         output_matches_size_input = all(
-            arg
-            for arg in (
-                (tr.shape == TEST_DATA["close"].shape for tr in test_res.values())
+            arg for arg in (
+                (
+                    tr.shape == TEST_DATA["close"].shape
+                    for tr in (
+                        test_res.open_long,
+                        test_res.open_short,
+                        test_res.close_short,
+                        test_res.close_long,
+                    )
+                )
             )
         )
 
         return all(
-            arg
-            for arg in (
-                isinstance(test_res, dict),
-                len(test_res) >= 3,
-                "signal" in test_res,
-                isinstance(test_res["signal"], np.ndarray),
+            arg for arg in (
+                isinstance(test_res, ConditionResult),
                 output_matches_size_input,
             )
         )

@@ -209,6 +209,8 @@ def run(
     else:
         data['leverage'] = np.full_like(data['close'], max_leverage, dtype=np.float64)
 
+    data["leverage"] = data["leverage"] * np.abs(data["signal"])
+
     # before cutting off the first 200 data points, we need to make
     # sure that he last signal that occured before the cut-off is
     # included in the data at the first point after the cut-off.

@@ -19,11 +19,11 @@ cci = sg.SignalsDefinition(
     name=f"CCI {timeperiod}",
     conditions=cn.ConditionDefinition(
         interval="1d",
-        operand_a=("cci", {"timeperiod": 70}),
-        operand_b=("cci_oversold", -200, [-200, -70, 15]),
-        operand_c=("cci_overbought", 67, [70, 200, 15]),
-        open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
-        open_short=("a", cn.COMPARISON.CROSSED_BELOW, "c"),
+        operand_a=("cci", {"timeperiod": 21}),
+        operand_b=("cci_oversold", 0, [-200, -70, 15]),
+        operand_c=("cci_overbought", 100, [70, 200, 15]),
+        open_long=("a", cn.COMPARISON.IS_BELOW, "b"),
+        close_long=("a", cn.COMPARISON.IS_ABOVE, "c"),
     ),
 )
 
@@ -34,10 +34,10 @@ rsi = sg.SignalsDefinition(
     conditions=cn.ConditionDefinition(
         interval="1d",
         operand_a=("rsi", {"timeperiod": 2}),
-        operand_b=("rsi_oversold", 182, [5, 35, 2]),
-        operand_c=("rsi_overbought", 127, [65, 95, 2]),
-        open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
-        open_short=("a", cn.COMPARISON.CROSSED_BELOW, "c"),
+        operand_b=("rsi_oversold", 20, [5, 35, 2]),
+        operand_c=("rsi_overbought", 80, [65, 95, 2]),
+        open_long=("a", cn.COMPARISON.IS_BELOW, "b"),
+        close_long=("a", cn.COMPARISON.IS_ABOVE, "c"),
     ),
 )
 
@@ -437,6 +437,82 @@ s_test_er = sb.StrategyDefinition(
     ]
 )
 
+
+# ====================================================================================
+#                                     MULTI STRATEGY 1                               #
+# ====================================================================================
+ema_cross_10_30 = ema_cross = sg.SignalsDefinition(
+    name=f"ema cross {timeperiod}/{timeperiod*4}",
+    conditions=[
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=("ema", {"timeperiod": 10}),
+            operand_b=("ema", {"timeperiod": 20}),
+            open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
+            close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+        ),
+    ]
+)
+
+ema_cross_20_60 = ema_cross = sg.SignalsDefinition(
+    name=f"ema cross {timeperiod}/{timeperiod*4}",
+    conditions=[
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=("ema", {"timeperiod": 20}),
+            operand_b=("ema", {"timeperiod": 40}),
+            open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
+            close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+        ),
+    ]
+)
+
+ema_cross_40_120 = ema_cross = sg.SignalsDefinition(
+    name=f"ema cross {timeperiod}/{timeperiod*4}",
+    conditions=[
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=("ema", {"timeperiod": 40}),
+            operand_b=("ema", {"timeperiod": 80}),
+            open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
+            close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+        ),
+    ]
+)
+
+s_ema_multi = sb.StrategyDefinition(
+        strategy="Composite Strategy",
+        symbol="BTCUSDT",
+        interval="1d",
+        sub_strategies=[
+            sb.StrategyDefinition(
+                strategy="CCI",
+                symbol="BTCUSDT",
+                interval="1d",
+                signals_definition=ema_cross_10_30,
+                weight=0.33,
+            ),
+            sb.StrategyDefinition(
+                strategy="RSI",
+                symbol="BTCUSDT",
+                interval="1d",
+                signals_definition=ema_cross_20_60,
+                weight=0.33,
+            ),
+            sb.StrategyDefinition(
+                strategy="RSI",
+                symbol="BTCUSDT",
+                interval="1d",
+                signals_definition=ema_cross_40_120,
+                weight=0.33,
+            ),
+        ]
+    )
+
+
+# ====================================================================================
+#                                   END OF DEFINitiONS                               #
+# ====================================================================================
 
 def get_all_strategies():
     return [contra_1, trend_1]

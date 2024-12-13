@@ -214,7 +214,7 @@ class SignalGenerator:
 
         return main, sub
 
-    def execute(self, data: tp.Data, weight: tp.Weight = 1) -> tp.Data:
+    def execute(self, data: tp.Data) -> cnd.ConditionResult:
         """Execute the signal generator.
 
         Parameters
@@ -227,13 +227,10 @@ class SignalGenerator:
         tp.Data
             OHLCV data dictionary
         """
-        res = reduce(
+        return reduce(
             lambda x, y: x & y,
             (cond.execute(data) for cond in self.conditions)
         )
-
-        data.update(res.as_dict())
-        return data
 
     def speak(self, data: tp.Data, weight: tp.Weight = 1) -> tp.Data:
         return self.execute(data, weight)

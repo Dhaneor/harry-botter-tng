@@ -43,21 +43,21 @@ from src.analysis import strategy_backtest as bt  # noqa: E402, F401
 from src.analysis.backtest import statistics as st  # noqa: E402, F401
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
     contra_1, trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross,
-    s_linreg, s_test_er
+    s_linreg, s_test_er, s_ema_multi
 )
 # from src.plotting.minerva import BacktestChart as Chart  # noqa: E402, F401)
 from src.analysis.chart.tikr_charts import BacktestChart as Chart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
 from src.analysis.models import position  # noqa: E402, F401
 
-symbol = "BTCUSDT"
+symbol = "ETHUSDT"
 interval = "1d"
 
 start = int(-365*6)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_linreg
-risk_level, max_leverage = 6, 2
+strategy = s_ema_multi
+risk_level, max_leverage = 6, 1.5
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')

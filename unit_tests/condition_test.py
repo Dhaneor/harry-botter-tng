@@ -8,13 +8,12 @@ Created on Oct 06 10:03:20 2021
 import sys
 import os
 import time
-from functools import reduce
-import itertools as it
 import logging
 import numpy as np
 import pandas as pd
 from typing import Iterable
 from pprint import pprint  # noqa: F401
+from random import choice
 
 # profiler imports
 from cProfile import Profile  # noqa: F401
@@ -176,58 +175,99 @@ def test_condition_indicators(condition: cn.Condition):
 
 
 def test_condition_result():
+    def get_random_array(length=10):
+        return np.array(tuple(choice([True, False]) for _ in range(length)))
+
+    def get_random_condition_result():
+        return cn.ConditionResult(
+            open_long=get_random_array(),
+            close_long=get_random_array(),
+            open_short=get_random_array(),
+            close_short=get_random_array(),
+        )
+
+    cr1 = get_random_condition_result()
+    # cr2 = get_random_condition_result()
+    # cr3 = get_random_condition_result()
+
+    print(cr1.open_long)
+    print(cr1.close_long)
+    print(cr1.open_short)
+    print(cr1.close_short)
+    print
+    print('-' * 120)
+    print(cr1.combined())
+
+
+def test_condition_result_from_combined():
+    s1 = np.array(tuple(choice([1., 0., -1., np.nan]) for _ in range(10)))
+    s2 = np.array(tuple(choice([1., 0., -1., np.nan]) for _ in range(10)))
+
+    combined = s1 + s2
+
+    cr = cn.ConditionResult.from_combined(combined)
+
+    print(combined)
+    print('-' * 50)
+    print(cr.open_long)
+    print(cr.open_short)
+    print(cr.close_long)
+    print(cr.close_short)
+
+
+def test_condition_result_combine():
     cr1 = cn.ConditionResult(
-        open_long=np.array([False, False, False, True, True, True])
+        open_long=np.array([True, False, np.nan, False, False]),
+        close_long=np.array([False, True, np.nan, False, False]),
+        open_short=np.array([False, False, True, True, False]),
+        close_short=np.array([False, False, np.nan, False, True]),
     )
+
+    print(cr1.combined())
+    assert np.array_equal(cr1.combined(), np.array([1, 0, -1, -1, 0]))
+
     cr2 = cn.ConditionResult(
-        open_long=np.array([False, False, True, True, True, False])
+        open_long=np.array([False, True, True, False, False, np.nan, np.nan]),
+        close_long=np.array([True, False, np.nan, True, False, np.nan, False]),
+        open_short=np.array([False, False, np.nan, False, True, np.nan, False]),
+        close_short=np.array([True, False, np.nan, True, False, np.nan, True]),
     )
 
-    cr3 = cn.ConditionResult(
-        open_long=np.array([False, False, True, True, True, False])
-    )
-
-    res1 = tuple(it.accumulate([cr1, cr2, cr3], lambda x, y: x & y))[-1]
-    res2 = reduce(lambda x, y: x & y, [cr1, cr2, cr3])
-
-    print(cr1)
-    print(cr2)
-    print(cr3)
-    print('\n')
-    print(res1)
-    print(res2)
+    print(cr2.combined())
+    assert np.array_equal(cr2.combined(), np.array([0, 1, 1, 0, -1, -1, 0]))
 
 
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
+    test_condition_result_combine()
+
+    sys.exit()
+
     c = cn.factory(c_defs["golden_cross"])
 
     for comp in (c.operand_a, c.operand_b, c.operand_c, c.operand_d):
         if comp:
             print(comp.indicators)
 
-    print(c.indicators)
+    # print(c.indicators)
 
-    for ind in c.indicators:
-        print(f"{ind} -> {ind.parameters} ... {ind.parameter_space}")
+    # sys.exit()
 
-    sys.exit()
-
-    # # test_condition_is_working(c)
+    test_condition_is_working(c)
     logger.debug("~-*-~" * 30)
     logger.debug("condition: %s", c)
-    # logger.debug("indicators: %s", test_condition_indicators(c))
+    logger.debug("indicators: %s", test_condition_indicators(c))
 
     pprint(c.__dict__)
     print('-' * 80)
-    pprint(c.operand_a.plot_desc)
-    pprint(c.operand_b.plot_desc)
-    pprint(c.operand_c.plot_desc)
-    pprint(c.operand_d.plot_desc)
-    print('-' * 80)
-    pprint(c.plot_desc)
+    # pprint(c.operand_a.plot_desc)
+    # pprint(c.operand_b.plot_desc)
+    # pprint(c.operand_c.plot_desc)
+    # pprint(c.operand_d.plot_desc)
+    # print('-' * 80)
+    # pprint(c.plot_desc)
 
     # print(c)
     # test_execute_condition(data, c, True)
@@ -239,7 +279,7 @@ if __name__ == "__main__":
     factory = cn.ConditionFactory()
 
     logger.setLevel(logging.ERROR)
-    runs = 1_000
+    runs = 1_000_000
     data = data
     st = time.time()
 
