@@ -133,6 +133,7 @@ ConditionBranch: TypeAlias = tuple[str, tuple[str, str], Callable]
 
 @jit(nopython=True)
 def merge_signals_nb(open_long, open_short, close_long, close_short):
+    """Merges the four possible signals into one column."""
     n = len(open_long)
     signal = np.zeros(n, dtype=np.float64)
     position = np.zeros(n, dtype=np.float64)
@@ -143,28 +144,30 @@ def merge_signals_nb(open_long, open_short, close_long, close_short):
                 signal[i] = open_long[i]
                 position[i] = 1
             elif open_short[i] > 0:
-                signal[i] = open_short[i]
+                signal[i] = open_short[i] * -1
                 position[i] = -1
         else:
             prev_position = position[i-1]
+            signal[i] = signal[i-1]
+            position[i] = prev_position
 
             if open_long[i] > 0:
-                signal[i] = open_long[1]
+                signal[i] = open_long[i]
                 position[i] = 1
-            elif open_short[i] > 0:
-                signal[i] = -1
-                position[i] = open_short[i]
+
             elif close_long[i] > 0:
                 if prev_position > 0:
                     signal[i] = 0
                     position[i] = 0
+
+            elif open_short[i] > 0:
+                signal[i] = open_short[i] * -1
+                position[i] = -1
+
             elif close_short[i] > 0:
                 if prev_position < 0:
                     signal[i] = 0
                     position[i] = 0
-            else:
-                signal[i] = 0  # np.nan
-                position[i] = prev_position
 
     return signal, position
 
@@ -301,6 +304,8 @@ class ConditionResult:
     close_long: np.ndarray | None = None
     close_short: np.ndarray | None = None
 
+    combined_signal: np.ndarray | None = None
+
     def __post_init__(self):
 
         all_actions = (
@@ -399,13 +404,20 @@ class ConditionResult:
             "open_short": self.open_short,
             "close_long": self.close_long,
             "close_short": self.close_short,
+            "combined": self.combined_signal
+            if self.combined_signal is not None
+            else self.combined()
         }
 
     def combined(self):
         signal, _ = merge_signals_nb(
-            self.open_long, self.open_short, self.close_long, self.close_short)
+            self.open_long,
+            self.open_short,
+            self.close_long,
+            self.close_short
+        )
 
-        return signal
+        return np.nan_to_num(signal)  # self._fill_nan_with_last(signal)
 
     @classmethod
     def from_combined(cls, combined: np.ndarray):
@@ -436,7 +448,26 @@ class ConditionResult:
                     close_short[i] = 1
                 position = 0
 
-        return ConditionResult(open_long, open_short, close_long, close_short)
+        cr = ConditionResult(open_long, open_short, close_long, close_short)
+        cr.combined_signal = combined
+
+        return cr
+
+    def _fill_nan_with_last(self, arr):
+        mask = np.isnan(arr)
+        idx = np.where(~mask, np.arange(len(arr)), 0)
+        np.maximum.accumulate(idx, out=idx)
+        return arr[idx]
+
+    def _add_arrays_with_nan_handling(self, arr1, arr2):
+        # Fill NaN values in both arrays
+        filled_arr1 = self._fill_nan_with_last(arr1)
+        filled_arr2 = self._fill_nan_with_last(arr2)
+
+        # Add the filled arrays
+        result = filled_arr1 + filled_arr2
+
+        return result
 
 
 @dataclass

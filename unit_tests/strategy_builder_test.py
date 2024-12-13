@@ -46,7 +46,7 @@ from src.analysis.strategies import condition as cnd  # noqa: E402, F401
 from src.analysis.strategies import signal_generator as sg  # noqa: E402, F401
 from src.analysis.strategies import exit_order_strategies as es  # noqa: E402
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
-    cci, rsi, ema_cross, tema_cross
+    cci, rsi, ema_cross, tema_cross, breakout
 )  # noqa: E402, F401
 
 
@@ -114,7 +114,7 @@ def __get_composite_strategy_definition():
                 strategy="CCI",
                 symbol="BTCUSDT",
                 interval="1d",
-                signals_definition=cci,
+                signals_definition=breakout,
                 weight=0.7,
             ),
             sb.StrategyDefinition(
@@ -218,12 +218,22 @@ def test_strategy_run(s, show=False):
     if show:
         df = pd.DataFrame.from_dict(data)
 
+        for col in (
+            "open time", "close time", "high", "low", "open",
+            "rsi_oversold_20", "rsi_overbought_80",
+            "cci_oversold_-100", "cci_overbought_100",
+        ):
+            try:
+                del df[col]
+            except Exception:
+                pass
+
+        df.loc[(df["rsi_2_close"] < 80) & (df["rsi_2_close"] > 20), "rsi_2_close"] = 0
+
         df.replace(False, ".", inplace=True)
-        df.replace(np.nan, ".", inplace=True)
+        df.replace(np.nan, "-", inplace=True)
         df.replace(0.0, ".", inplace=True)
 
-        print(df.info())
-        print(sys.getsizeof(data))
         print(df.tail(50))
 
 
@@ -242,12 +252,8 @@ if __name__ == "__main__":
     # test_sl_strategy_factory()
     # sdef = __get_single_strategy_definition()
     sdef = __get_composite_strategy_definition()
-
-    print(sdef)
-
     s = sb.build_strategy(sdef)
     assert isinstance(s, sb.IStrategy)
-
     print("-" * 200)
     print(s)
 

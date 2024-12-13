@@ -327,8 +327,7 @@ class CompositeStrategy(IStrategy):
         return string
 
     def speak(self, data: tp.Data) -> tp.Data:
-        self._add_signals(data)
-        return data
+        return self._add_signals(data)
 
     def optimize(self) -> None:
         """Optimize the strategy by testing param combinations.
@@ -374,36 +373,22 @@ class CompositeStrategy(IStrategy):
 
         try:
             combined_signal = reduce(
-                lambda x, y: x + y,
+                lambda x, y: np.add(x, y),
                 (
                     strat.get_signals(data).combined()
                     for strat, _ in self.sub_strategies.values()
                 )
-                )
+            )
         except Exception as e:
             logger.error(e, exc_info=True)
 
         data.update(
-            ConditionResult.from_combined(combined_signal).as_dict()
+            ConditionResult
+            .from_combined(combined_signal)
+            .as_dict()
             )
 
-        data["combined_signal"] = combined_signal
-
         return data
-
-    def _combine_signals(self, signals: Sequence[np.ndarray]) -> np.ndarray:
-        """Combines the signals from multiple sub-strategies.
-
-        Parameters
-        ----------
-        signals: Signals -> Dict[str, Tuple[np.ndarray, float]]
-            signals from multiple sub-strategies
-        Returns
-        -------
-        np.ndarray
-            combined signals
-        """
-        return combine_arrays(signals)
 
     def _add_stop_loss(self, data: tp.Data) -> tp.Data:
         """Calculates stop loss and adds it to the data dictionary.

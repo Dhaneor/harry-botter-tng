@@ -30,6 +30,7 @@ from numba import jit, int8
 
 @jit(nopython=True)
 def merge_signals_nb(open_long, open_short, close_long, close_short):
+    """Merges the four possible signals into one column."""
     n = len(open_long)
     signal = np.zeros(n, dtype=np.float64)
     position = np.zeros(n, dtype=np.float64)
@@ -37,31 +38,33 @@ def merge_signals_nb(open_long, open_short, close_long, close_short):
     for i in range(n):
         if i == 0:
             if open_long[i] > 0:
-                signal[i] = 1
+                signal[i] = open_long[i]
                 position[i] = 1
             elif open_short[i] > 0:
-                signal[i] = -1
+                signal[i] = open_short[i] * -1
                 position[i] = -1
         else:
             prev_position = position[i-1]
+            signal[i] = signal[i-1]
+            position[i] = prev_position
 
             if open_long[i] > 0:
-                signal[i] = 1
+                signal[i] = open_long[i]
                 position[i] = 1
-            elif open_short[i] > 0:
-                signal[i] = -1
-                position[i] = -1
+
             elif close_long[i] > 0:
                 if prev_position > 0:
                     signal[i] = 0
                     position[i] = 0
+
+            elif open_short[i] > 0:
+                signal[i] = open_short[i] * -1
+                position[i] = -1
+
             elif close_short[i] > 0:
                 if prev_position < 0:
                     signal[i] = 0
                     position[i] = 0
-            else:
-                signal[i] = np.nan
-                position[i] = prev_position
 
     return signal, position
 
@@ -178,7 +181,7 @@ def find_positions_nb(open_, high, low, close, signal, position,
             sl_current[i] = max(sl_current[i - 1], sl_long[i - 1])
 
         # open LONG position
-        if active_position != 1 and signal[i - 1] == 1:
+        if active_position != 1 and signal[i - 1] > 0:
             active_position = 1
             position[i] = 1
             buy[i] = 1
@@ -187,7 +190,7 @@ def find_positions_nb(open_, high, low, close, signal, position,
 
         # close LONG position
         if active_position == 1:
-            if signal[i] in (0, -1):
+            if signal[i] <= 0:
                 active_position = 0
                 sell[i] = 1
                 sell_at[i] = close[i]
@@ -204,7 +207,7 @@ def find_positions_nb(open_, high, low, close, signal, position,
             sl_current[i] = min(sl_current[i - 1], sl_short[i - 1])
 
         # open SHORT position
-        if active_position != -1 and signal[i - 1] == -1:
+        if active_position != -1 and signal[i - 1] < 0:
             active_position = -1
             position[i] = -1
             sell[i] = 1
@@ -213,7 +216,7 @@ def find_positions_nb(open_, high, low, close, signal, position,
 
         # close SHORT position
         if active_position == -1:
-            if signal[i] in (0, 1):
+            if signal[i] >= 0:
                 active_position = 0
                 buy[i] = 1
                 buy_at[i] = close[i]

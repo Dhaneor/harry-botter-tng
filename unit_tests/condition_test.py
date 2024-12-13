@@ -8,8 +8,6 @@ Created on Oct 06 10:03:20 2021
 import sys
 import os
 import time
-from functools import reduce
-import itertools as it
 import logging
 import numpy as np
 import pandas as pd
@@ -189,18 +187,8 @@ def test_condition_result():
         )
 
     cr1 = get_random_condition_result()
-    cr2 = get_random_condition_result()
-    cr3 = get_random_condition_result()
-
-    res1 = tuple(it.accumulate([cr1, cr2, cr3], lambda x, y: x & y))[-1]
-    res2 = reduce(lambda x, y: x + y, [cr1, cr2, cr3])
-
-    # print(cr1)
-    # print(cr2)
-    # print(cr3)
-    # print('\n')
-    # # print(res1)
-    # print(res2)
+    # cr2 = get_random_condition_result()
+    # cr3 = get_random_condition_result()
 
     print(cr1.open_long)
     print(cr1.close_long)
@@ -227,11 +215,33 @@ def test_condition_result_from_combined():
     print(cr.close_short)
 
 
+def test_condition_result_combine():
+    cr1 = cn.ConditionResult(
+        open_long=np.array([True, False, np.nan, False, False]),
+        close_long=np.array([False, True, np.nan, False, False]),
+        open_short=np.array([False, False, True, True, False]),
+        close_short=np.array([False, False, np.nan, False, True]),
+    )
+
+    print(cr1.combined())
+    assert np.array_equal(cr1.combined(), np.array([1, 0, -1, -1, 0]))
+
+    cr2 = cn.ConditionResult(
+        open_long=np.array([False, True, True, False, False, np.nan, np.nan]),
+        close_long=np.array([True, False, np.nan, True, False, np.nan, False]),
+        open_short=np.array([False, False, np.nan, False, True, np.nan, False]),
+        close_short=np.array([True, False, np.nan, True, False, np.nan, True]),
+    )
+
+    print(cr2.combined())
+    assert np.array_equal(cr2.combined(), np.array([0, 1, 1, 0, -1, -1, 0]))
+
+
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    test_condition_result_from_combined()
+    test_condition_result_combine()
 
     sys.exit()
 
