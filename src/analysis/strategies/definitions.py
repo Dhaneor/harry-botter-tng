@@ -447,7 +447,7 @@ ema_cross_10_30 = ema_cross = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a=("ema", {"timeperiod": 10}),
-            operand_b=("ema", {"timeperiod": 20}),
+            operand_b=("ema", {"timeperiod": 40}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
@@ -460,7 +460,7 @@ ema_cross_20_60 = ema_cross = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a=("ema", {"timeperiod": 20}),
-            operand_b=("ema", {"timeperiod": 40}),
+            operand_b=("ema", {"timeperiod": 80}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
@@ -472,8 +472,8 @@ ema_cross_40_120 = ema_cross = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("ema", {"timeperiod": 40}),
-            operand_b=("ema", {"timeperiod": 80}),
+            operand_a=("ema", {"timeperiod": 30}),
+            operand_b=("ema", {"timeperiod": 120}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),

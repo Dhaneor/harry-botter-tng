@@ -10,24 +10,6 @@ import numpy as np
 from numba import jit, int8
 
 
-# ==============================================================================
-# def merge_signals(data):
-#     open_long = np.nan_to_num(data["open_long"])
-#     open_short = np.nan_to_num(data["open_short"])
-#     close_long = np.nan_to_num(data["close_long"])
-#     close_short = np.nan_to_num(data["close_short"])
-
-#     data["signal"] = np.where(
-#         open_long > 0, 1, np.where(
-#             open_short > 0, -1, np.where(
-#                 close_long > 0, 0, np.where(
-#                     close_short > 0, 0, np.nan
-#                 )
-#             )
-#         )
-#     )
-
-
 @jit(nopython=True)
 def merge_signals_nb(open_long, open_short, close_long, close_short):
     """Merges the four possible signals into one column."""
