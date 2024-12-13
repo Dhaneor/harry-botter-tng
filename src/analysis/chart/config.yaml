@@ -1,0 +1,35 @@
+strategy:
+  equity:
+    column: b.value
+    label: Strategy Equity
+  drawdown:
+    column: b.drawdown
+    label: Strategy Drawdown
+
+capital:
+  equity:
+    column: 'cptl.b'
+    label: Capital Equity
+  drawdown:
+    column: 'cptl.drawdown'
+    label: Capital Drawdown
+
+hodl:
+  equity:
+    column: hodl.value
+    label: Hodl Equity
+  drawdown:
+    column: hodl.drawdown
+    label: Hodl Drawdown
+
+position:
+  size:
+    column: b.base
+    label: Position Size
+  leverage:
+    column: leverage
+    label: Leverage
+
+ohlcv:
+  volume: volume
+

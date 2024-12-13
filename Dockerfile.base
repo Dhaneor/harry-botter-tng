@@ -24,6 +24,10 @@ RUN wget https://github.com/TA-Lib/ta-lib/releases/download/v0.4.0/ta-lib-0.4.0-
     cd .. && \
     rm -rf ta-lib-0.4.0-src.tar.gz ta-lib/
 
+# this did not work, because the packages for the fonts could not be found
+# but how can we install more interesting fonts?
+# RUN apt-get install fonts-georgian fonts-dejavu fonts-liberation
+
 # Set the working directory in the container
 WORKDIR /app
 
@@ -34,3 +38,5 @@ COPY requirements_mvp.txt .
 RUN pip install --no-cache-dir -r requirements_mvp.txt
 
 # This base image is now ready to be used for building your application
+# build it with: # build it with:
+# docker build --platform linux/amd64 -f Dockerfile.base -t tikr-mvp-baseimage-<YYYYMMDD> .

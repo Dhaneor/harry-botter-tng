@@ -11,6 +11,7 @@ import asyncio
 import numpy as np
 import os
 import pandas as pd
+import sys
 import time
 from queue import Queue, Empty
 from threading import Event
@@ -23,7 +24,7 @@ from src.analysis.backtest import statistics as st
 from src.analysis.models.position import Positions
 from src.analysis import telegram_signal as ts
 from src.backtest import result_stats as rs
-from src.plotting.minerva import TikrChart as Chart
+from src.analysis.chart.tikr_charts import TikrChart as Chart
 from tikr_mvp_strategy import mvp_strategy
 
 # set up logging
@@ -43,20 +44,37 @@ start_time = time.time()
 
 # ================================ Configuration =====================================
 # instantiate strategy: the mvp_strategy is not available in the
-# Github  repository, you can implement your own strategy
+# Github repository, you can implement your own strategy
 strategy = sb.build_strategy(mvp_strategy)
 strategy.name = "Safe HODL Strategy by Gregorovich"
 
 RISK_LEVEL = 0  # define the risk level for the strategy / position sizing
 MAX_LEVERAGE = 1  # define the maximum leverage for the strategy / position sizing
-CHAT_ID = os.getenv('CHAT_ID')  # Telegram chat ID (set as environment variable)
 
 TIMEOUT = 60  # time in seconds to wait for the data to be available in the repository
 RETRY_AFTER_SECS = 5  # time between retries in seconds
 repo.RATE_LIMIT = False  # disable rate limit for the repository
-repo.LOG_STATUS = True  # enable logging status messages
+repo.LOG_STATUS = True  # enable logging of server status and server time
 
 DISPLAY_DF_ROWS = 10  # number of rows to display in the dataframe
+
+
+# ================== <<<<< SET THESE ENVIRONMENT VARIABLES! >>>>> ====================
+CHAT_ID = os.getenv('CHAT_ID')  # Telegram chat ID (set as environment variable)
+SEND_SIGNAL = os.getenv('SEND_SIGNAL')  # set as environment variable
+SEND_CHART = os.getenv('SEND_CHART')  # set as environment variable
+
+if not CHAT_ID:
+    logger.error("CHAT_ID environment variable must be set!")
+    sys.exit(1)
+
+if not SEND_CHART and not SEND_SIGNAL:
+    logger.error(
+        "SEND_SIGNAL and SEND_CHART environment variables must be set, "
+        "and at least one of them should be set to True!")
+    sys.exit(1)
+
+logger.info("starting: SEND_SIGNAL: %s / SEND_CHART: %s", SEND_SIGNAL, SEND_CHART)
 
 
 # ============================ Data Display & Processing =============================
@@ -143,11 +161,11 @@ def display_results(df: pd.DataFrame) -> None:
     display_stats(df)
 
 
-def process_data(ohlcv_data: repo.Response):
-    logger.debug(ohlcv_data)
+def run_backtest(response: repo.Response):
+    logger.debug(response)
 
-    ohlcv_data = bt.run(
-        data=ohlcv_data.to_dict(),
+    backtest_result = bt.run(
+        data=response.to_dict(),
         strategy=strategy,
         risk_level=RISK_LEVEL,
         max_leverage=MAX_LEVERAGE,
@@ -155,7 +173,7 @@ def process_data(ohlcv_data: repo.Response):
     )
 
     # build a dataframe from the results & set index to be the datetime
-    df = pd.DataFrame.from_dict(ohlcv_data)
+    df = pd.DataFrame.from_dict(backtest_result)
     df.index = pd.to_datetime(df["open time"], unit="ms")
 
     # add drawdown & other additional information to dataframe
@@ -221,13 +239,23 @@ async def send_performance_chart(df: pd.DataFrame) -> None:
     await ts.send_message(
         chat_id=CHAT_ID,
         msg=msg,
-        image=Chart(df, title=strategy.name).get_image_bytes()
+        image=Chart(df, title=strategy.name, style='day').get_image_bytes()
     )
 
 
 async def notify_telegram(df: pd.DataFrame) -> None:
-    await send_signal(df)
-    await send_performance_chart(df)
+    # the environment variables for sending messages
+    # need to be explicitly converted to boolean values
+    def str_to_bool(value):
+        return value.lower() in ('true', 't', 'yes', 'y', '1')
+
+    if str_to_bool(SEND_SIGNAL):
+        logger.info("Sending trading signal to Telegram...")
+        await send_signal(df)
+
+    if str_to_bool(SEND_CHART):
+        logger.info("Sending performance chart to Telegram...")
+        await send_performance_chart(df)
 
 
 # ================================= Sync Functions ===================================
@@ -273,13 +301,13 @@ def main():
 
     try:
         # we just wait here until we get something
-        ohlcv_data = ohlcv_queue.get(timeout=TIMEOUT)
+        response = ohlcv_queue.get(timeout=TIMEOUT)
 
         # if any problem occured, the response from the ohlcv_repository
         # will be marked as unsuccessful, and additional imformation
         # about the cause if the issue should be included.
-        if not ohlcv_data.success:
-            raise ValueError("Response marked as unsuccessful: %s" % ohlcv_data)
+        if not response.success:
+            raise ValueError("Response marked as unsuccessful: %s" % response)
 
     except ValueError as e:
         logger.error(e)
@@ -291,7 +319,7 @@ def main():
         logger.error("An unexpected error occured: %s", e, exc_info=True)
 
     else:
-        df = process_data(ohlcv_data)
+        df = run_backtest(response)
         asyncio.run(notify_telegram(df))
     finally:
         ohlcv_queue.task_done()

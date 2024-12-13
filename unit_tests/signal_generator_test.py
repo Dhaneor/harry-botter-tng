@@ -33,7 +33,7 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
     linreg_roc_btc_1d, linreg_roc_eth_1d, test_er
 )
-from src.analysis.strategies import strategy_plot as sp  # noqa: E402
+from analysis.chart import strategy_plot as sp  # noqa: E402
 from helpers_ import get_sample_data, get_ohlcv  # noqa: E402, F401
 
 logger = logging.getLogger("main")

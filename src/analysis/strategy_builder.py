@@ -43,14 +43,15 @@ import abc
 import logging
 import numpy as np
 from dataclasses import dataclass
+from functools import reduce
 from typing import Any, NamedTuple, Optional, Sequence, Callable
 
 from .util import proj_types as tp
 from .strategies import signal_generator as sg
 from .strategies import exit_order_strategies as es
+from .strategies.condition import ConditionResult
 
 logger = logging.getLogger("main.strategy_builder")
-# logger.setLevel(logging.INFO)
 
 
 # ======================================================================================
@@ -235,6 +236,18 @@ class SubStrategy(IStrategy):
         """
         raise NotImplementedError(f"optimize() not implemented for {self.name}")
 
+    def get_signals(self, data: tp.Data) -> sg.cnd.ConditionResult:
+        """Gets the signals as ConditionResult object.
+
+        Instead of adding keys/values to the original data structure,
+        this method returns a ConditionResult object which allows further
+        processing, and or combining of multiple signals/strategies.
+        """
+        return self\
+            ._signal_generator\
+            .execute(data)\
+            .apply_weight(self.weight)
+
     # --------------------------------------------------------------------------
     def _add_positions(self, data: tp.Data) -> None:
         """Calculates positions and adds them to the data dictionary.
@@ -252,7 +265,7 @@ class SubStrategy(IStrategy):
         :return: _description_
         :rtype: _type_
         """
-        return self._signal_generator.execute(data, self.weight)
+        return data.update(self.get_signals(data).as_dict())
 
     def _add_stop_loss(self, data: tp.Data) -> tp.Data:
         """Calculates stop loss and adds it to the data dictionary.
@@ -283,7 +296,6 @@ class SubStrategy(IStrategy):
         tp.Data
             the dict with added 'take profit' series
         """
-        return data
         return super()._add_take_profit(data)
 
 
@@ -315,8 +327,7 @@ class CompositeStrategy(IStrategy):
         return string
 
     def speak(self, data: tp.Data) -> tp.Data:
-        self._add_signals(data)
-        return data
+        return self._add_signals(data)
 
     def optimize(self) -> None:
         """Optimize the strategy by testing param combinations.
@@ -359,34 +370,25 @@ class CompositeStrategy(IStrategy):
         tp.Data
             data with added 'signal' key/values
         """
-        # for key in sg.SignalGenerator.dict_keys:
-        #     if key not in data:
-        #         logger.debug("creating key '%s' in data", key)
-        #         data[key] = np.zeros(data['open'].shape)
 
-        [strat.speak(data) for strat, _ in self.sub_strategies.values()]
+        try:
+            combined_signal = reduce(
+                lambda x, y: np.add(x, y),
+                (
+                    strat.get_signals(data).combined()
+                    for strat, _ in self.sub_strategies.values()
+                )
+            )
+        except Exception as e:
+            logger.error(e, exc_info=True)
 
-        # result = np.array(arrays[0])
-
-        # for array in arrays[1:]:
-        #     result = np.add(result, array)
-        # return result
+        data.update(
+            ConditionResult
+            .from_combined(combined_signal)
+            .as_dict()
+            )
 
         return data
-
-    def _combine_signals(self, signals: Sequence[np.ndarray]) -> np.ndarray:
-        """Combines the signals from multiple sub-strategies.
-
-        Parameters
-        ----------
-        signals: Signals -> Dict[str, Tuple[np.ndarray, float]]
-            signals from multiple sub-strategies
-        Returns
-        -------
-        np.ndarray
-            combined signals
-        """
-        return combine_arrays(signals)
 
     def _add_stop_loss(self, data: tp.Data) -> tp.Data:
         """Calculates stop loss and adds it to the data dictionary.

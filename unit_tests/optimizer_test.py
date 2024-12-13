@@ -7,6 +7,7 @@ Created on Oct 06 10:03:20 2021
 """
 import sys
 import os
+import time
 import logging
 
 # profiler imports
@@ -45,12 +46,12 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = int(-365*6)
+start = int(-365*3)
 end = 'now UTC'
 
-strategy = s_breakout
-risk_levels = 0,  # [0, 7, 8, 9]
-max_leverage_levels = [0.5, 0.6, 0.7, 0.8, 0.9, 1]  # (1, 1.25, 1.5, 1.75)
+strategy = s_linreg
+risk_levels = 0,  # [0, 4, 5, 6, 7, 8, 9]
+max_leverage_levels = 1,  # (1, 1.25, 1.5, 1.75, 2)
 max_drawdown = 25
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
@@ -186,7 +187,11 @@ def test_optimize(data: dict | None):
 
 def test_check_robustness():
     data = _get_ohlcv_from_db()
-    best_result = test_optimize(data)[0]
+    if test_optimize(data):
+        best_result = test_optimize(data)[0]
+    else:
+        logger.info("No profitable parameters found.")
+        return
 
     results = optimizer.check_robustness(
         signal_generator=sig_gen,
@@ -227,6 +232,34 @@ def test_check_robustness():
     logger.info("Efficiency Ratio: %s", er[-1])
 
 
+def profile_function(runs=1):
+    logger.setLevel(logging.ERROR)
+    data = _get_ohlcv_from_db()
+    st = time.perf_counter()
+
+    with Profile() as p:
+        for _ in range(runs):
+            # Optimize the strategy
+            _ = optimizer.soptimize(
+                signal_generator=sig_gen,
+                data=data,
+                interval=interval,
+                risk_levels=risk_levels,
+            )
+
+    (
+        Stats(p)
+        .strip_dirs()
+        .sort_stats(SortKey.CUMULATIVE)  # (SortKey.CALLS)
+        # .reverse_order()
+        .print_stats(50)
+    )
+
+    et = time.perf_counter()
+    print(f'length data: {len(data["close"])} periods')
+    print(f"average execution time: {((et - st)*1_000/runs):.2f} milliseconds")
+
+
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
@@ -237,4 +270,6 @@ if __name__ == '__main__':
     # test_vector_generator()
     # test_mutations_for_parameters()
     # test_optimize()
-    test_check_robustness()
+    # test_check_robustness()
+
+    profile_function()

@@ -17,7 +17,7 @@ from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
 logger = logging.getLogger('main')
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
@@ -43,20 +43,21 @@ from src.analysis import strategy_backtest as bt  # noqa: E402, F401
 from src.analysis.backtest import statistics as st  # noqa: E402, F401
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
     contra_1, trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross,
-    s_linreg, s_test_er
+    s_linreg, s_test_er, s_ema_multi
 )
-from src.plotting.minerva import BacktestChart as Chart  # noqa: E402, F401
+# from src.plotting.minerva import BacktestChart as Chart  # noqa: E402, F401)
+from src.analysis.chart.tikr_charts import BacktestChart as Chart  # noqa: E402, F401
 from src.backtest import result_stats as rs  # noqa: E402, F401
 from src.analysis.models import position  # noqa: E402, F401
 
-symbol = "BTCUSDT"
+symbol = "ETHUSDT"
 interval = "1d"
 
-start = int(-365*3)  # 'December 01, 2018 00:00:00'
+start = int(-365*6)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_breakout
-risk_level, max_leverage = 0, 1
+strategy = s_ema_multi
+risk_level, max_leverage = 7, 2
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -235,7 +236,7 @@ def run(data, show=False, plot=False):
     if show:
         _show(df)
 
-    positions = position.extract_positions(df_pos, symbol)
+    positions = position.Positions(df_pos, symbol)
 
     # for pos in positions:
     #     print(pos)
@@ -259,7 +260,7 @@ def run(data, show=False, plot=False):
 
     if plot:
         plot_title = f'{strategy.name} - {symbol} ({interval})'
-        Chart(df=df, title=plot_title, color_scheme='night').show()
+        Chart(df=df, title=plot_title, style='night').show()
 
 
 def test_find_positions(data: dict):

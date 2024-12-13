@@ -215,7 +215,8 @@ run_funcs = {
     8: partial(_conservative_sizing, target_risk_annual=0.54),
     9: partial(_conservative_sizing, target_risk_annual=0.60),
     10: partial(_aggressive_sizing, risk_limit_per_trade=0.01),
-    11: partial(_aggressive_sizing, risk_limit_per_trade=0.05),
+    11: partial(_aggressive_sizing, risk_limit_per_trade=0.03),
+    12: partial(_aggressive_sizing, risk_limit_per_trade=0.05),
 }
 
 
