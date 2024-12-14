@@ -182,42 +182,24 @@ class SignalGenerator:
 
         Returns
         -------
-        tuple[PlotDescription, Sequence[PlotDescription]]
-            the plot defintion(s), one for the main plot and one for
-            each subplot
+        list[SubPlot]
+            A list of unique SubPlot objects for all conditions.
         """
-        # collect all PlotDescription objects for all conditions used by
-        # this SignalGenerator instance
-        all_ = tuple(c.plot_desc for c in self.conditions)
+        # Collect all PlotDescription objects for all conditions
+        all_plots = [c.plot_desc for c in self.conditions]
 
-        logger.error(f"plot descriptions: {all_}")
+        # Flatten the list of plot descriptions
+        flattened_plots = [item for sublist in all_plots for item in sublist]
 
-        # add all PlotDescription instances that describe something that
-        # goes into the main plot (= where the candlesticks are)
-        main = sum(p_desc for p_desc in all_ if not p_desc.is_subplot)
-        main = [main] if main else []
-        logger.error("MAIN PLOTS: %s" % main)
+        # Remove duplicates while preserving order
+        unique_plots = []
+        seen = set()
+        for plot in flattened_plots:
+            if plot.label not in seen:
+                seen.add(plot.label)
+                unique_plots.append(plot)
 
-        # gather all subplot definitions
-        sub_with_duplicates = tuple(p_desc for p_desc in all_ if p_desc.is_subplot)
-
-        # Some of the PlotDescription instances we collected belong
-        # together, but come from different branches (for instance
-        # conditions that use the same indicator but different triggers
-        # to open/close a long or a short). We only want to plot the
-        # indicator once, so we  need to combine those into a single
-        # plot definition.
-        sub = []
-
-        # add all definitions that belong together, some of those will
-        # still be duplicates
-        for p_desc in sub_with_duplicates:
-            sub.append(sum(p for p in sub_with_duplicates if p.label == p_desc.label))
-
-        # remove duplicates from the result
-        sub = [sub[x] for x in range(len(sub)) if not (sub[x] in sub[:x])]
-
-        return main + sub
+        return unique_plots
 
     def execute(self, data: tp.Data) -> cnd.ConditionResult:
         """Execute the signal generator.
