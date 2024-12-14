@@ -711,6 +711,7 @@ class SignalChart(Chart):
             row_heights=[8],
             col_widths=[1]
         )
+        self._update_layout()
         self.layout.show_layout()
         self._plot_definition = self._build_plot_definition()
         self.artist.plot_definition = self._plot_definition
@@ -743,13 +744,26 @@ class SignalChart(Chart):
             secondary_y=True,
         )
 
+    def _update_layout(self):
+        row = len(self.layout.layout)
+        for subplot in self.subplots:
+            if subplot.is_subplot:
+                row += 1
+                self.layout.layout[subplot.label] = {"row": row, "col": 1}
+                self.layout.row_heights.append(self.indicator_row_height)
+
     def _build_plot_definition(self):
+        subplots = [sp for sp in self.subplots if sp.is_subplot]
+
+        for subplot in subplots:
+            for elem in subplot.elements:
+                elem.color = self.style.colors.strategy
+
         return PlotDefinition(
             name=self.title or "Tikr Chart",
             subplots=(
                 self.subplot_ohlcv(),
-                # self.subplot_portfolio(),
-                # self.subplot_drawdown(),
+                *subplots,
             ),
             layout=self.layout,
             style=self.style,
