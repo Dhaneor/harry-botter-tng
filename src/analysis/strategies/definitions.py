@@ -292,7 +292,7 @@ test_er = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a=("close"),
-            operand_b=("kama", {"timeperiod": 37}),
+            operand_b=("kama", {"timeperiod": 21}),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_BELOW, "b"),

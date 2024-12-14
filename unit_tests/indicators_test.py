@@ -20,6 +20,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 
 import src.analysis.indicators.indicator as indicator  # noqa: E402
+from src.analysis.chart.plot_definition import SubPlot  # noqa: E402
 
 # configure logger
 LOG_LEVEL = logging.DEBUG
@@ -67,109 +68,109 @@ a1 = np.random.rand(array_len) * 1.05
 a2 = np.random.rand(array_len) * 0.95
 
 # ==============================================================================
-defs = {
-    'SMA': {
-        'src': 'talib',
-        'params': {'timeperiod': 100},
-        "plot_desc": indicator.PlotDescription(
-            label='sma_100',
-            is_subplot=False,
-            lines=[('sma_100', 'Line')],
-            triggers=[],
-            channel=[],
-            hist=[],
-            level='indicator'
-        )
-    },
-    "STOCH": {
-        "src": "talib",
-        "params": {
-            "fastk_period": 14,
-            "slowk_period": 10,
-            "slowd_period": 10,
-            "slowk_matype": 0,
-            "slowd_matype": 0,
-        },
-        "plot_desc": indicator.PlotDescription(
-            label='stoch_14_10_0_10_0',
-            is_subplot=True,
-            lines=[
-                ('stoch_14_5_0_5_0_slowk', 'Dashed Line'),
-                ('stoch_14_5_0_5_0_slowd', 'Dashed Line')
-            ],
-            triggers=[],
-            channel=[],
-            hist=[],
-            level='indicator'
-        )
-    },
-    "BBANDS": {
-        "src": "talib",
-        "params": {
-            "timeperiod": 20,
-            "nbdevup": 2,
-            "nbdevdn": 2,
-            "matype": 0,
-        },
-        "plot_desc": indicator.PlotDescription(
-            label='bbands_20_2.0_2.0_0',
-            is_subplot=False,
-            lines=[('bbands_20_2.0_2.0_0_middleband', 'Line')],
-            triggers=[],
-            channel=['bbands_20_2.0_2.0_0_upperband', 'bbands_20_2.0_2.0_0_lowerband'],
-            hist=[],
-            level='indicator'
-        )
-    },
-    "MACD": {
-        "src": "talib",
-        "params": {
-            "fastperiod": 12,
-            "slowperiod": 26,
-            "signalperiod": 9
-        },
-        "plot_desc": indicator.PlotDescription(
-            label='macd_12_26_9',
-            is_subplot=True,
-            lines=[
-                ('macd_12_26_9_macd', 'Line'),
-                ('macd_12_26_9_macdsignal', 'Dashed Line')
-            ],
-            triggers=[],
-            channel=[],
-            hist=['macd_12_26_9_macdhist'],
-            level='indicator'
-        )
-    },
-    "RSI_OVERBOUGHT": {
-        "src": "fixed",
-        "params": {'value': 70},
-        'parameter_space': {'trigger': [70, 100]},
-        "plot_desc": indicator.PlotDescription(
-            label='rsi_overbought_70',
-            is_subplot=True,
-            lines=[],
-            triggers=[('rsi_overbought_70', 'Line')],
-            channel=[],
-            hist=[],
-            level='indicator'
-        )
-    },
-    "RSI_OVERSOLD": {
-        "src": "fixed",
-        "params": {'value': 30},
-        'parameter_space': {'trigger': [0, 30]},
-        "plot_desc": indicator.PlotDescription(
-            label='rsi_oversold_30',
-            is_subplot=True,
-            lines=[],
-            triggers=[('rsi_oversold_30', 'Line')],
-            channel=[],
-            hist=[],
-            level='indicator'
-        )
-    },
-}
+# defs = {
+#     'SMA': {
+#         'src': 'talib',
+#         'params': {'timeperiod': 100},
+#         "plot_desc": SubPlot(
+#             label='sma_100',
+#             is_subplot=False,
+#             lines=[('sma_100', 'Line')],
+#             triggers=[],
+#             channel=[],
+#             hist=[],
+#             level='indicator'
+#         )
+#     },
+#     "STOCH": {
+#         "src": "talib",
+#         "params": {
+#             "fastk_period": 14,
+#             "slowk_period": 10,
+#             "slowd_period": 10,
+#             "slowk_matype": 0,
+#             "slowd_matype": 0,
+#         },
+#         "plot_desc": SubPlot(
+#             label='stoch_14_10_0_10_0',
+#             is_subplot=True,
+#             lines=[
+#                 ('stoch_14_5_0_5_0_slowk', 'Dashed Line'),
+#                 ('stoch_14_5_0_5_0_slowd', 'Dashed Line')
+#             ],
+#             triggers=[],
+#             channel=[],
+#             hist=[],
+#             level='indicator'
+#         )
+#     },
+#     "BBANDS": {
+#         "src": "talib",
+#         "params": {
+#             "timeperiod": 20,
+#             "nbdevup": 2,
+#             "nbdevdn": 2,
+#             "matype": 0,
+#         },
+#         "plot_desc": SubPlot(
+#             label='bbands_20_2.0_2.0_0',
+#             is_subplot=False,
+#             lines=[('bbands_20_2.0_2.0_0_middleband', 'Line')],
+#             triggers=[],
+#             channel=['bbands_20_2.0_2.0_0_upperband', 'bbands_20_2.0_2.0_0_lowerband'],
+#             hist=[],
+#             level='indicator'
+#         )
+#     },
+#     "MACD": {
+#         "src": "talib",
+#         "params": {
+#             "fastperiod": 12,
+#             "slowperiod": 26,
+#             "signalperiod": 9
+#         },
+#         "plot_desc": SubPlot(
+#             label='macd_12_26_9',
+#             is_subplot=True,
+#             lines=[
+#                 ('macd_12_26_9_macd', 'Line'),
+#                 ('macd_12_26_9_macdsignal', 'Dashed Line')
+#             ],
+#             triggers=[],
+#             channel=[],
+#             hist=['macd_12_26_9_macdhist'],
+#             level='indicator'
+#         )
+#     },
+#     "RSI_OVERBOUGHT": {
+#         "src": "fixed",
+#         "params": {'value': 70},
+#         'parameter_space': {'trigger': [70, 100]},
+#         "plot_desc": SubPlot(
+#             label='rsi_overbought_70',
+#             is_subplot=True,
+#             lines=[],
+#             triggers=[('rsi_overbought_70', 'Line')],
+#             channel=[],
+#             hist=[],
+#             level='indicator'
+#         )
+#     },
+#     "RSI_OVERSOLD": {
+#         "src": "fixed",
+#         "params": {'value': 30},
+#         'parameter_space': {'trigger': [0, 30]},
+#         "plot_desc": SubPlot(
+#             label='rsi_oversold_30',
+#             is_subplot=True,
+#             lines=[],
+#             triggers=[('rsi_oversold_30', 'Line')],
+#             channel=[],
+#             hist=[],
+#             level='indicator'
+#         )
+#     },
+# }
 
 
 # ==============================================================================
@@ -378,7 +379,7 @@ if __name__ == '__main__':
     #     'ER', params={"timeperiod": 30}, show=False
     #     )
 
-    # ind = test_indicator_factory('SMA', {'timeperiod': 20}, show=False)
+    ind = test_indicator_factory('SMA', {'timeperiod': 37}, show=False)
 
     # ind = test_indicator_factory('STOCH', show=False)
 
@@ -395,6 +396,7 @@ if __name__ == '__main__':
     # pprint(ind.plot_desc)
     pprint(ind.__dict__)
     print("unqiue_output: ", ind.unique_output)
+    print("unique_name: ", ind.unique_name)
     print(ind.plot_desc)
 
     # print(test_indicator_run(ind))

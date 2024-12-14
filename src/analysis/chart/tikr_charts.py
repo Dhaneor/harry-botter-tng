@@ -17,6 +17,7 @@ import time
 from abc import abstractmethod
 from plotly.io import to_image
 from plotly.subplots import make_subplots
+from typing import Sequence
 
 from .plot_definition import (
     PlotDefinition,
@@ -686,6 +687,69 @@ class BacktestChart(Chart):
                 self.subplot_drawdown(),
                 self.subplot_leverage(),
                 self.subplot_position_size(),
+            ),
+            layout=self.layout,
+            style=self.style,
+        )
+
+
+class SignalChart(Chart):
+    indicator_row_height = 2
+
+    def __init__(self, df, subplots: Sequence[SubPlot], style: str, title=None):
+        super().__init__(df, style, title)
+
+        self.subplots = subplots
+
+        self.layout: Layout
+        self.layout = Layout(
+            layout={
+                "OHLCV": {"row": 1, "col": 1, "secondary_y": True},
+                # "Portfolio": {"row": 2, "col": 1},
+                # "Drawdown": {"row": 3, "col": 1},
+            },
+            row_heights=[8],
+            col_widths=[1]
+        )
+        self.layout.show_layout()
+        self._plot_definition = self._build_plot_definition()
+        self.artist.plot_definition = self._plot_definition
+
+    @property
+    def ohlcv_elements(self):
+        return [sub for sub in self.subplots if not sub.is_subplot]
+
+    def draw(self):
+        self.artist.plot(data=self.data, p_def=self.plot_definition)
+
+    def subplot_ohlcv(self):
+        main_indicators = self.ohlcv_elements
+        traces = []
+        for indicator in main_indicators:
+            for trace in indicator.elements:
+                trace.color = self.style.colors.strategy
+                traces.append(trace)
+
+        return SubPlot(
+            label="OHLCV",
+            elements=(
+                # Positions(column=config.ohlcv.volume, opacity=self.style.fill_alpha),
+                Volume(label='Volume', column=config.ohlcv.volume),
+                *traces,
+                Candlestick(),
+                # Buy(),
+                # Sell(),
+            ),
+            secondary_y=True,
+        )
+
+    def _build_plot_definition(self):
+        return PlotDefinition(
+            name=self.title or "Tikr Chart",
+            subplots=(
+                self.subplot_ohlcv(),
+                # self.subplot_portfolio(),
+                # self.subplot_drawdown(),
             ),
             layout=self.layout,
             style=self.style,

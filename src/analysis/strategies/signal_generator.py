@@ -59,10 +59,10 @@ from ..util import proj_types as tp
 from . import condition as cnd
 from ..indicators.indicator import Indicator
 from ..indicators.indicator_parameter import Parameter
-from src.analysis.chart.plot_definition import SubPlot
+from src.analysis.chart.plot_definition import SubPlot, Layout, PlotDefinition
 
 logger = logging.getLogger("main.signal_generator")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 PositionTypeT = Literal["open_long", "open_short", "close_long", "close_short"]
 
@@ -177,7 +177,7 @@ class SignalGenerator:
         return tuple(p for ind in self.indicators for p in ind.parameters)
 
     @property
-    def plot_desc(self) -> list[SubPlot]:
+    def subplots(self) -> list[SubPlot]:
         """Get the plot parameters for the signal generator.
 
         Returns
@@ -188,13 +188,10 @@ class SignalGenerator:
         # Collect all PlotDescription objects for all conditions
         all_plots = [c.plot_desc for c in self.conditions]
 
-        # Flatten the list of plot descriptions
-        flattened_plots = [item for sublist in all_plots for item in sublist]
-
         # Remove duplicates while preserving order
         unique_plots = []
         seen = set()
-        for plot in flattened_plots:
+        for plot in all_plots:
             if plot.label not in seen:
                 seen.add(plot.label)
                 unique_plots.append(plot)

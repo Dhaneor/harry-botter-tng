@@ -1210,7 +1210,12 @@ class SubPlot:
     def draw_subplot(self, fig, data) -> go.Figure:
         """Draw the subplot and add a legend within the subplot"""
         for element in self.elements:
-            element.add_trace(fig, data)
+            try:
+                element.add_trace(fig, data)
+            except Exception as e:
+                logger.error(f"Error drawing subplot: {element.label}")
+                logger.error(str(e), exc_info=True)
+                logger.error(data.columns)
 
     def get_axis_keys(self, fig, row, col):
         """Get the axis keys for a specific subplot."""

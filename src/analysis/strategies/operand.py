@@ -272,6 +272,9 @@ class OperandIndicator(Operand):
             if isinstance(elem, Line) and not belongs_to_channel(elem)
         )
 
+        for line, name in zip(lines, self.output_names):
+            line.column = name
+
         logger.debug(f"Operand {self.name} lines: {lines}")
 
         # if the input for the main indicator is another indicator,
@@ -1194,8 +1197,6 @@ def operand_factory(op_def: OperandDefinitionT) -> Operand:
         return tuple(inputs)
 
     # ..........................................................................
-    logger.debug(F"custom indicators: {CUSTOM_INDICATORS}")
-
     match op_def:
         # if the first string in the op_def is a TALIB indicator ..
         case tuple() if op_def[0].split(".")[0].lower() in ALL_INDICATORS:

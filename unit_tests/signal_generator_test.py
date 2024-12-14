@@ -33,11 +33,11 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
     linreg_roc_btc_1d, linreg_roc_eth_1d, test_er
 )
-from src.analysis.chart import strategy_plot as sp  # noqa: E402
+from src.analysis.chart.tikr_charts import SignalChart  # noqa: E402
 from helpers_ import get_sample_data, get_ohlcv  # noqa: E402, F401
 
 logger = logging.getLogger("main")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 ch = logging.StreamHandler()
 
@@ -53,36 +53,11 @@ interval = "15m"
 length = 365*6
 
 # ======================================================================================
-df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
-df.drop(
-    ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
-)
-
-df['human open time'] = pd.to_datetime(df['human open time'])
-df.set_index(keys=['human open time'], inplace=True)
-
-if interval != "15m":
-    df = df.resample(interval)\
-        .agg(
-            {
-                'close': 'last', 'open': 'first',
-                'high': 'max', 'low': 'min', 'volume': 'sum',
-                'open time': 'first'
-            },
-            min_periods=1
-        )  # noqa: E123
-
-df.dropna(inplace=True)
-
 try:
-    df = get_ohlcv(symbol="SOLUSDT", interval="1d", as_dataframe=True)
+    df = get_ohlcv(symbol="BTCUSDT", interval="1d", as_dataframe=True)
 except Exception as e:
     logger.error(f"Error fetching data: {e}")
     sys.exit()
-
-# start = random.randint(0, (len(df) - length))
-# end = start + length
-# data = {col: df[start:end][col].to_numpy() for col in df.columns}
 
 data = {col: df[col].to_numpy() for col in df.columns}
 
@@ -146,7 +121,7 @@ def test_factory(sig_def):
         sys.exit()
 
     logger.info("created signal generator: %s", sig_gen)
-    logger.info("plot description: %s", sig_gen.plot_desc)
+    logger.info("subplots: %s", sig_gen.subplots)
     return sig_gen
 
 
@@ -162,14 +137,8 @@ def test_factory_from_existing(sig_gen):
 
 
 def test_execute(sig_gen: sg.SignalGenerator, data, weight, show=False, plot=False):
-    for key in sg.SignalGenerator.dict_keys:
-        if key not in data:
-            logger.debug("signal key '%s' not in data", key)
-            data[key] = np.zeros(data['open'].shape)
-
     sig_gen.execute(data)
     logger.info(sig_gen)
-    logger.info(sig_gen.plot_desc)
 
     if show:
         print(list(data.keys()))
@@ -189,16 +158,14 @@ def test_execute(sig_gen: sg.SignalGenerator, data, weight, show=False, plot=Fal
         print(df1.tail(50))
 
         if plot:
-            logger.debug(sig_gen.plot_desc)
-            # main, sub = sig_gen.plot_desc
+            chart = SignalChart(
+                df=df1,
+                subplots=sig_gen.subplots,
+                style='night',
+                title=sig_gen.name
+                )
 
-            # plot_def = sp.PlotDefinition(
-            #     name=f"{sig_gen.name} for BTCUSDT ({interval})",
-            #     main=main,
-            #     sub=sub
-            # )
-
-            # sp.plot(df1, plot_def)
+            chart.draw()
 
 
 # -----------------------------------------------------------------------------
@@ -392,7 +359,7 @@ if __name__ == "__main__":
     if not sig_gen:
         sys.exit()
 
-    test_plot_desc(sig_gen)
+    # test_plot_desc(sig_gen)
     test_execute(sig_gen, data, 1, True, True)
     # test_returns(sig_gen, data, True)
 

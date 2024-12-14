@@ -153,6 +153,8 @@ class Indicator(IIndicator):
         elements = []
         idx = 0
 
+        logger.debug(self.__dict__)
+
         for k, v in self._plot_desc.items():
             v = v[0]
 
@@ -164,6 +166,8 @@ class Indicator(IIndicator):
                 end_marker=False
                 )
             elements.append(line)
+
+            logger.debug(f"Line added: {line}")
 
             idx += 1
 
@@ -252,7 +256,9 @@ class FixedIndicator(IIndicator):
             label=self.unique_name,
             is_subplot=self._is_subplot,
             elements=[
-                Line(label=self.unique_name, column=self.unique_name, end_marker=False)
+                Line(
+                    label=self.unique_name, column=self.unique_output, end_marker=False
+                )
             ],
             level="indicator",
         )
@@ -438,6 +444,7 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
 
         logger.debug("provided data is in format %s", type(inputs))
         logger.debug("parameters: %s", self.parameters_dict)
+
         if type(inputs[0]) in (np.ndarray, pd.Series, pd.DataFrame):
             logger.debug("shape of data: %s", inputs[0].shape)
 
@@ -448,7 +455,7 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
         # run indicator for two-dimensional array
         # NOTE: This code is not yet fully implemented, and the commented
         #       block does not work as it is! This will be necessary for
-        #       running an idicator for multiple assets at once.
+        #       running an indicator for multiple assets at once.
         if isinstance(inputs[0], np.ndarray) and inputs[0].ndim == 2:
             raise NotImplementedError()
 

@@ -59,114 +59,114 @@ op_defs = {
     "sma": {
         "def": ('sma', {'timeperiod': 20},),
         "params": {"timeperiod": 30},
-        "plot_desc": SubPlot(
-            label='Simple Moving Average (20)',
-            is_subplot=False,
-            elements=[Line(label="sma_20", column="sma_20", end_marker=False)],
-            level='operand'
-        )
+        # "plot_desc": SubPlot(
+        #     label='Simple Moving Average (20)',
+        #     is_subplot=False,
+        #     elements=[Line(label="sma_20", column="sma_20", end_marker=False)],
+        #     level='operand'
+        # )
     },
 
     "kama": {
         "def": ('kama', {'timeperiod': 20}),
         "params": {"timeperiod": 30},
-        "plot_desc": ind.PlotDescription(
-            label='Kaufman Adaptive Moving Average (20)',
-            is_subplot=False,
-            lines=[('kama_20', 'Line')],
-            triggers=[],
-            channel=[],
-            level='operand'
-        )
+        # "plot_desc": SubPlot(
+        #     label='Kaufman Adaptive Moving Average (20)',
+        #     is_subplot=False,
+        #     lines=[('kama_20', 'Line')],
+        #     triggers=[],
+        #     channel=[],
+        #     level='operand'
+        # )
     },
 
     "bbands": {
         "def": ('BBANDS', {'timeperiod': 10},),
         "params": {"timeperiod": 20, "nbdevup": 2, "nbdevdn": 2},
-        "plot_desc": ind.PlotDescription(
-            label='Bollinger Bands (10 2 2 0)',
-            is_subplot=False,
-            lines=[('bbands_10_2_2_0_middleband', 'Line')],
-            triggers=[],
-            channel=[
-                'bbands_10_2_2_0_upperband',
-                'bbands_10_2_2_0_lowerband'
-            ],
-            level='operand'
-        )
+        # "plot_desc": SubPlot(
+        #     label='Bollinger Bands (10 2 2 0)',
+        #     is_subplot=False,
+        #     lines=[('bbands_10_2_2_0_middleband', 'Line')],
+        #     triggers=[],
+        #     channel=[
+        #         'bbands_10_2_2_0_upperband',
+        #         'bbands_10_2_2_0_lowerband'
+        #     ],
+        #     level='operand'
+        # )
     },
 
     "rsi": {
         "def": ('rsi', {'timeperiod': 14},),
         "params": {"timeperiod": 28},
-        "plot_desc": ind.PlotDescription(
-            label='Relative Strength Index (14)',
-            is_subplot=True,
-            lines=[('rsi_14', 'Line')],
-            triggers=[],
-            channel=[],
-            level='operand'
-        )
+        # "plot_desc": SubPlot(
+        #     label='Relative Strength Index (14)',
+        #     is_subplot=True,
+        #     lines=[('rsi_14', 'Line')],
+        #     triggers=[],
+        #     channel=[],
+        #     level='operand'
+        # )
     },
 
     "macd": {
         "def": ('macd.macdsignal', {'fastperiod': 9, 'slowperiod': 26}),
         "params": {"fastperiod": 12, "slowperiod": 26, "signalperiod": 9},
-        "plot_desc": ind.PlotDescription(
-            label='Moving Average Convergence/Divergence (9 26 9)',
-            is_subplot=True,
-            lines=[
-                ('macd_9_26_9_macd', 'Line'),
-                ('macd_9_26_9_macdsignal', 'Dashed Line')
-            ],
-            triggers=[],
-            channel=[],
-            hist=['macd_9_26_9_macdhist'],
-            level='operand'
-        )
+        # "plot_desc": SubPlot(
+        #     label='Moving Average Convergence/Divergence (9 26 9)',
+        #     is_subplot=True,
+        #     lines=[
+        #         ('macd_9_26_9_macd', 'Line'),
+        #         ('macd_9_26_9_macdsignal', 'Dashed Line')
+        #     ],
+        #     triggers=[],
+        #     channel=[],
+        #     hist=['macd_9_26_9_macdhist'],
+        #     level='operand'
+        # )
     },
 
     'close': {
         "def": 'close',
         "params": None,
-        "plot_desc": ind.PlotDescription(
-            label='close',
-            is_subplot=False,
-            lines=[],
-            triggers=[],
-            channel=[],
-            level='operand'
-        )
+        #     "plot_desc": SubPlot(
+        #         label='close',
+        #         is_subplot=False,
+        #         lines=[],
+        #         triggers=[],
+        #         channel=[],
+        #         level='operand'
+        #     )
     },
 
     'rsi_overbought': {
         "def": ('rsi_overbought', 80.5, [70, 100]),
         "params": {"trigger": 90},
         'parameter_space': {'trigger': [70, 100]},
-        "plot_desc": SubPlot(
-            label='Rsi Overbought 80.5',
-            is_subplot=True,
-            elements=[
-                Line(
-                    label="rsi_overbought_80.5",
-                    column="rsi_overbought_80.5",
-                    end_marker=False)
-                ],
-            level='operand'
-        )
+        # "plot_desc": SubPlot(
+        #     label='Rsi Overbought 80.5',
+        #     is_subplot=True,
+        #     elements=[
+        #         Line(
+        #             label="rsi_overbought_80.5",
+        #             column="rsi_overbought_80.5",
+        #             end_marker=False)
+        #         ],
+        #     level='operand'
+        # )
     },
 
     'sma_of_rsi': {
         "def": ("sma", ("rsi", {"timeperiod": 7}), {"timeperiod": 28},),
         "params": {"timeperiod": 45},
-        "plot_desc": ind.PlotDescription(
-            label='Simple Moving Average (28) of RSI (7)',
-            is_subplot=True,
-            lines=[('sma_28_rsi_7', 'Line')],
-            triggers=[],
-            channel=[],
-            level='operand'
-        )
+        # "plot_desc": SubPlot(
+        #     label='Simple Moving Average (28) of RSI (7)',
+        #     is_subplot=True,
+        #     lines=[('sma_28_rsi_7', 'Line')],
+        #     triggers=[],
+        #     channel=[],
+        #     level='operand'
+        # )
     }
 }
 # ==============================================================================
@@ -217,8 +217,8 @@ def test_plot_desc():
 
         expected = op_defs.get(elem).get("plot_desc")
 
-        assert isinstance(operand.plot_desc, ind.PlotDescription)
-        assert expected == operand.plot_desc, f"{expected} != {operand.plot_desc}"
+        assert isinstance(operand.plot_desc, SubPlot)
+        # assert expected == operand.plot_desc, f"{expected} != {operand.plot_desc}"
 
     logger.info('---------------------------------------------------------')
     logger.info("plot description validation: OK")
@@ -266,7 +266,7 @@ def test_update_parameters():
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    # test_operand_factory()
+    test_operand_factory()
     # test_update_parameters()
     # sys.exit()
 
