@@ -8,8 +8,9 @@ Created on Fri July 28 20:08:20 2023
 import bottleneck as bn
 import numpy as np
 from numba import njit
-from .indicator import IIndicator, PlotDescription
+from .indicator import IIndicator
 from .indicator_parameter import Parameter
+from src.analysis.chart.plot_definition import Line, SubPlot
 
 # defining parameters for the Noise indicator
 timeperiod = Parameter(
@@ -72,11 +73,16 @@ class EfficiencyRatio(IIndicator):
         return print(self.run.__doc__)
 
     @property
-    def plot_desc(self) -> PlotDescription:
-        return PlotDescription(
+    def plot_desc(self) -> SubPlot:
+        return SubPlot(
             label=self.unique_name,
             is_subplot=self._is_subplot,
-            lines=[(self.unique_name, "Line")],
+            elements=(
+                Line(
+                    label=self.unique_name,
+                    column=self.unique_name,
+                    end_marker=False),
+            ),
             level="indicator",
         )
 

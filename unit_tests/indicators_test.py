@@ -365,14 +365,14 @@ if __name__ == '__main__':
 
     # arr, res = test_is_above()
 
-    # ind = test_indicator_factory(
-    #     'BBANDS', {'timeperiod': 80, 'nbdevup': 1.5},
-    #     show=False
-    # )
-
     ind = test_indicator_factory(
-        'LINEARREG', params={'timeperiod': 20}, show=False
-        )
+        'BBANDS', {'timeperiod': 80, 'nbdevup': 1.5},
+        show=False
+    )
+
+    # ind = test_indicator_factory(
+    #     'LINEARREG', params={'timeperiod': 20}, show=False
+    #     )
 
     # ind = test_indicator_factory(
     #     'ER', params={"timeperiod": 30}, show=False
@@ -392,10 +392,10 @@ if __name__ == '__main__':
     # ind.parameters = {'value': 80, 'parameter_space': [40, 70]}
 
     # print(ind.help())
-    pprint(ind.plot_desc)
-    # pprint(ind.__dict__)
-    # print(ind.unique_output)
-    # print(ind.plot_desc)
+    # pprint(ind.plot_desc)
+    pprint(ind.__dict__)
+    print("unqiue_output: ", ind.unique_output)
+    print(ind.plot_desc)
 
     # print(test_indicator_run(ind))
 

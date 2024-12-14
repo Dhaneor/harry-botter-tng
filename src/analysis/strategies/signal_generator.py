@@ -57,8 +57,9 @@ import numpy as np
 
 from ..util import proj_types as tp
 from . import condition as cnd
-from ..indicators.indicator import PlotDescription, Indicator
+from ..indicators.indicator import Indicator
 from ..indicators.indicator_parameter import Parameter
+from src.analysis.chart.plot_definition import SubPlot
 
 logger = logging.getLogger("main.signal_generator")
 logger.setLevel(logging.ERROR)
@@ -176,7 +177,7 @@ class SignalGenerator:
         return tuple(p for ind in self.indicators for p in ind.parameters)
 
     @property
-    def plot_desc(self) -> tuple[PlotDescription, Sequence[PlotDescription]]:
+    def plot_desc(self) -> list[SubPlot]:
         """Get the plot parameters for the signal generator.
 
         Returns
@@ -189,9 +190,13 @@ class SignalGenerator:
         # this SignalGenerator instance
         all_ = tuple(c.plot_desc for c in self.conditions)
 
+        logger.error(f"plot descriptions: {all_}")
+
         # add all PlotDescription instances that describe something that
         # goes into the main plot (= where the candlesticks are)
         main = sum(p_desc for p_desc in all_ if not p_desc.is_subplot)
+        main = [main] if main else []
+        logger.error("MAIN PLOTS: %s" % main)
 
         # gather all subplot definitions
         sub_with_duplicates = tuple(p_desc for p_desc in all_ if p_desc.is_subplot)
@@ -212,8 +217,7 @@ class SignalGenerator:
         # remove duplicates from the result
         sub = [sub[x] for x in range(len(sub)) if not (sub[x] in sub[:x])]
 
-        return [main].extend(sub)
-        return main, sub
+        return main + sub
 
     def execute(self, data: tp.Data) -> cnd.ConditionResult:
         """Execute the signal generator.

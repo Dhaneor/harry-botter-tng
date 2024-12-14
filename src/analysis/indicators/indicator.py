@@ -34,15 +34,13 @@ from typing import (
 )
 from talib import MA_Type, abstract
 
-from .iindicator import IIndicator, PlotDescription
+from .iindicator import IIndicator
 from .indicators_custom import custom_indicators
 from .indicator_parameter import Parameter
-from src.analysis.chart.plot_definition import (
-    Line, Channel, SubPlot
-)
+from src.analysis.chart.plot_definition import Line, SubPlot
 
 logger = logging.getLogger("main.indicator")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 
 Params = Dict[str, Union[str, float, int, bool]]
 IndicatorSource = Literal["talib", "nb"]
@@ -153,63 +151,26 @@ class Indicator(IIndicator):
     @property
     def plot_desc(self) -> SubPlot:
         elements = []
-        number_of_lines = len(self._plot_desc.keys())
+        idx = 0
 
         for k, v in self._plot_desc.items():
             v = v[0]
 
-            if "upper" in k or "lower" in k:
-                elements.append(self.unique_name + "_" + k)
+            logger.info(f"Adding {k} to plot description: {v}")
 
-            elif v == "Histogram":
-                elements.append(self.unique_name + "_" + k)
+            line = Line(
+                label=f"{self.unique_name.upper()} {k if k != 'real' else ''}",
+                column=self.unique_output[idx],
+                end_marker=False
+                )
+            elements.append(line)
 
-            else:
-                if number_of_lines == 1:
-                    line = Line(
-                        label=self.unique_name,
-                        column=self.unique_name,
-                        end_marker=False
-                        )
-                    elements.append(line)
-                else:
-                    line = Line(
-                        label=f"{self.unique_name}_{k}",
-                        column=self.unique_name,
-                        end_marker=False
-                        )
-                    elements.append(line)
+            idx += 1
 
         return SubPlot(
-            label=f"{self.unique_name} - {self.parameters}",
+            label=f"{self.display_name} ({self.parameters[0].value})",
             elements=elements,
-        )
-
-        # ............................................................................
-        lines, channel, hist, count_lines = [], [], [], len(self._plot_desc.keys())
-
-        for k, v in self._plot_desc.items():
-            v = v[0]
-
-            if "upper" in k or "lower" in k:
-                channel.append(self.unique_name + "_" + k)
-
-            elif v == "Histogram":
-                hist.append(self.unique_name + "_" + k)
-
-            else:
-                if count_lines == 1:
-                    lines.append(tuple((self.unique_name, v)))
-                else:
-                    lines.append(tuple((f"{self.unique_name}_{k}", v)))
-
-        return PlotDescription(
-            label=self.unique_name,
-            is_subplot=self._is_subplot,
-            lines=lines,
-            channel=channel,
-            hist=hist,
-            level="indicator",
+            is_subplot=self.is_subplot,
         )
 
     def run(self, *inputs) -> np.ndarray:
@@ -287,7 +248,7 @@ class FixedIndicator(IIndicator):
     # ..................................................................................
     @property
     def plot_desc(self) -> SubPlot:
-        return PlotDescription(
+        return SubPlot(
             label=self.unique_name,
             is_subplot=self._is_subplot,
             elements=[

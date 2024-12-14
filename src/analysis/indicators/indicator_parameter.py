@@ -78,6 +78,9 @@ class Parameter(Iterable):
     def __str__(self):
         return f"Parameter {self.name} -> {self.value}"
 
+    def __repr__(self):
+        return f"Parameter {self.name} -> {self.value}"
+
     def __iter__(self):
         return iter(
             np.arange(self.hard_min, self.hard_max, self.step)

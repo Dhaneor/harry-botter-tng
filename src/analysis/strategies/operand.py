@@ -5,7 +5,7 @@ Provides Operand classes and their factory function.
 
 NOTE:   Operands that are indicators can have the output from another
         indicator as input. This is also the main reason level exists
-        in the SignalGenerator -> Condition -> perand -> Indicator ->
+        in the SignalGenerator -> Condition -> Operand -> Indicator ->
         Parameter chain. This allows for the construction of complex
         and flexible trading strategies / conditions.
 
@@ -51,9 +51,10 @@ import numpy as np
 from ..indicators import indicator as ind
 from ..indicators import indicators_custom
 from ..util import proj_types as tp
+from src.analysis.chart.plot_definition import SubPlot, Line, Channel
 
 logger = logging.getLogger("main.operand")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 # build a list of all available indicators, that can later be used
 # to do a fast check if requested indicators are available.
@@ -238,11 +239,11 @@ class OperandIndicator(Operand):
         return " ".join((i.display_name for i in self.indicators))
 
     @property
-    def plot_desc(self) -> dict[str, tp.Parameters]:
+    def plot_desc(self) -> SubPlot:
         """Return the plot description for the operand.
 
-        Takes the PlotDescription as returned by all indicators for
-        the operand and returns a PlotDescription for the operand,
+        Takes the SubPlot object as returned by all indicators for
+        the operand and returns a Subplot for the operand,
         after combining them into one. Results depend on the type of
         the operand.
 
@@ -251,44 +252,56 @@ class OperandIndicator(Operand):
         dict[str, tp.Parameters]
             plot parameters for the operand
         """
+
+        def belongs_to_channel(line: Line) -> bool:
+            if "upper" in line.label:
+                return True
+            elif "lower" in line.label:
+                return True
+            else:
+                return False
+
         desc = self.indicator.plot_desc
 
-        logger.debug(desc.lines)
-        logger.debug(self.output_names)
+        logger.debug(f"Operand {self.name} plot_desc:\n {desc}")
 
-        lines = [
-            (name, line[1])
-            for name in self.output_names
-            for line in desc.lines
-            if name.startswith(f"{line[0]}_")
+        # get the lines from the main indicator that do not
+        # belong to a channel
+        lines = tuple(
+            elem for elem in desc.elements
+            if isinstance(elem, Line) and not belongs_to_channel(elem)
+        )
+
+        logger.debug(f"Operand {self.name} lines: {lines}")
+
+        # if the input for the main indicator is another indicator,
+        # update label and column for the line(s)
+        if len(self.indicators) > 1:
+            logger.debug(f"Operand {self.name} has multiple indicators")
+            lines[0].column = self.unique_name
+
+        logger.debug(f"Operand {self.name} combined lines: {lines}")
+
+        # combine the lines that belong to a channel into a single
+        # Channel element
+        channel_lines = [
+            elem for elem in desc.elements
+            if isinstance(elem, Line) and belongs_to_channel(elem)
         ]
 
-        # put the names of all outputs that need to be plotted as
-        # a channel (for instance Bollinger Bands) into the list
-        # for the channel prpoerty of the PlotDescription
-        channel = (
-            ()
-            if not desc.channel
-            else (
-                elem
-                for elem in self.output_names
-                if ("upper" in elem) | ("lower" in elem)
+        if channel_lines:
+            channel = Channel(
+                upper=channel_lines[0],
+                lower=channel_lines[1],
+                label=None,
             )
-        )
+        else:
+            channel = ()
 
-        hist = (
-            ()
-            if not desc.hist
-            else (elem for elem in self.output_names if ("hist" in elem))
-        )
-
-        return ind.PlotDescription(
-            label=self.display_name,
+        return SubPlot(
+            label=" of ".join((i.plot_desc.label for i in self.indicators)),
             is_subplot=any(arg.is_subplot for arg in self.indicators),
-            lines=lines,
-            triggers=desc.triggers,
-            channel=list(channel),
-            hist=list(hist),
+            elements=tuple((channel, *lines)) if channel else lines,
             level="operand",
         )
 
@@ -642,8 +655,8 @@ class OperandTrigger(Operand):
     def plot_desc(self) -> dict[str, tp.Parameters]:
         """Return the plot description for the operand.
 
-        Takes the PlotDescription as returned by all indicators for
-        the operand and returns a PlotDescription for the operand,
+        Takes the SubPlot as returned by all indicators for
+        the operand and returns a SubPlot for the operand,
         after combining them into one. Results depend on the type of
         the operand.
 
@@ -653,13 +666,10 @@ class OperandTrigger(Operand):
             plot parameters for the operand
         """
         desc = self.indicator.plot_desc
-        return ind.PlotDescription(
+        return SubPlot(
             label=self.display_name,
             is_subplot=desc.is_subplot,
-            lines=desc.lines,
-            triggers=desc.triggers,
-            channel=desc.channel,
-            hist=desc.hist,
+            elements=desc.elements,
             level="operand",
         )
 
@@ -792,7 +802,7 @@ class OperandPriceSeries(Operand):
         return self.name
 
     @property
-    def plot_desc(self) -> dict[str, tp.Parameters]:
+    def plot_desc(self) -> SubPlot | None:
         """Return the plot description for the operand.
 
         Returns
@@ -800,7 +810,8 @@ class OperandPriceSeries(Operand):
         dict[str, tp.Parameters]
             plot parameters for the operand
         """
-        return ind.PlotDescription(label=self.name, is_subplot=False, level="operand")
+        # return SubPlot(label=self.name, is_subplot=False, level="operand")
+        return None
 
     # ..................................................................................
     def update_parameters(self, params: dict[str, tp.Parameters]) -> None:

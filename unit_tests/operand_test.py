@@ -41,6 +41,7 @@ sys.path.append(parent)
 
 from src.analysis.strategies import operand as op  # noqa: E402
 from src.analysis.indicators import indicator as ind  # noqa: E402
+from src.analysis.chart.plot_definition import SubPlot, Line  # noqa: E402
 
 # ======================================================================================
 # load and prepare OHLCV data for use in testing
@@ -58,12 +59,10 @@ op_defs = {
     "sma": {
         "def": ('sma', {'timeperiod': 20},),
         "params": {"timeperiod": 30},
-        "plot_desc": ind.PlotDescription(
+        "plot_desc": SubPlot(
             label='Simple Moving Average (20)',
             is_subplot=False,
-            lines=[('sma_20', 'Line')],
-            triggers=[],
-            channel=[],
+            elements=[Line(label="sma_20", column="sma_20", end_marker=False)],
             level='operand'
         )
     },
@@ -141,15 +140,18 @@ op_defs = {
     },
 
     'rsi_overbought': {
-        "def": ('rsi_overbought', 80.5),
+        "def": ('rsi_overbought', 80.5, [70, 100]),
         "params": {"trigger": 90},
         'parameter_space': {'trigger': [70, 100]},
-        "plot_desc": ind.PlotDescription(
+        "plot_desc": SubPlot(
             label='Rsi Overbought 80.5',
             is_subplot=True,
-            lines=[],
-            triggers=[('rsi_overbought_80.5', 'Line')],
-            channel=[],
+            elements=[
+                Line(
+                    label="rsi_overbought_80.5",
+                    column="rsi_overbought_80.5",
+                    end_marker=False)
+                ],
             level='operand'
         )
     },
@@ -264,31 +266,28 @@ def test_update_parameters():
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    test_operand_factory()
+    # test_operand_factory()
     # test_update_parameters()
     # sys.exit()
 
-    operand = op.operand_factory(op_defs.get('sma').get('def'))
-    operand = op.operand_factory(op_defs.get('sma_of_rsi').get('def'))
-    operand = op.operand_factory(
-        ("ema", ("trix", {"timeperiod": 7},), {"timeperiod": 9})
-    )
+    operand = op.operand_factory(op_defs.get('bbands').get('def'))
+    # operand = op.operand_factory(op_defs.get('sma_of_rsi').get('def'))
 
-    operand.update_parameters(
-        {
-            'rsi_overbought_80.5': {
-                'value': 90,
-                'this_is_wrong': 'wrongest',
-                'parameter_space': {'value': [80, 100]}
-            },
-        }
-    )
-    operand.update_parameters({'sma_10': {'timeperiod': 35}})
-    logger.debug('before: %s', operand)
-    operand.update_parameters({operand.unique_name: {'timeperiod': 129}})
-    logger.debug('after: %s', operand)
+    # operand.update_parameters(
+    #     {
+    #         'rsi_overbought_80.5': {
+    #             'value': 90,
+    #             'this_is_wrong': 'wrongest',
+    #             'parameter_space': {'value': [80, 100]}
+    #         },
+    #     }
+    # )
+    # operand.update_parameters({'sma_10': {'timeperiod': 35}})
+    # logger.debug('before: %s', operand)
+    # operand.update_parameters({operand.unique_name: {'timeperiod': 129}})
+    # logger.debug('after: %s', operand)
 
-    operand.run(data)
+    # operand.run(data)
 
     print('-~•~-' * 40)
     print("indicator:")
@@ -296,12 +295,12 @@ if __name__ == "__main__":
     print('-~•~-' * 40)
     print("operand:")
     pprint(operand.as_dict())
-    # print(operand.indicator.unique_output)
+    print(operand.indicator.display_name)
     print('-~•~-' * 40)
     print("plot description:")
     pprint(operand.plot_desc)
 
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
     runs = 1_000

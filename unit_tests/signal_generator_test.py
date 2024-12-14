@@ -189,15 +189,16 @@ def test_execute(sig_gen: sg.SignalGenerator, data, weight, show=False, plot=Fal
         print(df1.tail(50))
 
         if plot:
-            main, sub = sig_gen.plot_desc
+            logger.debug(sig_gen.plot_desc)
+            # main, sub = sig_gen.plot_desc
 
-            plot_def = sp.PlotDefinition(
-                name=f"{sig_gen.name} for BTCUSDT ({interval})",
-                main=main,
-                sub=sub
-            )
+            # plot_def = sp.PlotDefinition(
+            #     name=f"{sig_gen.name} for BTCUSDT ({interval})",
+            #     main=main,
+            #     sub=sub
+            # )
 
-            sp.plot(df1, plot_def)
+            # sp.plot(df1, plot_def)
 
 
 # -----------------------------------------------------------------------------

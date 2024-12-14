@@ -1084,15 +1084,18 @@ class SubPlot:
 
     def __repr__(self) -> str:
         elements = (
-            "elements:\n" + "\n".join(["\t" + str(chan) for chan in self.elements])
+            "elements:\n" + "\n".join(
+                ["\t" + str(chan) for chan in self.elements]
+                )
             if self.elements
             else ""
         )
 
         return "\n".join(
             (
-                f"<<<<< {self.label} >>>>>\n",
+                f"<<<<< SubPlot: {self.label} >>>>>\n",
                 f"level='{self.level}'",
+                f"is_subplot={self.is_subplot}",
                 f"secondary_y={self.secondary_y})\n",
                 f"{elements}\n\n",
             )
@@ -1119,38 +1122,49 @@ class SubPlot:
             )
         )
 
-        elements = itertools.chain(self.elements, other.elements)
+        logger.debug(f"Combining {self.label} and {other.label}")
 
-        # combine the lines
-        lines = list(set(elem for elem in elements if not elem.is_triger))
+        elements = tuple(itertools.chain(self.elements, other.elements))
 
-        # combine the triggers
-        triggers = list(set(elem for elem in elements if not elem.is_triger))
+        # TODO: implement this part to plot channels between triggers
+        # logger.info(elements)
 
-        if triggers:
-            trig_channel = [
-                elem[0]
-                for pair in itertools.pairwise(triggers)
-                if pair[0][0].split("_")[0] == pair[1][0].split("_")[0]
-                for elem in pair
-            ]
-        else:
-            trig_channel = []
+        # # combine the lines
+        # lines = [elem for elem in elements if not elem.is_trigger]
 
-        # combine the channels ... include the triggers, so we can
-        # plot a chnnel between 'overbought' and 'oversold' for example
-        channel = trig_channel
+        # logger.info("LINES after filtering out triggers: %s" % lines)
 
-        # sometimes the addition can cause a line to be both a line
-        # and a trigger, so we need to remove it from the lines
-        lines = [line for line in lines if line not in triggers]
+        # # combine the triggers
+        # triggers = [elem for elem in elements if elem.is_trigger]
 
-        return SubPlot(
+        # if triggers:
+        #     trig_channel = [
+        #         elem[0]
+        #         for pair in itertools.pairwise(triggers)
+        #         if pair[0][0].split("_")[0] == pair[1][0].split("_")[0]
+        #         for elem in pair
+        #     ]
+        # else:
+        #     trig_channel = []
+
+        # # combine the channels ... include the triggers, so we can
+        # # plot a channel between 'overbought' and 'oversold' for example
+        # channel = trig_channel
+
+        # # sometimes the addition can cause a line to be both a line
+        # # and a trigger, so we need to remove it from the lines
+        # lines = [line for line in lines if line not in triggers]
+
+        sub_plot = SubPlot(
             label=self.label,
             is_subplot=self.is_subplot & other.is_subplot,
-            elements=itertools.chain(channel, triggers, lines),
+            elements=elements,
             level=res_levels[min(level + 1, 3)],
         )
+
+        logger.debug(sub_plot)
+
+        return sub_plot
 
     def __radd__(self, other: "SubPlot") -> "SubPlot":
         if other == 0:
@@ -1160,10 +1174,14 @@ class SubPlot:
 
     def __post_init__(self):
         # set the legendgroup for all elements in the subplot
-        for elem in self.elements:
-            elem.legendgroup = self.label
-            logger.debug(elem)
-            logger.debug("-" * 150)
+        try:
+            for elem in self.elements:
+                elem.legendgroup = self.label
+                logger.debug(elem)
+                logger.debug("-" * 150)
+        except Exception as e:
+            logger.error(f"Error setting legendgroup: {e}")
+            logger.error(self.elements)
 
     @property
     def row(self) -> int:
