@@ -77,7 +77,7 @@ kama_cross = sg.SignalsDefinition(
 # 'sortino_ratio': 1.39, 'kalmar_ratio': 3.31, 'annualized_volatility': 37.903}
 
 # ETHUSDT
-# best: params: params: (36, 0.07, 24, 7) :: risk level 6 :: max leverage 1,
+# best params: (36, 0.07, 24, 7) :: risk level 6 :: max leverage 1,
 # stats {'profit': 1928.265, 'max_drawdown': -31.241, 'sharpe_ratio': 1.338,
 # 'sortino_ratio': 1.009, 'kalmar_ratio': 2.086, 'annualized_volatility': 45.148}
 #
@@ -130,6 +130,21 @@ trix = sg.SignalsDefinition(
     ],
 )
 
+# BTCUSDT
+# params: (4, 1, 37, 0.21) :: risk level 9 :: max leverage 1,
+# stats {'profit': 5436.227, 'max_drawdown': -23.921, 'sharpe_ratio': 1.976,
+# 'sortino_ratio': 1.535, 'kalmar_ratio': 3.983, 'annualized_volatility': 37.399}
+#
+# params: (4, 1, 37, 0.21) :: risk level 0 :: max leverage 1,
+# stats {'profit': 7643.912, 'max_drawdown': -32.924, 'sharpe_ratio': 1.842,
+# 'sortino_ratio': 1.401, 'kalmar_ratio': 3.235, 'annualized_volatility': 44.794}
+#
+# ETHUSDT
+# (17, 3, 60, 0.05) :: risk level 5 :: max leverage 1.5,
+# stats {'profit': 4427.212, 'max_drawdown': -25.013, 'sharpe_ratio': 2.04,
+# 'sortino_ratio': 2.044, 'kalmar_ratio': 3.552, 'annualized_volatility': 34.035}
+#
+# not worth it with risk level 0!
 aroonosc = sg.SignalsDefinition(
     name="AROON OSC",
     conditions=[
@@ -138,16 +153,16 @@ aroonosc = sg.SignalsDefinition(
             operand_a=(
                 'aroonosc',
                 'high', 'low',
-                {"timeperiod": 2},
+                {"timeperiod": 17},
             ),
-            operand_b=('trigger', 0, [-5, 5, 1]),
+            operand_b=('trigger', 3, [-5, 5, 1]),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 8}),
-            operand_b=("trending", 0.29, [0.05, 0.55, 0.1]),
+            operand_a=("er", {"timeperiod": 60}),
+            operand_b=("trending", 0.05, [0.05, 0.55, 0.1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),

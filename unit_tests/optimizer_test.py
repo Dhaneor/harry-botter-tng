@@ -43,14 +43,14 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
     trend_1, contra_1, s_test_er, s_linreg_ma_cross, s_aroon_osc
 )
 
-symbol = "BTCUSDT"
+symbol = "ETHUSDT"
 interval = "1d"
 
 start = int(-365*6)
 end = 'now UTC'
 
 strategy = s_aroon_osc
-risk_levels = [0, 4, 5, 6, 7, 8, 9]
+risk_levels = 0,  # [0, 4, 5, 6, 7, 8, 9]
 max_leverage_levels = (1, 1.25, 1.5, 1.75, 2,)
 max_drawdown = 30
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
@@ -187,6 +187,7 @@ def test_optimize(data: dict | None):
 
 def test_check_robustness():
     data = _get_ohlcv_from_db()
+
     if test_optimize(data):
         best_result = test_optimize(data)[0]
     else:

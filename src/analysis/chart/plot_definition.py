@@ -1365,7 +1365,7 @@ class Layout:
 
 @dataclass(frozen=True)
 class PlotDefinition:
-    name: str
+    title: str
     subplots: Sequence[SubPlot]
     layout: Layout
     style: TikrStyle

@@ -198,6 +198,15 @@ class ChartArtist:
         # that is larger than what was defined in the previous step
         fig.update_xaxes(domain=[0, 1])
 
+        fig.update_layout(
+            title_text=self.plot_definition.title,
+            title_x=0.5,
+            title_font_size=self.style.title_font_size,
+            title_font_family=self.style.font_family,
+            title_font_color=self.style.colors
+            .text.set_alpha(self.style.font_opacity).rgba,
+        )
+
         # set the background/overlay image, if defined in the style
         if self.style.canvas_image is not None:
 
@@ -621,7 +630,7 @@ class TikrChart(Chart):
 
     def _build_plot_definition(self):
         return PlotDefinition(
-            name=self.title or "Tikr Chart",
+            title=self.title or "Tikr Chart",
             subplots=(
                 self.subplot_ohlcv(),
                 self.subplot_portfolio(),
@@ -675,7 +684,7 @@ class BacktestChart(Chart):
 
     def _build_plot_definition(self):
         return PlotDefinition(
-            name=self.title or "Tikr Chart",
+            title=self.title or "Tikr Chart",
             subplots=(
                 self.subplot_ohlcv(),
                 self.subplot_portfolio(),
@@ -767,7 +776,7 @@ class SignalChart(Chart):
                 elem.color = self.style.colors.strategy
 
         return PlotDefinition(
-            name=self.title or "Tikr Chart",
+            title=self.title or "Tikr Chart",
             subplots=(
                 self.subplot_ohlcv(),
                 *subplots,
