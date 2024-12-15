@@ -40,19 +40,19 @@ from src.analysis import optimizer  # noqa: E402, F401
 from src.analysis.indicators import indicators_custom  # noqa: E402, F401
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
     s_breakout, s_tema_cross, s_linreg, s_kama_cross, s_trix,
-    trend_1, contra_1, s_test_er
+    trend_1, contra_1, s_test_er, s_linreg_ma_cross, s_aroon_osc
 )
 
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = int(-365*3)
+start = int(-365*6)
 end = 'now UTC'
 
-strategy = s_linreg
-risk_levels = 0,  # [0, 4, 5, 6, 7, 8, 9]
-max_leverage_levels = 1,  # (1, 1.25, 1.5, 1.75, 2)
-max_drawdown = 25
+strategy = s_aroon_osc
+risk_levels = [0, 4, 5, 6, 7, 8, 9]
+max_leverage_levels = (1, 1.25, 1.5, 1.75, 2,)
+max_drawdown = 30
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 
@@ -270,6 +270,6 @@ if __name__ == '__main__':
     # test_vector_generator()
     # test_mutations_for_parameters()
     # test_optimize()
-    # test_check_robustness()
+    test_check_robustness()
 
-    profile_function()
+    # profile_function()

@@ -24,29 +24,29 @@ from src.analysis.chart.plot_definition import SubPlot  # noqa: E402
 
 # configure logger
 LOG_LEVEL = logging.DEBUG
-logger = logging.getLogger('main')
+logger = logging.getLogger("main")
 logger.setLevel(LOG_LEVEL)
 
 ch = logging.StreamHandler()
 ch.setLevel(LOG_LEVEL)
 
 formatter = logging.Formatter(
-    '%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s'
+    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
 )
 ch.setFormatter(formatter)
 
 logger.addHandler(ch)
-logger.info('Logger initialized')
+logger.info("Logger initialized")
 
 
 # import sample data for BTCUSDT 15min
-file_name = os.path.join(parent, 'ohlcv_data', 'btcusdt_15m.csv')
+file_name = os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv")
 data = pd.read_csv(file_name, index_col=0, parse_dates=True)
 
 # clean the ohlcv data
-data.drop(['human open time', 'quote asset volume', 'close time'], axis=1, inplace=True)
-data['open time'] = pd.to_datetime(data['open time'], unit='ms')
-data.set_index(keys=['open time'], inplace=True)
+data.drop(["human open time", "quote asset volume", "close time"], axis=1, inplace=True)
+data["open time"] = pd.to_datetime(data["open time"], unit="ms")
+data.set_index(keys=["open time"], inplace=True)
 
 # data = data.resample('1d')\
 #     .agg(
@@ -184,10 +184,10 @@ def test_indicator_factory(
     ind = indicator.factory(name, params, src)
 
     if show:
-        print('name:', ind.name)
-        print('input:', ind.input)
-        print('params:', ind.parameters)
-        print('out:', ind.output)
+        print("name:", ind.name)
+        print("input:", ind.input)
+        print("params:", ind.parameters)
+        print("out:", ind.output)
         print(ind)
         ind.help()
 
@@ -201,10 +201,10 @@ def test_indicator_factory(
 def test_set_indicator_parameters():
     for cand in defs:
         i = indicator.factory(
-            indicator_name=cand, params=defs[cand]['params'], source=defs[cand]['src']
+            indicator_name=cand, params=defs[cand]["params"], source=defs[cand]["src"]
         )
 
-        if params := defs[cand].get('params'):
+        if params := defs[cand].get("params"):
             for k, v in params.items():
                 logger.info("setting parameter %s for %s -> %s", k, i, v * 2)
                 i.parameters = {k: v * 2}
@@ -228,7 +228,7 @@ def test_indicator_run(i: indicator.IIndicator, params: dict | None = None):
         case 4:
             res = i.run(a, a1, a2, a2 * 1.1)
         case _:
-            raise ValueError(f'invalid input: {i.input}')
+            raise ValueError(f"invalid input: {i.input}")
 
     assert res is not None
 
@@ -254,14 +254,14 @@ def test_plot_desc():
     logger.setLevel(logging.INFO)
 
     for cand in defs:
-        i = indicator.factory(cand, defs[cand]['params'], defs[cand]['src'])
+        i = indicator.factory(cand, defs[cand]["params"], defs[cand]["src"])
         logger.info(i.plot_desc)
 
         try:
-            assert i.plot_desc == defs[cand]['plot_desc']
+            assert i.plot_desc == defs[cand]["plot_desc"]
         except AssertionError as e:
-            logger.error(f'plot description mismatch for {cand} --> %s', e)
-            logger.error("expected:\t%s", defs[cand]['plot_desc'])
+            logger.error(f"plot description mismatch for {cand} --> %s", e)
+            logger.error("expected:\t%s", defs[cand]["plot_desc"])
             logger.error("got:     \t%s", i.plot_desc)
             return
 
@@ -272,7 +272,7 @@ def test_plot_desc():
 def test_parameter():
     """Tests the Parameter class"""
     p = indicator.Parameter(
-        name='slowperiod',
+        name="slowperiod",
         _value=1,
         min_=0.1,
         max_=10,
@@ -287,8 +287,9 @@ def test_parameter():
             p.value = v
 
             if p._enforce_int:
-                assert p.value == int(round(v)), \
-                    f"expected {int(round(v))}, but got {p.value}"
+                assert p.value == int(
+                    round(v)
+                ), f"expected {int(round(v))}, but got {p.value}"
             else:
                 assert p.value == v, f"expected {v}, but got {p.value}"
             logger.info("parameter value %s: OK (%s)", v, p.value)
@@ -305,7 +306,7 @@ def test_parameter():
 def test_parameter_space():
     """Tests the setting the parameter space for a Parameter class"""
     p = indicator.Parameter(
-        name='slowperiod',
+        name="slowperiod",
         _value=1,
         min_=0.1,
         max_=10,
@@ -326,19 +327,20 @@ def test_parameter_space():
             p.space = min_, max_
             logger.info(
                 "set parameter space to [%s, %s] for requested values [%s, %s]: OK",
-                p.min_, p.max_, min_, max_
+                p.min_,
+                p.max_,
+                min_,
+                max_,
             )
         except ValueError as e:
-            logger.error(
-                "set parameter space to [%s, %s]: FAIL -> %s", min_, max_, e
-            )
+            logger.error("set parameter space to [%s, %s]: FAIL -> %s", min_, max_, e)
 
     logger.info("finished: OK")
 
 
 def test_parameter_iter():
     p = indicator.Parameter(
-        name='test',
+        name="test",
         _value=1,
         min_=0,
         max_=10,
@@ -356,7 +358,7 @@ def test_parameter_iter():
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
-if __name__ == '__main__':
+if __name__ == "__main__":
     # test_set_indicator_parameters()
 
     # test_parameter_space()
@@ -367,8 +369,7 @@ if __name__ == '__main__':
     # arr, res = test_is_above()
 
     ind = test_indicator_factory(
-        'BBANDS', {'timeperiod': 80, 'nbdevup': 1.5},
-        show=False
+        "BBANDS", {"timeperiod": 80, "nbdevup": 1.5}, show=False
     )
 
     # ind = test_indicator_factory(
@@ -379,7 +380,7 @@ if __name__ == '__main__':
     #     'ER', params={"timeperiod": 30}, show=False
     #     )
 
-    ind = test_indicator_factory('SMA', {'timeperiod': 37}, show=False)
+    ind = test_indicator_factory("SMA", {"timeperiod": 37}, show=False)
 
     # ind = test_indicator_factory('STOCH', show=False)
 
@@ -416,7 +417,7 @@ if __name__ == '__main__':
 
     with Profile() as p:
         for _ in range(runs):
-            ind.parameter_space = {'value': [40, 70]}
+            ind.parameter_space = {"value": [40, 70]}
 
         (
             pstats.Stats(p)
@@ -426,6 +427,4 @@ if __name__ == '__main__':
             .print_stats(20)
         )
 
-    print(
-        f'execution time: {((time.time() - st)*1_000_000/runs):.2f} microseconds'
-    )
+    print(f"execution time: {((time.time() - st)*1_000_000/runs):.2f} microseconds")

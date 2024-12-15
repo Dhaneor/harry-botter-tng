@@ -54,15 +54,18 @@ from functools import reduce
 import itertools
 import logging
 import numpy as np
+import pandas as pd
 
 from ..util import proj_types as tp
 from . import condition as cnd
 from ..indicators.indicator import Indicator
 from ..indicators.indicator_parameter import Parameter
-from src.analysis.chart.plot_definition import SubPlot, Layout, PlotDefinition
+
+from src.analysis.chart.plot_definition import SubPlot
+from src.analysis.chart.tikr_charts import SignalChart
 
 logger = logging.getLogger("main.signal_generator")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 PositionTypeT = Literal["open_long", "open_short", "close_long", "close_short"]
 
@@ -198,7 +201,7 @@ class SignalGenerator:
 
         return unique_plots
 
-    def execute(self, data: tp.Data) -> cnd.ConditionResult:
+    def execute(self, data: tp.Data, as_dict=True) -> cnd.ConditionResult:
         """Execute the signal generator.
 
         Parameters
@@ -211,13 +214,36 @@ class SignalGenerator:
         tp.Data
             OHLCV data dictionary
         """
-        return reduce(
+        signals = reduce(
             lambda x, y: x & y,
             (cond.execute(data) for cond in self.conditions)
         )
 
+        if not as_dict:
+            return signals
+
+        data.update(signals.as_dict())
+        return data
+
     def speak(self, data: tp.Data, weight: tp.Weight = 1) -> tp.Data:
         return self.execute(data, weight)
+
+    def plot(self, data: tp.Data) -> None:
+        self.make_plot(data).draw()
+
+    def make_plot(self, data: tp.Data, style='night') -> SignalChart:
+        # run the signal generator and convert the result
+        # to a pandas DataFrame
+        df = pd.DataFrame.from_dict(self.execute(data))
+
+        # set open time to datetime format and set it as index
+        df['open time'] = pd.to_datetime(df['open time'], unit='ms')
+        df.set_index('open time', inplace=True)
+        df.index = df.index.strftime('%Y-%m-%d %X')
+
+        return SignalChart(
+            data=df, subplots=self.subplots, style=style, title=self.name
+            )
 
     def is_working(self) -> bool:
         """Check if the signal generator is working.

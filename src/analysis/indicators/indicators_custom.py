@@ -14,7 +14,7 @@ from src.analysis.chart.plot_definition import Line, SubPlot
 
 # defining parameters for the Noise indicator
 timeperiod = Parameter(
-    name="timeperiod", initial_value=14, hard_min=7, hard_max=95, step=7
+    name="timeperiod", initial_value=14, hard_min=5, hard_max=200, step=5
 )
 
 

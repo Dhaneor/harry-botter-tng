@@ -257,7 +257,9 @@ class FixedIndicator(IIndicator):
             is_subplot=self._is_subplot,
             elements=[
                 Line(
-                    label=self.unique_name, column=self.unique_output, end_marker=False
+                    label=self.unique_name,
+                    column=self.unique_output[0],
+                    end_marker=False
                 )
             ],
             level="indicator",

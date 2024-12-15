@@ -404,7 +404,7 @@ class ConditionResult:
             "open_short": self.open_short,
             "close_long": self.close_long,
             "close_short": self.close_short,
-            "combined": self.combined_signal
+            "signals": self.combined_signal
             if self.combined_signal is not None
             else self.combined()
         }

@@ -31,10 +31,11 @@ from src.analysis.strategies import signal_generator as sg  # noqa: E402
 from src.analysis.strategies import condition as cn  # noqa: E402
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
-    linreg_roc_btc_1d, linreg_roc_eth_1d, test_er
+    linreg_roc_btc_1d, linreg_roc_eth_1d, test_er, linreg, aroonosc,
+    linreg_ma_cross
 )
 from src.analysis.chart.tikr_charts import SignalChart  # noqa: E402
-from helpers_ import get_sample_data, get_ohlcv  # noqa: E402, F401
+from helpers_ import get_ohlcv  # noqa: E402, F401
 
 logger = logging.getLogger("main")
 logger.setLevel(logging.ERROR)
@@ -49,12 +50,14 @@ ch.setFormatter(formatter)
 logger.addHandler(ch)
 
 # set interval and length of test data
-interval = "15m"
+interval = "1d"
 length = 365*6
+
+sig_def = linreg_ma_cross
 
 # ======================================================================================
 try:
-    df = get_ohlcv(symbol="BTCUSDT", interval="1d", as_dataframe=True)
+    df = get_ohlcv(symbol="BTCUSDT", interval=interval, as_dataframe=True)
 except Exception as e:
     logger.error(f"Error fetching data: {e}")
     sys.exit()
@@ -137,35 +140,39 @@ def test_factory_from_existing(sig_gen):
 
 
 def test_execute(sig_gen: sg.SignalGenerator, data, weight, show=False, plot=False):
-    sig_gen.execute(data)
+    data = sig_gen.execute(data)
     logger.info(sig_gen)
 
     if show:
-        print(list(data.keys()))
-        df1 = pd.DataFrame.from_dict(data)
-        df1.replace(0.0, ".", inplace=True)
-        df1['open time'] = pd.to_datetime(
-            df1['open time'],
+        df = pd.DataFrame.from_dict(data)
+        df_plot = df.copy()
+        df.replace(0.0, ".", inplace=True)
+        df['open time'] = pd.to_datetime(
+            df['open time'],
             unit='ms',
             origin='unix',
         )
 
-        df1['open time'] = pd\
-            .to_datetime(df1['open time'])\
+        df['open time'] = pd\
+            .to_datetime(df['open time'])\
             .dt.strftime('%Y-%m-%d %X')
 
-        df1.set_index(keys=['open time'], inplace=True)
-        print(df1.tail(50))
+        df.set_index(keys=['open time'], inplace=True)
+        print(df.tail(50))
 
-        if plot:
-            chart = SignalChart(
-                df=df1,
-                subplots=sig_gen.subplots,
-                style='night',
-                title=sig_gen.name
-                )
+    if plot:
+        chart = SignalChart(
+            data=df_plot,
+            subplots=sig_gen.subplots,
+            style='night',
+            title=sig_gen.name
+            )
 
-            chart.draw()
+        chart.draw()
+
+
+def test_plot(sig_gen: sg.SignalGenerator, data):
+    sig_gen.plot(data)
 
 
 # -----------------------------------------------------------------------------
@@ -344,7 +351,7 @@ def test_plot_desc(sig_gen):
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    sig_gen = test_factory(test_er)
+    sig_gen = test_factory(sig_def)
 
     # sig_gen = test_factory_from_existing(sig_gen)
 
@@ -360,7 +367,7 @@ if __name__ == "__main__":
         sys.exit()
 
     # test_plot_desc(sig_gen)
-    test_execute(sig_gen, data, 1, True, True)
+    test_plot(sig_gen, data)
     # test_returns(sig_gen, data, True)
 
     sys.exit()

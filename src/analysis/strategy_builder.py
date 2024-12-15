@@ -245,7 +245,7 @@ class SubStrategy(IStrategy):
         """
         return self\
             ._signal_generator\
-            .execute(data)\
+            .execute(data, as_dict=False)\
             .apply_weight(self.weight)
 
     # --------------------------------------------------------------------------

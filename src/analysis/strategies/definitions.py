@@ -110,7 +110,7 @@ breakout = sg.SignalsDefinition(
     ]
 )
 
-timeperiod = 10
+timeperiod = 2
 linreg_timeperiod = 20
 
 trix = sg.SignalsDefinition(
@@ -119,17 +119,39 @@ trix = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a=(
-                "linearreg_slope",
-                ("trix", {"timeperiod": timeperiod}),
-                {"timeperiod": linreg_timeperiod},
+                'roc',
+                ("linearreg_slope",  "close", {"timeperiod": linreg_timeperiod}),
+                {"timeperiod": timeperiod},
             ),
-            operand_b=(
-                "linearreg_slope",
-                ("trix", {"timeperiod": timeperiod * 4}),
-                {"timeperiod": linreg_timeperiod},
-            ),
+            operand_b=('trigger', 0, [-5, 5, 1]),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+        ),
+    ],
+)
+
+aroonosc = sg.SignalsDefinition(
+    name="AROON OSC",
+    conditions=[
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=(
+                'aroonosc',
+                'high', 'low',
+                {"timeperiod": 2},
+            ),
+            operand_b=('trigger', 0, [-5, 5, 1]),
+            open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
+            close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+        ),
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=("er", {"timeperiod": 8}),
+            operand_b=("trending", 0.29, [0.05, 0.55, 0.1]),
+            open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
+            # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            # close_short=("a", cn.COMPARISON.IS_BELOW, "b"),
         ),
     ],
 )
@@ -211,12 +233,33 @@ linreg = sg.SignalsDefinition(
                 "close",
                 {"timeperiod": 7},
             ),
-            operand_c=("slope", 0, [-10, 10, 2]),
-            operand_d=("slope", 0, [-10, 10, 2]),
+            operand_c=("trigger", 0, [-10, 10, 2]),
+            operand_d=("trigger", 0, [-10, 10, 2]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "c"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "c"),
             open_short=("b", cn.COMPARISON.IS_BELOW, "d"),
             close_short=("b", cn.COMPARISON.IS_ABOVE, "d"),
+        ),
+    ],
+)
+
+linreg_ma_cross = sg.SignalsDefinition(
+    name=f"Linear Regression Slope {linreg_timeperiod}",
+    conditions=[
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=(
+                "linearreg",
+                "close",
+                {"timeperiod": 2},
+            ),
+            operand_b=(
+                "linearreg",
+                "close",
+                {"timeperiod": 142},
+            ),
+            open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
+            close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
     ],
 )
@@ -282,8 +325,8 @@ test_er = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 7}),
-            operand_b=("trending", 0.45, [0.05, 0.55, 0.05]),
+            operand_a=("er", {"timeperiod": 40}),
+            operand_b=("trending", 0.15, [0.05, 0.55, 0.05]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
@@ -292,7 +335,7 @@ test_er = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a=("close"),
-            operand_b=("kama", {"timeperiod": 21}),
+            operand_b=("kama", {"timeperiod": 183}),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
@@ -437,6 +480,35 @@ s_test_er = sb.StrategyDefinition(
     ]
 )
 
+s_linreg_ma_cross = sb.StrategyDefinition(
+    strategy="KAMA with Noise Filter",
+    symbol="BTC/USDT",
+    interval="1d",
+    sub_strategies=[
+        sb.StrategyDefinition(
+            strategy="Test ER",
+            symbol="BTC/USDT",
+            interval="1d",
+            signals_definition=linreg_ma_cross,
+            weight=1,
+        ),
+    ]
+)
+
+s_aroon_osc = sb.StrategyDefinition(
+    strategy="AROON oscillator with Noise Filter",
+    symbol="BTCUSDT",
+    interval="1d",
+    sub_strategies=[
+        sb.StrategyDefinition(
+            strategy="AROON oscillator",
+            symbol="BTC/USDT",
+            interval="1d",
+            signals_definition=aroonosc,
+            weight=1,
+        ),
+    ]
+)
 
 # ====================================================================================
 #                                     MULTI STRATEGY 1                               #

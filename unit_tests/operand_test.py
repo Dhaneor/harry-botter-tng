@@ -40,8 +40,7 @@ sys.path.append(parent)
 # -----------------------------------------------------------------------------
 
 from src.analysis.strategies import operand as op  # noqa: E402
-from src.analysis.indicators import indicator as ind  # noqa: E402
-from src.analysis.chart.plot_definition import SubPlot, Line  # noqa: E402
+from src.analysis.chart.plot_definition import SubPlot  # noqa: E402
 
 # ======================================================================================
 # load and prepare OHLCV data for use in testing

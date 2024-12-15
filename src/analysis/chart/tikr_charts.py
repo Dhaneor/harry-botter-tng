@@ -100,13 +100,8 @@ class ChartArtist:
 
     def plot(self, data: pd.DataFrame | Data, p_def: PlotDefinition) -> None:
         self.build_figure(data, p_def)
-
-        # display the chart
         config = {"autosizable": True, "responsive": True, "displaylogo": False}
         self.fig.show(width=2400, height=1600, config=config)
-
-        # print the layout of the chart to the terminal
-        self.plot_definition.layout.show_layout()
 
     def create_fig(self, p_def: PlotDefinition):
         """Prepare a figure for plotting.
@@ -696,23 +691,35 @@ class BacktestChart(Chart):
 class SignalChart(Chart):
     indicator_row_height = 2
 
-    def __init__(self, df, subplots: Sequence[SubPlot], style: str, title=None):
-        super().__init__(df, style, title)
+    def __init__(
+        self,
+        data: pd.DataFrame,
+        subplots: Sequence[SubPlot],
+        style: str,
+        title: str = None
+    ):
+        super().__init__(data, style, title)
 
         self.subplots = subplots
 
-        self.layout: Layout
         self.layout = Layout(
             layout={
                 "OHLCV": {"row": 1, "col": 1, "secondary_y": True},
-                # "Portfolio": {"row": 2, "col": 1},
-                # "Drawdown": {"row": 3, "col": 1},
             },
             row_heights=[8],
             col_widths=[1]
         )
         self._update_layout()
         self.layout.show_layout()
+
+        # self.clean_signals()
+        self.add_buy_at_column()
+        self.add_sell_at_column()
+
+        self.style.line_width = 0.5
+
+        print(self.data.tail(50))
+
         self._plot_definition = self._build_plot_definition()
         self.artist.plot_definition = self._plot_definition
 
@@ -738,8 +745,8 @@ class SignalChart(Chart):
                 Volume(label='Volume', column=config.ohlcv.volume),
                 *traces,
                 Candlestick(),
-                # Buy(),
-                # Sell(),
+                Buy(),
+                Sell(),
             ),
             secondary_y=True,
         )
@@ -768,3 +775,52 @@ class SignalChart(Chart):
             layout=self.layout,
             style=self.style,
         )
+
+    def clean_signals(self) -> None:
+        """
+        Clean the signals by removing consecutive repetitions and
+        keeping only the first occurrence.
+        """
+        for column in ('open_long', 'close_long', 'open_short', 'close_short'):
+            self.data[column] = self.data[column].replace(0, np.nan)
+            signals = self.data[column].values
+            cleaned_signals = np.full_like(signals, np.nan)
+            last_signal = np.nan
+            last_signal_arr = np.full_like(signals, np.nan)
+
+            for i, signal in enumerate(signals):
+                if not np.isnan(signal) and signal != last_signal:
+                    cleaned_signals[i] = signal
+                    last_signal = signal
+                last_signal_arr[i] = last_signal
+
+            self.data[column] = cleaned_signals
+            self.data[f'last_{column}'] = last_signal_arr
+
+    def add_buy_at_column(self) -> None:
+        """
+        Add a 'buy_at' column to the DataFrame where:
+        a) the value is the close price when open_long is not NaN
+        b) the value is np.nan for all other rows
+        """
+        self.data['buy_at'] = np.nan
+        self.data['open_long'] = self.data.open_long.replace(0, np.nan)
+
+        self.data.loc[
+            (self.data['open_long'] > 0) | (self.data['close_short'] > 0),
+            'buy_at'
+        ] = self.data.close
+
+    def add_sell_at_column(self) -> None:
+        """
+        Add a 'sell_at' column to the DataFrame where:
+        a) the value is the close price when close_long is not NaN
+        b) the value is np.nan for all other rows
+        """
+        self.data['sell_at'] = np.nan
+        self.data['open_short'] = self.data.open_short.replace(0, np.nan)
+
+        self.data.loc[
+            (self.data['open_short'] > 0) | (self.data['close_long'] > 0),
+            'sell_at'
+        ] = self.data.close
