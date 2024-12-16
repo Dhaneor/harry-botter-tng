@@ -48,7 +48,7 @@ MAX_WORKERS_BINANCE = VALID_EXCHANGES["binance"]["max_workers"]
 MAX_WORKERS_KUCOIN = VALID_EXCHANGES["kucoin"]["max_workers"]
 
 logger = logging.getLogger("main.hermes")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 # ==============================================================================
 """

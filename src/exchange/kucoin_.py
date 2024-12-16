@@ -926,8 +926,12 @@ class Public(IExchangePublic, OhlcvDownloadPrepper, KucoinResponseFormatter):
         this is the method that the caller should use.
         """
         sleep(self.delay)
+
         return self.market_client.get_kline(
-            symbol=symbol, kline_type=interval, startAt=start_ts, endAt=end_ts
+            symbol=symbol,
+            kline_type=interval,
+            startAt=start_ts,
+            endAt=end_ts
         )
 
     # -------------------------------------------------------------------------

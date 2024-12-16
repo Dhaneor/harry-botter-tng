@@ -13,7 +13,7 @@ import mysql.connector as dbc
 from mysql.connector import Error, IntegrityError
 
 from src.helpers.ilabrat import get_exchange_name
-from util.timeops import utc_to_unix
+from src.util.timeops import utc_to_unix
 
 import pandas as pd
 from pprint import pprint
@@ -275,7 +275,7 @@ class Mnemosyne:
                 f"INSERT IGNORE INTO {table_name} ({_columns}) VALUES ({placeholders})"
             )
 
-            if batch == True:
+            if batch:
                 logger.debug(f"BATCH INSERT for {table_name} with {len_data} entries")
                 cursor.executemany(sql, data)
             else:
@@ -361,7 +361,7 @@ class Mnemosyne:
         sql = f"SELECT symbol FROM {table_name};"
         result = self.query(sql)
 
-        if return_dataframe == True:
+        if return_dataframe:
             return self.symbols_to_dataframe(result)
         else:
             return result
@@ -411,9 +411,12 @@ class Mnemosyne:
 
         table_name = "_".join([exchange, symbol, "ohlcv", interval])
 
-        sql = f"SELECT * FROM {table_name} "
-        sql += f"WHERE openTime BETWEEN {start} AND {end} "
-        sql += f"ORDER BY openTime;"
+        sql = (
+            f"SELECT * FROM {table_name} "
+            f"WHERE openTime BETWEEN {start} AND {end} "
+            "ORDER BY openTime;"
+        )
+
         result = self.query(sql)
 
         if not result:
@@ -574,7 +577,7 @@ class Mnemosyne:
         return df
 
     def talk_to_me(self, yesno: bool):
-        if yesno == True:
+        if yesno:
             self.verbose = True
         else:
             self.verbose = False

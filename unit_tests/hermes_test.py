@@ -8,7 +8,6 @@ Created on Tue Oct 12 14:11:33 2021
 
 import sys
 import os
-import time
 import pandas as pd
 import logging
 from pprint import pprint
@@ -23,7 +22,7 @@ ch = logging.StreamHandler()
 ch.setLevel(logging.DEBUG)
 
 formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s - %(levelname)s - %(message)s"
+    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
 )
 ch.setFormatter(formatter)
 
@@ -35,9 +34,8 @@ current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 # -----------------------------------------------------------------------------
-from src.staff.hermes import Hermes
-from util.timeops import unix_to_utc, utc_to_unix, execution_time
-from src.helpers.ilabrat import get_exchange_name
+from src.staff.hermes import Hermes  # noqa: E402, F401
+from src.util.timeops import unix_to_utc, execution_time  # noqa: E402
 
 
 # =============================================================================
@@ -274,13 +272,13 @@ class HermesTester:
 # =============================================================================
 if __name__ == "__main__":
 
-    symbol_name = "ADA-USDT"
+    symbol_name = "ADAUSDT"
     interval = "1h"
     symbols = ["BTCUSDT", "ADAUSDT", "XRPUSDT", "XLMUSDT"]
     intervals = ["5m", "15m", "30m", "1h", "2h", "4h"]
 
     dates = [
-        'January 01, 2019 00:00:00',
+        'October 01, 2024 00:00:00',
         "now UTC",  # 'October 19, 2023 00:00:00'
     ]
     exchange = "kucoin" if "-" in symbol_name else "binance"
