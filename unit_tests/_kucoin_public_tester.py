@@ -25,7 +25,7 @@ sys.path.append(parent)
 # ------------------------------------------------------------------------------
 
 from src.exchange.kucoin_ import KucoinCrossMargin, is_exchange_closed
-from src.helpers.timeops import (unix_to_utc, execution_time,
+from util.timeops import (unix_to_utc, execution_time,
                              get_start_and_end_timestamp,
                              interval_to_milliseconds)
 from broker.config import CREDENTIALS

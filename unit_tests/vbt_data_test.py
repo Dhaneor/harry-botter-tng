@@ -28,7 +28,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 
 from src.analysis.models.vbt_data import LiveData
-from src.helpers.timeops import execution_time
+from util.timeops import execution_time
 
 exchange = 'kucoin'
 symbols = [
@@ -43,9 +43,9 @@ def test_fetch_symbol_multiple():
     res = LiveData.fetch_symbol_multiple(
         exchange=exchange, symbols=symbols, interval='1 minute'
     )
-    
+
     data = LiveData.from_data(data=res, silence_warnings=True) #type:ignore
-    
+
     print(data.stats())
 
 

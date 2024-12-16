@@ -15,7 +15,7 @@ from typing import Union, List, Tuple, Optional, Iterable
 import numpy.typing as npt
 
 from src.helpers.fibonacci import fibonacci_series
-from src.helpers.timeops import execution_time
+from util.timeops import execution_time
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)

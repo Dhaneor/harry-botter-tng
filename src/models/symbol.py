@@ -23,7 +23,7 @@ sys.path.append(parent)
 sys.path.append('../backtest.module/')
 # -----------------------------------------------------------------------------
 from staff.hermes import Hermes
-from helpers.timeops import execution_time
+from util.timeops import execution_time
 from helpers.accounting import Accounting
 
 # ==============================================================================
@@ -33,27 +33,27 @@ class Symbol:
     like restraints for orders sizes or the values for rounding prescision.
     """
     def __init__(self, symbol_name:str, data:Optional[dict]=None):
-        
+
         if symbol_name is None:
             raise ValueError('Symbol name cannot be <None>!')
-        
+
         self.name = symbol_name
         self.symbol_name = symbol_name
         self.exchange = self._determine_exchange_from_symbol_name()
         self._initialize(data=data)
-        
+
     def __str__(self):
         permissions = (', ').join(self.permissions)
-        
+
         return f'[{self.name}] on {self.exchange.upper()} '\
                 f' ({permissions}) '\
                 f'is currently: {self.status.lower()}'
 
-        
+
     def _initialize(self, data:Optional[dict]=None):
         """This method gets the raw symbol information from Hermes and
         initializes all values.
-        
+
         This is what we get from Hermes:
         ..code:: python
             {
@@ -102,95 +102,95 @@ class Symbol:
                 raise ValueError(f'{self.name} is not a valid symbol')
         else:
             s = data
-        
+
         missing_values = self._check_for_missing_values(s)
         if missing_values:
             raise ValueError(f'Missing Values for {missing_values}')
-        
+
         self.exchange = 'kucoin' if '-' in self.name else 'binance'
-        
+
         self.baseAsset = s.get('baseAsset')
         self.baseAssetPrecision = s.get('baseAssetPrecision')
         self.baseCommissionPrecision = s.get('baseCommissionPrecision')
-        
+
         self.f_icebergParts_limit = s.get('f_icebergParts_limit')
-        
+
         self.f_lotSize_maxQty = s.get('f_lotSize_maxQty')
         self.f_lotSize_minQty = s.get('f_lotSize_minQty')
         self.f_lotSize_stepSize = s.get('f_lotSize_stepSize')
         self.f_stepPrecision = Accounting.get_precision(
             self.f_lotSize_stepSize
             )
-                
+
         self.f_marketLotSize_maxQty = s.get('f_marketLotSize_maxQty')
         self.f_marketLotSize_minQty = s.get('f_marketLotSize_minQty')
         self.f_marketLotSize_stepSize = s.get('f_marketLotSize_stepSize')
 
-        
+
         self.f_maxNumAlgoOrders = s.get('f_maxNumAlgoOrders')
         self.f_maxNumOrders = s.get('f_maxNumOrders')
-        
+
         self.f_minNotional_applyToMarket = s.get('f_minNotional_applyToMarket')
         self.f_minNotional_avgPriceMins = s.get('f_minNotional_avgPriceMins')
         self.f_minNotional_minNotional = s.get('f_minNotional_minNotional')
-        
+
         self.f_percentPrice_avgPriceMins = s.get('f_percentPrice_avgPriceMins')
         self.f_percentPrice_multiplierDown = s.get('f_percentPrice_multiplierDown')
         self.f_percentPrice_multiplierUp = s.get('f_percentPrice_multiplierUp')
-        
+
         self.f_priceFilter_maxPrice = s.get('f_priceFilter_maxPrice')
         self.f_priceFilter_minPrice = s.get('f_priceFilter_minPrice')
         self.f_priceFilter_tickSize = s.get('f_priceFilter_tickSize')
         self.f_tickPrecision = Accounting.get_precision(
             self.f_priceFilter_tickSize
             )
-        
+
         self.icebergAllowed = s.get('icebergAllowed')
         self.isMarginTradingAllowed = s.get('isMarginTradingAllowed')
         self.isSpotTradingAllowed = s.get('isSpotTradingAllowed')
-        
+
         self.ocoAllowed = s.get('ocoAllowed')
         self.orderTypes = s.get('orderTypes')
         self.permissions = s.get('permissions')
-        
+
         self.quoteAsset = s.get('quoteAsset')
         self.quoteAssetPrecision = s.get('quoteAssetPrecision')
         self.quoteCommissionPrecision = s.get('quoteCommissionPrecision')
         self.quoteOrderQtyMarketAllowed = s.get('quoteOrderQtyMarketAllowed')
         self.quotePrecision = s.get('quotePrecision')
-        
+
         self.status = s.get('status')
         self.symbol = s.get('symbol')
-        
+
     def _check_for_missing_values(self, symbol:dict) ->list:
         missing =  [k for k,v in symbol.items() if v is None]
-        
-        # some fields/keys were recently added by Binance, but we 
+
+        # some fields/keys were recently added by Binance, but we
         # don't need them and it doesn't matter if we don't have
-        # values for these keys  
-        we_dont_care = ['cancelReplaceAllowed', 
-                        'f_trailingDelta_maxTrailingAboveDelta', 
-                        'f_trailingDelta_maxTrailingBelowDelta', 
-                        'f_trailingDelta_minTrailingAboveDelta', 
+        # values for these keys
+        we_dont_care = ['cancelReplaceAllowed',
+                        'f_trailingDelta_maxTrailingAboveDelta',
+                        'f_trailingDelta_maxTrailingBelowDelta',
+                        'f_trailingDelta_minTrailingAboveDelta',
                         'f_trailingDelta_minTrailingBelowDelta']
-        
+
         missing = [item for item in missing if item not in we_dont_care]
-        
+
         if missing:
-            return missing 
+            return missing
         return None
 
     def _determine_exchange_from_symbol_name(self):
         return 'kucoin' if '-' in self.name else 'binance'
-        
-        
-        
+
+
+
 # ==============================================================================
 @execution_time
 def test_create_symbol(symbol_name:str):
     s = Symbol(symbol_name)
-    pprint(s.__dict__)    
-        
+    pprint(s.__dict__)
+
 # ==============================================================================
 if __name__ == '__main__':
     symbol_name = 'XLM-USDT'

@@ -37,7 +37,7 @@ from src.exchange.util.ohlcv_download_prepper import (  # noqa: F401, E402
 from src.exchange.util.kucoin_order_downloader import (  # noqa: F401, E402
     KucoinOrderDownloader
 )
-from src.helpers.timeops import (  # noqa: F401, E402
+from util.timeops import (  # noqa: F401, E402
     utc_to_unix, interval_to_milliseconds
 )
 from src.helpers.accounting import Accounting  # noqa: F401, E402

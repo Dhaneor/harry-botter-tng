@@ -25,7 +25,7 @@ sys.path.append(parent)
 # ------------------------------------------------------------------------------
 from broker.config import CREDENTIALS
 from exchange.exchange import ExchangePublic as Broker
-from helpers.timeops import (seconds_to, unix_to_utc, execution_time,
+from util.timeops import (seconds_to, unix_to_utc, execution_time,
                              get_start_and_end_timestamp,
                              interval_to_milliseconds)
 

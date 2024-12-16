@@ -18,7 +18,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # ------------------------------------------------------------------------------
 from src.exchange.util import ohlcv_download_prepper as odp  # noqa: E402
-from src.helpers.timeops import execution_time  # noqa: E402
+from util.timeops import execution_time  # noqa: E402
 
 dp = odp.OhlcvDownloadPrepper()
 

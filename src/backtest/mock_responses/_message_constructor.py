@@ -15,7 +15,7 @@ import json
 from random import random, randrange, choice
 from pprint import pprint
 from copy import deepcopy
-from helpers.timeops import unix_to_utc
+from util.timeops import unix_to_utc
 
 from models.symbol import Symbol
 from broker.models.orders import ExecutionReport
@@ -31,11 +31,11 @@ class MockUSerStreamResponse:
 
         self.symbol_name = symbol.symbol_name
         self.symbol = symbol
-        
+
         self.commission = 0.00075
         if commission_asset is not None:
             self.commission_asset = commission_asset
-        else: 
+        else:
             self.commission_asset = self.symbol.quoteAsset
 
         self.slippage = 0.0015
@@ -49,11 +49,11 @@ class MockUSerStreamResponse:
 
         if order.base_qty is not None: base_qty = order.base_qty
         else: base_qty = '0.00000000'
-        
+
         if order.quote_qty is not None: quote_qty = order.quote_qty
         else: quote_qty = '0.00000000'
-        
-        if order.type == 'MARKET':  price = '0.00000000' 
+
+        if order.type == 'MARKET':  price = '0.00000000'
         else: price = str(order.limit_price)
 
         if order.type == 'STOP_LIMIT' or order.type == 'STOP_MARKET':
@@ -64,7 +64,7 @@ class MockUSerStreamResponse:
         transact_time = round(time.time())
         event_time = transact_time + 1
 
-        
+
         message = {"e": "executionReport",      # Event type
                     "E": event_time,            # Event time
                     "s": self.symbol_name,      # Symbol
@@ -98,7 +98,7 @@ class MockUSerStreamResponse:
                     "Y": "0.00000000",          # Last quote asset transacted quantity (i.e. lastPrice * lastQty)
                     "Q": quote_qty              # Quote Order Qty
                     }
-        
+
         return message
 
 
@@ -130,12 +130,12 @@ class MockUSerStreamResponse:
             results.append({})
 
             new = deepcopy(om)
-            
-            if (idx == number_of_fills -1): 
+
+            if (idx == number_of_fills -1):
                 new['X'] = 'FILLED'
-            else: 
+            else:
                 new['X'] = 'PARTIALLY_FILLED'
-            
+
             new['x'] = 'TRADE'
             new['E'] = tx_times[idx]
             new['T'] = tx_times[idx] -1
@@ -150,7 +150,7 @@ class MockUSerStreamResponse:
 
             if self.commission_asset == 'BNB':
                 new['N'] = 'BNB'
-                new['n'] = self._calculate_commission_bnb(om['S'], 
+                new['n'] = self._calculate_commission_bnb(om['S'],
                                                              quantities[idx],
                                                              prices[idx]
                                                              )
@@ -174,14 +174,14 @@ class MockUSerStreamResponse:
         return results
 
     # -------------------------------------------------------------------------
-    # helper functions 
+    # helper functions
 
     # get the latest prices for the symbol and for BNB - quote asset
     def _update_prices(self):
 
         pair = 'BNB' + self.symbol.quoteAsset
-        with Binance() as conn: 
-            self.bnb_price = conn.get_last_price(pair) 
+        with Binance() as conn:
+            self.bnb_price = conn.get_last_price(pair)
             self.last_price = conn.get_last_price(self.symbol_name)
             self.updated = time.time()
 
@@ -205,7 +205,7 @@ class MockUSerStreamResponse:
             length = 8
 
         # build the result string
-        res_list = [] 
+        res_list = []
         for idx in range(length):
 
             x = choice(let_num)
@@ -233,9 +233,9 @@ class MockUSerStreamResponse:
         for idx in range(number_of_fills-1):
 
             if side == 'BUY':
-                price = self.last_price * (1 + random() * self.slippage * factor) 
+                price = self.last_price * (1 + random() * self.slippage * factor)
             elif side == 'SELL':
-                price = self.last_price * (1 - random() * self.slippage * factor) 
+                price = self.last_price * (1 - random() * self.slippage * factor)
             price = round(price, self.symbol.f_tickPrecision)
             fill_prices.append(price)
 
@@ -265,7 +265,7 @@ class MockUSerStreamResponse:
         return base_qty * price * self.commission
 
     def _calculate_commission_bnb(self, side, base_qty, price):
-        
+
         com = (base_qty * price) * self.commission / self.bnb_price
         return round(com, 8)
 
@@ -289,7 +289,7 @@ if __name__ == '__main__':
     pprint(no)
 
     # -------------------------------------------------------------------------
-    # for i in range(10): 
+    # for i in range(10):
     #     test = erb._get_quantities(100, 5)
 
     #     print(test)
@@ -320,6 +320,6 @@ if __name__ == '__main__':
 
     #     if i == 0: print(f'last price: {erb.last_price}')
     #     print(f'price: {p[i]} - slippage = {sl}%')
-    
+
     # m = round(cum_sl / len(p), 4)
     # print(f'mean slippage: {m}%')

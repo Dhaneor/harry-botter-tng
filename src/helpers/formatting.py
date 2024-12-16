@@ -9,7 +9,7 @@ from decimal import Decimal
 from typing import Union
 
 try:
-    from .timeops import unix_to_utc
+    from ..util.timeops import unix_to_utc
 except:
     pass
 
@@ -33,7 +33,7 @@ def _get_market_order():
             'timeInForce': 'GTC',
             'type': 'MARKET',
             'updateTime': 1645484145447}
-    
+
 def _get_stop_limit_order():
     return {'clientOrderId': 'RV9SRdlQvatep1nsNX64vH',
             'cummulativeQuoteQty': '0',
@@ -58,10 +58,10 @@ def _get_stop_limit_order():
 
 # =============================================================================
 def human_order_response(response:dict) -> str:
-    
+
     if not response:
         return
-    
+
     _time = unix_to_utc(response.get('updateTime'), 0)
     symbol = response.get('symbol')
     type = response.get('type')
@@ -70,7 +70,7 @@ def human_order_response(response:dict) -> str:
     quote_qty = float(response.get('cummulativeQuoteQty'), 0)
     status = response.get('status')
     _precision = len(response.get('icebergQty', '0.0').split('.')[1])
-        
+
     try:
         price = round(quote_qty / base_qty, _precision)
     except:
@@ -78,36 +78,36 @@ def human_order_response(response:dict) -> str:
 
     # .........................................................................
     human = f"[{_time}] {symbol} {type} {side} order for "
-    
+
     if type == 'MARKET':
         human += f"{base_qty} - price: {price}"
-    
+
     if 'LIMIT' in type:
         orig_base_qty = float(response.get('origQty'))
         percent_filled = round(base_qty / orig_base_qty, _precision)
         base_qty = orig_base_qty
         price = response.get('price')
-        
+
         human += f"{base_qty} "
-        
+
         if 'FILLED' in status:
             human += f"({percent_filled}% filled) "
-        
+
         human += f"- price: {price}"
-    
+
     if 'STOP' in type:
         stop_price = response.get('stopPrice')
         human += f" :: stop price: {stop_price}"
-        
+
     human += f' [status: {status}]'
 
-    return human 
+    return human
 
 def scientific_to_str(value: Union[float, int, str]) -> str:
     if value is not None:
-        res = "{:.8f}".format(float(value))  
+        res = "{:.8f}".format(float(value))
         while res[-1] == '0':
-            res = res[:-1]  
+            res = res[:-1]
     else:
         res = value
     return res
@@ -121,9 +121,9 @@ if __name__ == '__main__':
 
     print(scientific_to_str(value=0.00002388))
     print(scientific_to_str(value=1.878e-05))
-    
+
     # print(human_order_response(_get_market_order()))
     # print(human_order_response(_get_stop_limit_order()))
-    
+
 
 

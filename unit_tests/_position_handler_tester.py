@@ -25,7 +25,7 @@ from broker.models.requests import PositionChangeRequest, RequestFactory
 from models.symbol import Symbol
 from broker.util.order_factory import OrderFactory
 from broker.models.exchange_order import build_exchange_order
-from helpers.timeops import execution_time
+from util.timeops import execution_time
 
 from broker.config import CREDENTIALS
 

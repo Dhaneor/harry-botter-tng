@@ -160,38 +160,48 @@ def get_start_and_end_timestamp(
     unit: str = "milliseconds",
     verbose: bool = False,
 ) -> Tuple[int, int]:
-    """Convert two values (start/end) to seconds or milliseconds
+    """
+    Convert two values (start/end) to seconds or milliseconds.
 
-    :param start: the beginning of the time period which can be given as
-                    integer or a string. there are multiple ways to pass
-                    this value.
+    Parameters
+    ----------
+    start : int or str
+        The beginning of the time period which can be given as integer or a string.
+        There are multiple ways to pass this value:
+        - int: If the number is smaller than 10000, it will be interpreted as
+                number of intervals counted backwards from the end date.
+                Otherwise, it will be treated as a timestamp.
+        - str: A string can be in one of many formats that represent a date (and time).
+                It is also possible to use expressions like '30 days ago' or 'now UTC'.
 
-                    int: if the number is smaller than 10000, then  it will
-                         be interpreted as number of intervals counted
-                         backwards from the end date. otherwise it will
-                         be treated as a timestamp
+    end : int or str
+        The end of the time period which can have all the same formats as 'start'
+        (except smaller integers for periods).
 
-                    str: a string can be in one of many formats that
-                         represent a date (and time). it is also possible
-                         to use expressions like '30 days ago' or 'now UTC'
-    :type start: int or str
+    interval : str
+        The time interval (e.g., '1h', '1d').
 
-    :param end: the end of the time period which can have all the same
-                formats as 'start' (except smaller integers for periods)
-    :type end: int or str
+    unit : str, optional
+        Return as 'milliseconds' or 'seconds'. Default is "milliseconds".
 
-    :param unit: return as 'milliseconds' or 'seconds'
-    :type unit: str
+    verbose : bool, optional
+        Print verbose output or not. Default is False.
 
-    :param verbose: print verbose output or not
-    :type verbose: bool
+    Returns
+    -------
+    tuple of int
+        A tuple with two timestamps (start_ts, end_ts).
 
-    :returns: tuple with two timestamps (start_ts, end_ts)
+    Notes
+    -----
+    This function is flexible in accepting various input formats for start and end times,
+    making it versatile for different use cases.
     """
 
-    # find the 'end' timestamp
+    # determine the timestamp for 'now'
     now = int(time() * 1000)
 
+    # find the 'end' timestamp
     match end:
         case str():
             end_ts = int(date_to_milliseconds(end) / 1000)

@@ -21,12 +21,12 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 sys.path.append('../backtest.module/')
 # -----------------------------------------------------------------------------
-from helpers.timeops import unix_to_utc
+from util.timeops import unix_to_utc
 
 # ==============================================================================
 @dataclass
 class ExchangeOrder:
-    
+
     type: str
     time: int
     symbol: str
@@ -45,7 +45,7 @@ class ExchangeOrder:
     time_human: str = ''
     time_in_force: str = ''
     api_response: Optional[dict] = None
-    
+
     def __post_init__(self):
         if self.price is None or self.price == 0:
             if self.executed_base_qty != 0 and self.executed_quote_qty != 0:
@@ -56,23 +56,23 @@ class ExchangeOrder:
                 self.price = self.stop_price
 
         # if self.type == 'STOP_LOSS_LIMIT':
-        #     pprint(self.api_response) 
+        #     pprint(self.api_response)
         #     sys.exit()
-        
+
     def __repr__(self):
         status = self.status
-        
+
         base_qty = self.executed_base_qty if self.executed_base_qty != 0 \
             else self.orig_qty
-            
+
         price = self.fill_price if self.fill_price != 0 else self.price
-            
+
         quote_qty = self.executed_quote_qty if self.executed_quote_qty != 0\
             else self.orig_quote_qty
-            
+
         # quote_qty = base_qty * self.price if quote_qty == 0 \
         #     else self.orig_quote_qty
-        
+
 
         out = f'[{self.time_human}] {status: <10} {self.symbol: <10} ' \
             f'{self.type: >18} {self.side: <5} order for  ' \
@@ -80,11 +80,11 @@ class ExchangeOrder:
 
         if quote_qty is not None:
             out += f'(funds: {quote_qty:.8f})'
-            
-        out += f' (order id: {self.order_id})' 
-            
+
+        out += f' (order id: {self.order_id})'
+
         return out
-            
+
 # ==============================================================================
 def build_exchange_order(response:dict) -> ExchangeOrder:
 
@@ -95,18 +95,18 @@ def build_exchange_order(response:dict) -> ExchangeOrder:
             return round(quote_qty / executed_qty, 8)
         else:
             return 0
-    
+
     for k,v in response.items():
         try:
             response[k] = float(v)
         except Exception as e:
-            pass 
-     
-    if response.get('status') == 'FILLED':    
+            pass
+
+    if response.get('status') == 'FILLED':
         fill_price = _get_fill_price(response)
     else:
         fill_price = 0.00
-    
+
     return ExchangeOrder(
         client_order_id=response.get('clientOrderId', ''),
         executed_quote_qty=response.get('cummulativeQuoteQty', ''),
@@ -121,19 +121,19 @@ def build_exchange_order(response:dict) -> ExchangeOrder:
         status=response.get('status'),
         stop_price=response.get('stopPrice', None),
         symbol=response.get('symbol'),
-        time=response.get('time'),  
+        time=response.get('time'),
         time_human=unix_to_utc(response.get('time', 0)),
         time_in_force=response.get('timeInForce'),
         type=response.get('type'),
-        api_response=response  
+        api_response=response
     )
-    
-    
+
+
 # =============================================================================
 #                                   MAIN                                      #
-# ============================================================================= 
+# =============================================================================
 if __name__ == '__main__':
-    
+
     response = {
         'clientOrderId': 'test',
         'cummulativeQuoteQty': 0.0,
@@ -155,11 +155,11 @@ if __name__ == '__main__':
         'type': 'LIMIT',
         'updateTime': 1659297392372.0
     }
-    
-    print(build_exchange_order(response)) 
-  
-    
-""" 
+
+    print(build_exchange_order(response))
+
+
+"""
 This is how an API response looks like when we request order information:
 
     {
@@ -184,5 +184,4 @@ This is how an API response looks like when we request order information:
         'updateTime': 1659297392372.0
     }
 """
-    
-    
+

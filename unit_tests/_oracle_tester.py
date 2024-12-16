@@ -44,7 +44,7 @@ sys.path.append(parent)
 from src.analysis.oracle import Oracle, atr_nb  # noqa: E402, F401
 from src.staff.hermes import Hermes  # noqa: E402, F401
 from analysis.indicators.indicators_old import Indicators  # noqa: E402, F401
-from src.helpers.timeops import execution_time, seconds_to  # noqa: E402, F401
+from util.timeops import execution_time, seconds_to  # noqa: E402, F401
 
 
 # =============================================================================

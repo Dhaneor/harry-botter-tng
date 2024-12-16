@@ -22,7 +22,7 @@ from src.exchange.util.event_bus import (  # noqa: F401, E402
     OrderFilledEvent,
     OrderCancelledEvent,
 )
-from helpers.timeops import execution_time  # noqa: F401, E402
+from util.timeops import execution_time  # noqa: F401, E402
 from broker.config import CREDENTIALS  # noqa: F401, E402
 
 

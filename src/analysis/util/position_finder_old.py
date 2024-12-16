@@ -12,7 +12,7 @@ import numpy as np
 from numba import jit, int8
 from typing import Optional, Tuple
 
-from src.helpers.timeops import execution_time
+from util.timeops import execution_time
 
 LOG_LEVEL = "INFO"
 logger = logging.getLogger('main.position_finder')

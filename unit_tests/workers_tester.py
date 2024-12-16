@@ -29,7 +29,7 @@ from broker.ganesh import Ganesh
 from broker.position_handlers.workers import (PositionUpdateRequest,
                                               PositionWorker, LoanRequest,
                                               LoanWorker)
-from helpers.timeops import execution_time
+from util.timeops import execution_time
 from broker.config import CREDENTIALS
 
 LOGGER = logging.getLogger('main')

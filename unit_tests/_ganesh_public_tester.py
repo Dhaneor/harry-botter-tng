@@ -23,7 +23,7 @@ sys.path.append(parent)
 # -----------------------------------------------------------------------------
 
 from src.broker.ganesh import Ganesh
-from src.helpers.timeops import execution_time
+from util.timeops import execution_time
 from broker.config import CREDENTIALS
 
 # -----------------------------------------------------------------------------

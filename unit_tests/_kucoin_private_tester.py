@@ -26,7 +26,7 @@ sys.path.append(parent)
 from src.exchange.kucoin_ import KucoinFactory, KucoinCrossMargin
 from src.broker.models.symbol import Symbol, SymbolFactory
 from src.broker.models.exchange_order import build_exchange_order
-from src.helpers.timeops import seconds_to, unix_to_utc, execution_time
+from util.timeops import seconds_to, unix_to_utc, execution_time
 
 from broker.config import CREDENTIALS
 

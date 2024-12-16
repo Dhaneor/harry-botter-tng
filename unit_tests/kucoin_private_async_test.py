@@ -16,7 +16,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 
 from src.exchange.kucoin_async import KucoinCrossMargin
-from helpers.timeops import execution_time
+from util.timeops import execution_time
 from broker.config import CREDENTIALS
 
 conn = KucoinCrossMargin(credentials=CREDENTIALS)

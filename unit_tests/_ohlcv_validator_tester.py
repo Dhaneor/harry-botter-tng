@@ -28,7 +28,7 @@ sys.path.append(parent)
 # -----------------------------------------------------------------------------
 from staff.hermes import Hermes
 from analysis.util.ohlcv_validator import OhlcvValidator
-from helpers.timeops import execution_time
+from util.timeops import execution_time
 
 
 LOGGER = logging.getLogger('main')
@@ -43,7 +43,7 @@ HERMES = Hermes(exchange='kucoin', verbose=True)
 OV = OhlcvValidator()
 
 # =============================================================================
-def get_ohlcv(symbol:str, interval:str, start:Union[int, str], 
+def get_ohlcv(symbol:str, interval:str, start:Union[int, str],
               end:Union[int, str]) -> dict:
     return HERMES.get_ohlcv(
         symbols=symbol, interval=interval, start=start, end=end
@@ -52,13 +52,13 @@ def get_ohlcv(symbol:str, interval:str, start:Union[int, str],
 
 # -----------------------------------------------------------------------------
 @execution_time
-def test_find_missing_rows_in_df(symbol:str, interval:str, start:Union[int, str], 
+def test_find_missing_rows_in_df(symbol:str, interval:str, start:Union[int, str],
                                  end:Union[int, str]):
-    
+
     query_result = get_ohlcv(
         symbol=symbol, interval=interval, start=start, end=end
     )
-    
+
     if query_result.get('success'):
         df = query_result.get('message')
         print(df)
@@ -66,15 +66,15 @@ def test_find_missing_rows_in_df(symbol:str, interval:str, start:Union[int, str]
         missing = OV.find_missing_rows_in_df(
             df=df, interval=interval, start=start, end=end
         )
-        
+
         pprint(missing)
 
 # =============================================================================
 #                                   MAIN                                      #
 # =============================================================================
 if __name__ == '__main__':
-    
+
     test_find_missing_rows_in_df(
-        symbol='BTC-USDT', interval='15m', start=-20000, 
+        symbol='BTC-USDT', interval='15m', start=-20000,
         end='March 12, 2021 05:15:00'
     )

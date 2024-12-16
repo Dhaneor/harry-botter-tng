@@ -17,7 +17,7 @@ sys.path.append(parent)
 
 from src.analysis import leverage as pm  # noqa: E402, F401
 from unit_tests.helpers_ import get_sample_data, get_ohlcv  # noqa: E402, F401
-from src.helpers.timeops import execution_time  # noqa: E402, F401
+from util.timeops import execution_time  # noqa: E402, F401
 
 
 data = get_sample_data(length=1000, interval='15min')

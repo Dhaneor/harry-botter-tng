@@ -22,7 +22,7 @@ from exchange.util.repositories import Repository
 from broker.models.orders import Order
 from broker.models.exchange_order import build_exchange_order
 from models.symbol import Symbol
-from helpers.timeops import seconds_to, unix_to_utc, time_difference_in_ms
+from util.timeops import seconds_to, unix_to_utc, time_difference_in_ms
 
 # =============================================================================
 class Position(ABC):
@@ -38,12 +38,12 @@ class Position(ABC):
         self.status = 'INITIALIZED'
 
         self.price_entry = 0
-        self.value_entry = 0 
+        self.value_entry = 0
 
         self.price_exit = 0
 
-        self._pnl_unrealized = 0 
-        self._pnl_realized = 0 
+        self._pnl_unrealized = 0
+        self._pnl_realized = 0
 
         self.open_time = 0
         self.human_open_time = 0
@@ -74,74 +74,74 @@ class Position(ABC):
             [t for t in self.repository.tickers.tickers \
                 if t['symbol'] == self.symbol.symbol_name
             ][0]['last'])
-        
+
     @property
     def value(self):
         self._value = self._calculate_value()
-        return 
-    
+        return
+
     @property
     def unrealized_pnl(self):
         self._calculate_unrealized_pnl()
         return self._pnl_unrealized
-        
+
     # -------------------------------------------------------------------------
     def include_order(self, order:Order):
         if self.status == 'INITIALIZED':
             self._open(order)
         else:
             self._add_order(order)
-    
+
     # -------------------------------------------------------------------------
     # helper methods
     def _open(self, order:Order):
-        
+
         if self._is_opening_order(order):
             self._add_order(order)
-            
+
             er = order.last_execution_report
             message = er.original_message.get('message')
-            
+
             self._set_open_time(message.get('transactTime'))
-            
+
         else:
             raise Exception(
                 f'[POSITION] Warning: {order.type} is invalid '
                 f'for opening a position'
                 )
-        
+
         self.status = 'ACTIVE' if order.status == 'FILLED' else 'PENDING'
-              
+
     def _close(self):
         pass
-    
+
     def _add_order(self, order:Order):
-        
+
         er = order.last_execution_report
         response = er.original_message.get('message')
-        
-        # make sure we have no duplicates and/or remove orders that 
+
+        # make sure we have no duplicates and/or remove orders that
         # were created (=limit order) and are now filled or partially
         # filled
         order_ids = [oid for oid in self.order_ids if oid != er.order_id]
         order_ids.append(er.order_id)
         self.order_ids = order_ids
-        
+
         self.orders = [
             o for o in self.orders if o.order_id != response.get('order_id')
             ]
 
         self.orders.append(build_exchange_order(response))
-        
+
         self.base_qty += float(response.get('executedQty'))
         self.quote_qty += float(
             response.get('cummulativeQuoteQty')
             )
-        
+
         self.price_entry = round(
             self.quote_qty / self.base_qty, self.symbol.f_tickPrecision
         )
-     
+
     @abstractmethod
     def _is_opening_order(self, order:Order) -> bool:
         pass
@@ -149,22 +149,22 @@ class Position(ABC):
     @abstractmethod
     def _calculate_average_entry_price(self):
         pass
-    
+
     @abstractmethod
     def _calculate_unrealized_pnl(self):
         pass
-    
-    # .......................................................................... 
+
+    # ..........................................................................
     def _set_open_time(self, timestamp:int):
         self.open_time = timestamp
         self.human_open_time = unix_to_utc(self.open_time)
-            
+
     def _calculate_value(self):
         print(type(self.base_qty), type(self.last_price))
         return round(
             self.base_qty * self.last_price, self.symbol.quoteAssetPrecision
             )
-   
+
     def _calculate_hold_time(self):
         self.hold_time = round(time_difference_in_ms(self.open_time) / 1000)
 
@@ -176,27 +176,27 @@ class Position(ABC):
 
 
 class LongPosition(Position):
-    
+
     def __init__(self, **kwargs):
-        
+
         super().__init__(**kwargs)
         self.TYPE = 'LONG'
-        
+
     # --------------------------------------------------------------------------
     def _is_opening_order(self, order:Order) -> bool:
         return True if not 'STOP' in order.type else False
-    
+
     def _calculate_average_entry_price(self):
-        
+
         self.price_entry = round(self.quote_qty / self.base_qty,
                                  self.symbol.f_tickPrecision)
-    
+
     def _calculate_unrealized_pnl(self):
-        
+
         self._pnl_unrealized = round(self.value - self.quote_qty,
                                      self.symbol.f_tickPrecision)
-    
-    
+
+
 
 
 
@@ -208,17 +208,17 @@ class LongPosition(Position):
 # =============================================================================
 class Account:
     """Class that acts as a proxy for the account on the exchange.
-    
+
     This is like a central repository for things and informations that
-    relate to our account in the exchange. Here we have all the 
+    relate to our account in the exchange. Here we have all the
     balances for the coins that are tradeable in the selected market.
-    It also provides access to informations that are related to loan 
+    It also provides access to informations that are related to loan
     management, e.g. the max borrow amount for any one coin/asset.
-    
-    It uses some specialized repository classes/objects that cache 
+
+    It uses some specialized repository classes/objects that cache
     important information. This reduces the amount of necessary API
-    calls down to a minmum and dramatically improves speed if we 
-    need the informations multiple times. 
+    calls down to a minmum and dramatically improves speed if we
+    need the informations multiple times.
     """
     def __init__(self, exchange:Exchange):
         """Initializes the account.
@@ -230,23 +230,23 @@ class Account:
         """
         self.exchange = exchange
         self._assets : dict = {}
-        
+
     @property
     def account(self) -> list:
         return self.exchange.account
-    
-    @property    
+
+    @property
     def assets_that_we_own(self) -> list:
         return [a['asset'] for a in self.account if a['net'] != 0]
-        
-    @property 
+
+    @property
     def tickers(self) -> list:
         return self.exchange.get_all_tickers()
-    
+
     @property
     def margin_info(self) -> list:
         return self.exchange.margin_loan_info
-    
+
     # --------------------------------------------------------------------------
     def get_account_value(self, quote_asset:str=None):
         """Calculates the account value in the given quote asset currency.
@@ -257,68 +257,68 @@ class Account:
         :return: the calculated value (default: in USDT)
         :rtype: float
         """
-        acc = self.account 
+        acc = self.account
         acc = [bal for bal in acc if bal['net'] != 0]
         acc = [self._add_value_to_balance(bal) for bal in acc]
-        
+
         if quote_asset is None or quote_asset == 'USDT':
             return sum([bal['value']['USDT'] for bal in acc])
         elif quote_asset == 'BTC':
             return sum([bal['value']['BTC'] for bal in acc])
         else:
             return None
-    
+
     def get_asset(self, asset:str) -> dict:
-        
+
         _asset = list(filter(lambda x: x['asset'] == asset, self.account))
         if _asset:
             margin_info = list(filter(
                 lambda x: x['asset'] == asset, self.margin_info))
-            
+
             if margin_info:
-                return {**_asset[0], **margin_info[0]} 
-        
+                return {**_asset[0], **margin_info[0]}
+
         return None
-          
-    # --------------------------------------------------------------------------    
+
+    # --------------------------------------------------------------------------
     def _add_value_to_balance(self, balance:dict) -> dict:
-        
+
         balance['value'] = {}
         asset = balance['asset']
         symbol = f'{asset}-USDT'
         balance['symbol'] = symbol
         btc_price = 0
-         
+
         for ticker in self.tickers:
-            
+
             if ticker['symbol'] == 'BTC-USDT':
                 btc_price = float(ticker['last'])
-            
-        for ticker in self.tickers: 
+
+        for ticker in self.tickers:
             if asset == 'USDT':
                 balance['value']['USDT'] = balance['net']
-                 
-              
+
+
             if ticker['symbol'] == symbol:
                 last_price = float(ticker['last'])
                 net_amount = balance['net']
                 balance['value']['USDT'] = round(
-                    last_price * net_amount, 8) 
-                
+                    last_price * net_amount, 8)
+
                 break
 
         balance['value']['BTC'] = round(
-            balance['value']['USDT'] / btc_price, 8)        
+            balance['value']['USDT'] / btc_price, 8)
         return balance
-            
-                
+
+
 
 # =============================================================================
 
 if __name__ == '__main__':
 
     pass
-    
+
 
 
 
@@ -356,11 +356,11 @@ if __name__ == '__main__':
 
 '''
     message = {'C': '',
-                'E': 1618268329645, 
-                'F': '0.00000000', 
-                'I': 2651735496, 
-                'L': '1.33387000', 
-                'M': True, 
+                'E': 1618268329645,
+                'F': '0.00000000',
+                'I': 2651735496,
+                'L': '1.33387000',
+                'M': True,
                 'N': 'BNB',
                 'O': 1618268329644,
                 'P': '0.00000000',
@@ -421,11 +421,11 @@ format of binance response for filled message from USER STREAM:
 1) actual market message filled
 
 {'C': '',
- 'E': 1618268329645, 
- 'F': '0.00000000', 
- 'I': 2651735496, 
- 'L': '1.33387000', 
- 'M': True, 
+ 'E': 1618268329645,
+ 'F': '0.00000000',
+ 'I': 2651735496,
+ 'L': '1.33387000',
+ 'M': True,
  'N': 'BNB',
  'O': 1618268329644,
  'P': '0.00000000',

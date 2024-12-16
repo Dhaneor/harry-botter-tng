@@ -36,7 +36,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # -----------------------------------------------------------------------------
 from src.staff.hermes import Hermes
-from src.helpers.timeops import unix_to_utc, utc_to_unix, execution_time
+from util.timeops import unix_to_utc, utc_to_unix, execution_time
 from src.helpers.ilabrat import get_exchange_name
 
 

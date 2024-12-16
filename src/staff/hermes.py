@@ -19,7 +19,7 @@ from typing import Union, Tuple, Optional, Callable
 from src.staff.mnemosyne import Mnemosyne
 from src.exchange.binance_ import Binance
 from src.exchange.kucoin_ import KucoinCrossMargin as Kucoin
-from src.helpers.timeops import (
+from util.timeops import (
     time_difference_in_ms,
     unix_to_utc,
     interval_to_milliseconds,

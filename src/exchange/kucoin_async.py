@@ -29,7 +29,7 @@ from src.exchange.exchange_interface import (IExchangePublic, IExchangeTrading,
                                              IExchangeMargin)
 from src.exchange.util.ohlcv_download_prepper import OhlcvDownloadPrepper
 from src.exchange.util.kucoin_order_downloader import KucoinOrderDownloader
-from src.helpers.timeops import utc_to_unix, unix_to_utc, interval_to_milliseconds
+from util.timeops import utc_to_unix, unix_to_utc, interval_to_milliseconds
 from src.helpers.accounting import Accounting
 
 try:

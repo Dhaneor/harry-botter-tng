@@ -15,7 +15,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 
 from src.exchange.kucoin_async import KucoinCrossMargin
-from helpers.timeops import execution_time
+from util.timeops import execution_time
 
 conn = KucoinCrossMargin()
 
@@ -38,7 +38,7 @@ async def test_get_symbols():
 
 async def test_get_all_tickers():
     return await conn.get_all_tickers()
-  
+
 async def main(func):
     res = (
         await asyncio.gather(
@@ -58,7 +58,7 @@ async def main(func):
                 pprint(r[0])
             elif isinstance(r, dict):
                 print(r)
-    
+
 
 
 
@@ -67,8 +67,8 @@ async def main(func):
 if __name__ == '__main__':
     st = time.time()
     func = test_get_server_status
-    
+
     asyncio.run(main(func))
-    
+
     et = round((time.time() - st) * 1000, 1)
     print(f'execution time: {et}ms')

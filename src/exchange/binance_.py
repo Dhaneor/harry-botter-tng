@@ -59,7 +59,7 @@ from binance.exceptions import (  # noqa: E402
     BinanceRequestException,
 )
 from .util.ohlcv_download_prepper import OhlcvDownloadPrepper  # noqa: E402
-from helpers.timeops import (  # noqa: E402
+from util.timeops import (  # noqa: E402
     unix_to_utc,
     utc_to_unix,
     get_start_and_end_timestamp,

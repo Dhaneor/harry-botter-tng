@@ -29,7 +29,7 @@ sys.path.append(parent)
 
 from models.users import Users
 from analysis.oracle import Oracle
-from helpers.timeops import execution_time
+from util.timeops import execution_time
 from  broker.config import CREDENTIALS, VALID_EXCHANGES, VALID_MARKETS
 
 USERS = Users()

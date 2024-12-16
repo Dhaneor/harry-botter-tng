@@ -28,7 +28,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # -----------------------------------------------------------------------------
 from exchange.util.cryptowatch import CryptoWatch
-from helpers.timeops import execution_time
+from util.timeops import execution_time
 
 
 LOGGER = logging.getLogger('main')
@@ -45,13 +45,13 @@ CW = CryptoWatch()
 def test_get_exchanges():
     CW.get_exchanges()
 
-@execution_time    
+@execution_time
 def test_get_markets(symbol=None):
     res =CW.get_markets(symbol=symbol)
-    
+
     [LOGGER.debug(item) for item in res]
     LOGGER.debug(f'found {len(res)} markets for symbol {symbol}')
-    
+
     if symbol:
         LOGGER.debug('-'*80)
         LOGGER.debug(CW._get_exchanges_where_symbol_has_a_market(symbol))
@@ -61,7 +61,7 @@ def test_get_ohlcv(symbol:str, interval:str):
     print('-'*150)
     print(CW.get_ohlcv('kucoin', symbol, interval).tail(3))
     print(datetime.datetime.utcnow())
-    
+
 
 
 
@@ -70,9 +70,8 @@ def test_get_ohlcv(symbol:str, interval:str):
 #                                   MAIN                                      #
 # =============================================================================
 if __name__ == '__main__':
-    
+
     # test_get_exchanges()
     # test_get_markets('ETHUSDT')
     test_get_ohlcv(symbol='QNTUSDT', interval='1m')
     # test_get_ohlcv(symbol='ETHUSDT', interval='1h')
-    

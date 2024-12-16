@@ -17,7 +17,7 @@ from random import choice, random, randrange
 # getting the name of the directory
 # where the this file is present.
 current = os.path.dirname(os.path.realpath(__file__))
-  
+
 # Getting the parent directory name
 # where the current directory is present.
 parent = os.path.dirname(current)
@@ -28,7 +28,7 @@ from models.symbol import Symbol
 from exchange.binance_ import Binance
 from exchange.kucoin_ import Kucoin
 from broker.models.orders import MarketOrder, LimitOrder, Order, StopMarketOrder, StopLimitOrder
-from helpers.timeops import execution_time
+from util.timeops import execution_time
 
 from pprint import pprint
 
@@ -38,11 +38,11 @@ class OrderFactory:
     def __init__(self, symbol):
 
         self.symbol = symbol
-        
+
         if '-' in symbol.symbol_name:
             with Kucoin() as conn:
                 res = conn.get_ticker(symbol.symbol_name)
-        else:        
+        else:
             with Binance() as conn:
                 res = conn.get_ticker(symbol.symbol_name)
 
@@ -55,12 +55,12 @@ class OrderFactory:
             pprint(res)
             sys.exit()
 
-    def create_market_order(self, side:str=None, base_qty:float=None, 
+    def create_market_order(self, side:str=None, base_qty:float=None,
                             quote_qty:float=None) -> MarketOrder:
 
         if side is None:
             side = choice(['BUY', 'SELL'])
-            
+
         auto_borrow = True if random() > 0.7 else False
 
         return MarketOrder(symbol=self.symbol,
@@ -150,10 +150,10 @@ class TestSaturn:
         quantities = [base_qty_below_min, base_qty_over_max, *valid_qtys]
 
         for base_qty in quantities:
-            
+
             quote_qty = base_qty * self.factory.last_price if random() > 0.5 else None
-            
-            # choose a randomized combination of base_qty and quote_qty to 
+
+            # choose a randomized combination of base_qty and quote_qty to
             # simulate cases were one (=allowed) or none/both (=not allowed)
             # are used
             _r = random()
@@ -163,11 +163,11 @@ class TestSaturn:
             elif _r < 0.5:
                 quote_qty = None
             elif _r < 0.9:
-                base_qty = None 
-            
+                base_qty = None
+
             print(f'{base_qty=} :: {quote_qty=}')
             # create and check order
-            order = self.factory.create_market_order(base_qty=base_qty, 
+            order = self.factory.create_market_order(base_qty=base_qty,
                                                      quote_qty=quote_qty)
             print(order)
             order = self.checker.check_single(order=order)
@@ -189,7 +189,7 @@ class TestSaturn:
             orders.append(order)
             print(order)
             order = self.checker.check_single(order=order)
-            
+
             if order.status == 'APPROVED':
                 cprint(order, 'green')
             else:
@@ -202,7 +202,7 @@ class TestSaturn:
 #                                   MAIN                                      #
 # =========================================================================== #
 if __name__ == '__main__':
-    
+
     symbol_name = 'XRP-BTC'
 
     ts = TestSaturn(symbol_name=symbol_name)

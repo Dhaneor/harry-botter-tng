@@ -39,7 +39,7 @@ from data_sources.websockets.publishers import (  # noqa: E402, F401
     IPublisher, PrintPublisher, LogPublisher,
     EventBusPublisher, ZeroMqPublisher
 )
-from src.helpers.timeops import execution_time  # noqa: E402, F401
+from util.timeops import execution_time  # noqa: E402, F401
 
 messages = [
     'one message', 'another message', 'really important message',

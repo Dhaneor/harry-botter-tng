@@ -46,7 +46,7 @@ from exchange.util.repositories import (AccountRepository, OrderRepository,
                                       )
 from exchange.util.event_bus import (LoanRepaidEvent, OrderCreatedEvent,
                                      OrderFilledEvent, OrderCancelledEvent)
-from helpers.timeops import execution_time
+from util.timeops import execution_time
 from broker.config import CREDENTIALS
 
 EXCHANGE = Kucoin(market='CROSS MARGIN', credentials=CREDENTIALS)

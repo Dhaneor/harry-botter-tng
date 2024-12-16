@@ -37,7 +37,7 @@ sys.path.append(parent)
 from exchange.exchange import Exchange as Broker
 from models.symbol import Symbol
 from broker.models.exchange_order import build_exchange_order
-from helpers.timeops import seconds_to, unix_to_utc, execution_time
+from util.timeops import seconds_to, unix_to_utc, execution_time
 from broker.config import CREDENTIALS
 
 EXCHANGE = 'kucoin'

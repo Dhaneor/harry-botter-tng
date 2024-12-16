@@ -13,7 +13,7 @@ import mysql.connector as dbc
 from mysql.connector import Error, IntegrityError
 
 from src.helpers.ilabrat import get_exchange_name
-from src.helpers.timeops import utc_to_unix
+from util.timeops import utc_to_unix
 
 import pandas as pd
 from pprint import pprint

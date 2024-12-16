@@ -27,7 +27,7 @@ from src.staff.hermes import Hermes  # noqa: E402, F401
 from src.analysis.oracle import Oracle  # noqa: E402, F401
 from src.models.symbol import Symbol  # noqa: E402, F401
 from src.plotting.minerva import BacktestChart   # noqa: E402, F401
-from src.helpers.timeops import execution_time   # noqa: E402, F401
+from util.timeops import execution_time   # noqa: E402, F401
 
 trade_costs = 0.002
 

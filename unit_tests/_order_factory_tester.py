@@ -24,7 +24,7 @@ sys.path.append('../backtest.module/')
 # -----------------------------------------------------------------------------
 from broker.util.order_factory import OrderFactory
 from broker.models.symbol import Symbol
-from helpers.timeops import execution_time
+from util.timeops import execution_time
 from broker.ganesh import Ganesh
 
 BROKER = Ganesh(exchange='kucoin', credentials={}, market='CROSS MARGIN')
@@ -35,9 +35,9 @@ def get_last_price(symbol):
 
 def get_random_base_qty():
     factor = choice([0.01, 0.1, 1, 10, 100, 1_000, 10_000, 100_000, 1_000_000])
-    base_qty = random() * factor 
+    base_qty = random() * factor
     base_qty = round(base_qty, 8)
-    return base_qty if random() < 0.85 else None 
+    return base_qty if random() < 0.85 else None
 
 def get_random_quote_qty():
     quote_qty = 0.2 * random() if random() < 0.3 else 10_000 * random()
@@ -46,7 +46,7 @@ def get_random_quote_qty():
 
 def get_random_limit_price(last_price):
     factor = random() - 0.3
-    limit_price = round(last_price * factor, 8) 
+    limit_price = round(last_price * factor, 8)
     return limit_price if random() < 0.5 else None
 
 def get_random_stop_price(limit_price):
@@ -56,18 +56,18 @@ def get_random_stop_price(limit_price):
     else:
         return None
 
-# ..............................................................................        
+# ..............................................................................
 # @execution_time
 def test_build_buy_order(symbol:Symbol, last_price:float):
 
-    for _ in range(1):        
+    for _ in range(1):
         order = OF.build_buy_order(
-            symbol=symbol, 
+            symbol=symbol,
             base_qty=get_random_base_qty(), #type:ignore
-            last_price=last_price, 
-            type=choice(['limit', 'market']), 
+            last_price=last_price,
+            type=choice(['limit', 'market']),
             limit_price=get_random_limit_price(last_price)) #type:ignore
-        
+
         # print(order)
 
 
@@ -76,34 +76,34 @@ def test_build_sell_order(symbol:Symbol, last_price:float):
 
     for _ in range(10):
         order = OF.build_sell_order(
-            symbol=symbol, 
-            base_qty=get_random_base_qty(), 
-            last_price=last_price, 
-            type=choice(['limit', 'market']), 
+            symbol=symbol,
+            base_qty=get_random_base_qty(),
+            last_price=last_price,
+            type=choice(['limit', 'market']),
             limit_price=get_random_limit_price(last_price))
-        
+
         # print(order)
 
 @execution_time
 def test_build_long_stop_order(symbol:Symbol, last_price:float):
-    
+
     for _ in range(10):
         limit_price = get_random_limit_price(last_price)
-        
+
         order = OF.build_long_stop_order(
-            symbol=symbol, 
+            symbol=symbol,
             base_qty=get_random_base_qty(), #type:ignore
-            stop_price=get_random_stop_price(limit_price), #type:ignore 
+            stop_price=get_random_stop_price(limit_price), #type:ignore
             limit_price=limit_price,
             last_price=last_price)
-        
+
         print(order)
-        
+
 # =============================================================================
 #                                   MAIN                                      #
 # =============================================================================
 if __name__ == '__main__':
-    symbol_name = 'BTC-USDT'   
+    symbol_name = 'BTC-USDT'
     symbol = BROKER.get_symbol(symbol_name)
     if symbol:
         test_build_buy_order(symbol, get_last_price(symbol.name))

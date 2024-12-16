@@ -39,7 +39,7 @@ from staff.account_manager import AccountManager
 from models.users import Account
 from staff.hermes import Hermes
 from analysis.oracle import LiveOracle
-from helpers.timeops import execution_time
+from util.timeops import execution_time
 from broker.config import ACCOUNTS
 
 hermes = Hermes(exchange='kucoin', mode='live')

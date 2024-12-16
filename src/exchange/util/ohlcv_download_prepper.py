@@ -22,27 +22,18 @@ __email__ = crpytodude23 at protonmail
 __status__ = Dev
 """
 import logging
-import os
-import sys
 from typing import Union, Dict
 from collections import OrderedDict
 from functools import lru_cache
 
-logger = logging.getLogger("main.ohlcv_download_prepper")
-logger.setLevel(logging.INFO)
-
-# ------------------------------------------------------------------------------
-# adding the parent directory to the search path
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# ------------------------------------------------------------------------------
-
-from src.helpers.timeops import (  # noqa: E402
+from util.timeops import (  # noqa: E402
     interval_to_milliseconds,
     unix_to_utc,
     get_start_and_end_timestamp,
 )
+
+logger = logging.getLogger("main.ohlcv_download_prepper")
+logger.setLevel(logging.INFO)
 
 INTERVALS = {
     "1m": 60_000,
