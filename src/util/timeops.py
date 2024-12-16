@@ -191,11 +191,6 @@ def get_start_and_end_timestamp(
     -------
     tuple of int
         A tuple with two timestamps (start_ts, end_ts).
-
-    Notes
-    -----
-    This function is flexible in accepting various input formats for start and end times,
-    making it versatile for different use cases.
     """
 
     # determine the timestamp for 'now'

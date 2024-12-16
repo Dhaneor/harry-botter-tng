@@ -1079,6 +1079,7 @@ class Signals(ChartElement):
             zorder=self.zorder
         ).add_trace(fig, data)
 
+
 # ====================================================================================
 @dataclass
 class SubPlot:

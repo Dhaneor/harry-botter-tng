@@ -9,7 +9,9 @@ in various formats.
 1. Human-readable dates (e.g.: 'January 01, 2019 00:00:00')
 2. Relative dates ('now UTC', '1 week ago UTC')
 3. Timestamps
-4. End as None and start as a negative integer
+4. End as None and start as a negative integer. 'start' will be interpreted
+as a number of intervals counted backwards from the end date. In this case,
+'interval' is required s additional keyword argument for the decorated function.
 5. Mixed inputs (e.g.: date string and timestamp)
 
 
@@ -39,8 +41,6 @@ def timestamp_converter(unit: str = "milliseconds") -> Callable:
         The time interval (e.g., '1h', '1d').
     unit : str, optional
         Return as 'milliseconds' or 'seconds'. Default is "milliseconds".
-    verbose : bool, optional
-        Print verbose output or not. Default is False.
 
     Returns
     -------

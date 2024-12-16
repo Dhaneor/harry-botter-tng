@@ -137,11 +137,11 @@ def test_relative_time_expressions():
 
         assert expected_start_ms - 1000 <= start <= expected_start_ms + 1000, \
             (
-                f"Start time for '1 {unit} ago UTC' is incorrect. Expected {expected_start_ms} "
+                f"Start time for '1 {unit} ago UTC' is incorrect. "
+                f"Expected {expected_start_ms} "
                 f"but got {start} (difference: {expected_start_ms - start})"
             )
         assert now_ms - 2000 <= end <= now_ms + 2000
-
 
 
 if __name__ == "__main__":
