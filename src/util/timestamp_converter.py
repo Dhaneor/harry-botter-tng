@@ -3,22 +3,33 @@
 """
 Provides a decorator to convert start and end parameters to timestamps.
 
+By using this decorator, the client can specify dates and relative times
+in various formats.
+
+1. Human-readable dates (e.g.: 'January 01, 2019 00:00:00')
+2. Relative dates ('now UTC', '1 week ago UTC')
+3. Timestamps
+4. End as None and start as a negative integer
+5. Mixed inputs (e.g.: date string and timestamp)
+
+
 Created on Sat Dec 16 10:17:23 2024
 
 @author_ dhaneor
 """
-import re
+import dateparser
+import logging
+import pytz
 
 from functools import wraps
-from typing import Union, Callable, Optional, Dict
+from typing import Callable, Optional, Dict
 from time import time
-from datetime import datetime, timezone, timedelta
+import datetime
+
+logger = logging.getLogger(f"main.{__name__}")
 
 
-def timestamp_converter(
-    interval: str,
-    unit: str = "milliseconds",
-) -> Callable:
+def timestamp_converter(unit: str = "milliseconds") -> Callable:
     """
     A decorator to convert start and end parameters to timestamps.
 
@@ -47,6 +58,9 @@ def timestamp_converter(
             # Extract start and end from args or kwargs
             start = kwargs.get('start')
             end = kwargs.get('end')
+            interval = kwargs.get('interval')
+
+            _validate_arguments(start, end, interval)
 
             # Convert start and end to timestamps
             start_ts, end_ts = _convert_to_timestamps(start, end, interval, unit)
@@ -60,9 +74,31 @@ def timestamp_converter(
     return decorator
 
 
+def _validate_arguments(start, end, interval):
+    if all(v is None for v in [start, end, interval]):
+        raise ValueError(
+            "start, end and interval seem to be None. This can happen "
+            "if they are not provided as keyword arguments"
+        )
+
+    if interval is None and isinstance(start, int) and start < 0:
+        raise ValueError(
+            "'interval' must be provided when 'start' is a negative integer."
+        )
+
+    if start is None:
+        raise ValueError("'start' must be provided.")
+
+    if not isinstance(start, (int, str)):
+        raise ValueError("'start' must be an integer or a string.")
+
+    if end is not None and not isinstance(end, (int, str)):
+        raise ValueError("'end' must be an integer or a string (or None).")
+
+
 def _convert_to_timestamps(
-    start: Union[int, str],
-    end: Union[int, str],
+    start: int | str,
+    end: int | str | None,
     interval: str,
     unit: str = "milliseconds",
 ) -> tuple[int, int]:
@@ -70,36 +106,47 @@ def _convert_to_timestamps(
     now = int(time() * 1000)
 
     # find the 'end' timestamp
-    if isinstance(end, str):
-        end_ts = int(date_to_milliseconds(end) / 1000)
-    elif isinstance(end, int):
-        end_ts = end
-    elif end is None:
-        end_ts = now
-    else:
-        return 0, 0
+    match end:
+        case str():
+            end_ts = int(date_to_milliseconds(end))
+        case int():
+            end_ts = end
+        case None:
+            end_ts = now
+        case _:
+            return 0, 0
 
-    end_ts = min(end_ts, now)
+    if end_ts > now + 1000:
+        logger.warning(
+            "The 'end' timestamp '%s' is in the future. "
+            "Adjusting to the current time: %s." % (end_ts, now)
+        )
+        end_ts = now
 
     # find the 'start' timestamp
     if isinstance(start, str):
-        start_ts = int(date_to_milliseconds(start) / 1000)
+        start_ts = int(date_to_milliseconds(start))
     elif isinstance(start, int):
         if start < 0:
-            interval_in_sec = interval_to_milliseconds(interval) / 1000
-            start_ts = int(end_ts - start * interval_in_sec * -1)
+            start_ts = int(end_ts - start * interval_to_milliseconds(interval) * -1)
         else:
             start_ts = start
     elif start is None:
-        interval_in_sec = interval_to_milliseconds(interval) / 1000
-        start_ts = int(end_ts - 1000 * (interval_in_sec))
+        start_ts = int(end_ts - 1000 * (interval_to_milliseconds(interval)))
     else:
         return 0, 0
 
+    if start_ts > end_ts:
+        raise ValueError('The start timestamp is after the end timestamp.')
+
+    if end_ts - start_ts < 59_000:
+        raise ValueError("The time range is too short (< 1 minute).")
+
     # convert to milliseconds if parameter 'unit' is milliseconds
-    if unit == "milliseconds":
-        start_ts *= 1000
-        end_ts *= 1000
+    if unit == "seconds":
+        logger.debug("Converting start and end timestamps to seconds")
+        start_ts = int(str(start_ts)[:10])
+        end_ts = int(str(end_ts)[:10])
 
     return int(start_ts), int(end_ts)
 
@@ -107,13 +154,23 @@ def _convert_to_timestamps(
 def interval_to_milliseconds(interval: str) -> Optional[int]:
     """Convert a Binance interval string to milliseconds
 
-    :param interval: Binance interval string, e.g.: 1m .. 4h .. 3d .. 1w
+    Parameters
+    ----------
+    interval: str
+        interval string, e.g.: 1m .. 4h .. 3d .. 1w
 
-    :return:
-         int value of interval in milliseconds
-         None if interval prefix is not a decimal integer
-         None if interval suffix is not one of m, h, d, w
+    Returns
+    -------
+    int
+        value of interval in milliseconds
+    None if interval prefix is not a decimal integer
+    None if interval suffix is not one of m, h, d, w
 
+    Raises
+    ------
+    ValueError
+        if the interval prefix is not a decimal integer
+    KeyError
     """
     seconds_per_unit: Dict[str, int] = {
         "m": 60,
@@ -125,61 +182,34 @@ def interval_to_milliseconds(interval: str) -> Optional[int]:
     try:
         return int(interval[:-1]) * seconds_per_unit[interval[-1]] * 1000
     except (ValueError, KeyError):
+        logger.error(f"Invalid interval: {interval}")
         return None
 
 
 def date_to_milliseconds(date_str: str) -> int:
-    """
-    Parse a date string to milliseconds since epoch.
+    """Convert UTC date to milliseconds
 
-    Supports various date formats including:
-    - ISO 8601
-    - Relative time expressions (e.g., '1 day ago', '2 hours ago')
-    - 'now UTC'
+    If using offset strings add "UTC" to date string e.g. "now UTC",
+    "11 hours ago UTC"
 
-    Parameters
+    See dateparse docs for formats http://dateparser.readthedocs.io/en/latest/
+
+    Arguments:
     ----------
-    date_str : str
-        The date string to parse.
-
-    Returns
-    -------
-    int
-        Milliseconds since epoch.
+    date_str: str
+        date in readable format, i.e. "January 01, 2018",
+        "11 hours ago UTC", "now UTC"
     """
-    if date_str.lower() == 'now utc':
-        return int(time() * 1000)
+    # get epoch value in UTC
+    epoch = datetime.datetime.fromtimestamp(0, tz=datetime.UTC)
 
-    # Check for relative time expressions
-    relative_match = re.match(
-        r'(\d+)\s+(minute|hour|day|week|month|year)s?\s+ago',
-        date_str,
-        re.IGNORECASE
-        )
-    if relative_match:
-        num, unit = relative_match.groups()
-        num = int(num)
-        now = datetime.now(timezone.utc)
-        if unit.lower() == 'minute':
-            delta = now - timedelta(minutes=num)
-        elif unit.lower() == 'hour':
-            delta = now - timedelta(hours=num)
-        elif unit.lower() == 'day':
-            delta = now - timedelta(days=num)
-        elif unit.lower() == 'week':
-            delta = now - timedelta(weeks=num)
-        elif unit.lower() == 'month':
-            delta = now - timedelta(days=num*30)  # Approximation
-        elif unit.lower() == 'year':
-            delta = now - timedelta(days=num*365)  # Approximation
-        return int(delta.timestamp() * 1000)
+    # parse our date string
+    d = dateparser.parse(date_str, settings={"TIMEZONE": "UTC"})
 
-    # Try parsing as ISO 8601
-    try:
-        dt = datetime.fromisoformat(date_str.replace('Z', '+00:00'))
-        return int(dt.timestamp() * 1000)
-    except ValueError:
-        pass
+    # if the date is not timezone aware apply UTC timezone
 
-    # If all else fails, raise an error
-    raise ValueError(f"Unable to parse date string: {date_str}")
+    if d.tzinfo is None or d.tzinfo.utcoffset(d) is None:
+        d = d.replace(tzinfo=pytz.utc)
+
+    # return the difference in time
+    return int((d - epoch).total_seconds() * 1000.0)
