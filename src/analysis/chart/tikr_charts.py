@@ -33,6 +33,7 @@ from .plot_definition import (
     Drawdown,
     Leverage,
     PositionSize,
+    Signals
 )
 from .plotly_styles import styles, TikrStyle
 from .util import config
@@ -93,7 +94,7 @@ class ChartArtist:
                 legend_name=legend_name,
                 row=subplot.row,
                 col=subplot.col,
-                legend_position='lower right'
+                legend_position='upper left'
             )
 
         return self.fig
@@ -190,11 +191,11 @@ class ChartArtist:
 
         # adjust the margins
         fig.update_layout(
-            margin=dict(l=50, r=50, t=40, b=30, pad=0),
+            margin=dict(l=50, r=50, t=50, b=30, pad=0),
             autosize=False,
         )
 
-        # this is somehow necessary to avoid a mright side margin
+        # this is somehow necessary to avoid a right side margin
         # that is larger than what was defined in the previous step
         fig.update_xaxes(domain=[0, 1])
 
@@ -651,9 +652,9 @@ class BacktestChart(Chart):
                 "Portfolio": {"row": 2, "col": 1},
                 "Drawdown": {"row": 3, "col": 1},
                 "Leverage": {"row": 4, "col": 1},
-                "Position size": {"row": 5, "col": 1},
+                "Signal": {"row": 5, "col": 1},
             },
-            row_heights=[13, 8, 5, 3, 1],
+            row_heights=[12, 7, 5, 3, 2],
             col_widths=[1]
         )
 
@@ -668,6 +669,50 @@ class BacktestChart(Chart):
 
     def show(self) -> None:
         self.draw()
+
+    # ......................... (Sub-)Plot Descriptions ..............................
+    def subplot_signals(self):
+        return SubPlot(
+            label="Signal",
+            elements=[
+                Signals(
+                    label=config.signals.label,
+                    column=config.signals.column
+                )
+            ],
+        )
+
+    def _equity_channel(self):
+        return Channel(
+            label="Equity channel",
+            upper=Line(
+                label=config.strategy.equity.label,
+                column=config.strategy.equity.column,
+                color=self.style.colors.strategy,
+                width=self.style.line_width,
+                zorder=1,
+            ),
+            lower=Line(
+                label=config.capital.equity.label,
+                column=config.capital.equity.column,
+                color=self.style.colors.capital.set_alpha(
+                    self.style.colors.capital.a / 2
+                ),
+                width=self.style.line_width,
+                zorder=1,
+            ),
+            fillmethod="tonexty",
+            color=self.style.colors.strategy_fill,
+        )
+
+    def subplot_portfolio(self) -> SubPlot:
+        return SubPlot(
+            label="Portfolio",
+            elements=[
+                self._equity_channel(),
+                self._hodl_equity(),
+            ],
+        )
 
     def subplot_ohlcv(self):
         return SubPlot(
@@ -690,7 +735,7 @@ class BacktestChart(Chart):
                 self.subplot_portfolio(),
                 self.subplot_drawdown(),
                 self.subplot_leverage(),
-                self.subplot_position_size(),
+                self.subplot_signals(),
             ),
             layout=self.layout,
             style=self.style,

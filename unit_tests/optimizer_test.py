@@ -40,18 +40,19 @@ from src.analysis import optimizer  # noqa: E402, F401
 from src.analysis.indicators import indicators_custom  # noqa: E402, F401
 from src.analysis.strategies.definitions import (  # noqa: E402, F401
     s_breakout, s_tema_cross, s_linreg, s_kama_cross, s_trix,
-    trend_1, contra_1, s_test_er, s_linreg_ma_cross, s_aroon_osc
+    trend_1, contra_1, s_test_er, s_linreg_ma_cross, s_aroon_osc,
+    s_test_ema_cross
 )
 
-symbol = "ETHUSDT"
+symbol = "BTCUSDT"
 interval = "1d"
 
 start = int(-365*6)
 end = 'now UTC'
 
-strategy = s_aroon_osc
-risk_levels = 0,  # [0, 4, 5, 6, 7, 8, 9]
-max_leverage_levels = (1, 1.25, 1.5, 1.75, 2,)
+strategy = s_test_ema_cross
+risk_levels = [4, 5, 6, 7, 8, 9]
+max_leverage_levels = (0.75, 1, 1.25, 1.5, 1.75, 2)
 max_drawdown = 30
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
@@ -154,6 +155,10 @@ def test_optimize(data: dict | None):
         reverse=True
         )
 
+    # filter out results with max drawdown equal to 0, which means that no trades
+    # occured during the given timeframe
+    best_parameters = [res for res in best_parameters if res[3]['max_drawdown'] != 0.0]
+
     for result in best_parameters[:50]:
         logger.info(
             "params: %s :: risk level %s :: max leverage %s, stats %s",
@@ -178,6 +183,12 @@ def test_optimize(data: dict | None):
     logger.info(f'Best profit: {max(profits):.2f}%')
     logger.info(f'Worst profit: {min(profits):.2f}%')
     logger.info(f'Average profit: {sum(profits) / len(profits):.2f}%')
+
+    # display the parameters for the best profit, which otherwise might not be disaplyed
+    # because parameters with less profit had a better Kalmar ratio
+    for result in best_parameters:
+        if result[3]['profit'] == max(profits):
+            logger.info(f'Best profit parameters: {result}')
 
     df = optimizer.results_to_dataframe(best_parameters)
     print(df.describe())

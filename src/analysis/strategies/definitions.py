@@ -145,6 +145,16 @@ trix = sg.SignalsDefinition(
 # 'sortino_ratio': 2.044, 'kalmar_ratio': 3.552, 'annualized_volatility': 34.035}
 #
 # not worth it with risk level 0!
+#
+# SOLUSDT
+# params: (3, 1, 15, 0.31) :: risk level 9 :: max leverage 1.5,
+# stats {'profit': 2256.527, 'max_drawdown': -20.569, 'sharpe_ratio': 2.362,
+# 'sortino_ratio': 1.82, 'kalmar_ratio': 6.305, 'annualized_volatility': 38.314}
+#
+# ADAUSDT
+# params: (2, 5, 37, 0.33) :: risk level 0 :: max leverage 1,
+# stats {'profit': 7427.879, 'max_drawdown': -35.107, 'sharpe_ratio': 1.671,
+# 'sortino_ratio': 0.988, 'kalmar_ratio': 3.007, 'annualized_volatility': 50.368}
 aroonosc = sg.SignalsDefinition(
     name="AROON OSC",
     conditions=[
@@ -153,16 +163,16 @@ aroonosc = sg.SignalsDefinition(
             operand_a=(
                 'aroonosc',
                 'high', 'low',
-                {"timeperiod": 17},
+                {"timeperiod": 4},
             ),
-            operand_b=('trigger', 3, [-5, 5, 1]),
+            operand_b=('trigger', 1, [-5, 5, 1]),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 60}),
-            operand_b=("trending", 0.05, [0.05, 0.55, 0.1]),
+            operand_a=("er", {"timeperiod": 37}),
+            operand_b=("trending", 0.21, [0.05, 0.55, 0.1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
@@ -528,41 +538,56 @@ s_aroon_osc = sb.StrategyDefinition(
 # ====================================================================================
 #                                     MULTI STRATEGY 1                               #
 # ====================================================================================
-ema_cross_10_30 = ema_cross = sg.SignalsDefinition(
+ema_cross_10_30 = sg.SignalsDefinition(
     name=f"ema cross {timeperiod}/{timeperiod*4}",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("ema", {"timeperiod": 10}),
-            operand_b=("ema", {"timeperiod": 40}),
+            operand_a=("ema", {"timeperiod": 22}),
+            operand_b=("ema", {"timeperiod": 67}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
     ]
 )
 
-ema_cross_20_60 = ema_cross = sg.SignalsDefinition(
+ema_cross_20_60 = sg.SignalsDefinition(
     name=f"ema cross {timeperiod}/{timeperiod*4}",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("ema", {"timeperiod": 20}),
-            operand_b=("ema", {"timeperiod": 80}),
+            operand_a=("ema", {"timeperiod": 2}),
+            operand_b=("ema", {"timeperiod": 87}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
     ]
 )
 
-ema_cross_40_120 = ema_cross = sg.SignalsDefinition(
+ema_cross_40_120 = sg.SignalsDefinition(
     name=f"ema cross {timeperiod}/{timeperiod*4}",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("ema", {"timeperiod": 30}),
-            operand_b=("ema", {"timeperiod": 120}),
+            operand_a=("ema", {"timeperiod": 32}),
+            operand_b=("ema", {"timeperiod": 52}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+        ),
+    ]
+)
+
+s_test_ema_cross = sb.StrategyDefinition(
+    strategy="Test for optimizer",
+    symbol="BTCUSDT",
+    interval="1d",
+    sub_strategies=[
+        sb.StrategyDefinition(
+            strategy="Optimizer Test",
+            symbol="BTC/USDT",
+            interval="1d",
+            signals_definition=ema_cross_10_30,
+            weight=1,
         ),
     ]
 )
@@ -573,21 +598,21 @@ s_ema_multi = sb.StrategyDefinition(
         interval="1d",
         sub_strategies=[
             sb.StrategyDefinition(
-                strategy="CCI",
+                strategy="Sub 1",
                 symbol="BTCUSDT",
                 interval="1d",
                 signals_definition=ema_cross_10_30,
                 weight=0.33,
             ),
             sb.StrategyDefinition(
-                strategy="RSI",
+                strategy="Sub 2",
                 symbol="BTCUSDT",
                 interval="1d",
                 signals_definition=ema_cross_20_60,
                 weight=0.33,
             ),
             sb.StrategyDefinition(
-                strategy="RSI",
+                strategy="Sub 3",
                 symbol="BTCUSDT",
                 interval="1d",
                 signals_definition=ema_cross_40_120,

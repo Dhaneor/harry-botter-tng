@@ -198,14 +198,13 @@ class ConditionDefinition(NamedTuple):
         passed to the indicator .
 
         Only 'open', 'high', 'low', 'close' and 'volume', are supported
-        for this, if you. But, his value can also be another tuple,
-        describing another indicator. That makes it possible to
-        describe for instance the ATR for the RSI, or the SMA over a
-        base indicator. Common sense is the only limiting factor for the
-        number of these nested indicators.
-        Most indicators take only one input (usually close prices),
-        but some, like the ATR, require more. If unsure, check the
-        indicator with its help() method for required inputs!
+        for this, But, his value can also be another tuple, describing
+        another indicator. That makes it possible to describe for
+        instance the ATR for the RSI, or the SMA over a base indicator.
+        Common sense is the only limiting factor for the number of these
+        nested indicators. Most indicators take only one input (usually
+        close prices), but some, like the ATR, require more. If unsure,
+        check the indicator with its help() method for required inputs!
         The ATR for instance would be defined like this:
 
         >>>    ('atr', 'open', 'high', 'low' {'timeperiod': 14})
@@ -241,9 +240,6 @@ class ConditionDefinition(NamedTuple):
     '(rsi, close, {'timeperiod': 14}) is above 70', which may
     or may not make sense. :D
 
-    TODO: This class could also be used to change a strategy on-the-fly,
-    while it is running. We just need to implement this in the strategy
-    class.
 
     Attributes:
     ----------
@@ -256,8 +252,11 @@ class ConditionDefinition(NamedTuple):
     comparand_b
         second value to compare, optional
 
-    comparand_b
-        second value to compare, optional
+    comparand_c
+        third value to compare, optional
+
+    comparand_d
+        fourth value to compare, optional
 
     trigger
         the method used to compare the values (trigger condition),
@@ -304,7 +303,7 @@ class ConditionResult:
     close_long: np.ndarray | None = None
     close_short: np.ndarray | None = None
 
-    combined_signal: np.ndarray | None = None
+    _combined_signal: np.ndarray | None = None
 
     def __post_init__(self):
 
@@ -405,11 +404,10 @@ class ConditionResult:
             "close_long": self.close_long,
             "close_short": self.close_short,
             "signals": self.combined_signal
-            if self.combined_signal is not None
-            else self.combined()
         }
 
-    def combined(self):
+    @property
+    def combined_signal(self):
         signal, _ = merge_signals_nb(
             self.open_long,
             self.open_short,
@@ -417,7 +415,11 @@ class ConditionResult:
             self.close_short
         )
 
-        return np.nan_to_num(signal)  # self._fill_nan_with_last(signal)
+        return np.nan_to_num(signal)
+
+    @combined_signal.setter
+    def combined_signal(self, value):
+        self._combined_signal = value
 
     @classmethod
     def from_combined(cls, combined: np.ndarray):

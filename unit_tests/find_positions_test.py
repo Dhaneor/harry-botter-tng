@@ -56,8 +56,8 @@ interval = "1d"
 start = int(-365*6)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_aroon_osc
-risk_level, max_leverage = 7, 1.5
+strategy = s_ema_multi
+risk_level, max_leverage = 8, 1.25
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -255,12 +255,9 @@ def run(data, show=False, plot=False):
     logger.info(strategy_stats)
     logger.info(hodl_stats)
 
-    # display_problematic_rows(df)
-    # sys.exit()
-
     if plot:
         plot_title = f'{strategy.name} - {symbol} ({interval})'
-        Chart(df=df, title=plot_title, style='night').show()
+        Chart(df=df, title=plot_title, style='backtest').show()
 
 
 def test_find_positions(data: dict):

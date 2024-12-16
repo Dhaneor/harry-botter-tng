@@ -976,7 +976,7 @@ class Leverage(ChartElement):
             column=self.column,
             color=self.color,
             shape='hv',
-            width=self.width - 1,
+            width=max(self.width - 1, 0.1),
             fillcolor=None,
             fillmethod=None,
             row=self.row,
@@ -1017,14 +1017,14 @@ class PositionSize(ChartElement):
             data = data.sort_index()
 
         assert pd.api.types.is_numeric_dtype(data[self.column]), \
-            "Column must be numeric!"
+            f"Column {self.column} must be numeric!"
 
         Line(
             label=self.label,
             column=self.column,
             color=self.color,
             shape='linear',
-            width=self.width - 1,
+            width=max(self.width - 1, 0.1),
             fillcolor=self.fillcolor,
             fillmethod=self.fillmethod,
             row=self.row,
@@ -1033,6 +1033,51 @@ class PositionSize(ChartElement):
             zorder=self.zorder
         ).add_trace(fig, data)
 
+
+@dataclass
+class Signals(ChartElement):
+    fillcolor: Color | None = None
+    fillmethod: str = "tozeroy"
+
+    zorder: int = 0
+
+    def apply_style(self, style: TikrStyle) -> None:
+        self.width = style.line_width if not self.width else self.width
+        self.color = self.color if self.color else style.colors.strategy
+        self.fillcolor = self.fillcolor \
+            if self.fillcolor else style.colors.strategy_fill
+
+    def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
+        # Ensure column is numeric
+        data[self.column] = pd.to_numeric(data[self.column], errors="coerce")
+
+        if data[self.column].isna().any():
+            logger.warning(
+                f"NaN values found in {self.column}. Handling missing values."
+                )
+            data[self.column] = data[self.column].ffill()
+
+        # Ensure data is sorted and aligned
+        if data.index.duplicated().any():
+            logger.warning("Duplicated x-values detected; sorting index.")
+            data = data.sort_index()
+
+        assert pd.api.types.is_numeric_dtype(data[self.column]), \
+            f"Column {self.column} must be numeric!"
+
+        Line(
+            label=self.label,
+            column=self.column,
+            color=self.color,
+            shape='hv',
+            width=max(self.width - 1, 0.1),
+            fillcolor=self.fillcolor,
+            fillmethod=self.fillmethod,
+            row=self.row,
+            col=self.col,
+            end_marker=False,
+            zorder=self.zorder
+        ).add_trace(fig, data)
 
 # ====================================================================================
 @dataclass

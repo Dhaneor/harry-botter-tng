@@ -170,7 +170,7 @@ tikr_day_style = TikrStyle(
     candle_down_alpha=1,  # Full opacity for negative candles
     font_family="Georgia, Arial",
     font_size=36,
-    title_font_size=36,
+    title_font_size=16,
     tick_font_size=16,
     font_opacity=0.5,
     volume_opacity=0.2,
@@ -193,7 +193,7 @@ palette_4 = [
     "#181818",
     "#202020",
     "#121212",
-    "#7f818a",
+    "#999ba6",
 ]
 
 tikr_night_colors = Colors.from_palette(palette_4)
@@ -203,8 +203,26 @@ tikr_night_style = TikrStyle(
     candle_down_alpha=0.6,  # Full opacity for negative candles
     font_family="Fira Code, Console, monospace",
     font_size=24,
-    title_font_size=36,
+    title_font_size=16,
     tick_font_size=12,
+    font_opacity=0.6,
+    volume_opacity=0.3,
+    marker_size=5,
+    marker_opacity=1,
+    canvas_image="./assets/chart_bg_noise.png",
+    canvas_image_opacity=0.2
+    )
+
+backtest_style = TikrStyle(
+    colors=tikr_night_colors,
+    candle_up_alpha=0.6,  # Full opacity for positive candles
+    candle_down_alpha=0.6,  # Full opacity for negative candles
+    line_width=0.75,
+    line_alpha=0.8,  # Slightly more opaque lines for clarity
+    font_family="Fira Code, Console, monospace",
+    font_size=10,
+    title_font_size=12,
+    tick_font_size=10,
     font_opacity=0.6,
     volume_opacity=0.3,
     marker_size=5,
@@ -218,6 +236,7 @@ styles = {
     "default": tikr_day_style,  # default style for tikr charting
     "day": tikr_day_style,
     "night": tikr_night_style,
+    "backtest": backtest_style,
     # add more styles here...
 }
 

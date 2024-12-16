@@ -30,6 +30,10 @@ position:
     column: leverage
     label: Leverage
 
+signals:
+  column: signals
+  label: Signals
+
 ohlcv:
   volume: volume
 

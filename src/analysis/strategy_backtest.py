@@ -252,7 +252,9 @@ def show_overview(
 ):
 
     include_columns = [
-        'close', 'signal', 'position', 'leverage',
+        'close',
+        *[c for c in df.columns if c.split('.')[0] == 'signal'],
+        'signal', 'position', 'leverage',
     ]
 
     stop_loss_columns = ['sl_current', 'sl_pct', 'sl_trig']
@@ -271,8 +273,8 @@ def show_overview(
             include_columns.append(c)
         if c.split('_')[0] == 'sell':
             include_columns.append(c)
-        if c.split('_')[0] == 'tp':
-            include_columns.append(c)
+        # if c.split('_')[0] == 'tp':
+        #     include_columns.append(c)
 
     include_columns += [
         'b.base', 'b.quote', 'b.value', 'cptl.b',

@@ -370,18 +370,35 @@ class CompositeStrategy(IStrategy):
         tp.Data
             data with added 'signal' key/values
         """
-
+        # get the (combined) signal from all sub-strategies. These are
+        # returned as ConditionResult objects, and we extract only the
+        # combined signal here.
         try:
-            combined_signal = reduce(
-                lambda x, y: np.add(x, y),
-                (
-                    strat.get_signals(data).combined()
-                    for strat, _ in self.sub_strategies.values()
-                )
+            condition_results = tuple(
+                strat.get_signals(data).combined_signal
+                for strat, _ in self.sub_strategies.values()
             )
         except Exception as e:
             logger.error(e, exc_info=True)
+            raise
 
+        logger.info("Got signals from %s sub-strategies" % len(condition_results))
+
+        # add the signals column from each sub-strategy to the data dictionary
+        as_dict = {
+            f"signal.{idx + 1}": elem for idx, elem in enumerate(condition_results)
+            }
+
+        data.update(as_dict)
+
+        logger.info(tuple(data.keys()))
+
+        # combine the signals from all sub-strategies into one
+        combined_signal = reduce(lambda x, y: np.add(x, y), condition_results)
+
+        # add the combine signal to the data dictionary. We need to
+        # construct a ConditionResult object first to get all columns
+        # (for open_long, open_short, etc., plus the combined signal)
         data.update(
             ConditionResult
             .from_combined(combined_signal)
