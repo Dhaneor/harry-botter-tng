@@ -319,6 +319,58 @@ class HermesDataBase:
 
     # --------------------------------------------------------------------------
     # methods that deal with the ohlcv tables
+    def _get_ohlcv_from_database(
+        self, symbol: str, interval: str, start: int, end: int
+    ) -> dict:
+        """Gets OHLCV data from database."""
+
+        # fetch data from database (returns dataframe)
+        logger.info("fetching data from database...")
+
+        if not self._ohlcv_table_exists(symbol, interval):
+            table_name = self._get_ohlcv_table_name(symbol, interval)
+            self._create_ohlcv_table(table_name)
+            self._update_ohlcv_table(table_name)
+
+        with Mnemosyne() as conn:
+            data = conn.get_ohclv(
+                exchange=self.exchange_name,
+                symbol=symbol,
+                interval=interval,
+                start=start,
+                end=end,
+            )
+
+        # happy case
+        if data is not None:
+            logger.debug(f"got {len(data)} rows of data")
+            return {
+                "success": True,
+                "symbol": symbol,
+                "message": data,
+                "error": None,
+                "error code": 0,
+            }
+
+        # unhappy case
+        logger.debug("failed to fetch data from database")
+        table_status = self._get_ohlcv_table_status_for_symbol(symbol, interval)
+
+        if table_status["table exists"]:
+            logger.debug(
+                f"table for {symbol}-{interval} exists ... updating table..."
+                )
+            self._update_ohlcv_table(symbol=symbol, interval=interval)
+            self._get_ohlcv_from_database(symbol, interval, start, end)
+        else:
+            return {
+                "success": False,
+                "symbol": symbol,
+                "message": None,
+                "error": "symbol does not exist in database",
+                "error code": 404,
+            }
+
     def _create_ohlcv_table(self, table_name: str):
         table_description = (
             """
@@ -538,12 +590,13 @@ class HermesDataBase:
 
                 save_data, sim_counter = [], 0
 
-            else:
-                logger.debug(
-                    f"{index=}: save_data has {len(save_data)} items now :: "
-                    f"the end is near: {index == (len(data) - 1)}"
-                )
+            # else:
+            #     logger.debug(
+            #         f"{index=}: save_data has {len(save_data)} items now :: "
+            #         f"the end is near: {index == (len(data) - 1)}"
+            #     )
 
+        logger.info(f"update of {table_name} successful")
         return True
 
     def _get_ohlcv_table_status_for_symbol(self, symbol: str, interval: str) -> dict:
@@ -1303,7 +1356,15 @@ class Hermes(HermesDataBase):
         res = self._get_ohlcv_from_database(
             symbol=symbol, interval=interval, start=start, end=end
         )
-        res["interval"] = interval
+
+        try:
+            res["interval"] = interval
+        except Exception as e:
+            logger.error(
+                f"error while trying to retrieve data from database: {e}",
+                exc_info=True
+                )
+            return {"success": False, "error": str(e)}
 
         # ..................................................................
         # we need to check if we got data from the database. if not,
@@ -1386,50 +1447,6 @@ class Hermes(HermesDataBase):
         with self.exchange() as conn:
             res = conn.get_ohlcv(symbol=symbol, interval=interval, start=start, end=end)
         return res
-
-    def _get_ohlcv_from_database(
-        self, symbol: str, interval: str, start: int, end: int
-    ) -> dict:
-        """Gets OHLCV data from database."""
-
-        # fetch data from database (returns dataframe)
-        with Mnemosyne() as conn:
-            data = conn.get_ohclv(
-                exchange=self.exchange_name,
-                symbol=symbol,
-                interval=interval,
-                start=start,
-                end=end,
-            )
-        # happy case
-        if data is not None:
-            return {
-                "success": True,
-                "symbol": symbol,
-                "message": data,
-                "error": None,
-                "error code": 0,
-            }
-
-        # unhappy case
-        _status = self._get_ohlcv_table_status_for_symbol(symbol, interval)
-
-        if _status["table exists"]:
-            return {
-                "success": False,
-                "symbol": symbol,
-                "message": f"period: {start=}, {end=}",
-                "error": "no data for requested period",
-                "error code": 11,
-            }
-        else:
-            return {
-                "success": False,
-                "symbol": symbol,
-                "message": None,
-                "error": "symbol does not exist in database",
-                "error code": 404,
-            }
 
     def _standardize_kucoin_kline(self, kline: list, interval: str) -> list:
         """Transforms raw Kucoin OHLCV data to standard format.
