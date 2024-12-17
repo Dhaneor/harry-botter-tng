@@ -1361,6 +1361,7 @@ class Hermes(HermesDataBase):
             res["symbol"], res["interval"] = symbol, interval
             return res
 
+        # fetch the data from the database
         try:
             res = self._get_ohlcv_from_database(
                 symbol=symbol, interval=interval, start=start, end=end
