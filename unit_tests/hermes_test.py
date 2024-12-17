@@ -14,7 +14,7 @@ from pprint import pprint
 from typing import Union, Optional
 from random import choice
 
-LOG_LEVEL = "DEBUG"
+LOG_LEVEL = "INFO"
 logger = logging.getLogger("main")
 logger.setLevel(LOG_LEVEL)
 
@@ -273,7 +273,7 @@ class HermesTester:
 if __name__ == "__main__":
 
     symbol_name = "ADAUSDT"
-    interval = "1h"
+    interval = "4h"
     symbols = ["BTCUSDT", "ADAUSDT", "XRPUSDT", "XLMUSDT"]
     intervals = ["5m", "15m", "30m", "1h", "2h", "4h"]
 
@@ -312,13 +312,14 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # ht.get_ohlcv_multiple(symbols=symbols, start=dates[0], end=dates[1])
 
-    for _ in range(3):
-        ht.get_ohlcv_single(symbol=symbol_name, interval=interval,
-                            start=dates[0], end=dates[1])
+    # for _ in range(3):
+    #     ht.get_ohlcv_single(symbol=symbol_name, interval=interval,
+    #                         start=dates[0], end=dates[1])
 
     # -------------------------------------------------------------------------
-    # ht.update_database_for_interval(exchange=exchange, quote_asset='USDT',
-    #                                 interval=interval)
+    ht.update_database_for_interval(
+        exchange=exchange, quote_asset='USDT', interval=interval
+        )
 
     # ht.get_listing_date(symbol_name, '15m')
 

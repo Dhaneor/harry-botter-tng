@@ -73,11 +73,9 @@ class OhlcvDownloadPrepper:
         :param client: a working Client object for the exchange
         :type client: _type_
         """
-        logger.info("Initializing Download Prepper")
+        logger.debug("Initializing Download Prepper")
         self.listing_dates: Dict[str, int] = {}
         self.limit: int = 1000  # max allowed size for one request
-
-        logger.info("Listing dates: %s", self.listing_dates)
 
     def _prepare_request(
         self, symbol: str, interval: str, start: Union[str, int], end: Union[str, int]

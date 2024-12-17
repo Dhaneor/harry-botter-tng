@@ -405,10 +405,9 @@ class Mnemosyne:
         start: int,
         end: int,
         return_as_dataframe: bool = True,
-    ) -> Union[pd.DataFrame, dict, None]:
-        if exchange == "kucoin":
-            symbol = "".join(symbol.split("-"))
+    ) -> pd.DataFrame | dict | None:
 
+        symbol = "".join(symbol.split("-")) if exchange == "kucoin" else symbol
         table_name = "_".join([exchange, symbol, "ohlcv", interval])
 
         sql = (

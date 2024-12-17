@@ -48,7 +48,7 @@ MAX_WORKERS_BINANCE = VALID_EXCHANGES["binance"]["max_workers"]
 MAX_WORKERS_KUCOIN = VALID_EXCHANGES["kucoin"]["max_workers"]
 
 logger = logging.getLogger("main.hermes")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # ==============================================================================
 """
@@ -94,10 +94,12 @@ class HermesDataBase:
 
         # get list of all currently tradeable (=active and not
         # restricted) symbols on 'exchange' for the given 'quote_asset'
-        _tradeable = self.get_tradeable_symbols(quote_asset=quote_asset)
+        tradebale = self.get_tradeable_symbols(quote_asset=quote_asset)
 
         # create all table names that should be in our database
-        _table_names = [self._get_ohlcv_table_name(sym, interval) for sym in _tradeable]
+        table_names = [
+            self._get_ohlcv_table_name(sym, interval) for sym in tradebale
+            ]
 
         # get a list of all symbols that we have in our database for
         # the given interval
@@ -105,7 +107,9 @@ class HermesDataBase:
             _all_in_db = conn.get_all_table_names(containing=self.exchange_name)
 
         # compare the two lists and create all missing tables
-        _no_table_for = [tn for tn in _table_names if tn not in _all_in_db]
+        _no_table_for = [tn for tn in table_names if tn not in _all_in_db]
+
+        # create the missing tables
         [self._create_ohlcv_table(tn) for tn in _no_table_for]
 
         # ......................................................................
@@ -127,14 +131,14 @@ class HermesDataBase:
             self.conn.delay = 2 if interval in ["15m", "30m", "1h"] else 1
 
         logger.debug(f"{self._max_workers=} {conn_max_workers=}")
-        time.sleep(5)
+        # time.sleep(5)
 
         # start the update(s) with parallel threads
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=self._max_workers
         ) as executor:
             futures = []
-            for tn in _table_names[:20]:
+            for tn in table_names:
                 futures.append(executor.submit(self._update_ohlcv_table, table_name=tn))
 
             futures, _ = concurrent.futures.wait(futures)
@@ -589,11 +593,11 @@ class HermesDataBase:
             return _parts[1], _parts[3]
 
         if self.exchange_name == "kucoin":
-            _tradeable = self.get_tradeable_symbols()
-            if _tradeable:
+            tradebale = self.get_tradeable_symbols()
+            if tradebale:
                 return [
                     s
-                    for s in _tradeable
+                    for s in tradebale
                     if s.split("-")[0] in table_name and s.split("-")[1] in table_name
                 ][0], interval
             else:
@@ -605,7 +609,7 @@ class HermesDataBase:
 
     def _ohlcv_table_exists(self, symbol: str, interval: str) -> bool:
         table_name = self._get_ohlcv_table_name(symbol, interval)
-        all_tables = self._get_all_table_names()
+        all_tables = self._get_alltable_names()
         return True if table_name in all_tables else False
 
     def _ohlcv_table_needs_update(self, latest_open: int, interval: str) -> bool:
@@ -796,7 +800,7 @@ class HermesDataBase:
             return False
 
     # ---------------------------------------------------------------------------
-    def _get_all_table_names(self, filter_for: Optional[str] = None):
+    def _get_alltable_names(self, filter_for: Optional[str] = None):
         sql = """SELECT table_name FROM information_schema.tables;"""
         with Mnemosyne() as conn:
             table_names = conn.query(sql)
@@ -828,7 +832,7 @@ class HermesDataBase:
             logger.debug(sql)
             conn.query(sql)
 
-        names = self._get_all_table_names()
+        names = self._get_alltable_names()
         names = [n[0] for n in names if "prices" in n[0]]
         splitted = [n.split("_") for n in names]
         new = ["_".join(["binance", item[0], "ohlcv", item[2]]) for item in splitted]
