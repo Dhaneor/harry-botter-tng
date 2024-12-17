@@ -5,6 +5,7 @@ Created on Sun Jan 31 00:57:06 2021
 
 @author: dhaneor
 """
+import datetime
 import inspect
 import sys
 import concurrent.futures
@@ -49,6 +50,12 @@ MAX_WORKERS_KUCOIN = VALID_EXCHANGES["kucoin"]["max_workers"]
 
 logger = logging.getLogger("main.hermes")
 logger.setLevel(logging.DEBUG)
+
+
+# ==============================================================================
+class BadSymbolError(Exception):
+    """Raised when a symbol is not found in the symbols table."""
+
 
 # ==============================================================================
 """
@@ -265,7 +272,7 @@ class HermesDataBase:
                 "failed": failed,  # number of failed downloads
             }
 
-    # --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     def _find_missing_rows_in_df(self, df: pd.DataFrame) -> tuple:
         if len(df) < 2:
             logger.warning(f"dataframe too short ({len(df)} to anaylze!)")
@@ -317,15 +324,21 @@ class HermesDataBase:
         logger.debug(f"found the following downtimes based on {interval} interval:")
         pprint(m_windows)
 
-    # --------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     # methods that deal with the ohlcv tables
     def _get_ohlcv_from_database(
-        self, symbol: str, interval: str, start: int, end: int
-    ) -> dict:
+        self, symbol: str, interval: str, start: int, end: int, attempt: int = 0
+    ) -> pd.DataFrame | None:
         """Gets OHLCV data from database."""
 
+        attempt += 1
+
+        if attempt == 3:
+            logger.error(f"Failed to fetch data after {attempt - 1} attempts")
+            return None
+
         # fetch data from database (returns dataframe)
-        logger.info("fetching data from database...")
+        logger.info(f"[{attempt}] fetching data from database...")
 
         if not self._ohlcv_table_exists(symbol, interval):
             table_name = self._get_ohlcv_table_name(symbol, interval)
@@ -344,32 +357,31 @@ class HermesDataBase:
         # happy case
         if data is not None:
             logger.debug(f"got {len(data)} rows of data")
-            return {
-                "success": True,
-                "symbol": symbol,
-                "message": data,
-                "error": None,
-                "error code": 0,
-            }
 
-        # unhappy case
-        logger.debug("failed to fetch data from database")
-        table_status = self._get_ohlcv_table_status_for_symbol(symbol, interval)
+            # check if we got only partial data and need to update the table
+            latest_open = int(data.at[data.last_valid_index(), "open time"])
+            last_close = latest_open + interval_to_milliseconds(interval)
+            now = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
+            update_necessary = last_close + interval_to_milliseconds(interval) < now
 
-        if table_status["table exists"]:
-            logger.debug(
-                f"table for {symbol}-{interval} exists ... updating table..."
-                )
+            if not update_necessary:
+                return data
+
+            # update the table and call this method again
             self._update_ohlcv_table(symbol=symbol, interval=interval)
-            self._get_ohlcv_from_database(symbol, interval, start, end)
-        else:
-            return {
-                "success": False,
-                "symbol": symbol,
-                "message": None,
-                "error": "symbol does not exist in database",
-                "error code": 404,
-            }
+            return self._get_ohlcv_from_database(
+                symbol, interval, start, end, attempt
+                )
+
+        # unhappy case (the database does not contain any data for
+        # this period). this can happen if the table has not been updated for a
+        # long time and the requested data period starts after the
+        # date/time of the last update
+        logger.debug("failed to fetch data from database - going to update table...")
+
+        # try to update the table again
+        self._update_ohlcv_table(symbol=symbol, interval=interval)
+        return self._get_ohlcv_from_database(symbol, interval, start, end, attempt)
 
     def _create_ohlcv_table(self, table_name: str):
         table_description = (
@@ -420,12 +432,13 @@ class HermesDataBase:
         """
         # add parameter(s) symbol/interval or table_name depending on
         # parameters provided
-        if table_name is not None:
+        if table_name:
             symbol, interval = self._get_symbol_and_interval_from(table_name)
-
-        if symbol is None or interval is None:
-            raise ValueError("Please specify 'table_name' <or> 'symbol' and 'interval'")
         else:
+            if symbol is None or interval is None:
+                raise ValueError(
+                    "Please specify 'table_name' <or> 'symbol' and 'interval'"
+                    )
             table_name = self._get_ohlcv_table_name(symbol, interval)
 
         # get table status from database
@@ -436,30 +449,24 @@ class HermesDataBase:
         # time the exchange opened) for 'latest open', from where the
         # download of new data will start
         latest_open = status.get("latest open", 0)
-        human_time = unix_to_utc(latest_open)
+        latest_open_utc = unix_to_utc(latest_open)
 
         if latest_open == 0:
-            if self.exchange_name in VALID_EXCHANGES:
-                latest_open = VALID_EXCHANGES.get(self.exchange_name, {}).get(
-                    "exchange_opened", 0
-                )
-            else:
-                raise ValueError(f"{self.exchange_name} not found in VALID_EXCHANGES")
-
-        if latest_open == 0:
-            raise Exception('unable to determine "latest_open" ... aborting')
+            latest_open = VALID_EXCHANGES\
+                .get(self.exchange_name, {})\
+                .get("exchange_opened", 0)
 
         # check if the latest row in table already represents the most
         # recent datapoint and return if true
         if not self._ohlcv_table_needs_update(latest_open, interval):
             logger.debug(
                 f"no update necessary for {symbol} - {interval} "
-                f"(latest open time: {human_time})"
+                f"(latest open time: {latest_open_utc})"
             )
             return True
 
         logger.info(
-            f"updating {table_name} from {human_time} ({latest_open}) "
+            f"updating {table_name} from {latest_open_utc} ({latest_open}) "
             f"to now for {symbol} (interval {interval})"
         )
 
@@ -488,11 +495,6 @@ class HermesDataBase:
             return False
 
         self._write_to_ohlcv_table(table_name=table_name, data=msg)
-        status = self._get_ohlcv_table_status_for_symbol(symbol, interval)
-
-        if intrvl_ms := interval_to_milliseconds(interval) is not None:
-            latest_open, now = status.get("latest open", 0), time.time()
-            return True if latest_open + 2 * intrvl_ms > now else False
 
     def _write_to_ohlcv_table(
         self, table_name: str, data: list[list], end_of_table=True
@@ -550,6 +552,11 @@ class HermesDataBase:
 
         logger.debug(f"saving {len(data)} items to {table_name}")
 
+        if len(data) == 1:
+            logger.debug(data)
+            logger.debug(f"skipping saving of 1 item to {table_name}")
+            return True
+
         # prepare the data row by row and do a batch save to database
         # for index in trange(len(data), unit=' items', desc=table_name):
         for index, row in enumerate(data):
@@ -583,7 +590,7 @@ class HermesDataBase:
             # for max_simultaneous (batch write) or we reached the
             # end of our list
             if sim_counter == max_simultaneous or index == (len(data) - 1):
-                logger.debug(f"saving {len(save_data)} items to {table_name}")
+                logger.debug(f"saving batch ({len(save_data)}) to {table_name}")
 
                 with Mnemosyne() as conn:
                     conn.save_to_database(table_name, columns, save_data, batch=True)
@@ -612,7 +619,7 @@ class HermesDataBase:
             {
                 'name' : table_name,
                 'table exists' : True|False,
-                'number of entries' : no_of_rows,
+                'rows' : no_of_rows,
                 'earliest open' : earliest timestamp 'open time',
                 'latest open' : latest timestamp 'open time',
                 'symbol' : symbol
@@ -620,14 +627,14 @@ class HermesDataBase:
             }
         """
         table_name = self._get_ohlcv_table_name(symbol=symbol, interval=interval)
-        _res = {}
+
         with Mnemosyne() as conn:
-            _res = conn.get_ohlcv_table_status(table_name)
+            status = conn.get_ohlcv_table_status(table_name)
 
-        if _res:
-            _res["symbol"], _res["interval"] = symbol, interval
+        if status:
+            status["symbol"], status["interval"] = symbol, interval
 
-        return _res
+        return status
 
     def _get_ohlcv_table_name(self, symbol: str, interval: str) -> str:
         exchange = get_exchange_name(symbol)
@@ -663,7 +670,8 @@ class HermesDataBase:
 
     def _ohlcv_table_needs_update(self, latest_open: int, interval: str) -> bool:
         interval_in_ms = interval_to_milliseconds(interval)
-        return latest_open + 2 * interval_in_ms < int(time.time()) * 1000
+        now = datetime.datetime.now(datetime.UTC).timestamp() * 1000
+        return latest_open + 2 * interval_in_ms < now
 
     # --------------------------------------------------------------------------
     # methods that deal with the symbol(s) information table(s)
@@ -1258,7 +1266,7 @@ class Hermes(HermesDataBase):
             logger.debug(_res)
             self.all_symbols[exchange_name] = {}
 
-    # ======================= ohlcv related methods ================================
+    # ========================= ohlcv related methods ================================
     @lru_cache
     def get_ohlcv(
         self,
@@ -1326,7 +1334,7 @@ class Hermes(HermesDataBase):
         else:
             return results[0]
 
-    # ..........................................................................
+    # ................................................................................
     def _get_ohlcv_for_one_symbol(
         self, symbol: str, interval: str, start: int, end: int
     ) -> dict:
@@ -1338,7 +1346,7 @@ class Hermes(HermesDataBase):
         interval_in_ms = interval_to_milliseconds(interval)
 
         if interval_in_ms is None:
-            raise ValueError(f"unable to determine length of interval for {interval}")
+            raise ValueError(f"Bad interval: {interval}")
 
         # list of intervals that are not in our database (bc: too much data)
         if interval in ["1m", "3m", "5m"]:
@@ -1349,104 +1357,45 @@ class Hermes(HermesDataBase):
             res["symbol"], res["interval"] = symbol, interval
             return res
 
-        logger.debug(
-            f"trying to retrieve data from database ({self.start}, {self.end})"
-        )
-
-        res = self._get_ohlcv_from_database(
-            symbol=symbol, interval=interval, start=start, end=end
-        )
-
         try:
-            res["interval"] = interval
+            res = self._get_ohlcv_from_database(
+                symbol=symbol, interval=interval, start=start, end=end
+            )
+        except BadSymbolError:
+            return {"success": False, "error": "Bad Symbol"}
         except Exception as e:
-            logger.error(
-                f"error while trying to retrieve data from database: {e}",
-                exc_info=True
-                )
+            logger.debug(f"error while trying to retrieve data from database: {e}")
             return {"success": False, "error": str(e)}
 
-        # ..................................................................
-        # we need to check if we got data from the database. if not,
-        # this could mean that the symbol does not exist in our
-        # database, or does not exist at all on the exchange. this
-        # means that we need to check for all of this and then also
-        # check if the data we got covers the whole time period that
-        # was requested or if we need to update the table in our
-        # database.
-
-        # we will get an error code (23) if the symbol is not in our
-        # database
-        df, update_necessary = None, False
-
-        if not res["success"]:
-            if res["error code"] == 23:
-                # give up if the symbol does not exist
-                if symbol not in self.get_tradeable_symbols():
-                    return {"success": False, "error": "symbol is not tradeable!"}
-                # otherwise, create a new table for symbol/interval
-                else:
-                    logger.debug(f"need to create table for {symbol} {interval}")
-                    table_name = self._get_ohlcv_table_name(symbol, interval)
-                    self._create_ohlcv_table(table_name)
-
-        # if we got data, get the dataframe with the ohlcv values
+        if res is not None:
+            return {
+                "success": True,
+                "message": res,
+                "symbol": symbol,
+                "interval": interval,
+                "error": None,
+            }
         else:
-            df = res.get("message", None)
-
-        if df is None or not isinstance(df, pd.DataFrame):
-            return res
-
-        update_necessary = True if df.empty else False
-
-        # make sure the data we got covers the whole time period
-        # that was requested. if not, we need to update the table
-        # with data from the API
-        if res["success"]:
-            latest_open = int(df.at[df.last_valid_index(), "open time"])
-            latest_close = latest_open + interval_in_ms - 1
-        else:
-            latest_close = 0
-
-        end = min(end, int(time.time() * 1000))
-        update_necessary = True if latest_close < end else False
-        logger.debug(f"{latest_close} < {end}: {update_necessary}")
-
-        if not update_necessary:
-            res["message"] = df
-            return res
-
-        # update the table for symbol/interval if we got no data or
-        # incomplete data
-        updated = self._update_ohlcv_table(symbol=symbol, interval=interval)
-
-        if updated:
-            logger.debug(f"update table for {symbol} ({interval}): success)")
-            res = self._get_ohlcv_from_database(
-                symbol=symbol, interval=self.interval, start=self.start, end=self.end
-            )
-            res["symbol"] = symbol
-            res["interval"] = interval
-            return res
-        else:
-            logger.debug(f"update table for {symbol} ({interval}: fail)")
-            res["warning"] = "missing data - update from API failed!"
-            return res
+            logger.error(
+                "unknown error while trying to retrieve data from database",
+                )
+            return {
+                "symbol": symbol,
+                "success": False,
+                "error": "No data found for the given time period",
+            }
 
     def _get_ohlcv_from_api(
         self, symbol: str, interval: str, start: int, end: int
     ) -> pd.DataFrame:
         """Gets OHLCV data from exchange API"""
 
-        if self.verbose:
-            s, e = unix_to_utc(start), unix_to_utc(end)
-            logger.debug(f"fetching OHLCV from API for {symbol} ({s}, {e})")
-
         end = int(end / 1000)
 
         with self.exchange() as conn:
-            res = conn.get_ohlcv(symbol=symbol, interval=interval, start=start, end=end)
-        return res
+            return conn.get_ohlcv(
+                symbol=symbol, interval=interval, start=start, end=end
+                )
 
     def _standardize_kucoin_kline(self, kline: list, interval: str) -> list:
         """Transforms raw Kucoin OHLCV data to standard format.

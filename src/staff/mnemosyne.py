@@ -5,6 +5,7 @@ Created on Sun Jan 31 00:21:53 2021
 
 @author: dhaneor
 """
+import datetime
 import logging
 from time import time
 from typing import Union, Optional
@@ -163,13 +164,22 @@ class Mnemosyne:
                 earliest = self.query(sql)
                 earliest = int(earliest[0][0]) if earliest else 0
 
-        return {
-            "name": table_name,
-            "table exists": exists,
-            "number of entries": no_of_rows,
-            "earliest open": earliest,
-            "latest open": latest,
-        }
+            return {
+                "name": table_name,
+                "table exists": exists,
+                "number of entries": no_of_rows,
+                "earliest open": earliest,
+                "latest open": latest,
+            }
+
+        else:
+            return {
+                "name": table_name,
+                "table exists": exists,
+                "number of entries": None,
+                "earliest open": None,
+                "latest open": None,
+            }
 
     def check_if_table_exists(self, table_name: str) -> bool:
         sql = f"SHOW TABLES LIKE '{table_name}'"
@@ -218,7 +228,7 @@ class Mnemosyne:
         # create and return a list with the results
         for symbol in symbols:
             for interval in intervals:
-                table_name = self._get_ohlcv_table_name(symbol, interval)
+                table_name = self._get_ohlcv_table_name(exchange, symbol, interval)
                 item = []
 
                 if table_name in all_tables:
@@ -248,7 +258,14 @@ class Mnemosyne:
 
         return result
 
-    # ------------------------------------------------------------------------
+    def get_latest_open(self, exchange: str, symbol: str, interval: str) -> int:
+        table_name = self._get_ohlcv_table_name(exchange, symbol, interval)
+        sql = f"SELECT MAX(openTime) FROM {table_name}"
+        result = self.query(sql)
+
+        return int(result[0][0]) if result else 0
+
+    # --------------------------------------------------------------------------------
     def save_to_database(
         self, table_name: str, columns: list, data: list, batch=False
     ) -> bool:
@@ -303,7 +320,7 @@ class Mnemosyne:
         pass
         # REPLACE into table (id, name, age) values(1, "A", 19)
 
-    # ========================================================================
+    # ================================================================================
     # functions for special queries
     def _create_symbols_table(self):
         table_name = "symbols"
@@ -394,7 +411,7 @@ class Mnemosyne:
             if columns:
                 return {k: v for k, v in (zip(columns, values))}
 
-    # -------------------------------------------------------------------------
+    # --------------------------------------------------------------------------------
     # get the ohclv data in the same format as a direct
     # binance api request returns (= dataframe)
     def get_ohclv(
@@ -471,11 +488,11 @@ class Mnemosyne:
         self.create_table(table_name, table_description)
         return True
 
-    def _get_ohlcv_table_name(self, symbol: str, interval: str):
+    def _get_ohlcv_table_name(self, exchange: str, symbol: str, interval: str) -> str:
         symbol_name = "".join(symbol.split("-")) if "-" in symbol else symbol
-        return "_".join([get_exchange_name(symbol), symbol_name, "ohlcv", interval])
+        return "_".join([exchange, symbol_name, "ohlcv", interval])
 
-    # ========================================================================
+    # ===============================================================================
     # helper methods
     def set_start_time(self, start_time):
         self.start = utc_to_unix(start_time)
