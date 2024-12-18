@@ -1,0 +1,322 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Provides a class to download OHLCV from Binance API as fast as possible.
+
+The BinanceClient class utilizes the RateLimiter class to adjust the
+rate of requests based on the 'used weight' info returned by the API
+to avoid hitting the request limtits (which would result in a ban).
+
+Created on Dec 17 06:36:20 2024
+
+These are the Binance rate limits according to their API documentation:
+
+"rateLimits": [{
+                    "rateLimitType": "REQUEST_WEIGHT",
+                    "interval": "MINUTE",
+                    "intervalNum": 1,
+                    "limit": 1200
+                }, {
+                    "rateLimitType": "ORDERS",
+                    "interval": "SECOND",
+                    "intervalNum": 10,
+                    "limit": 50
+                }, {
+                    "rateLimitType": "ORDERS",
+                    "interval": "DAY",
+                    "intervalNum": 1,
+                    "limit": 160000
+                }, {
+                    "rateLimitType": "RAW_REQUESTS",
+                    "interval": "MINUTE",
+                    "intervalNum": 5,
+                    "limit": 6100
+                }]
+
+@author dhaneor
+"""
+import asyncio
+import aiohttp
+import logging
+from time import time
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+from typing import List, Dict, Any, Tuple
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+else:
+    logger = logging.getLogger(f'main.{__name__}')
+
+MAX_WORKERS = 20  # max number of parallel requests to the Binance API
+KLINES_LIMIT = 1000  # how may klines to request in one API call
+BASE_DELAY = MAX_WORKERS / 25  # base delay for rate limiting (in seconds)
+
+RATE_LIMIT_BARRIER = 1200  # this is the Binance API rate limit (see above)
+HARD_LIMIT = RATE_LIMIT_BARRIER * 0.9  # limit harder above this threshhold
+SOFT_LIMIT = RATE_LIMIT_BARRIER * 0.7  # start limiting above this threshhold
+
+RAW_REQUEST_LIMIT = 6100  # requests per 5 minutes (see above)
+LONG_DELAY_THRESHHOLD = RAW_REQUEST_LIMIT * 0.9  # add even more delay above ...
+
+
+class CircuitBreaker:
+    def __init__(self, max_failures=5, reset_time=300):
+        self.failures = 0
+        self.max_failures = max_failures
+        self.reset_time = reset_time
+        self.last_failure_time = None
+
+    def record_failure(self):
+        current_time = datetime.now()
+
+        if self.last_failure_time:
+            secs_since_reset = timedelta(seconds=self.reset_time)
+            if (current_time - self.last_failure_time) > secs_since_reset:
+                self.failures = 0
+
+        self.failures += 1
+        self.last_failure_time = current_time
+
+    def is_open(self):
+        return self.failures >= self.max_failures
+
+
+@dataclass
+class RateLimiter:
+    """Rate limiter class """
+    weight_1m: int = 0
+    weight_total: int = 0
+    last_update: float = time()
+    time_offset: float = 0.0
+    throttle_counter: int = 0
+
+    def update(self, weight_1m: int, weight_total: int):
+        # reset at the start of each minute
+        if self.seconds_to_next_full_minute() > 55:
+            self.weight_1m = 0
+            self.weight_total = 0
+
+        # update values
+        self.weight_1m = max(weight_1m, self.weight_1m)
+        self.weight_total = max(weight_total, self.weight_total)
+        self.last_update = time()
+
+        logger.debug(
+            "1 muinute weight used: %s (total weight used: %s)"
+            % (self.weight_1m, self.weight_total)
+            )
+
+    def should_throttle(self) -> bool:
+        return self.weight_1m > SOFT_LIMIT or self.weight_total > LONG_DELAY_THRESHHOLD
+
+    def chill_out_bro(self) -> tuple[float, int]:
+        # calculate the delay we need to prevent 'too many requests'
+        seconds_left = self.seconds_to_next_full_minute() + 0.5
+
+        # start throttling when the 1m weight goes above the soft limit
+        base_delay = BASE_DELAY
+
+        if self.weight_1m >= SOFT_LIMIT:
+            base_delay += seconds_left ** 1.5 / (HARD_LIMIT - (self.weight_1m - 1))
+
+            # throttle harder when we crossed the hard limit
+            if self.weight_1m > HARD_LIMIT:
+                base_delay = seconds_left ** 2.5\
+                    / max(RATE_LIMIT_BARRIER - self.weight_1m - 50, 1)
+
+            # wait for the next minute before proceeding when we approach
+            # the API limit of 1200 ised weight per one minute
+            if self.weight_1m >= RATE_LIMIT_BARRIER - 50:
+                base_delay = seconds_left
+
+        # handle the Raw Request Limit ... usually, this should never happen,
+        # because if the above code works as intended then we will not reach
+        # more than 6000 requests per 5 minutes
+        add_delay = 0.0
+
+        if self.weight_total > LONG_DELAY_THRESHHOLD:
+            logger.info(f"increased total weight: {self.weight_total}")
+            add_delay = (self.weight_total - LONG_DELAY_THRESHHOLD) / 60
+
+        # add even more delay when we have used up more than 95%
+        # of the weight per 5 minutes
+        if self.weight_total > RAW_REQUEST_LIMIT * 0.95:
+            logger.warning("approaching 5m limit ... increasing delay")
+            base_delay = 10
+
+        self.throttle_counter += 1  # just for logging purposes
+        return base_delay + add_delay, self.throttle_counter
+
+    def seconds_to_next_full_minute(self) -> float:
+        adjusted_time = int(time() + self.time_offset)
+        now = datetime.fromtimestamp(adjusted_time)
+        return 60 - now.second
+
+
+class BinanceClient:
+    def __init__(
+        self, api_key: str, api_secret: str, max_concurrent_requests: int = 20
+    ):
+        self.api_key = api_key
+        self.api_secret = api_secret
+        self.base_url = "https://api.binance.com"
+        self.rate_limiter = RateLimiter()
+        self.semaphore = asyncio.Semaphore(max_concurrent_requests)
+        self.circuit_breaker = CircuitBreaker()
+
+    async def sync_server_time(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(f"{self.base_url}/api/v3/time") as response:
+                server_time = (await response.json())['serverTime'] / 1000
+                self.rate_limiter.time_offset = server_time - time()
+
+    async def _fetch_ohlcv_chunk(
+        self,
+        session: aiohttp.ClientSession,
+        symbol: str,
+        interval: str,
+        start: int,
+        end: int,
+    ) -> List[List[Any]]:
+
+        if self.circuit_breaker.is_open():
+            logger.warning("Circuit breaker is open. Waiting before retrying...")
+            await asyncio.sleep(60)  # Wait for 1 minute before retrying
+            self.circuit_breaker = CircuitBreaker()  # Reset the circuit breaker
+
+        endpoint = "/api/v3/klines"
+        params = {
+            "symbol": symbol,
+            "interval": interval,
+            "startTime": start,
+            "endTime": end,
+            "limit": KLINES_LIMIT,
+        }
+
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                async with self.semaphore:
+                    if self.rate_limiter.should_throttle():
+                        delay, count = self.rate_limiter.chill_out_bro()
+                        logger.info(f"[{count}] throttling ... ({round(delay, 2)})")
+                        await asyncio.sleep(delay)
+
+                    async with session.get(
+                        f"{self.base_url}{endpoint}",
+                        params=params,
+                    ) as response:
+                        self.rate_limiter.update(
+                            int(response.headers.get("x-mbx-used-weight-1m", 0)),
+                            int(response.headers.get("x-mbx-used-weight", 0)),
+                        )
+
+                        if response.status == 429:
+                            logger.warning("hit a 429 error!")
+                            retry_after = int(response.headers.get("Retry-After", 60))
+                            await asyncio.sleep(retry_after)
+                            continue
+
+                        response.raise_for_status()
+
+                        logger.info(
+                            f"Request successful for {symbol}. "
+                            f"Weight: {self.rate_limiter.weight_1m}")
+
+                        return await response.json()
+
+            except aiohttp.ClientResponseError:
+                if attempt == max_retries - 1:
+                    raise
+                await asyncio.sleep(1.5**attempt)
+
+            except Exception as e:
+                logger.error(f"Error for {symbol}: {e}, attempt {attempt + 1}")
+                self.circuit_breaker.record_failure()
+
+        logger.warning(
+            "no result for %s after retrying %s times" % (symbol, max_retries)
+            )
+        return []
+
+    def _get_chunk_periods(
+        self, start: int, end: int, interval: str
+    ) -> List[Tuple[int, int]]:
+        chunk_size = 1000  # Maximum number of candles per request
+        interval_ms = {
+            "1m": 60000,
+            "3m": 180000,
+            "5m": 300000,
+            "15m": 900000,
+            "30m": 1800000,
+            "1h": 3600000,
+            "2h": 7200000,
+            "4h": 14400000,
+            "6h": 21600000,
+            "8h": 28800000,
+            "12h": 43200000,
+            "1d": 86400000,
+            "3d": 259200000,
+            "1w": 604800000,
+            "1M": 2592000000,
+        }
+
+        step = chunk_size * interval_ms[interval]
+        chunks = []
+        chunk_start = start
+
+        while chunk_start < end:
+            chunk_end = min(chunk_start + step, end)
+            chunks.append((chunk_start, chunk_end))
+            chunk_start = chunk_end + 1
+
+        return chunks
+
+    async def get_ohlcv(
+        self, symbol: str, interval: str, start: int, end: int
+    ) -> List[List[Any]]:
+        chunks = self._get_chunk_periods(start, end, interval)
+        async with aiohttp.ClientSession() as session:
+            tasks = [
+                self._fetch_ohlcv_chunk(
+                    session, symbol, interval, chunk_start, chunk_end
+                )
+                for chunk_start, chunk_end in chunks
+            ]
+            results = await asyncio.gather(*tasks)
+
+        return [candle for chunk in results for candle in chunk if chunk]
+
+    async def download_ohlcv_data(
+        self, symbols: List[str], interval: str, start: int, end: int
+    ) -> Dict[str, List[List[Any]]]:
+        # async with aiohttp.ClientSession() as session:
+        tasks = [self.get_ohlcv(symbol, interval, start, end) for symbol in symbols]
+        results = await asyncio.gather(*tasks)
+        return dict(zip(symbols, results))
+
+
+# Usage
+async def main():
+    client = BinanceClient("your_api_key", "your_api_secret")
+    symbols = ["BTCUSDT"]  # , "ETHUSDT", "BNBUSDT", "XRPUSDT", "XLMUSDT"]
+    interval = "15m"
+    start = int(time() * 1000) - 5 * 365 * 24 * 60 * 60 * 1000  # 5 years ago
+    end = int(time() * 1000)
+
+    st = time()
+
+    data = await client.download_ohlcv_data(symbols, interval, start, end)
+
+    et = int((time() - st) * 1000)
+    no_of_klines = sum(len(v) for v in data.values())
+    print(f"got {no_of_klines} klines in {et}ms")
+
+    for symbol, ohlcv in data.items():
+        print(f"{symbol}: {len(ohlcv)} candles downloaded")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
