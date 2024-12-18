@@ -42,13 +42,27 @@ import random
 from time import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from threading import Lock
 from typing import List, Dict, Any, Tuple
 
+LOG_LEVEL = logging.INFO
+
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger(__name__)
+    logger.setLevel(LOG_LEVEL)
+
+    ch = logging.StreamHandler()
+    ch.setLevel(LOG_LEVEL)
+
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
+    )
+    ch.setFormatter(formatter)
+
+    logger.addHandler(ch)
 else:
     logger = logging.getLogger(f'main.{__name__}')
+    logger.setLevel(LOG_LEVEL)
 
 MAX_WORKERS = 15  # max number of parallel requests to the Binance API
 KLINES_LIMIT = 1000  # how may klines to request in one API call
@@ -62,6 +76,31 @@ RAW_REQUEST_LIMIT = 6100  # requests per 5 minutes (see above)
 LONG_DELAY_THRESHHOLD = RAW_REQUEST_LIMIT * 0.9  # add even more delay above ...
 
 
+class RateLimitManager:
+    def __init__(self):
+        self._lock = Lock()
+        self._retry_after = 0
+        self._ban_until = 0
+
+    def check_rate_limit(self):
+        current_time = time()
+        if current_time < self._ban_until:
+            return self._ban_until - current_time
+        if current_time < self._retry_after:
+            return self._retry_after - current_time
+        return 0
+
+    def set_rate_limit(self, retry_after):
+        self._retry_after = time() + retry_after
+
+    def set_ban(self, ban_duration):
+        self._ban_until = time() + ban_duration
+
+    def reset(self):
+        self._retry_after = 0
+        self._ban_until = 0
+
+
 class CircuitBreaker:
     def __init__(self, max_failures=5, reset_time=300):
         self.failures = 0
@@ -70,7 +109,7 @@ class CircuitBreaker:
         self.last_failure_time = None
         self.retry_after = 0
 
-    def record_failure(self, retry_after: int = 0):
+    def record_failure(self):
         current_time = datetime.now()
 
         if self.last_failure_time:
@@ -82,8 +121,6 @@ class CircuitBreaker:
         self.last_failure_time = current_time
 
     def is_open(self):
-        is_open = self.failures >= self.max_failures
-        logger.debug("circuit breaker is open: %s" % is_open)
         return self.failures >= self.max_failures
 
 
@@ -158,6 +195,7 @@ class BinanceClient:
         self.base_url = "https://api.binance.com"
         self.rate_limiter = RateLimiter()
         self.circuit_breaker = CircuitBreaker()
+        self.rate_limit_manager = RateLimitManager()
         self.semaphore = asyncio.Semaphore(MAX_WORKERS)
 
     async def sync_server_time(self):
@@ -166,88 +204,7 @@ class BinanceClient:
                 server_time = (await response.json())['serverTime'] / 1000
                 self.rate_limiter.time_offset = server_time - time()
 
-    async def _fetch_ohlcv_chunk(
-        self,
-        session: aiohttp.ClientSession,
-        symbol: str,
-        interval: str,
-        start: int,
-        end: int,
-    ) -> List[List[Any]]:
-
-        if self.circuit_breaker.is_open():
-            logger.warning("Circuit breaker is open. Waiting before retrying...")
-            await asyncio.sleep(60)  # Wait for 1 minute before retrying
-            self.circuit_breaker = CircuitBreaker()  # Reset the circuit breaker
-
-        endpoint = "/api/v3/klines"
-        params = {
-            "symbol": symbol,
-            "interval": interval,
-            "startTime": start,
-            "endTime": end,
-            "limit": KLINES_LIMIT,
-        }
-
-        max_retries = 5
-        for attempt in range(max_retries):
-            try:
-                async with self.semaphore:
-                    delay = 0
-                    count = 0
-                    if self.rate_limiter.should_throttle():
-                        delay, count = self.rate_limiter.chill_out_bro()
-                        logger.info("[%s] throttling: %s" % (count, round(delay, 2)))
-                        await asyncio.sleep(delay)
-
-                    async with session.get(
-                        f"{self.base_url}{endpoint}",
-                        params=params,
-                    ) as response:
-                        self.rate_limiter.update(
-                            int(response.headers.get("x-mbx-used-weight-1m", 0)),
-                            int(response.headers.get("x-mbx-used-weight", 0)),
-                        )
-
-                        if response.status == 429:
-                            logger.warning("hit a 429 error!")
-                            retry_after = int(response.headers.get("Retry-After", 60))
-                            await asyncio.sleep(retry_after)
-                            continue
-
-                        if response.status == 418:
-                            retry_after = int(response.headers.get("Retry-After", 60))
-                            logger.error("WE ARE BANNED for %s seconds" % retry_after)
-                            await asyncio.sleep(retry_after)
-                            self.circuit_breaker.record_failure(retry_after)
-
-                        response.raise_for_status()
-
-                        logger.info(
-                            f"Request successful for {symbol}. "
-                            f"Weight: {self.rate_limiter.weight_1m}-"
-                            f"{self.rate_limiter.weight_total}"
-                            )
-
-                        return await response.json()
-
-            except (aiohttp.ClientResponseError, asyncio.TimeoutError, Exception) as e:
-                if attempt == max_retries - 1:
-                    raise
-                wait_time = (2 ** attempt) + random.uniform(0, 1)
-                logger.error(
-                    "Error: %s for %s. Retrying in %s seconds...",
-                    e, symbol, f"{wait_time:.2f}"
-                    )
-                await asyncio.sleep(wait_time)
-                self.circuit_breaker.record_failure()
-
-        logger.warning(
-            "no result for %s after retrying %s times" % (symbol, max_retries)
-            )
-        return []
-
-    def _get_chunk_periods(
+    async def _get_chunk_periods(
         self, start: int, end: int, interval: str
     ) -> List[Tuple[int, int]]:
         chunk_size = 1000  # Maximum number of candles per request
@@ -280,20 +237,127 @@ class BinanceClient:
 
         return chunks
 
+    async def _fetch_ohlcv_chunk(
+        self,
+        session: aiohttp.ClientSession,
+        worker_id: str,
+        symbol: str,
+        interval: str,
+        start: int,
+        end: int,
+    ) -> List[List[Any]]:
+
+        endpoint = "/api/v3/klines"
+        params = {
+            "symbol": symbol,
+            "interval": interval,
+            "startTime": start,
+            "endTime": end,
+            "limit": KLINES_LIMIT,
+        }
+
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                async with self.semaphore:
+                    wait_time = self.rate_limit_manager.check_rate_limit()
+                    if wait_time > 0:
+                        logger.warning(
+                            "%s Rate limit in effect. Waiting for %s seconds.",
+                            worker_id, wait_time
+                            )
+                        await asyncio.sleep(wait_time)
+
+                    if self.circuit_breaker.is_open():
+                        logger.warning(
+                            "Circuit breaker is open. Waiting before retrying..."
+                            )
+                        await asyncio.sleep(60)  # Wait for 1 minute before retrying
+                        self.circuit_breaker = CircuitBreaker()
+
+                    delay = 0
+                    count = 0
+                    if self.rate_limiter.should_throttle():
+                        delay, count = self.rate_limiter.chill_out_bro()
+                        logger.info(
+                            "[%s] throttling %s: %s",
+                            worker_id, count, round(delay, 2)
+                            )
+                        await asyncio.sleep(delay)
+
+                    async with session.get(
+                        f"{self.base_url}{endpoint}",
+                        params=params,
+                    ) as response:
+                        self.rate_limiter.update(
+                            int(response.headers.get("x-mbx-used-weight-1m", 0)),
+                            int(response.headers.get("x-mbx-used-weight", 0)),
+                        )
+
+                        if random.random() > 0.99:
+                            response.status = 429
+
+                        if response.status == 429:
+                            logger.warning("[%s] Hit a 429 error!" % worker_id)
+                            # retry_after = int(response.headers.get("Retry-After", 60))
+                            retry_after = 10
+                            self.rate_limit_manager.set_rate_limit(retry_after)
+                            return await self._fetch_ohlcv_chunk(
+                                session, worker_id, symbol, interval, start, end
+                                )
+
+                        if response.status == 418:
+                            retry_after = int(response.headers.get("Retry-After", 120))
+                            logger.error(
+                                "[%s] We are BANNED for %s seconds"
+                                % (worker_id, retry_after)
+                                )
+                            self.rate_limit_manager.set_ban(retry_after)
+                            return await self._fetch_ohlcv_chunk(
+                                session, worker_id, symbol, interval, start, end
+                                )
+
+                        response.raise_for_status()
+
+                        logger.info(
+                            f"[{worker_id}] Request successful. "
+                            f"Weight: {self.rate_limiter.weight_1m}-"
+                            f"{self.rate_limiter.weight_total}"
+                            )
+
+                        return await response.json()
+
+            except (aiohttp.ClientResponseError, asyncio.TimeoutError, Exception) as e:
+                if attempt == max_retries - 1:
+                    raise
+                wait_time = (2 ** attempt) + random.uniform(0, 1)
+                logger.error(
+                    "[%s] Error: %s for %s. Retrying in %s seconds...",
+                    worker_id, e, symbol, f"{wait_time:.2f}"
+                    )
+                await asyncio.sleep(wait_time)
+                self.circuit_breaker.record_failure()
+
+        logger.warning(
+            "no result for %s after retrying %s times" % (symbol, max_retries)
+            )
+        return []
+
     async def get_ohlcv(
         self, symbol: str, interval: str, start: int, end: int
     ) -> List[List[Any]]:
-        chunks = self._get_chunk_periods(start, end, interval)
+        chunks = await self._get_chunk_periods(start, end, interval)
+
         async with aiohttp.ClientSession() as session:
             tasks = [
                 self._fetch_ohlcv_chunk(
-                    session, symbol, interval, chunk_start, chunk_end
+                    session, f"{symbol}_{i}", symbol, interval, chunk_start, chunk_end
                 )
-                for chunk_start, chunk_end in chunks
+                for i, (chunk_start, chunk_end) in enumerate(chunks)
             ]
             results = await asyncio.gather(*tasks)
 
-        return [candle for chunk in results for candle in chunk if chunk]
+        return [item for sublist in results for item in sublist]
 
     async def download_ohlcv_data(
         self, symbols: List[str], interval: str, start: int, end: int
@@ -307,7 +371,7 @@ class BinanceClient:
 # Usage
 async def main():
     client = BinanceClient()
-    symbols = ["BTCUSDT", "ETHUSDT", "BNBUSDT", "XRPUSDT", "XLMUSDT"]
+    symbols = ["BTCUSDT", "ETHUSDT"]  # , "BNBUSDT", "XRPUSDT", "XLMUSDT"]
     interval = "15m"
     start = int(time() * 1000) - 5 * 365 * 24 * 60 * 60 * 1000  # 5 years ago
     end = int(time() * 1000)
