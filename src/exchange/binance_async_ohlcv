@@ -1,39 +1,39 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Provides a class to download OHLCV from Binance API as fast as possible.
+Binance Asynchronous OHLCV Downloader
 
-The BinanceClient class utilizes the RateLimiter class to adjust the
-rate of requests based on the 'used weight' info returned by the API
-to avoid hitting the request limtits (which would result in a ban).
+This module provides a class to download OHLCV (Open, High, Low, Close, Volume) data
+from the Binance API as efficiently as possible using asynchronous requests.
+
+Key Features:
+- Asynchronous data fetching for improved performance
+- Rate limiting to comply with Binance API restrictions
+- Circuit breaker pattern to handle and recover from API errors
+- Adjustable request rates based on API usage feedback
+
+Classes:
+- BinanceClient: Main class for interacting with the Binance API
+- RateLimiter: Manages and adjusts request rates
+- CircuitBreaker: Implements the circuit breaker pattern for error handling
+- RateLimitManager: Manages rate limit states and ban durations
+
+Usage:
+    client = BinanceClient()
+    ohlcv_data = await client.get_ohlcv('BTCUSDT', '1h', start_time, end_time)
+
+Note:
+This module is designed to work within the constraints of the Binance API's rate limits.
+Users should be aware of and respect these limits to avoid temporary IP bans.
+
+Binance API Rate Limits:
+- REQUEST_WEIGHT: 1200 per minute
+- ORDERS: 50 per 10 seconds, 160000 per day
+- RAW_REQUESTS: 6100 per 5 minutes
 
 Created on Dec 17 06:36:20 2024
 
-These are the Binance rate limits according to their API documentation:
-
-"rateLimits": [{
-                    "rateLimitType": "REQUEST_WEIGHT",
-                    "interval": "MINUTE",
-                    "intervalNum": 1,
-                    "limit": 1200
-                }, {
-                    "rateLimitType": "ORDERS",
-                    "interval": "SECOND",
-                    "intervalNum": 10,
-                    "limit": 50
-                }, {
-                    "rateLimitType": "ORDERS",
-                    "interval": "DAY",
-                    "intervalNum": 1,
-                    "limit": 160000
-                }, {
-                    "rateLimitType": "RAW_REQUESTS",
-                    "interval": "MINUTE",
-                    "intervalNum": 5,
-                    "limit": 6100
-                }]
-
-@author dhaneor
+@author: dhaneor
 """
 import asyncio
 import aiohttp
@@ -64,12 +64,17 @@ else:
     logger = logging.getLogger(f'main.{__name__}')
     logger.setLevel(LOG_LEVEL)
 
+# Increase this for increased speed at the beginning of a download/minute.
+# 15 seems to be a good number which means that at the end of the minute,
+# there is only a short waiting time for the reset of the API 1m limit.
+# If the latency is low, it may even make sense to decrease this value.
 MAX_WORKERS = 15  # max number of parallel requests to the Binance API
+
 KLINES_LIMIT = 1000  # how may klines to request in one API call
 BASE_DELAY = MAX_WORKERS / 25  # base delay for rate limiting (in seconds)
 
 RATE_LIMIT_BARRIER = 1200  # this is the Binance API rate limit (see above)
-HARD_LIMIT = RATE_LIMIT_BARRIER - 50  # limit harder above this threshhold
+HARD_LIMIT = RATE_LIMIT_BARRIER - 50  # limit hard above this threshhold
 SOFT_LIMIT = RATE_LIMIT_BARRIER * 0.6  # start limiting above this threshhold
 
 RAW_REQUEST_LIMIT = 6100  # requests per 5 minutes (see above)
@@ -79,12 +84,14 @@ SIMULATE_429_ERRORS = False  # activate this to test the RateLimitManager
 
 
 class RateLimitManager:
+    """Class to manage 429 and 418 errors."""
+
     def __init__(self):
         self._lock = Lock()
         self._retry_after = 0
         self._ban_until = 0
 
-    def check_rate_limit(self):
+    def get_wait_time(self) -> float:
         current_time = time()
         if current_time < self._ban_until:
             return self._ban_until - current_time
@@ -98,12 +105,10 @@ class RateLimitManager:
     def set_ban(self, ban_duration):
         self._ban_until = time() + ban_duration
 
-    def reset(self):
-        self._retry_after = 0
-        self._ban_until = 0
-
 
 class CircuitBreaker:
+    "Circuit Breaker class."
+
     def __init__(self, max_failures=5, reset_time=300):
         self.failures = 0
         self.max_failures = max_failures
@@ -198,6 +203,8 @@ class RateLimiter:
 
 
 class BinanceClient:
+    """Specialized Binance client for OHLCV data downloads."""
+
     def __init__(self, timeout: int = 10) -> None:
         self.base_url = "https://api.binance.com"
         self.timeout = aiohttp.ClientTimeout(total=timeout)
@@ -271,8 +278,7 @@ class BinanceClient:
                 async with self.semaphore:
                     # check with the Rate Limit Manager if we need to wait
                     # because we exceeded the API rate limit or got banned
-                    wait_time = self.rate_limit_manager.check_rate_limit()
-                    if wait_time > 0:
+                    if wait_time := self.rate_limit_manager.get_wait_time() > 0:
                         logger.warning(
                             "%s Rate limit in effect. Waiting for %s seconds.",
                             worker_id, round(wait_time)
@@ -383,6 +389,33 @@ class BinanceClient:
     async def get_ohlcv(
         self, symbol: str, interval: str, start: int, end: int
     ) -> List[List[Any]]:
+        """
+        Asynchronously fetches OHLCV (Open, High, Low, Close, Volume)
+        data for a given symbol and time range.
+
+        This method breaks down the requested time range into chunks,
+        fetches data for each chunk in parallel,filters out any errors,
+        and returns the combined and sorted results.
+
+        Arguments:
+        ----------
+        symbol: str
+            The trading pair symbol (e.g., 'BTCUSDT').
+        interval: str
+            The candlestick interval (e.g., '1m', '1h', '1d').
+        start:int
+            The start time in milliseconds since the Unix epoch.
+        end: int
+            The end time in milliseconds since the Unix epoch.
+
+        Returns:
+        --------
+        List: [List[Any]]
+            A list of OHLCV data points, where each data point is a list
+            containing [timestamp, open, high, low, close, volume, ...]
+            in that order. The list is sorted by timestamp in ascending
+            order.
+        """
         chunks = await self._get_chunk_periods(start, end, interval)
 
         async with aiohttp.ClientSession(timeout=self.timeout) as session:
@@ -410,7 +443,33 @@ class BinanceClient:
     async def download_ohlcv_data(
         self, symbols: List[str], interval: str, start: int, end: int
     ) -> Dict[str, List[List[Any]]]:
-        # async with aiohttp.ClientSession() as session:
+        """
+        Asynchronously download OHLCV (Open, High, Low, Close, Volume)
+        data for multiple symbols.
+
+        This function creates concurrent tasks to fetch OHLCV data for
+        each symbol in the provided list, over the specified time range
+        and interval.
+
+        Parameters:
+        -----------
+        symbols : List[str]
+            A list of trading pair symbols (e.g., ['BTCUSDT', 'ETHUSDT']).
+        interval : str
+            The candlestick interval (e.g., '1m', '1h', '1d').
+        start : int
+            The start time in milliseconds since the Unix epoch.
+        end : int
+            The end time in milliseconds since the Unix epoch.
+
+        Returns:
+        --------
+        Dict[str, List[List[Any]]]
+            A dictionary where each key is a symbol and the corresponding
+            value is a list of OHLCV data points. Each data point is a
+            list containing [timestamp, open, high, low, close, volume, ...]
+            in that order.
+        """
         tasks = [self.get_ohlcv(symbol, interval, start, end) for symbol in symbols]
         results = await asyncio.gather(*tasks)
         return dict(zip(symbols, results))
