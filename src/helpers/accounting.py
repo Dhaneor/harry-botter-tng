@@ -5,9 +5,6 @@ Created on Sun Feb 20 15:03:33 2022
 
 @author: dhaneor
 """
-
-import sys
-
 from decimal import Decimal
 from typing import Optional, Union
 
@@ -22,25 +19,25 @@ class Accounting:
             ndigits = 0
 
         return Decimal(amount).quantize(ndigits)
-    
+
     @classmethod
-    def get_precision(self, value:Union[int, float, str]) ->int:
+    def get_precision(self, value: Union[int, float, str]) -> int:
         try:
             value = str(float(value))
-        except:
-            raise ValueError(f'Value must int|float|str but was {type(value)}')
+        except Exception:
+            raise ValueError(f"Value must int|float|str but was {type(value)}")
 
-        if not '.' in value and not 'e' in value: 
+        if "." not in value and "e" not in value:
             return 0
-        
+
         # for scientific notation
-        if 'e' in value:
-            _exp = int(value.split('e')[1])
-            
-            if '.' in value:
-                _dec = value.split('.')[1]
-                _dec = len(_dec.split('e')[0])
-                _corr = 1 if value.split('.')[0] == '0' else 2
+        if "e" in value:
+            _exp = int(value.split("e")[1])
+
+            if "." in value:
+                _dec = value.split(".")[1]
+                _dec = len(_dec.split("e")[0])
+                _corr = 1 if value.split(".")[0] == "0" else 2
             else:
                 _dec = 0
 
@@ -51,27 +48,41 @@ class Accounting:
                     return 0
                 else:
                     return _dec - _exp - _corr
-            
-        res = len(value.split('.')[1])
-        if str(value.split('.')[1]) == '0': 
-            res -= 1 
+
+        res = len(value.split(".")[1])
+        if str(value.split(".")[1]) == "0":
+            res -= 1
 
         return res
 
+
 # =============================================================================
 def test_precision():
-    values = [4.43543, 0, '78.43', '8.3', '1.23e-03', 1.23e-03, 8.89769434e-03, 
-              9.25987864874599569e+08, 1.25987864874599569e+08,
-              8.45e03, '8.45e03',  4.173989e02, '1e-03', 1e-08, 1e20]
+    values = [
+        4.43543,
+        0,
+        "78.43",
+        "8.3",
+        "1.23e-03",
+        1.23e-03,
+        8.89769434e-03,
+        9.25987864874599569e08,
+        1.25987864874599569e08,
+        8.45e03,
+        "8.45e03",
+        4.173989e02,
+        "1e-03",
+        1e-08,
+        1e20,
+    ]
     a = Accounting
 
     for _v in values:
         p = a.get_precision(value=_v)
-        print(f'precision for {_v} ({float(_v)}): {p}')
-    
-                
+        print(f"precision for {_v} ({float(_v)}): {p}")
+
+
 # =============================================================================
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     test_precision()
