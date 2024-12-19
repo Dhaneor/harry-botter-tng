@@ -180,7 +180,7 @@ class RateLimiter:
         # wait for the next minute before proceeding when we approach
         # the API limit of 1200 used weight per one minute
         # but do not wait longer than 55 seconds (even though we try to sync to
-        # to the server time, sometimes the daly was set to 59 or 60 seconds)
+        # to the server time, sometimes the delay was set to 59 or 60 seconds)
         if self.weight_1m >= HARD_LIMIT:
             short_delay = seconds_left if seconds_left < 55 else 5
 
@@ -275,7 +275,7 @@ class BinanceClient:
         end: int,
     ) -> List[List[Any]]:
 
-        params = {
+        params: dict[str, str | int] = {
             "symbol": symbol,
             "interval": interval,
             "startTime": start,
