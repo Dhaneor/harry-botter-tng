@@ -13,6 +13,7 @@ import numpy as np
 from exchange.binance_ import Binance
 from staff.hermes import Hermes
 from exchange.binance_async_ohlcv import BinanceClient
+from src.analysis.indicators.indicators_fast_nb import atr
 
 
 # =============================================================================
