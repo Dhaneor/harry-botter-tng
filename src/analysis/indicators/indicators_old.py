@@ -14,7 +14,7 @@ from numba import jit
 from typing import Union, List, Tuple, Optional, Iterable
 import numpy.typing as npt
 
-from src.helpers.fibonacci import fibonacci_series
+from util.fibonacci import fibonacci_series
 from util.timeops import execution_time
 
 logger = logging.getLogger(__name__)

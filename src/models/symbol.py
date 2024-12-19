@@ -24,7 +24,7 @@ sys.path.append('../backtest.module/')
 # -----------------------------------------------------------------------------
 from staff.hermes import Hermes
 from util.timeops import execution_time
-from helpers.accounting import Accounting
+from util.accounting import Accounting
 
 # ==============================================================================
 class Symbol:

@@ -40,7 +40,7 @@ from src.exchange.util.kucoin_order_downloader import (  # noqa: F401, E402
 from util.timeops import (  # noqa: F401, E402
     utc_to_unix, interval_to_milliseconds
 )
-from src.helpers.accounting import Accounting  # noqa: F401, E402
+from util.accounting import Accounting  # noqa: F401, E402
 
 logger = logging.getLogger("main.kucoin")
 logger.setLevel(logging.INFO)

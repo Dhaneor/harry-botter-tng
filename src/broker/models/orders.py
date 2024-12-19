@@ -13,7 +13,7 @@ from pprint import pprint
 from typing import Union, List
 
 from broker.models.symbol import Symbol
-from helpers.formatting import scientific_to_str as sts 
+from util.formatting import scientific_to_str as sts
 
 
 # =============================================================================
@@ -23,14 +23,14 @@ class ExecutionReport:
 
         self.symbol: str
 
-        # determine message type 
+        # determine message type
         self.original_message: dict = message
         self._type_of_message: str
         self.successful_order: bool
         self.current_order_status: str
         self.execution_errors: list = []
 
-        # let's see if we got a user stream event or an order response event 
+        # let's see if we got a user stream event or an order response event
         self._determine_type_of_message()
 
         # build from the message/event type we got
@@ -48,7 +48,7 @@ class ExecutionReport:
     def __repr__(self):
 
         type =  '.' if self._type_of_message == 'order response' else '_'
-        
+
         out = f'{type}Execution Report for {self.symbol} {self.type} '
         out += f'{self.side} order ({self.client_order_id}) - '
         out += f'status {self.current_order_status} (exc type: {self.ex_type})'
@@ -57,7 +57,7 @@ class ExecutionReport:
 
             out += f': limit price = {self.order_price} '
             out += f'(stop price = {self.stop_price})'
-        
+
         if self.current_order_status == 'FILLED' \
         or self.current_order_status == 'PARTIALLY FILLED':
 
@@ -88,24 +88,24 @@ class ExecutionReport:
             return False
 
     # -------------------------------------------------------------------------
-    # there are two types of messages: 
+    # there are two types of messages:
     # 1) messages from the user events stream (websocket API)
     # 2) order responses from the REST API
     #
-    # this method determines which one we got by checking for keys that are not 
+    # this method determines which one we got by checking for keys that are not
     # present in the other type
     def _determine_type_of_message(self):
         # event type: user stream event
-        if 'E' in self.original_message: 
+        if 'E' in self.original_message:
             self._type_of_message = 'user stream event'
         # event type: structured order response (from exchange client)
-        elif 'message' in self.original_message: 
-            self._type_of_message = 'order response' 
+        elif 'message' in self.original_message:
+            self._type_of_message = 'order response'
         else:
             print('failed to determine message type for:')
             pprint(self.original_message)
             sys.exit()
-            self._type_of_message = 'unknown' 
+            self._type_of_message = 'unknown'
 
     def _build_from_user_stream_event(self):
 
@@ -114,14 +114,14 @@ class ExecutionReport:
 
         if execution_error == 'NONE':
 
-            self.symbol = message.get('s', None) 
+            self.symbol = message.get('s', None)
 
-            self.order_id = message.get('i', None) 
-            self.client_order_id = message.get('c', None) 
+            self.order_id = message.get('i', None)
+            self.client_order_id = message.get('c', None)
             self.trade_id = message.get('t', None)
 
-            self.order_creation_time = message.get('O', None) 
-            self.current_order_status = message.get('X', None) 
+            self.order_creation_time = message.get('O', None)
+            self.current_order_status = message.get('X', None)
             self.current_execution_type = message.get('x', None)
             self.time_in_force = message.get('f', None)
 
@@ -129,21 +129,21 @@ class ExecutionReport:
             self.type = message.get('o', None)
 
             self.order_quantity = float(message.get('q', None))
-            self.quote_order_quantity = float(message.get('Q', None)) 
+            self.quote_order_quantity = float(message.get('Q', None))
             self.order_price = float(message.get('p', None))
-            self.stop_price = float(message.get('P', None)) 
+            self.stop_price = float(message.get('P', None))
 
-            self.last_executed_price = float(message.get('L', None)) 
-            self.last_executed_quantity = float(message.get('l', None)) 
-            self.last_quote_asset_transacted_quantity = float(message.get('Y', None)) 
+            self.last_executed_price = float(message.get('L', None))
+            self.last_executed_quantity = float(message.get('l', None))
+            self.last_quote_asset_transacted_quantity = float(message.get('Y', None))
             self.cumulative_filled_quantity = float(message.get('z', None))
             self.cumulative_quote_asset_transacted_quantity = float(message.get('Z', None))
 
-            self.commission_asset = message.get('N', None) 
-            self.commission_amount = round(float(message.get('n', None)), 8) 
+            self.commission_asset = message.get('N', None)
+            self.commission_amount = round(float(message.get('n', None)), 8)
 
-            self.event_time = message.get('E', None) 
-            self.transaction_time = message.get('T', None) 
+            self.event_time = message.get('E', None)
+            self.transaction_time = message.get('T', None)
 
             self.is_this_trade_maker_side = True if message.get('m', False) == 'true' else False
             self.is_the_message_on_the_book = True if message.get('w', False) == 'true' else False
@@ -160,10 +160,10 @@ class ExecutionReport:
             pass
             return
 
-        if success:            
+        if success:
 
             fills = message.get('fills', [])
-            
+
             if len(fills) > 0:
                 fill_results = self._get_fill_results(message.get('fills'))
             else:
@@ -175,10 +175,10 @@ class ExecutionReport:
                                 'trade id' : None
                     }
 
-            self.symbol = message.get('symbol', None) 
+            self.symbol = message.get('symbol', None)
 
-            self.order_id = message.get('orderId', None) 
-            self.client_order_id = message.get('clientOrderId', None) 
+            self.order_id = message.get('orderId', None)
+            self.client_order_id = message.get('clientOrderId', None)
             self.trade_id = fill_results.get('trade id')
 
             self.order_creation_time = message.get('transactTime', 0)
@@ -190,9 +190,9 @@ class ExecutionReport:
             self.type = message.get('type', None)
 
             self.order_quantity = float(message.get('origQty', 0.00))
-            self.quote_order_quantity = fill_results.get('quote_qty') 
+            self.quote_order_quantity = fill_results.get('quote_qty')
             self.order_price = float(message.get('price', 0.00))
-            self.stop_price = float(message.get('stopPrice', 0.00)) 
+            self.stop_price = float(message.get('stopPrice', 0.00))
 
             self.last_executed_price = fill_results.get('price')
             self.last_executed_quantity = fill_results.get('qty')
@@ -200,17 +200,17 @@ class ExecutionReport:
             self.cumulative_filled_quantity = float(message.get('executedQty', 0.00))
             self.cumulative_quote_asset_transacted_quantity = float(message.get('cummulativeQuoteQty', 0.00))
 
-            self.commission_asset = fill_results.get('commission asset') 
+            self.commission_asset = fill_results.get('commission asset')
             self.commission_amount = fill_results.get('commission')
 
-            self.event_time = message.get('transactTime', None) 
-            self.transaction_time = message.get('transactTime', None) 
+            self.event_time = message.get('transactTime', None)
+            self.transaction_time = message.get('transactTime', None)
 
             if self.type == ('LIMIT' or 'STOP_LOSS_LIMIT' or 'TAKE_PROFIT_LIMIT'):
                 self.is_this_trade_maker_side = True
                 if self.current_order_status == ('NEW' or 'PARTIALLY FILLED'):
                     self.is_the_message_on_the_book = True
-            else: 
+            else:
                 self.is_this_trade_maker_side = False
                 self.is_the_message_on_the_book = False
 
@@ -250,7 +250,7 @@ class ExecutionReport:
         return result
 
     # -------------------------------------------------------------------------
-    # set a numerical value for the type of transaction. this is just used to 
+    # set a numerical value for the type of transaction. this is just used to
     # hide that logic from the main class and can be accessed/used there
     #
     # 1: BUY order FILLED [MARKET or LIMIT]
@@ -260,16 +260,16 @@ class ExecutionReport:
     # 5: STOP LOSS triggered
     #
     def _set_type(self):
-        
+
         if not self.original_message.get('success', False):
             self.ex_type = -1
             return
-        
+
         if self.side == 'BUY' \
         and self.current_order_status == 'FILLED' \
         and self.type != 'STOP_LOSS_LIMIT':
             self.ex_type = 1
-        
+
         elif self.side == 'SELL' \
         and self.current_order_status == 'FILLED' \
         and self.type != 'STOP_LOSS_LIMIT':
@@ -362,7 +362,7 @@ class ExecutionReport:
         '''
 
         '''
-        Here are two examples of the format for a response from the REST API for 
+        Here are two examples of the format for a response from the REST API for
         an order that was sent by the client:
 
         {'clientOrderId': 'SIpAS2YcuR1xWlkg6ROyN1',
@@ -401,7 +401,7 @@ class ExecutionReport:
             'type': 'STOP_LOSS_LIMIT'}
 
         '''
-        pass 
+        pass
 
 
 # =============================================================================
@@ -414,8 +414,8 @@ class Order:
 
     def __init__(self, **kwargs):
         """Base Class for order objects
-        
-        :param symbol: a symbol object 
+
+        :param symbol: a symbol object
         :type symbol: Symbol
         :param exchange: name of the exchange ('binance'/'kucoin')
         :type exchange: str
@@ -443,7 +443,7 @@ class Order:
 
         self.type: str
         self.base_qty_net: float
-        
+
         self.stop_price: float
         self.limit_price: float
 
@@ -456,7 +456,7 @@ class Order:
                                 'failed' : 0
                                 }
 
-        self._status: str # INITIATED. APPROVED, PENDING, CREATED, 
+        self._status: str # INITIATED. APPROVED, PENDING, CREATED,
                            # EXECUTED, REJECTED, FAILED
         self.valid: bool = False # False until order is validated
         self.validation_errors: List[str] = []
@@ -484,7 +484,7 @@ class Order:
     def __repr__(self):
 
         if self.status:
-            exc_time = self.execution_times[self.status.lower()] 
+            exc_time = self.execution_times[self.status.lower()]
         else:
             exc_time = 0
 
@@ -496,10 +496,10 @@ class Order:
         elif self.quote_qty:
             res += f' {round(self.quote_qty, self.symbol.tick_precision)} '\
                 f'{self.symbol.quote_asset} '
-            
+
             if self.last_price:
                 base_qty = float(self.quote_qty) / self.last_price
-                base_qty = round(base_qty, self.symbol.lot_size_step_precision) 
+                base_qty = round(base_qty, self.symbol.lot_size_step_precision)
                 res += f' (~{sts(base_qty)} {self.symbol.base_asset}) '
 
         if self.type == 'MARKET' and self.last_price:
@@ -510,9 +510,9 @@ class Order:
 
         if self.type == 'LIMIT':
             res += f':: limit price: {self.limit_price}'
-                        
+
         res += f'\t({self.client_order_id} - exc time: {exc_time}ms)'
-        
+
         if self.auto_borrow:
             res += ' [AUTO_BORROW]\n'
         else:
@@ -525,12 +525,12 @@ class Order:
                 order_id = self.result.get('orderId')
                 res += f'order ID: {order_id}\n'
 
-        if self.validation_warnings: 
+        if self.validation_warnings:
             for w in self.validation_warnings: res += f'{w} \n'
-        
+
         if self.status == 'REJECTED':
-            for e in self.validation_errors: res += f'{e} \n' 
-            
+            for e in self.validation_errors: res += f'{e} \n'
+
         if self.status == 'FILLED' and self.fill_price:
             res += f'expected price: {self.last_price} {self.symbol.quote_asset} \t\t\t'
             res += f'realized price: {self.fill_price} {self.symbol.quote_asset} \n'
@@ -560,7 +560,7 @@ class Order:
         self.all_execution_reports.append(self.last_execution_report)
 
         self.result = self.last_execution_report.original_message['message']
-        
+
     @property
     def status(self):
         return self._status
@@ -571,9 +571,9 @@ class Order:
         valid_status = ['INITIATED', 'APPROVED', 'PENDING', 'NEW', 'CREATED',
                         'ABORTED','EXECUTED', 'FILLED', 'REJECTED', 'FAILED',
                         'CANCELED, CANCELLED']
-        
+
         if status in valid_status:
-            
+
             self._status = status
             # print('setting status to ', self._status)
 
@@ -587,15 +587,15 @@ class Order:
 
         return
 
-        
-    # ------------------------------------------------------------------------- 
+
+    # -------------------------------------------------------------------------
     def _order_is_valid(self):
 
         self.status = 'REJECTED'
 
-        if isinstance(self.market, str): 
+        if isinstance(self.market, str):
             self.market = self.market.upper()
-        if isinstance(self.side, str): 
+        if isinstance(self.side, str):
             self.side = self.side.upper()
 
         # check if MARKET is a valid value
@@ -608,25 +608,25 @@ class Order:
 
         if self.last_price is None:
             self.validation_errors.append((f'Missing parameter: last_price'))
-        
+
         # change order status if there were no validation errors
-        if not self.validation_errors: 
+        if not self.validation_errors:
             self.status = 'INITIATED'
             self.valid = True
             return True
 
         return False
 
-    # -------------------------------------------------------------------------  
+    # -------------------------------------------------------------------------
     def _build_client_order_id(self):
         let_num = string.ascii_letters + string.digits
         return ''.join([choice(let_num) for _ in range(22)])
 
     def _calculate_result_stats(self):
 
-        if self.result is None: 
+        if self.result is None:
             return
-        
+
         base_asset = self.symbol.base_asset
         quote_asset = self.symbol.quote_asset
 
@@ -639,16 +639,16 @@ class Order:
         base_qty = float(self.result.get('executedQty', 0))
         cum_quote_qty = float(self.result.get('cummulativeQuoteQty', 0))
 
-        self.fill_price = round(cum_quote_qty / base_qty, tick_precision)  
+        self.fill_price = round(cum_quote_qty / base_qty, tick_precision)
 
         # calculate the slippage - absolute and in per cent
         if not self.last_price:
             return
-        
+
         if self.side == 'BUY' and self.type == 'MARKET':
             self.slippage = self.last_price - self.fill_price
             self.slippage_per_cent = (self.fill_price / self.last_price - 1) * 100
-        
+
         elif self.side == 'SELL' and self.type == 'MARKET':
             self.slippage = self.last_price - self.fill_price
             self.slippage_per_cent = (self.fill_price / self.last_price - 1) * 100
@@ -661,18 +661,18 @@ class Order:
             self.slippage = self.stop_price - self.fill_price
             self.slippage_per_cent = (self.fill_price / self.stop_price - 1) * 100
 
-        self.slippage = round(self.slippage, tick_precision) 
-        self.slippage_per_cent = round(self.slippage_per_cent, 4)  
+        self.slippage = round(self.slippage, tick_precision)
+        self.slippage_per_cent = round(self.slippage_per_cent, 4)
 
         # ---------------------------------------------------------------------
         # cycle through the fills and determine net quantity and commissions
         fills = self.result.get('fills')
-        
+
         if not fills:
             return
-        
-        real_price, net_qty = 0, 0 
-        commission_base, commission_quote, commission_bnb, cum_quote_comm = 0, 0 ,0, 0 
+
+        real_price, net_qty = 0, 0
+        commission_base, commission_quote, commission_bnb, cum_quote_comm = 0, 0 ,0, 0
 
         for fill in fills:
 
@@ -685,10 +685,10 @@ class Order:
             #     'qty': '59.2',
             #     'tradeId': '9028182'}
 
-            price = float(fill.get('price', 0)) 
+            price = float(fill.get('price', 0))
             qty = float(fill.get('qty', 0))
             commission = float(fill.get('commission', -1))
-            
+
             # calculation for BUY orders
             if self.side == 'BUY':
                 if fill.get('commissionAsset') == base_asset:
@@ -713,7 +713,7 @@ class Order:
         # calculate 'real' fill price for the order
         if net_qty != 0:
             self.real_price = round(cum_quote_qty / net_qty, quote_precision)
-            
+
         # calculate the commission expressed in quote asset amount for buy orders
         # (where the commission is deducted from the base asset received)
         commission_base = round(commission_base, base_precision)
@@ -726,8 +726,8 @@ class Order:
         # self.commission_bnb = commission_bnb
         self.sum_commissions_as_quote = cum_quote_comm
 
-        # calculate the commission in per cent of the transacted quote asset quantity 
-        self.commission_per_cent = round((cum_quote_comm / cum_quote_qty) * 100, 2)        
+        # calculate the commission in per cent of the transacted quote asset quantity
+        self.commission_per_cent = round((cum_quote_comm / cum_quote_qty) * 100, 2)
 
         return
 
@@ -755,7 +755,7 @@ class MarketOrder(Order):
                 )
             return False
 
-        # convert 'base quantity' to float if necessary 
+        # convert 'base quantity' to float if necessary
         if self.base_qty is not None and not isinstance(self.base_qty, float):
             try:
                 self.base_qty = float(self.base_qty)
@@ -763,16 +763,16 @@ class MarketOrder(Order):
                 self.validation_errors.append(
                     (f'Invalid base quantity type: {type(self.base_qty)}'))
 
-        # convert 'quote quantity' to float if necessary 
+        # convert 'quote quantity' to float if necessary
         if self.quote_qty is not None and not isinstance(self.quote_qty, float):
             try:
                 self.quote_qty = float(self.quote_qty)
             except:
                 self.validation_errors.append(
                     (f'Invalid quote quantity type: {type(self.quote_qty)}'))
-        
+
         # change order status if there were no validation errors
-        if not self.validation_errors: 
+        if not self.validation_errors:
             # print('first test successful...')
             self.status = 'INITIATED'
             self.valid = True
@@ -790,7 +790,7 @@ class StopMarketOrder(MarketOrder):
 
         self._is_valid_stop_market_order()
 
-    # -------------------------------------------------------------------------   
+    # -------------------------------------------------------------------------
     # some additional checks specific to STOP LIMIT orders
     def _is_valid_stop_market_order(self):
 
@@ -814,7 +814,7 @@ class StopMarketOrder(MarketOrder):
                 self.validation_errors.append(reason)
 
         # approve order and set status to INITIATED if there were no errors
-        if not self.validation_errors and not already_rejected: 
+        if not self.validation_errors and not already_rejected:
             self.status = 'INITIATED'
             self.valid = True
             return True
@@ -830,7 +830,7 @@ class LimitOrder(Order):
     def __init__(self, **kwargs):
 
         Order.__init__(self, **kwargs)
-        
+
         self.type = 'LIMIT'
         self.limit_price: float = kwargs.get('limit_price', 0)
 
@@ -856,7 +856,7 @@ class LimitOrder(Order):
                 f'missing parameter: limit price'
             )
 
-        # convert 'base quantity' to float if necessary 
+        # convert 'base quantity' to float if necessary
         if self.base_qty is not None and not isinstance(self.base_qty, float):
             try:
                 self.base_qty = float(self.base_qty)
@@ -865,7 +865,7 @@ class LimitOrder(Order):
                     f'Invalid base quantity type: {type(self.base_qty)}'
                 )
 
-        if not self.validation_errors: 
+        if not self.validation_errors:
             self.status = 'INITIATED'
             self.valid = True
 
@@ -874,7 +874,7 @@ class StopLimitOrder(LimitOrder):
     def __init__(self, **kwargs):
 
         LimitOrder.__init__(self, **kwargs)
-        
+
         self.type = 'STOP_LOSS_LIMIT'
         self.limit_price = float(kwargs.get('limit_price', None))
         self.stop_price = float(kwargs.get('stop_price', None))
@@ -883,11 +883,11 @@ class StopLimitOrder(LimitOrder):
         self._order_is_valid()
         self._is_valid_stop_limit_order()
 
-    # -------------------------------------------------------------------------   
+    # -------------------------------------------------------------------------
     # some additional checks specific to STOP LIMIT orders
     def _is_valid_stop_limit_order(self):
 
-        if self.valid == False: already_rejected = True 
+        if self.valid == False: already_rejected = True
         else: already_rejected = False
 
         self.status = 'REJECTED'
@@ -919,7 +919,7 @@ class StopLimitOrder(LimitOrder):
                 self.validation_errors.append(reason)
 
         # approve order and set status to INITIATED if there were no errors
-        if not self.validation_errors and not already_rejected: 
+        if not self.validation_errors and not already_rejected:
             self.status = 'INITIATED'
             self.valid = True
             return True
