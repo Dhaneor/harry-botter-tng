@@ -52,6 +52,7 @@ Created on Sat Aug 18 11:14:50 2023
 
 @author: dhaneor
 """
+
 import itertools
 import logging
 from enum import Enum, unique
@@ -147,8 +148,8 @@ def merge_signals_nb(open_long, open_short, close_long, close_short):
                 signal[i] = open_short[i] * -1
                 position[i] = -1
         else:
-            prev_position = position[i-1]
-            signal[i] = signal[i-1]
+            prev_position = position[i - 1]
+            signal[i] = signal[i - 1]
             position[i] = prev_position
 
             if open_long[i] > 0:
@@ -298,6 +299,7 @@ class ConditionResult:
     ValueError
         If initialized empty.
     """
+
     open_long: np.ndarray | None = None
     open_short: np.ndarray | None = None
     close_long: np.ndarray | None = None
@@ -306,9 +308,11 @@ class ConditionResult:
     _combined_signal: np.ndarray | None = None
 
     def __post_init__(self):
-
         all_actions = (
-            self.open_long, self.open_short, self.close_long, self.close_short
+            self.open_long,
+            self.open_short,
+            self.close_long,
+            self.close_short,
         )
 
         not_none = next(filter(lambda x: x is not None, all_actions), None)
@@ -317,11 +321,9 @@ class ConditionResult:
             raise ValueError(
                 "ConditionResult is empty - "
                 "at least one action needs to be an array."
-                )
+            )
 
-        for action in (
-            "open_long", "open_short", "close_long", "close_short"
-        ):
+        for action in ("open_long", "open_short", "close_long", "close_short"):
             if (elem := getattr(self, action)) is None:
                 elem = np.full_like(not_none, fill_value=0, dtype=np.float64)
             setattr(self, action, elem.astype(np.float64))
@@ -332,7 +334,7 @@ class ConditionResult:
     def __add__(self, other) -> "ConditionResult":
         res = []
 
-        for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
+        for attr in ["open_long", "open_short", "close_long", "close_short"]:
             res.append(np.add(getattr(self, attr), getattr(other, attr)))
 
         return ConditionResult(
@@ -345,7 +347,7 @@ class ConditionResult:
     def __and__(self, other) -> "ConditionResult":
         res = []
 
-        for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
+        for attr in ["open_long", "open_short", "close_long", "close_short"]:
             if (getattr(self, attr) is None) | (getattr(other, attr) is None):
                 res.append(None)
             else:
@@ -361,7 +363,7 @@ class ConditionResult:
     def __or__(self, other) -> "ConditionResult":
         res = []
 
-        for attr in ['open_long', 'open_short', 'close_long', 'close_short']:
+        for attr in ["open_long", "open_short", "close_long", "close_short"]:
             if (getattr(self, attr) is None) | (getattr(other, attr) is None):
                 res.append(None)
             else:
@@ -381,15 +383,13 @@ class ConditionResult:
         return arr
 
     def ffill(self):
-        for action in (
-            "open_long", "open_short", "close_long", "close_short"
-        ):
+        for action in ("open_long", "open_short", "close_long", "close_short"):
             arr = self.__ffill_array(getattr(self, action))
             setattr(self, action, arr)
 
         return self
 
-    def apply_weight(self, weight: float) -> 'ConditionResult':
+    def apply_weight(self, weight: float) -> "ConditionResult":
         return ConditionResult(
             open_long=np.multiply(self.open_long, weight),
             open_short=np.multiply(self.open_short, weight),
@@ -403,16 +403,13 @@ class ConditionResult:
             "open_short": self.open_short,
             "close_long": self.close_long,
             "close_short": self.close_short,
-            "signals": self.combined_signal
+            "signals": self.combined_signal,
         }
 
     @property
     def combined_signal(self):
         signal, _ = merge_signals_nb(
-            self.open_long,
-            self.open_short,
-            self.close_long,
-            self.close_short
+            self.open_long, self.open_short, self.close_long, self.close_short
         )
 
         return np.nan_to_num(signal)
@@ -567,7 +564,7 @@ class Condition:
                     self.operand_b.plot_desc if self.operand_b else None,
                     self.operand_c.plot_desc if self.operand_c else None,
                     self.operand_d.plot_desc if self.operand_d else None,
-                )
+                ),
             )
         )
 
@@ -594,32 +591,25 @@ class Condition:
         return ConditionResult(
             # open long
             open_long=self.open_long[2](
-                data[self.open_long[1][0]],
-                data[self.open_long[1][1]]
+                data[self.open_long[1][0]], data[self.open_long[1][1]]
             )
             if self.open_long is not None
             else np.full_like(data["close"], False, dtype=bool),
-
             # open short
             open_short=self.open_short[2](
-                data[self.open_short[1][0]],
-                data[self.open_short[1][1]]
+                data[self.open_short[1][0]], data[self.open_short[1][1]]
             )
             if self.open_short is not None
             else np.full_like(data["close"], False, dtype=bool),
-
             # close long
             close_long=self.close_long[2](
-                data[self.close_long[1][0]],
-                data[self.close_long[1][1]]
+                data[self.close_long[1][0]], data[self.close_long[1][1]]
             )
             if self.close_long is not None
             else np.full_like(data["close"], False, dtype=bool),
-
             # close short
             close_short=self.close_short[2](
-                data[self.close_short[1][0]],
-                data[self.close_short[1][1]]
+                data[self.close_short[1][0]], data[self.close_short[1][1]]
             )
             if self.close_short is not None
             else np.full_like(data["close"], False, dtype=bool),
@@ -632,7 +622,8 @@ class Condition:
         test_res = self.execute(TEST_DATA)
 
         output_matches_size_input = all(
-            arg for arg in (
+            arg
+            for arg in (
                 (
                     tr.shape == TEST_DATA["close"].shape
                     for tr in (
@@ -646,7 +637,8 @@ class Condition:
         )
 
         return all(
-            arg for arg in (
+            arg
+            for arg in (
                 isinstance(test_res, ConditionResult),
                 output_matches_size_input,
             )
@@ -775,7 +767,10 @@ class ConditionFactory:
     def _set_comparand(self, output: str) -> None:
         logger.debug("...setting comparand for: %s", output)
         for comparand_name in (
-            "comparand_a", "comparand_b", "comparand_c", "comparand_d"
+            "comparand_a",
+            "comparand_b",
+            "comparand_c",
+            "comparand_d",
         ):
             if getattr(self.condition, comparand_name) == output:
                 break
