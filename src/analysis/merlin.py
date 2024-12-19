@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+TODO: Needs to adapted because we do not have the old indicators library anymore.
+
 Created on Sun Jan 31 00:57:06 2021
 
 @author: dhaneor
@@ -8,10 +10,9 @@ Created on Sun Jan 31 00:57:06 2021
 import pandas as pd
 import numpy as np
 
-from exchange.binance_classic import Binance
+from exchange.binance_ import Binance
 from staff.hermes import Hermes
-from analysis.indicators import Indicators
-from experiments.binance_threaded import BinanceThreaded
+from exchange.binance_async_ohlcv import BinanceClient
 
 
 # =============================================================================
@@ -35,7 +36,6 @@ class Merlin:
         self.interval = interval
         self.conn: Binance = Binance()
         self.hermes = Hermes(verbose=True)
-        self.indicators = Indicators()
 
     def __repr__(self):
         return self.tickers
@@ -62,7 +62,6 @@ class Merlin:
     # get a list of symbols for a given quote asset (or all of them which
     # probably doesn't make sense most of the time)
     def get_symbols(self):
-
         self.symbols = self.conn.get_list_of_symbols(quote_asset=self.quote_asset)
 
     # get all tickers and filter out the ones we need based on our list
@@ -85,13 +84,9 @@ class Merlin:
 
     # get the klines (ohclv data) for all the symbols that we are interested in
     def get_klines(self):
-
         symbols = list(self.tickers["symbol"])
-
-        conn = BinanceThreaded()
-        self.klines = conn.get_recent_prices(symbols, self.interval)
-
-        # self.klines = [item[0] for item in self.klines]
+        conn = BinanceClient()
+        self.klines = conn.download_ohlcv_data(symbols, self.interval)
 
     # -------------------------------------------------------------------------
     # sort methods
@@ -121,23 +116,19 @@ class Merlin:
             self.tickers = self.tickers[self.tickers["symbol"] != s]
 
     def _filter_based_on_spread(self, percentile=0.2):
-
         cutoff = self.tickers["spread percent"].quantile(q=percentile)
         self.tickers = self.tickers[self.tickers["spread percent"] < cutoff]
 
     def _filter_based_on_quote_volume(self, percentile=0.1):
-
         cutoff = self.tickers["quoteVolume"].quantile(q=percentile)
         self.tickers = self.tickers[self.tickers["quoteVolume"] > cutoff]
 
     def _filter_based_on_atr(self):
-
         pass
 
     # -------------------------------------------------------------------------
     # methods to add columns with additional (computed) values
     def _add_spread_in_percent(self, df):
-
         df["spread percent"] = (df["askPrice"] / df["bidPrice"] - 1) * 100
         return df
 
@@ -154,7 +145,6 @@ class Merlin:
             ].iloc[-1]
 
     def _add_indicators_to_klines(self):
-
         for idx, kline in enumerate(self.klines):
             self.klines[idx] = (
                 self.indicators.average_true_range(
@@ -163,4 +153,3 @@ class Merlin:
                 self.klines[idx][1],
                 self.klines[idx][2],
             )
-            # print(self.klines[idx])
