@@ -47,6 +47,30 @@ from typing import List, Dict, Any, Tuple
 
 LOG_LEVEL = logging.INFO
 
+# Increase this for increased speed at the beginning of a download/minute.
+# 15 seems to be a good number which means that at the end of the minute,
+# there is only a short waiting time for the reset of the API 1m limit.
+# If the latency is low, it may even make sense to decrease this value.
+MAX_WORKERS = 15  # max number of parallel requests to the Binance API
+MAX_RETRIES = 5  # number of retries before giving up
+# These are the default values that can also be overridden when initializing
+# the BinanceClient class.
+
+BASE_URL = "https://api.binance.com"
+API_ENDPOINT = "/api/v3/klines"
+
+KLINES_LIMIT = 1000  # how may klines to request in one API call
+BASE_DELAY = MAX_WORKERS / 25  # base delay for rate limiting (in seconds)
+
+RATE_LIMIT_BARRIER = 1200  # this is the Binance API rate limit (see above)
+HARD_LIMIT = RATE_LIMIT_BARRIER - 50  # limit hard above this threshhold
+SOFT_LIMIT = RATE_LIMIT_BARRIER * 0.6  # start limiting above this threshhold
+
+RAW_REQUEST_LIMIT = 6100  # requests per 5 minutes (see above)
+LONG_DELAY_THRESHHOLD = RAW_REQUEST_LIMIT * 0.9  # add even more delay above ...
+
+SIMULATE_429_ERRORS = False  # activate this to test the RateLimitManager
+
 if __name__ == '__main__':
     logger = logging.getLogger(__name__)
     logger.setLevel(LOG_LEVEL)
@@ -63,24 +87,6 @@ if __name__ == '__main__':
 else:
     logger = logging.getLogger(f'main.{__name__}')
     logger.setLevel(LOG_LEVEL)
-
-# Increase this for increased speed at the beginning of a download/minute.
-# 15 seems to be a good number which means that at the end of the minute,
-# there is only a short waiting time for the reset of the API 1m limit.
-# If the latency is low, it may even make sense to decrease this value.
-MAX_WORKERS = 15  # max number of parallel requests to the Binance API
-
-KLINES_LIMIT = 1000  # how may klines to request in one API call
-BASE_DELAY = MAX_WORKERS / 25  # base delay for rate limiting (in seconds)
-
-RATE_LIMIT_BARRIER = 1200  # this is the Binance API rate limit (see above)
-HARD_LIMIT = RATE_LIMIT_BARRIER - 50  # limit hard above this threshhold
-SOFT_LIMIT = RATE_LIMIT_BARRIER * 0.6  # start limiting above this threshhold
-
-RAW_REQUEST_LIMIT = 6100  # requests per 5 minutes (see above)
-LONG_DELAY_THRESHHOLD = RAW_REQUEST_LIMIT * 0.9  # add even more delay above ...
-
-SIMULATE_429_ERRORS = False  # activate this to test the RateLimitManager
 
 
 class RateLimitManager:
@@ -205,18 +211,24 @@ class RateLimiter:
 class BinanceClient:
     """Specialized Binance client for OHLCV data downloads."""
 
-    def __init__(self, timeout: int = 10) -> None:
-        self.base_url = "https://api.binance.com"
+    def __init__(
+        self,
+        max_workers: int | None = None,
+        max_retries: int | None = None,
+        timeout: int = 10
+    ) -> None:
+        self.max_workers = max_workers or MAX_WORKERS
+        self.max_retries = max_retries or MAX_RETRIES
         self.timeout = aiohttp.ClientTimeout(total=timeout)
 
         self.rate_limiter = RateLimiter()
         self.circuit_breaker = CircuitBreaker()
         self.rate_limit_manager = RateLimitManager()
-        self.semaphore = asyncio.Semaphore(MAX_WORKERS)
+        self.semaphore = asyncio.Semaphore(self.max_workers)
 
     async def sync_server_time(self):
         async with aiohttp.ClientSession() as session:
-            async with session.get(f"{self.base_url}/api/v3/time") as response:
+            async with session.get(f"{BASE_URL}/api/v3/time") as response:
                 server_time = (await response.json())['serverTime'] / 1000
                 self.rate_limiter.time_offset = server_time - time()
 
@@ -263,7 +275,6 @@ class BinanceClient:
         end: int,
     ) -> List[List[Any]]:
 
-        endpoint = "/api/v3/klines"
         params = {
             "symbol": symbol,
             "interval": interval,
@@ -272,15 +283,14 @@ class BinanceClient:
             "limit": KLINES_LIMIT,
         }
 
-        max_retries = 5
-        for attempt in range(max_retries):
+        for attempt in range(self.max_retries):
             try:
                 async with self.semaphore:
                     # check with the Rate Limit Manager if we need to wait
                     # because we exceeded the API rate limit or got banned
                     if wait_time := self.rate_limit_manager.get_wait_time() > 0:
                         logger.warning(
-                            "%s Rate limit in effect. Waiting for %s seconds.",
+                            "[%s] Rate limit in effect. Waiting for %s seconds.",
                             worker_id, round(wait_time)
                             )
                         await asyncio.sleep(wait_time)
@@ -307,7 +317,7 @@ class BinanceClient:
 
                     # send the downlaod request to the API
                     async with session.get(
-                        f"{self.base_url}{endpoint}",
+                        f"{BASE_URL}{API_ENDPOINT}",
                         params=params,
                     ) as response:
                         self.rate_limiter.update(
@@ -364,25 +374,23 @@ class BinanceClient:
 
             except asyncio.TimeoutError:
                 logger.warning("[%s] Request timed out. Retrying..." % worker_id)
-                if attempt == max_retries - 1:
-                    raise
-                # wait_time = (2 ** attempt) + random.uniform(0, 1)
-                # await asyncio.sleep(wait_time)
                 self.circuit_breaker.record_failure()
+                if attempt == self.max_retries - 1:
+                    raise
 
             except (aiohttp.ClientResponseError, Exception) as e:
-                if attempt == max_retries - 1:
-                    raise
-                wait_time = (2 ** attempt) + random.uniform(0, 1)
                 logger.error(
                     "[%s] Error: %s for %s. Retrying in %s seconds...",
                     worker_id, e, symbol, f"{wait_time:.2f}"
                     )
-                await asyncio.sleep(wait_time)
                 self.circuit_breaker.record_failure()
+                if attempt == self.max_retries - 1:
+                    raise
+                wait_time = (2 ** attempt) + random.uniform(0, 1)
+                await asyncio.sleep(wait_time)
 
         logger.warning(
-            "no result for %s after retrying %s times" % (symbol, max_retries)
+            "no result for %s after retrying %s times" % (symbol, self.max_retries)
             )
         return []
 

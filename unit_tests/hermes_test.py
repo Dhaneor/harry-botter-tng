@@ -72,6 +72,8 @@ class HermesTester:
         if res:
             pprint(res[0])
 
+        print(f"found {len(res)} symbols for {exchange_name}")
+
     @execution_time
     def get_all_symbols_from_database(self, exchange_name: str):
         res = self.hermes._get_all_symbols_from_database(exchange_name)
@@ -292,7 +294,7 @@ if __name__ == "__main__":
     # ht.update_symbols_table(exchange_name=exchange)
     # ht.write_to_symbols_table()
 
-    # ht.get_tradeable_symbols(quote_asset='BTC', margin_only=True)
+    # ht.get_tradeable_symbols(quote_asset='BTC', margin_only=False)
     # ht.get_all_symbols_from_exchange(exchange)
     # ht.get_all_symbols_from_database(exchange)
 
@@ -304,7 +306,7 @@ if __name__ == "__main__":
 
     # ht.get_symbol(symbol_name)
     # ht.get_multiple_symbols(exchange)
-    # ht.get_tradeable_symbols(quote_asset=None)
+    ht.get_tradeable_symbols(quote_asset=None)
     # ht.get_leveraged_symbols()
 
     # ht.get_max_workers()
@@ -312,9 +314,9 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # ht.get_ohlcv_multiple(symbols=symbols, start=dates[0], end=dates[1])
 
-    for _ in range(3):
-        ht.get_ohlcv_single(symbol=symbol_name, interval=interval,
-                            start=dates[0], end=dates[1])
+    # for _ in range(3):
+    #     ht.get_ohlcv_single(symbol=symbol_name, interval=interval,
+    #                         start=dates[0], end=dates[1])
 
     # -------------------------------------------------------------------------
     # ht.update_database_for_interval(
