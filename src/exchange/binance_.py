@@ -283,11 +283,11 @@ class BinancePublic:
     # -------------------------------------------------------------------------
     def _connect(self):
         try:
-            self.client = Client(api_key=self.api_key, api_secret=self.api_secret)
+            self.client = Client()
             global CLIENT
             CLIENT = self.client
         except Exception as e:
-            # print(e)
+            logger.exception(f"Error connecting to Binance: {e}")
             self._extract_ban_time(e)
 
     def _import_api_key(self):

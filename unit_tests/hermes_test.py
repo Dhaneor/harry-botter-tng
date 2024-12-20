@@ -274,8 +274,8 @@ class HermesTester:
 # =============================================================================
 if __name__ == "__main__":
 
-    symbol_name = "BTCUSDT"
-    interval = "15m"
+    symbol_name = "XRPUSDT"
+    interval = "1h"
     symbols = ["BTCUSDT", "ADAUSDT", "XRPUSDT", "XLMUSDT"]
     intervals = ["5m", "15m", "30m", "1h", "2h", "4h"]
 

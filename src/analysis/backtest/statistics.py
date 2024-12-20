@@ -151,8 +151,11 @@ def calculate_sortino_ratio(
     expected_return = np.mean(excess_returns) * periods_per_year
 
     # Annualize the downside deviation
-    downside_deviation = np.sqrt(np.mean(downside_returns**2)) \
-        * np.sqrt(periods_per_year)
+    if len(downside_returns) > 0:
+        downside_deviation = np.sqrt(np.mean(downside_returns**2)) \
+            * np.sqrt(periods_per_year)
+    else:
+        downside_deviation = 0
 
     return expected_return / downside_deviation if downside_deviation != 0 else np.inf
 
@@ -232,7 +235,7 @@ def calculate_statistics(
             ),
         'kalmar_ratio': calculate_kalmar_ratio(portfolio_values, periods_per_year),
         'annualized_volatility': calculate_annualized_volatility(
-            portfolio_values, periods_per_year, use_log_returns=False
+            portfolio_values, periods_per_year, use_log_returns=True
             )
     }
 
