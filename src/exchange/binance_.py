@@ -29,11 +29,11 @@ Created on Sat Feb 6 23:54:28 2022
                     }]
 """
 
+import logging
 import os
 import sys
 import concurrent.futures
 import pandas as pd
-import logging
 
 from uuid import uuid1
 from time import time, sleep
@@ -42,7 +42,7 @@ from configparser import ConfigParser
 from pprint import pprint
 from threading import Lock
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger(f"main.{__name__}")
 logger.setLevel(logging.DEBUG)
 
 # -----------------------------------------------------------------------------
@@ -256,7 +256,6 @@ class BinancePublic:
     }
 
     def __init__(self, max_workers=10):
-
         self.name = "Binance Digital Asset Exchange"
         self.api_key = None
         self.api_secret = None
@@ -292,7 +291,6 @@ class BinancePublic:
             self._extract_ban_time(e)
 
     def _import_api_key(self):
-
         c = ConfigParser()
         c.read("config.ini")
 
@@ -470,7 +468,6 @@ class BinancePublic:
         end: Union[int, str] = None,
         as_dataframe: bool = True,
     ) -> list:
-
         if not self.client:
             return {
                 "success": False,
@@ -487,18 +484,15 @@ class BinancePublic:
         )
 
         _results = []
-        if self.verbose:
-            print(dl_request.get("number of chunks"), len(dl_request.get("chunks")))
+        logger.debug(dl_request)
 
         # ......................................................................
         # download the data in parallel with threads
         with concurrent.futures.ThreadPoolExecutor(
             max_workers=self._max_workers
         ) as executor:
-
             futures = []
             for chunk in dl_request["chunks"]:
-
                 kwargs = {
                     "symbol": dl_request.get("symbol"),
                     "interval": dl_request.get("interval"),
@@ -566,7 +560,6 @@ class BinancePublic:
         end: Union[int, str] = None,
         as_dataframe: bool = True,
     ) -> dict:
-
         # check format of start and end time and convert to seconds,
         # if necessary
         if not isinstance(start, int) or not isinstance(end, int):
@@ -771,7 +764,6 @@ class BinanceSpot:
         end: Union[int, str] = None,
         limit: int = 1000,
     ) -> dict:
-
         if start or end:
             # if start and/or end parameter was given, get the timestamps
             start_ts, end_ts = get_start_and_end_timestamp(
@@ -831,7 +823,6 @@ class BinanceSpot:
     def get_order(
         self, symbol: str, order_id: str = None, client_order_id: str = None
     ) -> dict:
-
         # get the result for a certain 'order id'
         res = self.client.get_order(
             symbol=symbol, orderId=order_id, origClientOrderId=client_order_id
@@ -843,7 +834,6 @@ class BinanceSpot:
     def get_active_orders(
         self, symbol: str = None, side: str = None, order_type=None
     ) -> dict:
-
         # to make this method behave the same as the Kucoin version,
         # if nor order type is given, then only LIMIT orders will
         # be returned. use get_active_stop_orders to retrieve all
@@ -865,7 +855,6 @@ class BinanceSpot:
 
     @call_wrapper(debug=False)
     def get_active_stop_orders(self, symbol: str = None, side: str = None) -> dict:
-
         orders = self.client.get_open_orders(symbol=symbol)
 
         stop_types = [
@@ -888,7 +877,6 @@ class BinanceSpot:
     def _get_all_orders(
         self, symbol: str = None, start: int = None, end: int = None, limit=1000
     ) -> dict:
-
         return self.client.get_all_orders(
             symbol=symbol, limit=limit, startTime=start, endTime=end
         )
@@ -897,7 +885,6 @@ class BinanceSpot:
     # NOTE: this section contains some high level functions to make life easier
     # -------------------------------------------------------------------------
     def sell_all(self, symbol: str) -> dict:
-
         _st = time()
 
         def _round_qty(qty: float):
@@ -959,7 +946,6 @@ class BinanceSpot:
         auto_borrow=False,
         base_or_quote="quote",
     ) -> dict:
-
         if base_qty and quote_qty:
             if base_or_quote == "quote":
                 base_qty = None
@@ -982,7 +968,6 @@ class BinanceSpot:
         base_qty: float = None,
         quote_qty: float = None,
     ) -> dict:
-
         return self.client.order_market_sell(
             symbol=symbol,
             newClientOrderId=client_order_id,
@@ -1003,7 +988,6 @@ class BinanceSpot:
         stp=None,
         remark=None,
     ) -> dict:
-
         return self.client.create_order(
             symbol=symbol,
             side="BUY",
@@ -1028,7 +1012,6 @@ class BinanceSpot:
         loss_or_entry: str = "loss",
         mode: int = 0,
     ) -> dict:
-
         return self.client.create_order(
             symbol=symbol,
             side=side.upper(),
@@ -1046,7 +1029,6 @@ class BinanceSpot:
         return self._cancel_order_by_order_id(symbol=symbol, order_id=order_id)
 
     def cancel_all_orders(self, symbol: str = None):
-
         res = self._get_all_orders(symbol=symbol)
 
         if res["success"]:
@@ -1080,7 +1062,6 @@ class BinanceSpot:
         price=None,
         funds=None,
     ):
-
         if client_oid is None:
             client_oid = str(uuid1())
 
@@ -1110,7 +1091,6 @@ class BinanceSpot:
         loss_or_entry: str = "loss",
         remark: str = None,
     ) -> dict:
-
         return self.client.create_limit_order(
             symbol=symbol,
             side=side,
@@ -1169,7 +1149,6 @@ class Binance(BinancePublic, BinanceSpot, OhlcvDownloadPrepper):
     """
 
     def __init__(self, market: str = "spot", verbose: bool = True):
-
         # TODO  implement that 'market' is read from config.ini if no
         #       market was provided
         if not market:
@@ -1191,7 +1170,7 @@ class Binance(BinancePublic, BinanceSpot, OhlcvDownloadPrepper):
         self.market = market
         self._max_simultaneous_requests = 2  # ohlcv download threads
         self.limit = 1000  # max number of klines for ohlcv download
-        self.verbose = False  # verbose # silent or talkative operation
+        self.verbose = True  # verbose # silent or talkative operation
 
         global CALLBACK
         CALLBACK = self.set_max_workers

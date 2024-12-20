@@ -45,13 +45,13 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 )
 
 symbol = "BTCUSDT"
-interval = "1d"
+interval = "15m"
 
-start = int(-365*6)
+start = "1 year ago UTC"  # int(-365*6)
 end = 'now UTC'
 
 strategy = s_test_ema_cross
-risk_levels = [4, 5, 6, 7, 8, 9]
+risk_levels = [0, 4, 5, 6, 7, 8, 9]
 max_leverage_levels = (0.75, 1, 1.25, 1.5, 1.75, 2)
 max_drawdown = 30
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
@@ -69,7 +69,7 @@ noise = indicators_custom.EfficiencyRatio()
 
 
 def _get_ohlcv_from_db():
-    hermes = Hermes(exchange='kucoin', mode='backtest')
+    hermes = Hermes(exchange='binance', mode='backtest')
 
     res = hermes.get_ohlcv(
         symbols=symbol, interval=interval, start=start, end=end
@@ -82,8 +82,6 @@ def _get_ohlcv_from_db():
     else:
         error = res.get('error', 'no error provided in response')
         raise Exception(error)
-
-    del hermes
 
 
 # ------------------------------------- TESTS ---------------------------------------

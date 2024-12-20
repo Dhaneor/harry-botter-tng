@@ -274,13 +274,13 @@ class HermesTester:
 # =============================================================================
 if __name__ == "__main__":
 
-    symbol_name = "ADAUSDT"
+    symbol_name = "BTCUSDT"
     interval = "15m"
     symbols = ["BTCUSDT", "ADAUSDT", "XRPUSDT", "XLMUSDT"]
     intervals = ["5m", "15m", "30m", "1h", "2h", "4h"]
 
     dates = [
-        'October 01, 2024 00:00:00',
+        "1 year ago UTC",
         "now UTC",  # 'October 19, 2023 00:00:00'
     ]
     exchange = "kucoin" if "-" in symbol_name else "binance"
@@ -306,7 +306,7 @@ if __name__ == "__main__":
 
     # ht.get_symbol(symbol_name)
     # ht.get_multiple_symbols(exchange)
-    ht.get_tradeable_symbols(quote_asset=None)
+    # ht.get_tradeable_symbols(quote_asset=None)
     # ht.get_leveraged_symbols()
 
     # ht.get_max_workers()
@@ -314,9 +314,9 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # ht.get_ohlcv_multiple(symbols=symbols, start=dates[0], end=dates[1])
 
-    # for _ in range(3):
-    #     ht.get_ohlcv_single(symbol=symbol_name, interval=interval,
-    #                         start=dates[0], end=dates[1])
+    for _ in range(3):
+        ht.get_ohlcv_single(symbol=symbol_name, interval=interval,
+                            start=dates[0], end=dates[1])
 
     # -------------------------------------------------------------------------
     # ht.update_database_for_interval(

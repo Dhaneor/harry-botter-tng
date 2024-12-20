@@ -49,7 +49,7 @@ MAX_WORKERS_BINANCE = VALID_EXCHANGES["binance"]["max_workers"]
 MAX_WORKERS_KUCOIN = VALID_EXCHANGES["kucoin"]["max_workers"]
 
 logger = logging.getLogger("main.hermes")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 
 # ==============================================================================
@@ -481,7 +481,7 @@ class HermesDataBase:
                     symbol=symbol,
                     interval=interval,
                     start=latest_open + 1,
-                    end=int(time.time()),
+                    end=int(time.time()) * 1000,
                     as_dataframe=False,
                 )
 
@@ -493,6 +493,8 @@ class HermesDataBase:
             if msg is None:
                 logger.error(res)
                 raise Exception('update succeeded, but "message" is empty')
+
+            logger.debug(f"got {len(msg)} rows of data from the API")
 
         except Exception as e:
             logger.error(f"update failed for {table_name}: {self.exchange_name}: {e}")

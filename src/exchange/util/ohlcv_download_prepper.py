@@ -31,9 +31,9 @@ from src.util.timeops import (  # noqa: E402
     unix_to_utc,
     get_start_and_end_timestamp,
 )
+from src.util.timestamp_converter import timestamp_converter
 
 logger = logging.getLogger("main.ohlcv_download_prepper")
-logger.setLevel(logging.INFO)
 
 INTERVALS = {
     "1m": 60_000,
@@ -77,6 +77,7 @@ class OhlcvDownloadPrepper:
         self.listing_dates: Dict[str, int] = {}
         self.limit: int = 1000  # max allowed size for one request
 
+    @timestamp_converter()
     def _prepare_request(
         self, symbol: str, interval: str, start: Union[str, int], end: Union[str, int]
     ) -> dict:
@@ -108,7 +109,7 @@ class OhlcvDownloadPrepper:
                         ('end', '2021-01-01 12:00:00'),
                         ('end_ts', 1609502400),
                         ('number of chunks', 27),
-                        ('chunks', [(1514764800, 6911164799)]),
+                        ('chunks', [(1514764800000, 6911164799000)]),
                         ('results', None)])
         """
         # check for valid interval and return error message not valid
@@ -116,9 +117,10 @@ class OhlcvDownloadPrepper:
             raise ValueError(f"Invalid interval: {interval}")
 
         # get timestamps for start and end of time period
-        start_ts, end_ts = self._get_timestamps_for_period(
-            symbol=symbol, start=start, end=end, interval=interval
-        )
+        # start_ts, end_ts = self._get_timestamps_for_period(
+        #     symbol=symbol, start=start, end=end, interval=interval
+        # )
+        start_ts, end_ts = start, end
 
         # get the number of klines we need to downlaod
         number_of_chunks = self._get_number_of_chunks(start_ts, end_ts, interval)
@@ -148,11 +150,15 @@ class OhlcvDownloadPrepper:
         step_start = start_ts
 
         while not step_start >= end_ts:
-            step_end = int(step_start + limit * INTERVALS[interval] - 1)
-            step_end = end_ts if step_end > end_ts else step_end
+            step = limit * INTERVALS[interval]
+            step_end = int(step_start + step - 1)
+            step_end = step_end if step_end < end_ts else end_ts
+
+            logger.debug(f"Chunk: {step_start}-{step_end} ({step=})")
             steps.append((step_start, step_end))
             step_start = step_end + 1
 
+        logger.debug(f"Total number of chunks: {len(steps)}")
         return steps
 
     def _get_number_of_chunks(self, start: int, end: int, interval: str):
@@ -186,8 +192,8 @@ class OhlcvDownloadPrepper:
 
         if number_of_epochs > 5:
 
-            listing_date = self._get_listing_date(symbol, interval)
-            ld_human = unix_to_utc(listing_date)
+            # listing_date = self._get_listing_date(symbol, interval)
+            ld_human = 0  # unix_to_utc(listing_date)
             start_ts_human = unix_to_utc(start_ts)
 
             logger.debug(
@@ -200,11 +206,11 @@ class OhlcvDownloadPrepper:
             # )
 
         # convert timestamp to seconds if it was given in milliseconds
-        start_ts = int(start_ts / 1000) if len(str(start_ts)) > 10 else start_ts
-        end_ts = int(end_ts / 1000) if len(str(end_ts)) > 10 else end_ts
+        # start_ts = int(start_ts / 1000) if len(str(start_ts)) > 10 else start_ts
+        # end_ts = int(end_ts / 1000) if len(str(end_ts)) > 10 else end_ts
 
         logger.debug("Start timestamp: %s -> %s", start, start_ts)
-        logger.debug("End timestamp: {end=} -> {end_ts}", end, end_ts)
+        logger.debug("End timestamp: %s -> %s", end, end_ts)
 
         return start_ts, end_ts
 

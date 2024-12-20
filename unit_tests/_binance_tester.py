@@ -12,6 +12,7 @@ from pprint import pprint
 
 from exchange.binance_classic import Binance
 
+
 def get_cross_margin_asset_info(asset):
 
     account = binance.client.get_margin_account()
@@ -25,7 +26,7 @@ def get_cross_margin_asset_info(asset):
 
     asset_info = binance.client.get_margin_asset(asset=asset)
     asset_name = asset_info.get('assetFullName')
-    
+
     asset_loan_info = binance.client.get_max_margin_loan(asset=asset)
     print(asset_loan_info)
 
@@ -46,7 +47,7 @@ def get_isolated_account_info():
     info = binance.client.get_isolated_margin_account()
 
     assets = info.get('assets')
-    
+
     print(f'Got {len(assets)} assets')
     # pprint(info)
 
@@ -84,7 +85,7 @@ def get_all_margin_symbols():
         for k,v in symbol.items():
 
             constructor[k].append(v)
-            
+
 
     df = pd.DataFrame(constructor)
 
@@ -109,4 +110,3 @@ if __name__ == '__main__':
 
     pprint(result)
 
-    

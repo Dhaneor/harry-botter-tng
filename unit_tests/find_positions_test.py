@@ -50,14 +50,14 @@ from src.analysis.chart.tikr_charts import BacktestChart as Chart  # noqa: E402,
 from src.backtest import result_stats as rs  # noqa: E402, F401
 from src.analysis.models import position  # noqa: E402, F401
 
-symbol = "ETHUSDT"
+symbol = "BTCUSDT"
 interval = "1d"
 
-start = int(-365*6)  # 'December 01, 2018 00:00:00'
+start = int(-365*4)  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_ema_multi
-risk_level, max_leverage = 8, 1.25
+strategy = s_aroon_osc
+risk_level, max_leverage = 9, 1.25
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
