@@ -5,7 +5,6 @@ Created on Sun Jan 31 00:21:53 2021
 
 @author: dhaneor
 """
-import datetime
 import logging
 from time import time
 from typing import Union, Optional
@@ -13,7 +12,7 @@ from typing import Union, Optional
 import mysql.connector as dbc
 from mysql.connector import Error, IntegrityError
 
-from util.ilabrat import get_exchange_name
+from src.util.ilabrat import get_exchange_name
 from src.util.timeops import utc_to_unix
 
 import pandas as pd
