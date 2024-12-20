@@ -224,14 +224,15 @@ def filter_results_by_profit_and_leverage(results_list, rel_tol=1e-9):
     the one with the lowest max_leverage.
 
     Parameters:
-    results_list
+    results_list: list
         List of tuples in the format
         ((param1, param2, ...), risk_level, max_leverage, stats_dict)
-    rel_tol
+    rel_tol: float
         Relative tolerance for floating-point comparison of profits.
 
     Returns:
-    - filtered_results: List of filtered tuples.
+    filtered_results
+        List of filtered tuples.
     """
     # Create a dictionary to collect results for each (params, risk_level)
     results_by_key = defaultdict(list)

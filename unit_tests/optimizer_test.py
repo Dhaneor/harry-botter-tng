@@ -45,14 +45,14 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 )
 
 symbol = "BTCUSDT"
-interval = "15m"
+interval = "1h"
 
 start = "1 year ago UTC"  # int(-365*6)
 end = 'now UTC'
 
-strategy = s_test_ema_cross
-risk_levels = [0, 4, 5, 6, 7, 8, 9]
-max_leverage_levels = (0.75, 1, 1.25, 1.5, 1.75, 2)
+strategy = s_breakout
+risk_levels = 7,  # [0, 4, 5, 6, 7, 8, 9]
+max_leverage_levels = 1,  # (0.75, 1, 1.25, 1.5, 1.75, 2)
 max_drawdown = 30
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
