@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fir Dec 20 10:20:33 2024
+Created on Fri Dec 20 10:20:33 2024
 
 @author dhaneor
 """
@@ -13,10 +13,7 @@ import time
 from src.data.util.mnemosyne import Mnemosyne
 from src.exchange.binance_ import Binance
 from src.exchange.kucoin_ import KucoinCrossMargin as Kucoin
-from util.timeops import (
-    unix_to_utc,
-    utc_to_unix,
-)
+from util.timeops import unix_to_utc, utc_to_unix
 
 # ==============================================================================
 # dictionary of interval names and their lengths in seconds
@@ -412,4 +409,3 @@ class OHLCVTable:
             is_up_to_date,
         )
         return is_up_to_date
-

@@ -1,0 +1,17 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Provides the central data repository.
+
+Hermes is the god of wisdom and knowledge. He knows everything about:
+
+• OHLCV data for all cryptocurrencies (on all exchanges supported by CCXT)
+• Symbol information (like trading pairs, currencies, etc.)
+
+• Sentiment (future feature)
+• On-chain data (future feature)
+
+Created on July 06 21:12:20 2023
+
+@author dhaneor
+"""

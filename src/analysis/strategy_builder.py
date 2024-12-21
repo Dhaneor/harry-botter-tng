@@ -79,6 +79,51 @@ def combine_arrays(arrays: Sequence[np.ndarray]) -> np.ndarray:
 
 
 # ======================================================================================
+@dataclass(frozen=True)
+class StrategyDefinition:
+    """Complete (single or composite) strategy definition.
+
+    # pylint: disable=too-many-instance-attributes
+    # Nine is reasonable in this case.
+
+    Parameters
+    ----------
+    strategy: str
+        name of the strategy
+
+    symbol: str
+        symbol to trade
+
+    interval: str
+        interval to trade
+
+    weight: float
+        weight of the strategy, defaults to 1
+
+    params: Dict[str, Any]
+        parameters for the strategy, defaults to None
+
+    sub_strategies: Sequence[StrategyDefinition]
+        sequence of sub strategies, defaults to None
+
+    stop_loss: Sequence[es.IStopLossStrategy]
+        sequence of stop loss strategies, defaults to None
+
+    take_profit: Sequence[es.ITakeProfitStrategy]
+        sequence of take profit strategies, defaults to None
+    """
+
+    strategy: str
+    symbol: str
+    interval: str
+    signals_definition: Optional[sg.SignalsDefinition] = None
+    weight: float = 1.0
+    params: Optional[dict[str, str | float | int | bool]] = None
+    sub_strategies: Optional[Sequence[NamedTuple]] = None
+    stop_loss: Optional[Sequence[es.StopLossDefinition]] = None
+    take_profit: Optional[Sequence[es.StopLossDefinition]] = None
+
+
 class IStrategy(abc.ABC):
     """Interface for all strategy classes."""
 
@@ -434,51 +479,6 @@ class CompositeStrategy(IStrategy):
             the dict with added 'take profit' series
         """
         return super()._add_take_profit(data)
-
-
-@dataclass(frozen=True)
-class StrategyDefinition:
-    """Complete (single or composite) strategy definition.
-
-    # pylint: disable=too-many-instance-attributes
-    # Nine is reasonable in this case.
-
-    Parameters
-    ----------
-    strategy: str
-        name of the strategy
-
-    symbol: str
-        symbol to trade
-
-    interval: str
-        interval to trade
-
-    weight: float
-        weight of the strategy, defaults to 1
-
-    params: Dict[str, Any]
-        parameters for the strategy, defaults to None
-
-    sub_strategies: Sequence[StrategyDefinition]
-        sequence of sub strategies, defaults to None
-
-    stop_loss: Sequence[es.IStopLossStrategy]
-        sequence of stop loss strategies, defaults to None
-
-    take_profit: Sequence[es.ITakeProfitStrategy]
-        sequence of take profit strategies, defaults to None
-    """
-
-    strategy: str
-    symbol: str
-    interval: str
-    signals_definition: Optional[sg.SignalsDefinition] = None
-    weight: float = 1.0
-    params: Optional[dict[str, str | float | int | bool]] = None
-    sub_strategies: Optional[Sequence[NamedTuple]] = None
-    stop_loss: Optional[Sequence[es.StopLossDefinition]] = None
-    take_profit: Optional[Sequence[es.StopLossDefinition]] = None
 
 
 # ======================================================================================

@@ -10,7 +10,7 @@ import os
 import time
 import logging
 import numpy as np
-import warnings
+import warnings  # noqa: F401
 
 
 # profiler imports
@@ -56,7 +56,7 @@ interval = "1d"
 start = "3 years ago UTC"  # int(-365*6)
 end = "now UTC"  # 'December 20, 2024 00:00:00'
 
-strategy = s_linreg_ma_cross
+strategy = s_test_er
 risk_levels = [0, 4, 5, 6, 7, 8, 9]
 max_leverage_levels = (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5)
 max_drawdown = 30
@@ -167,25 +167,23 @@ def test_optimize(data: dict | None = None):
                 ),
             ])
 
-    if not profitable:
+    profitable = optimizer.filter_results_by_profit_and_leverage(profitable)
+
+    # filter out results with:
+    # a) drawdown greater than max_drawdown,
+    # b) max drawdown equal to 0, which means that no trades occured
+    best_parameters = [
+        res for res in profitable
+        if res[3]['max_drawdown'] > max_drawdown * -1
+        and res[3]['max_drawdown'] != 0.0
+        ]
+
+    if not best_parameters:
         logger.info('No profitable parameters with acceptable drawdown found.')
         return
 
-    profitable = optimizer.filter_results_by_profit_and_leverage(profitable)
-
-    best_parameters = [
-        res for res in profitable if res[3]['max_drawdown'] > max_drawdown * -1
-        ]
-
     # sort results by kalmar ratio
-    best_parameters.sort(
-        key=lambda x: x[3]['kalmar_ratio'],
-        reverse=True
-        )
-
-    # filter out results with max drawdown equal to 0, which means that no trades
-    # occured during the given timeframe
-    best_parameters = [res for res in best_parameters if res[3]['max_drawdown'] != 0.0]
+    best_parameters.sort(key=lambda x: x[3]['kalmar_ratio'], reverse=True)
 
     for result in best_parameters[:50]:
         logger.info(
@@ -203,7 +201,7 @@ def test_optimize(data: dict | None = None):
     )
 
     logger.info(
-        'Best parameters with less than %s percent drawdown length: %s',
+        'Best parameters with less than %s percent drawdown: %s',
         max_drawdown, {len(best_parameters)}
         )
 

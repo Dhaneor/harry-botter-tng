@@ -35,7 +35,7 @@ multiprocessing.set_start_method('spawn', force=True)
 
 INITIAL_CAPITAL = 10_000  # initial capital for backtesting
 RISK_FREE_RATE = 0.04  # risk-free rate for calculating Sharpe Ratio
-CHUNK_SIZE = 100  # size of chunks for processing data
+CHUNK_SIZE = 50  # size of chunks for processing data
 
 PERIODS_PER_YEAR = {
     '1m': 365 * 24 * 60,
