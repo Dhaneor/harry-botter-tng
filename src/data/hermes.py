@@ -3,7 +3,7 @@
 """
 Provides the central data repository.
 
-Hermes is the god of wisdom and knowledge. He knows everything about:
+Hermes is the ancient god of wisdom and knowledge. He knows everything about:
 
 • OHLCV data for all cryptocurrencies (on all exchanges supported by CCXT)
 • Symbol information (like trading pairs, currencies, etc.)

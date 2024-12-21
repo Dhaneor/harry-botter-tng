@@ -15,7 +15,7 @@ import zmq
 import zmq.asyncio
 
 logger = logging.getLogger("main")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 ch = logging.StreamHandler()
 
@@ -32,7 +32,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # --------------------------------------------------------------------------------------
 
-from src.rawi import ohlcv_repository as repo  # noqa E402
+from src.data.rawi import ohlcv_repository as repo  # noqa E402
 
 ctx = zmq.asyncio.Context()
 
