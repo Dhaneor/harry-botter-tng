@@ -55,7 +55,7 @@ async def get_random_exchange():
     return random.choice(candidates)
 
 
-async def example_client(runs=5):
+async def example_client(runs=6):
     socket = ctx.socket(zmq.REQ)
     socket.connect(client_addr)
 
@@ -65,7 +65,7 @@ async def example_client(runs=5):
 
     while counter <= runs:
         if counter > 2:
-            if random.random() < 0.1:
+            if random.random() < 0.5:
                 req = {
                     'exchange': 'binance',
                     'symbol': symbols[0],
