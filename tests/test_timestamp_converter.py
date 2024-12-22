@@ -16,7 +16,7 @@ current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 
-from src.data.util.timestamp_converter import timestamp_converter  # noqa: E402
+from data.rawi.util.timestamp_converter import timestamp_converter  # noqa: E402
 
 
 # Helper function to get current timestamp in milliseconds

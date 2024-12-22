@@ -15,24 +15,27 @@ Created on July 06 21:12:20 2023
 
 @author dhaneor
 """
+import asyncio
 import logging
-import pandas as pd
 
 from .rawi.exchange_factory import exchange_factory_fn
-from .rawi.ohlcv_repository import Response
 from .rawi import ohlcv_repository
-from .util.timestamp_converter import timestamp_converter
+from .rawi.util.timestamp_converter import timestamp_converter
 
 logger = logging.getLogger(f"main.{__name__}")
 logger.setLevel(logging.DEBUG)
-
-exchange_facctory = exchange_factory_fn()
 
 
 class Hermes:
 
     def __init__(self):
-        ...
+        self.exchange_factory = exchange_factory_fn()
+
+    async def __aenter__(self) -> 'Hermes':
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        await self.exchange_factory(None)
 
     @timestamp_converter(unit='milliseconds')
     async def get_ohlcv(
@@ -40,10 +43,9 @@ class Hermes:
         exchange: str,
         symbol: str,
         interval: str,
-        start: int,
-        end: int,
-        as_dataframe: bool = True,
-    ) -> Response:
+        start: int | str,
+        end: int | str,
+    ) -> ohlcv_repository.Response:
         """Fetch OHLCV data for a given exchange and symbol.
 
         Parameters:
@@ -57,5 +59,15 @@ class Hermes:
         Returns:
         Response: A Response object containing the OHLCV data.
         """
-        # Fetch the OHLCV data from the appropriate exchange
-        return Response(exchange=exchange, symbol=symbol, interval=interval)
+        request = {
+            'exchange': exchange,
+            'symbol': symbol,
+            'interval': interval,
+            'start': start,
+            'end': end,
+        }
+
+        response = await ohlcv_repository.process_request(
+            request, self.exchange_factory
+            )
+        return response

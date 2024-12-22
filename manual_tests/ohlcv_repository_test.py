@@ -15,7 +15,7 @@ import zmq
 import zmq.asyncio
 
 logger = logging.getLogger("main")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG)
 
 ch = logging.StreamHandler()
 
@@ -55,8 +55,7 @@ async def get_random_exchange():
     return random.choice(candidates)
 
 
-async def example_client(runs=3):
-
+async def example_client(runs=5):
     socket = ctx.socket(zmq.REQ)
     socket.connect(client_addr)
 
@@ -65,17 +64,26 @@ async def example_client(runs=3):
     await asyncio.sleep(2)
 
     while counter <= runs:
-        if counter > runs - 2:
-            req = {
-                'exchange': 'binance',  # await get_random_exchange(),
-                'symbol': symbols[0],
-                'interval': intervals[-1]
-            }
+        if counter > 2:
+            if random.random() < 0.1:
+                req = {
+                    'exchange': 'binance',
+                    'symbol': symbols[0],
+                    'interval': intervals[-1]
+                }
+            else:
+                req = {
+                    'exchange': 'binance',
+                    'symbol': symbols[1],
+                    'interval': intervals[-1],
+                    'start': '2000 days ago UTC',
+                    'end': 'now UTC'
+                }
         else:
             req = {
                 'exchange': 'binance',  # await get_random_exchange(),
                 'symbol': random.choice(symbols),
-                'interval': "1d",  # random.choice(intervals)
+                'interval': random.choice(intervals)
             }
 
         snd_time = time.time()
@@ -91,7 +99,6 @@ async def example_client(runs=3):
         if isinstance(response.to_dict(), dict):
             logger.debug(response.to_dict().keys())
 
-        logger.info(isinstance(response.to_dict(), dict))
         logger.info("===============================================================\n")
 
         counter += 1
