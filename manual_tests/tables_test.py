@@ -18,6 +18,8 @@ sys.path.append(parent)
 # --------------------------------------------------------------------------------------
 from src.data.database.tables import OhlcvTable  # noqa: E402
 from src.data.database.base import DatabaseManager  # noqa: E402
+from src.data.rawi import ohlcv_repository as repo  # noqa: E402
+from src.data.rawi.exchange_factory import exchange_factory_fn  # noqa: E402
 
 # Set up logging
 logger = logging.getLogger("main")
@@ -76,6 +78,7 @@ dummy_candles = [
 ]
 
 
+# ====================================================================================
 async def test_ohlcv_table():
     # Initialize DatabaseManager and OhlcvTable
     db_manager = DatabaseManager()
@@ -95,7 +98,7 @@ async def test_ohlcv_table():
     try:
         await ohlcv_table.insert(dummy_candles)
     except Exception as e:
-        logger.error(f"Failed to insert candles: {e}", exc_info=True)
+        logger.error(f"Failed to insert candles: {e}", exc_info=False)
         await db_manager.disconnect()
         return
     logger.info("Candles inserted successfully.")
@@ -110,7 +113,9 @@ async def test_ohlcv_table():
     range_candles = await ohlcv_table.fetch_by_range(
         start=1609459200000, end=1609632000000
     )
-    logger.info(f"Candles in range: {range_candles}")
+    logger.info(f"Candles in range: {len(range_candles)}")
+    for candle in range_candles:
+        logger.info(f"{candle[0]}: {candle[1:]}")
 
     # Test base class methods
     logger.info("Testing base class methods...")
@@ -140,6 +145,154 @@ async def test_ohlcv_table():
     logger.info("All tests completed successfully.")
 
 
+async def test_ohlcv_table_with_real_data() -> None:
+    # initialize exchange_factory
+    exchange_factory = exchange_factory_fn()
+
+    # download OHLCV data from Binance
+    request = {
+        'exchange': 'binance',
+        'symbol': 'BTC/USDT',
+        'interval': '4h',
+        'start': 'six years ago UTC',
+        'end': 'one day ago UTC',
+    }
+
+    try:
+        response = await repo.process_request(request, exchange_factory)
+    except Exception as e:
+        logger.error(f"Failed to download OHLCV data: {e}")
+        await exchange_factory(None)  # close the exchange connection
+        return
+
+    logger.debug(f"Downloaded OHLCV data: {response}")
+    logger.debug(f"Number of candles: {len(response.data)}")
+
+    data_types = [type(elem) for elem in response.data[0]]
+    logger.debug(f"Data types: {data_types}")
+
+    # close the exchange connection
+    await exchange_factory(None)
+
+    # Initialize DatabaseManager and OhlcvTable
+    db_manager = DatabaseManager()
+    connected = await db_manager.connect()
+    if not connected:
+        logger.error("Failed to connect to the database.")
+        return
+    ohlcv_table = OhlcvTable(db_manager, "binance", response.symbol, response.interval)
+
+    # Test create method
+    logger.info("Testing create method...")
+    await ohlcv_table.create()
+    logger.info("Table created successfully.")
+
+    # Test insert method (single and batch)
+    logger.info("Testing insert method...")
+    try:
+        await ohlcv_table.insert(response.data)
+    except Exception as e:
+        logger.error(f"Failed to insert candles: {e}", exc_info=False)
+        await ohlcv_table.drop()
+        await db_manager.disconnect()
+        return
+    logger.info("Candles inserted successfully.")
+
+    # test get_row_count method
+    logger.info("Testing get_row_count method...")
+    row_count = await ohlcv_table.get_row_count()
+    logger.info(f"Number of rows in table: {row_count}")
+
+    # Test fetch_latest method
+    latest = await ohlcv_table.fetch_latest(limit=5)
+    for candle in latest:
+        logger.info(f"{candle[0]}: {candle[1:]}")
+
+    # test needs_update method
+    logger.info("Testing needs_update method...")
+    needs_update = await ohlcv_table.needs_update()
+    logger.info(f"Table needs to be updated: {needs_update}")
+
+    logger.info("All tests completed successfully.")
+
+    await ohlcv_table.drop()
+    await db_manager.disconnect()
+
+
+async def test_ohlcv_table_update() -> None:
+    # initialize exchange_factory
+    exchange_factory = exchange_factory_fn()
+
+    # download OHLCV data from Binance
+    request = {
+        'exchange': 'binance',
+        'symbol': 'BTC/USDT',
+        'interval': '4h',
+        'start': 'six years ago UTC',
+        'end': 'one day ago UTC',
+    }
+
+    try:
+        response = await repo.process_request(request, exchange_factory)
+    except Exception as e:
+        logger.error(f"Failed to download OHLCV data: {e}")
+        await exchange_factory(None)  # close the exchange connection
+        return
+
+    logger.debug(f"Downloaded OHLCV data: {response}")
+    logger.debug(f"Number of candles: {len(response.data)}")
+
+    data_types = [type(elem) for elem in response.data[0]]
+    logger.debug(f"Data types: {data_types}")
+
+    # close the exchange connection
+    await exchange_factory(None)
+
+    # Initialize DatabaseManager and OhlcvTable
+    db_manager = DatabaseManager()
+    connected = await db_manager.connect()
+    if not connected:
+        logger.error("Failed to connect to the database.")
+        return
+    ohlcv_table = OhlcvTable(db_manager, "binance", response.symbol, response.interval)
+
+    # Test create method
+    logger.info("Testing create method...")
+    await ohlcv_table.create()
+    logger.info("Table created successfully.")
+
+    # Test insert method (single and batch)
+    logger.info("Testing insert method...")
+    try:
+        await ohlcv_table.insert(response.data)
+    except Exception as e:
+        logger.error(f"Failed to insert candles: {e}", exc_info=False)
+        await ohlcv_table.drop()
+        await db_manager.disconnect()
+        return
+    logger.info("Candles inserted successfully.")
+
+    # test get_row_count method
+    logger.info("Testing get_row_count method...")
+    row_count = await ohlcv_table.get_row_count()
+    logger.info(f"Number of rows in table: {row_count}")
+
+    # Test fetch_latest method
+    latest = await ohlcv_table.fetch_latest(limit=5)
+    for candle in latest:
+        logger.info(f"{candle[0]}: {candle[1:]}")
+
+    # test needs_update method
+    logger.info("Testing needs_update method...")
+    needs_update = await ohlcv_table.needs_update()
+    logger.info(f"Table needs to be updated: {needs_update}")
+
+    logger.info("All tests completed successfully.")
+
+    await ohlcv_table.drop()
+    await db_manager.disconnect()
+
+
 # Run the test function
 if __name__ == "__main__":
-    asyncio.run(test_ohlcv_table())
+    asyncio.run(test_ohlcv_table_update())

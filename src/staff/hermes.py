@@ -1581,7 +1581,7 @@ class Hermes(HermesDataBase):
 
         :raises: ValueError
         """
-        if not exchange_name.lower() in VALID_EXCHANGES:
+        if exchange_name.lower() not in VALID_EXCHANGES:
             valid_exchanges = tuple(VALID_EXCHANGES.keys())
             raise ValueError(
                 f"Exchange must be one of {valid_exchanges} ({exchange_name})"

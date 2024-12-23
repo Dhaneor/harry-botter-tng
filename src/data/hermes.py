@@ -15,7 +15,6 @@ Created on July 06 21:12:20 2023
 
 @author dhaneor
 """
-import asyncio
 import logging
 
 from .rawi.exchange_factory import exchange_factory_fn
