@@ -35,7 +35,7 @@ class Mnemosyne:
         # self.db_ip = '85.214.71.96'
         self.db_name = "akasha"
         self.db_user = self.name
-        self.db_pass = "cp!8R//G6EHhTaO3F6wrx"
+        self.db_pass = "847423"
         self.auth_plugin = "mysql_native_password"
 
         self.error = []
@@ -309,15 +309,6 @@ class Mnemosyne:
             cursor.close()
 
         return True
-
-    def update(
-        self,
-        table_name,
-        columns,
-        data,
-    ):
-        pass
-        # REPLACE into table (id, name, age) values(1, "A", 19)
 
     # ================================================================================
     # functions for special queries

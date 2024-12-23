@@ -15,7 +15,7 @@ import zmq
 import zmq.asyncio
 
 logger = logging.getLogger("main")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 ch = logging.StreamHandler()
 
