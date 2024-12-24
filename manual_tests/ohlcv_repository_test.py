@@ -7,32 +7,15 @@ Created on Sep 10 20:15:20 2023
 """
 import asyncio
 import logging
-import os
 import random
-import sys
 import time
 import zmq
 import zmq.asyncio
 
-logger = logging.getLogger("main")
-logger.setLevel(logging.INFO)
+from data import ohlcv_repository as repo  # noqa E402
+from util.logger_setup import get_logger
 
-ch = logging.StreamHandler()
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
-
-# --------------------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# --------------------------------------------------------------------------------------
-
-from src.data.rawi import ohlcv_repository as repo  # noqa E402
+logger = get_logger(level=logging.INFO)
 
 ctx = zmq.asyncio.Context()
 
@@ -89,7 +72,7 @@ async def example_client(runs=6):
         snd_time = time.time()
         await socket.send_json(req)
 
-        response = repo.Response.from_json(await socket.recv_string())
+        response = repo.Ohlcv.from_json(await socket.recv_string())
         recv_time = time.time()
         response_times.append(recv_time - snd_time)
 

@@ -1,41 +1,26 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Fri Dec 202 18:00:33 2024
+Created on Fri Dec 20 18:00:33 2024
 
 @author dhaneor
 """
 
 import asyncio
 import logging
-import os
-import sys
 
-# --------------------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# --------------------------------------------------------------------------------------
-from src.data.database.tables import OhlcvTable  # noqa: E402
-from src.data.database.base import DatabaseManager  # noqa: E402
-from src.data.rawi import ohlcv_repository as repo  # noqa: E402
-from src.data.rawi.exchange_factory import exchange_factory_fn  # noqa: E402
+import _setup_test_environment  # noqa F401
+from src.data.database import DatabaseManager, OhlcvTable  # noqa: E402
+from src.data import ohlcv_repository as repo  # noqa: E402
+from src.data.exchange_factory import exchange_factory_fn  # noqa: E402
+from util.logger_setup import get_logger
 
-# Set up logging
-logger = logging.getLogger("main")
-handler = logging.StreamHandler()
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-handler.setFormatter(formatter)
-logger.addHandler(handler)
-logger.setLevel(logging.INFO)
+logger = get_logger(name="main", level=logging.INFO)
 
 # Dummy data for testing
 dummy_candles = [
     [
         1609459200000,
-        "10:00",
         100.0,
         105.0,
         98.0,
@@ -48,8 +33,6 @@ dummy_candles = [
         51000.0,
     ],
     [
-        1609545600000,
-        "11:00",
         102.0,
         107.0,
         101.0,
@@ -63,7 +46,6 @@ dummy_candles = [
     ],
     [
         1609632000000,
-        "12:00",
         106.0,
         110.0,
         104.0,
@@ -262,8 +244,12 @@ async def test_ohlcv_table_update() -> None:
         if await ohlcv_table.needs_update():
             await ohlcv_table.update()
 
-        logger.info("Table updated successfully.")
         await ohlcv_table.needs_update()
+
+        # Test fetch_latest method
+        latest = await ohlcv_table.fetch_latest(limit=5)
+        for candle in latest:
+            logger.info(f"{candle[0]}: {", ".join([str(e) for e in candle[1:6]])} ...")
 
     except Exception as e:
         logger.exception(e)

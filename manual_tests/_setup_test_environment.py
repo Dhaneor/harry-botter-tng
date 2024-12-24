@@ -8,8 +8,10 @@ Created on Thu Sep 22 13:00:23 2021
 
 @author_ dhaneor
 """
-import sys
 import os
+import sys
 
-# Add the src folder to sys.path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
+# Add the parent directory to sys.path
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)

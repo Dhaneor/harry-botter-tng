@@ -31,7 +31,7 @@ from src.util.timeops import (  # noqa: E402
     unix_to_utc,
     get_start_and_end_timestamp,
 )
-from data.rawi.util.timestamp_converter import timestamp_converter
+from data.util.timestamp_converter import timestamp_converter
 
 logger = logging.getLogger("main.ohlcv_download_prepper")
 

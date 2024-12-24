@@ -17,28 +17,12 @@ Created on December 21 07:59:20 2024
 """
 import asyncio
 import logging
-import os
-import sys
 
-# --------------------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# --------------------------------------------------------------------------------------
-from src.data.hermes import Hermes  # noqa: E402
-from src.data.rawi.ohlcv_repository import Response  # noqa: E402
+from data.hermes import Hermes  # noqa: E402
+from data.ohlcv_repository import Response  # noqa: E402
+from util.logger_setup import get_logger
 
-logger = logging.getLogger("main")
-logger.setLevel(logging.INFO)
-
-ch = logging.StreamHandler()
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
+logger = get_logger(level=logging.INFO)
 
 
 # ====================================================================================

@@ -10,7 +10,8 @@ import datetime
 import logging
 from typing import Any
 from .base import BaseTable, DatabaseManager
-from src.data.rawi import ohlcv_repository as repo
+from ..data_models import Ohlcv
+from .. import ohlcv_repository as repo
 from src.util.timeops import interval_to_milliseconds, seconds_to
 
 logger = logging.getLogger(f"main.{__name__}")
@@ -152,7 +153,7 @@ class OhlcvTable(BaseTable):
         LIMIT :limit
         """
         result = await self.db.fetch_all(query, values={"limit": limit})
-        return self._to_list_of_lists(result)
+        return reversed(self._to_list_of_lists(result))
 
     async def fetch_by_range(self, start: int, end: int) -> list[list[Any]]:
         query = f"""
@@ -161,7 +162,7 @@ class OhlcvTable(BaseTable):
         ORDER BY openTime ASC
         """
         result = await self.db.fetch_all(query, {"start": start, "end": end})
-        return self._to_list_of_lists(result)
+        return reversed(self._to_list_of_lists(result))
 
     # ................................................................................
     async def get_row_count(self) -> int:
@@ -225,10 +226,10 @@ class OhlcvTable(BaseTable):
         needs_update = delta > interval_ms
 
         logger.info(
-            "now_utc: %s, latest_close_utc: %s, "
-            "time delta: %s, interval: %s, needs update: %s",
-            now_utc, latest_close_utc,
-            seconds_to(delta / 1000), seconds_to(interval_ms / 1000), needs_update
+            "%s needs an update: %s  (now_utc: %s, latest_close_utc: %s, "
+            "time delta: %s, interval: %s)",
+            self.table_name, needs_update, now_utc, latest_close_utc,
+            seconds_to(delta / 1000), seconds_to(interval_ms / 1000)
             )
 
         return needs_update

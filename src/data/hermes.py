@@ -17,9 +17,9 @@ Created on July 06 21:12:20 2023
 """
 import logging
 
-from .rawi.exchange_factory import exchange_factory_fn
-from .rawi import ohlcv_repository
-from .rawi.util.timestamp_converter import timestamp_converter
+from .exchange_factory import exchange_factory_fn
+from . import ohlcv_repository
+from .util.timestamp_converter import timestamp_converter
 
 logger = logging.getLogger(f"main.{__name__}")
 logger.setLevel(logging.DEBUG)
@@ -70,3 +70,8 @@ class Hermes:
             request, self.exchange_factory
             )
         return response
+
+    async def _get_ohlcv_from_db(
+        self, exchange: str, symbol: str, interval: str, start: int, end: int
+    ) -> ohlcv_repository.Response:
+
