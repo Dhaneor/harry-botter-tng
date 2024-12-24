@@ -29,7 +29,7 @@ formatter = logging.Formatter(
 )
 handler.setFormatter(formatter)
 logger.addHandler(handler)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # Dummy data for testing
 dummy_candles = [
@@ -220,33 +220,10 @@ async def test_ohlcv_table_with_real_data() -> None:
 
 
 async def test_ohlcv_table_update() -> None:
-    # initialize exchange_factory
+    # initialize exchange_factory & set it for the repository as well,
+    # to make sure that everyrhing is closed properly at the end
     exchange_factory = exchange_factory_fn()
-
-    # download OHLCV data from Binance
-    request = {
-        'exchange': 'binance',
-        'symbol': 'BTC/USDT',
-        'interval': '4h',
-        'start': 'six years ago UTC',
-        'end': 'one day ago UTC',
-    }
-
-    try:
-        response = await repo.process_request(request, exchange_factory)
-    except Exception as e:
-        logger.error(f"Failed to download OHLCV data: {e}")
-        await exchange_factory(None)  # close the exchange connection
-        return
-
-    logger.debug(f"Downloaded OHLCV data: {response}")
-    logger.debug(f"Number of candles: {len(response.data)}")
-
-    data_types = [type(elem) for elem in response.data[0]]
-    logger.debug(f"Data types: {data_types}")
-
-    # close the exchange connection
-    await exchange_factory(None)
+    repo.EXCHANGE_FACTORY = exchange_factory
 
     # Initialize DatabaseManager and OhlcvTable
     db_manager = DatabaseManager()
@@ -254,43 +231,50 @@ async def test_ohlcv_table_update() -> None:
     if not connected:
         logger.error("Failed to connect to the database.")
         return
-    ohlcv_table = OhlcvTable(db_manager, "binance", response.symbol, response.interval)
 
-    # Test create method
-    logger.info("Testing create method...")
-    await ohlcv_table.create()
-    logger.info("Table created successfully.")
+    symbol = 'BTC/USDT'
+    interval = '4h'
 
-    # Test insert method (single and batch)
-    logger.info("Testing insert method...")
+    # download OHLCV data from Binance
+    request = {
+        'exchange': 'binance',
+        'symbol': symbol,
+        'interval': interval,
+        'start': 'six years ago UTC',
+        'end': 'one day ago UTC',
+    }
+
     try:
+        ohlcv_table = OhlcvTable(db_manager, "binance", symbol, interval)
+        await ohlcv_table.create()
+
+        response = await repo.process_request(request, exchange_factory)
         await ohlcv_table.insert(response.data)
+
+        row_count = await ohlcv_table.get_row_count()
+        logger.info(f"Number of rows in table: {row_count}")
+
+        # Test fetch_latest method
+        latest = await ohlcv_table.fetch_latest(limit=5)
+        for candle in latest:
+            logger.info(f"{candle[0]}: {", ".join([str(e) for e in candle[1:6]])} ...")
+
+        if await ohlcv_table.needs_update():
+            await ohlcv_table.update()
+
+        logger.info("Table updated successfully.")
+        await ohlcv_table.needs_update()
+
     except Exception as e:
-        logger.error(f"Failed to insert candles: {e}", exc_info=False)
+        logger.exception(e)
+    else:
+        logger.info("All tests completed successfully.")
+    finally:
         await ohlcv_table.drop()
         await db_manager.disconnect()
-        return
-    logger.info("Candles inserted successfully.")
 
-    # test get_row_count method
-    logger.info("Testing get_row_count method...")
-    row_count = await ohlcv_table.get_row_count()
-    logger.info(f"Number of rows in table: {row_count}")
-
-    # Test fetch_latest method
-    latest = await ohlcv_table.fetch_latest(limit=5)
-    for candle in latest:
-        logger.info(f"{candle[0]}: {candle[1:]}")
-
-    # test needs_update method
-    logger.info("Testing needs_update method...")
-    needs_update = await ohlcv_table.needs_update()
-    logger.info(f"Table needs to be updated: {needs_update}")
-
-    logger.info("All tests completed successfully.")
-
-    await ohlcv_table.drop()
-    await db_manager.disconnect()
+        # close the exchange connection
+        await exchange_factory(None)
 
 
 # Run the test function

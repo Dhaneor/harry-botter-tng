@@ -33,6 +33,16 @@ class OhlcvTable(BaseTable):
         self.table_name = f"{self.exchange}_{self.symbol}_{self.interval}"
         logger.info(f"Creating OHLCV table: {self.table_name} for {exchange} {symbol}")
 
+    async def exists(self) -> bool:
+        """Checks if the OHLCV table exists in the database."""
+        query = f"""
+        SELECT COUNT(*)
+        FROM information_schema.tables
+        WHERE table_schema = DATABASE() AND table_name = '{self.table_name}'
+        """
+        result = await self.db.fetch_one(query)
+        return result[0] > 0
+
     async def create(self):
         """Creates the OHLCV table if it doesn't exist.
 
@@ -75,6 +85,11 @@ class OhlcvTable(BaseTable):
         """
 
         await self.db.execute(query)
+
+        logger.info(
+            "Table %s created: %s",
+            self.table_name, "OK" if await self.exists() else "FAIL"
+        )
 
     async def insert(self, data, retries=3):
         """
@@ -129,10 +144,11 @@ class OhlcvTable(BaseTable):
                     logger.error("🚨 All retries failed for insert.")
                     raise
 
+    # ................................................................................
     async def fetch_latest(self, limit: int = 1000) -> list[list[Any]]:
         query = f"""
         SELECT * FROM {self.table_name}
-        ORDER BY openTime ASC
+        ORDER BY openTime DESC
         LIMIT :limit
         """
         result = await self.db.fetch_all(query, values={"limit": limit})
@@ -147,11 +163,18 @@ class OhlcvTable(BaseTable):
         result = await self.db.fetch_all(query, {"start": start, "end": end})
         return self._to_list_of_lists(result)
 
+    # ................................................................................
     async def get_row_count(self) -> int:
         """
         Returns the number of rows in the table.
         """
         query = f"SELECT COUNT(*) FROM {self.table_name}"
+        result = await self.db.fetch_one(query)
+        return result[0] if result else 0
+
+    async def get_first_entry_ts(self) -> int:
+        """ Returns the timestamp of the first entry in the table."""
+        query = f"SELECT MIN(openTime) FROM {self.table_name}"
         result = await self.db.fetch_one(query)
         return result[0] if result else 0
 
@@ -163,6 +186,7 @@ class OhlcvTable(BaseTable):
         result = await self.db.fetch_one(query)
         return result[0] if result else 0
 
+    # ................................................................................
     async def needs_update(self) -> bool:
         """
         Checks if the table is up to date based on the latest entry
@@ -200,7 +224,7 @@ class OhlcvTable(BaseTable):
 
         needs_update = delta > interval_ms
 
-        logger.debug(
+        logger.info(
             "now_utc: %s, latest_close_utc: %s, "
             "time delta: %s, interval: %s, needs update: %s",
             now_utc, latest_close_utc,
@@ -219,16 +243,22 @@ class OhlcvTable(BaseTable):
             - The timestamp of the last entry to be included in the update.
             - If not provided, the update will include all available data.
         """
-        logger.info(f"Updating OHLCV table: {self.table_name}")
-
         if end is None:
             end = datetime.datetime.now().timestamp() * 1000
 
         start = await self.get_last_entry_ts() + 1
 
         logger.info(
-            "updating from %s to %s",
-            seconds_to(start / 1000), seconds_to(end / 1000)
+            "Updating %s from %s to %s",
+            self.table_name,
+            datetime
+            .datetime
+            .fromtimestamp(start / 1000, datetime.timezone.utc)
+            .strftime("%Y-%m-%d %H:%M:%S"),
+            datetime
+            .datetime
+            .fromtimestamp(end / 1000, datetime.timezone.utc)
+            .strftime("%Y-%m-%d %H:%M:%S"),
             )
 
         request = {
@@ -246,8 +276,10 @@ class OhlcvTable(BaseTable):
             return
 
         if not response.success:
-            logger.error(f"Error fetching data from {self.table_name}: {response.error}")
+            logger.error(
+                "Error fetching data from %s: %s", self.table_name, response.error
+                )
             return
 
-        logger.info(f"Received {len(response)} rows for {self.table_name}")
-        await self.insert(response.data)
+        logger.info(f"Received {len(response.data)} rows for {self.table_name}")
+        await self.insert(response.data[:-1])
