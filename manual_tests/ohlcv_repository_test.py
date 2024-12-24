@@ -6,7 +6,6 @@ Created on Sep 10 20:15:20 2023
 @author dhaneor
 """
 import asyncio
-import logging
 import random
 import time
 import zmq
@@ -15,7 +14,7 @@ import zmq.asyncio
 from data import ohlcv_repository as repo  # noqa E402
 from util.logger_setup import get_logger
 
-logger = get_logger(level=logging.INFO)
+logger = get_logger(level="INFO")
 
 ctx = zmq.asyncio.Context()
 
@@ -91,7 +90,7 @@ async def example_client(runs=6):
     _ = await socket.recv_string()
     socket.close(1)
 
-    logger.setLevel(logging.INFO)
+    logger.setLevel("INFO")
 
     logger.info(
         "average response time: %s milliseconds",

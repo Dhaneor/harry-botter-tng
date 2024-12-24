@@ -28,7 +28,7 @@ logger = get_logger(level=logging.INFO)
 # ====================================================================================
 async def test_result_is_instance_of_response():
     async with Hermes() as repo:
-        response = await repo.get_ohlcv(
+        response = await repo.ohlcv.get_ohlcv(
             exchange='binance',
             symbol='BTC/USDT',
             interval='1m',

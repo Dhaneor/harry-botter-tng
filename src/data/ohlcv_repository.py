@@ -50,8 +50,6 @@ import time
 import zmq
 import zmq.asyncio
 
-from datetime import datetime
-from dotenv import load_dotenv
 from ccxt.base.errors import (
     BadSymbol,
     BadRequest,
@@ -62,6 +60,8 @@ from ccxt.base.errors import (
     RequestTimeout,
     ExchangeError,
 )
+from datetime import datetime
+from dotenv import load_dotenv
 from typing import Optional, Dict, Tuple, Callable
 
 from .exchange_factory import exchange_factory_fn
@@ -70,17 +70,7 @@ from .util.timestamp_converter import timestamp_converter
 
 logger = logging.getLogger("main.ohlcv_repository")
 
-# Load environment variables from .env file
-load_dotenv()
-
-# determine if we should use the database for OHLCV data
-USE_DB = os.getenv("USE_DB", "False").lower() == "true"
-
-logger.info(
-    f"{'WILL NOT' if not USE_DB else 'WILL'} USE THE DATABASE for OHLCV data."
-    )
-
-REQUEST_SOCKET_ADDRESS = "inproc://ohlcv_repository"
+REQUEST_SOCKET_ADDRESS = "inproc://ohlcv_repository"  # change this, if necessary
 KLINES_LIMIT = 1000  # number of candles to download in one call
 CACHE_TTL_SECONDS = 30  # cache TTL in seconds
 

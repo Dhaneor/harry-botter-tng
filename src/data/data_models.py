@@ -20,7 +20,7 @@ import logging
 import numpy as np
 
 from dataclasses import dataclass
-from typing import Optional
+from typing import Any
 
 logger = logging.getLogger("main.ohlcv_respsonse")
 
@@ -28,11 +28,12 @@ logger = logging.getLogger("main.ohlcv_respsonse")
 # ====================================================================================
 @dataclass
 class Ohlcv:
-    """Response class.
+    """Ohlcv data class.
 
     This class standardizes the response, does type checks for the values from
-    the request, and includes a method for sending the response after fetching
-    the OHLCV data (including some error flags for the client).
+    the request, and includes a method for sending the response over the ZeroMQ
+    socket (if provided) after fetching the OHLCV data from the database or the
+    exchange API (including some error flags for the client).
     """
 
     exchange: str = None
@@ -42,7 +43,7 @@ class Ohlcv:
     end: int = None
     socket: object = None
     id: str = None
-    data: list | None = None
+    data: list[list[Any]] | None = None
     _execution_time: float | None = None
     _bad_request_error: bool = False
     _authentication_error: bool = False
@@ -169,7 +170,7 @@ class Ohlcv:
 
     # ------ Functions for sending the response and reconstructing it from JSON ------
     @classmethod
-    def from_json(cls, json_string: str) -> "Response":
+    def from_json(cls, json_string: str) -> "Ohlcv":
         """
         Reconstruct a Response object from a JSON string.
 
@@ -242,7 +243,7 @@ class Ohlcv:
         )
 
     # -------- Functions for converting the OHLCV data to the desired format ---------
-    def to_dict(self) -> Optional[dict[str, np.ndarray]]:
+    def to_dict(self) -> dict[str, np.ndarray] | None:
         """Convert OHLCV data to a dictionary.
 
         Returns

@@ -7,15 +7,13 @@ Created on Fri Dec 20 18:00:33 2024
 """
 
 import asyncio
-import logging
 
-import _setup_test_environment  # noqa F401
-from src.data.database import DatabaseManager, OhlcvTable  # noqa: E402
-from src.data import ohlcv_repository as repo  # noqa: E402
-from src.data.exchange_factory import exchange_factory_fn  # noqa: E402
+from data.database import DatabaseManager, OhlcvTable
+from data import ohlcv_repository as repo
+from data.exchange_factory import exchange_factory_fn
 from util.logger_setup import get_logger
 
-logger = get_logger(name="main", level=logging.INFO)
+logger = get_logger(level="INFO")
 
 # Dummy data for testing
 dummy_candles = [
@@ -133,11 +131,11 @@ async def test_ohlcv_table_with_real_data() -> None:
 
     # download OHLCV data from Binance
     request = {
-        'exchange': 'binance',
-        'symbol': 'BTC/USDT',
-        'interval': '4h',
-        'start': 'six years ago UTC',
-        'end': 'one day ago UTC',
+        "exchange": "binance",
+        "symbol": "BTC/USDT",
+        "interval": "4h",
+        "start": "six years ago UTC",
+        "end": "one day ago UTC",
     }
 
     try:
@@ -214,20 +212,20 @@ async def test_ohlcv_table_update() -> None:
         logger.error("Failed to connect to the database.")
         return
 
-    symbol = 'BTC/USDT'
-    interval = '4h'
+    symbol = "BTC/USDT"
+    interval = "4h"
 
     # download OHLCV data from Binance
     request = {
-        'exchange': 'binance',
-        'symbol': symbol,
-        'interval': interval,
-        'start': 'six years ago UTC',
-        'end': 'one day ago UTC',
+        "exchange": "binance",
+        "symbol": symbol,
+        "interval": interval,
+        "start": "six years ago UTC",
+        "end": "one day ago UTC",
     }
 
     try:
-        ohlcv_table = OhlcvTable(db_manager, "binance", symbol, interval)
+        ohlcv_table = await db_manager.get_table("binance", symbol, interval)
         await ohlcv_table.create()
 
         response = await repo.process_request(request, exchange_factory)
@@ -238,17 +236,7 @@ async def test_ohlcv_table_update() -> None:
 
         # Test fetch_latest method
         latest = await ohlcv_table.fetch_latest(limit=5)
-        for candle in latest:
-            logger.info(f"{candle[0]}: {", ".join([str(e) for e in candle[1:6]])} ...")
-
-        if await ohlcv_table.needs_update():
-            await ohlcv_table.update()
-
-        await ohlcv_table.needs_update()
-
-        # Test fetch_latest method
-        latest = await ohlcv_table.fetch_latest(limit=5)
-        for candle in latest:
+        for candle in latest.data:
             logger.info(f"{candle[0]}: {", ".join([str(e) for e in candle[1:6]])} ...")
 
     except Exception as e:
