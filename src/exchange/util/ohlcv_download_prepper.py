@@ -26,7 +26,7 @@ from typing import Union, Dict
 from collections import OrderedDict
 from functools import lru_cache
 
-from src.util.timeops import (  # noqa: E402
+from util.timeops import (  # noqa: E402
     interval_to_milliseconds,
     unix_to_utc,
     get_start_and_end_timestamp,

@@ -23,14 +23,13 @@ from dotenv import load_dotenv
 from .exchange_factory import exchange_factory_fn
 from .ohlcv_repository import process_request
 from .data_models import Ohlcv as OHlcvData
-from .database import DatabaseManager, OhlcvTable
+from .database import DatabaseManager
 from .util.timestamp_converter import timestamp_converter
 
 logger = logging.getLogger(f"main.{__name__}")
 logger.setLevel(logging.DEBUG)
 
 exchange_factory = exchange_factory_fn()
-
 
 # Load environment variables from .env file
 load_dotenv()
@@ -80,6 +79,10 @@ class OhlcvRepository:
         return await process_request(request, exchange_factory)
 
 
+class SymbolsRepository:
+    ...
+
+
 class Hermes:
 
     def __init__(self):
@@ -91,6 +94,3 @@ class Hermes:
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         await exchange_factory(None)
         await db.disconnect()
-
-
-

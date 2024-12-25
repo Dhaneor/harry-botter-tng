@@ -264,3 +264,7 @@ class Ohlcv:
             "close": data_array[4],
             "volume": data_array[5],
         }
+
+
+class Symbol:
+    ...

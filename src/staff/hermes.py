@@ -17,9 +17,9 @@ from pprint import pprint
 from functools import lru_cache
 from typing import Union, Tuple, Optional, Callable
 
-from src.data.util.mnemosyne import Mnemosyne
-from src.exchange.binance_ import Binance
-from src.exchange.kucoin_ import KucoinCrossMargin as Kucoin
+from data.util.mnemosyne import Mnemosyne
+from exchange.binance_ import Binance
+from exchange.kucoin_ import KucoinCrossMargin as Kucoin
 from util.timeops import (
     time_difference_in_ms,
     unix_to_utc,

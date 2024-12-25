@@ -13,8 +13,8 @@ from typing import Union, Optional
 import mysql.connector as dbc
 from mysql.connector import Error, IntegrityError
 
-from src.util.ilabrat import get_exchange_name
-from src.util.timeops import utc_to_unix
+from util.ilabrat import get_exchange_name
+from util.timeops import utc_to_unix
 
 import pandas as pd
 from pprint import pprint

@@ -42,6 +42,7 @@ Created on Fri Dec 202 15:50:33 2024
 
 @author dhaneor
 """
+
 import asyncio
 import datetime
 import logging
@@ -51,6 +52,7 @@ import warnings
 from abc import abstractmethod
 from databases import Database
 from dotenv import load_dotenv
+from itertools import islice
 from typing import Any, Coroutine
 from urllib.parse import quote_plus
 
@@ -60,8 +62,9 @@ from util.timeops import interval_to_milliseconds, seconds_to
 
 # Ignore pymysql warning about duplicate entries in the same table
 # This is handled by the appropriate SQL INSERT IGNORE statement.
-warnings.filterwarnings('ignore', category=pymysql.Warning,
-                        message=r".*Duplicate entry.*for key.*")
+warnings.filterwarnings(
+    "ignore", category=pymysql.Warning, message=r".*Duplicate entry.*for key.*"
+)
 
 logger = logging.getLogger(f"main.{__name__}")
 
@@ -89,8 +92,7 @@ class BaseTable:
         return bool(result)
 
     @abstractmethod
-    async def create(self):
-        ...
+    async def create(self): ...
 
     async def drop(self) -> None:
         query = f"DROP TABLE IF EXISTS {self.table_name}"
@@ -99,62 +101,64 @@ class BaseTable:
     async def insert(
         self,
         data: dict[str, Any] | list[dict[str, Any]],
-        columns: list[str]
+        columns: list[str],
+        batch_size: int = 1000
     ) -> None:
-        # prepare the columns and placeholders for the SQL query
-        columns_formatted = ', '.join(columns)
-        placeholders = ', '.join([f':{col}' for col in columns])
+        if not data:
+            logger.warning("No data to insert.")
+            return
 
-        # build the SQL query
+        # Ensure data is a list of dictionaries
+        if isinstance(data, dict):
+            data = [data]
+
+        await self._fetch_columns()  # Ensure columns are fetched and cached
+
+        # Prepare the columns and placeholders for the SQL query
+        columns = [col for col in self.columns if col.lower() != "id"]
+        columns_formatted = ", ".join(columns)
+        placeholders = ", ".join([f":{col}" for col in columns])
+
+        # Build the SQL query
         query = (
             f"INSERT IGNORE INTO {self.table_name} "
             f"({columns_formatted}) VALUES ({placeholders})"
         )
 
-        # Ensure each dictionary in data doesn't include the 'id' key
-        cleaned_data = [
-            {k: v for k, v in row.items() if k.lower() != 'id'} for row in data
+        # Process data in batches
+        for i in range(0, len(data), batch_size):
+            batch = list(islice(data, i, i + batch_size))
+            cleaned_batch = [
+                {k: v for k, v in row.items() if k.lower() != "id"}
+                for row in batch
             ]
 
-        # Check if data is a single row or multiple rows
-        if isinstance(data[0], dict):
-            logger.debug(f"BATCH INSERT for {self.table_name} with {len(data)} entries")
-            logger.debug(placeholders)
-            logger.debug(data[0])
-            # Batch insert
-            if len(data[0]) != len(self.columns) - 1:
-                raise ValueError(
-                    f"Length of data {len(cleaned_data[0])} and number of "
-                    f"columns {len(placeholders)} does not match."
+            for attempt in range(3):
+                try:
+                    await self.db.execute_many(query, cleaned_batch)
+                    logger.debug(
+                        "Inserted batch of %s rows into %s",
+                        f"{len(cleaned_batch):,}", self.table_name,
                     )
-            else:
-                logger.debug(
-                    "no of columns: %s, items in row: %s",
-                    len(placeholders.split(' ')), len(cleaned_data[0])
+                    break
+                except Exception as e:
+                    logger.error(
+                        "Attempt %s failed: Error inserting batch into %s: %s",
+                        attempt + 1, self.table_name, str(e)
                     )
-            await self.db.execute_many(query, cleaned_data)
-        else:
-            # Single row insert
-            if len(data) != len(self.columns) - 1:
-                raise ValueError(
-                    f"Length of data {len(data)} and number of "
-                    f"columns {len(self.columns) - 1} does not match."
-                    )
-
-            await self.db.execute(query, data)
+                    if attempt == 2:  # Last retry
+                        logger.error("All retries failed for batch insert.")
+                        raise
+                    await asyncio.sleep(2)  # Wait before retrying
 
     async def fetch_all(self) -> list[list[Any]]:
         query = f"SELECT * FROM {self.table_name}"
-        return self._to_list_of_lists(
-            await self.db.fetch_all(query)
-        )
+        return self._to_list_of_lists(await self.db.fetch_all(query))
 
     async def fetch_by(self, **conditions) -> list[dict[str, Any]]:
         where_clause = " AND ".join([f"{key} = :{key}" for key in conditions.keys()])
         query = f"SELECT * FROM {self.table_name} WHERE {where_clause}"
-        return self._to_list_of_lists(
-            await self.db.fetch_all(query, conditions)
-        )
+        return self._to_list_of_lists(await self.db.fetch_all(query, conditions))
 
     # ................................................................................
     async def _fetch_columns(self):
@@ -170,7 +174,7 @@ class BaseTable:
         WHERE TABLE_NAME = '{self.table_name}'
         """
         result = await self.db.fetch_all(query)
-        self.columns = [row['COLUMN_NAME'] for row in result]
+        self.columns = [row["COLUMN_NAME"] for row in result]
         if not self.columns:
             raise ValueError(f"No columns found for table '{self.table_name}'.")
 
@@ -196,7 +200,7 @@ class OhlcvTable(BaseTable):
         symbol: str,
         interval: str,
         db_manager: "DatabaseManager",
-        repo: Coroutine = None
+        repo: Coroutine = None,
     ):
         super().__init__(db_manager, repo)
         self.exchange = exchange
@@ -260,7 +264,8 @@ class OhlcvTable(BaseTable):
 
         logger.info(
             "Table %s created: %s",
-            self.table_name, "OK" if await self.exists() else "FAIL"
+            self.table_name,
+            "OK" if await self.exists() else "FAIL",
         )
 
     async def insert(self, data, retries=3):
@@ -283,34 +288,30 @@ class OhlcvTable(BaseTable):
         # Convert the list of lists to a list of dictionaries
         dict_data = []
         for row in data:
-            logger.debug(row)
             dict_row = {
                 col: val for col, val in zip(self.columns[1:], row)
-                }  # Skip 'id' column
+            }  # Skip 'id' column
             dict_data.append(dict_row)
 
-        columns = [col for col in self.columns if col.lower() != 'id']
+        columns = [col for col in self.columns if col.lower() != "id"]
 
         for attempt in range(retries):
             try:
-                await super().insert(dict_data, columns)
+                await super().insert(data=dict_data, columns=columns, batch_size=10_000)
                 logger.debug(
-                    "INSERT OK [%s row] for %s",
-                    len(data) if isinstance(data[0], list) else 1,
-                    self.table_name
-                    )
+                    "INSERT OK [%s rows] for %s",
+                    len(data) if isinstance(data[0], list) else 1, self.table_name,
+                )
                 return
             except ValueError as ve:
                 logger.error(
-                    "[%s] INSERT FAIL for %s -> %s ",
-                    attempt, self.table_name, str(ve)
-                    )
+                    "[%s] INSERT FAIL for %s -> %s ", attempt, self.table_name, str(ve)
+                )
                 raise
             except Exception as e:
                 logger.error(
-                    "[%s] INSERT FAIL for %s -> %s ",
-                    attempt, self.table_name, str(e)
-                    )
+                    "[%s] INSERT FAIL for %s -> %s ", attempt, self.table_name, str(e)
+                )
                 await asyncio.sleep(2)
                 if attempt == retries - 1:  # Last retry
                     logger.error("🚨 All retries failed for insert.")
@@ -332,7 +333,7 @@ class OhlcvTable(BaseTable):
             exchange=self.exchange,
             symbol=self.symbol,
             interval=self.interval,
-            data=result
+            data=result,
         )
 
     async def fetch_by_range(self, start: int, end: int) -> list[list[Any]]:
@@ -353,7 +354,7 @@ class OhlcvTable(BaseTable):
             interval=self.interval,
             start=start,
             end=end,
-            data=result
+            data=result,
         )
 
     # ................................................................................
@@ -366,7 +367,7 @@ class OhlcvTable(BaseTable):
         return result[0] if result else 0
 
     async def get_first_entry_ts(self) -> int:
-        """ Returns the timestamp of the first entry in the table."""
+        """Returns the timestamp of the first entry in the table."""
         query = f"SELECT MIN(openTime) FROM {self.table_name}"
         result = await self.db.fetch_one(query)
         return result[0] if result else 0
@@ -394,25 +395,22 @@ class OhlcvTable(BaseTable):
         latest_open_ms = await self.get_last_entry_ts()
         latest_close_ms = latest_open_ms + interval_ms
         now_ms = up_to or datetime.datetime.now().timestamp() * 1000
-        delta = (now_ms - latest_close_ms)
+        delta = now_ms - latest_close_ms
 
         logger.debug(
             "now: %s, latest close: %s, time delta: %s interval: %s",
-            latest_close_ms, now_ms, f"{int(delta):,}", f"{interval_ms:,}",
-            )
-
-        latest_close_utc = (
-            datetime
-            .datetime
-            .fromtimestamp(latest_close_ms / 1000, datetime.timezone.utc)
-            .strftime("%Y-%m-%d %H:%M:%S")
+            latest_close_ms,
+            now_ms,
+            f"{int(delta):,}",
+            f"{interval_ms:,}",
         )
 
-        now_utc = (
-            datetime
-            .datetime
-            .now(datetime.timezone.utc)
-            .strftime("%Y-%m-%d %H:%M:%S")
+        latest_close_utc = datetime.datetime.fromtimestamp(
+            latest_close_ms / 1000, datetime.timezone.utc
+        ).strftime("%Y-%m-%d %H:%M:%S")
+
+        now_utc = datetime.datetime.now(datetime.timezone.utc).strftime(
+            "%Y-%m-%d %H:%M:%S"
         )
 
         needs_update = delta > interval_ms
@@ -420,9 +418,13 @@ class OhlcvTable(BaseTable):
         logger.info(
             "%s needs an update: %s  (now_utc: %s, latest_close_utc: %s, "
             "time delta: %s, interval: %s)",
-            self.table_name, needs_update, now_utc, latest_close_utc,
-            seconds_to(delta / 1000), seconds_to(interval_ms / 1000)
-            )
+            self.table_name,
+            needs_update,
+            now_utc,
+            latest_close_utc,
+            seconds_to(delta / 1000),
+            seconds_to(interval_ms / 1000),
+        )
 
         return needs_update
 
@@ -439,20 +441,18 @@ class OhlcvTable(BaseTable):
         if end is None:
             end = datetime.datetime.now().timestamp() * 1000
 
-        start = await self.get_last_entry_ts() + 1
+        start = await self.get_last_entry_ts() + 1000
 
         logger.info(
             "Updating %s from %s to %s",
             self.table_name,
-            datetime
-            .datetime
-            .fromtimestamp(start / 1000, datetime.timezone.utc)
-            .strftime("%Y-%m-%d %H:%M:%S"),
-            datetime
-            .datetime
-            .fromtimestamp(end / 1000, datetime.timezone.utc)
-            .strftime("%Y-%m-%d %H:%M:%S"),
-            )
+            datetime.datetime.fromtimestamp(
+                start / 1000, datetime.timezone.utc
+            ).strftime("%Y-%m-%d %H:%M:%S"),
+            datetime.datetime.fromtimestamp(end / 1000, datetime.timezone.utc).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+        )
 
         request = {
             "exchange": self.exchange,
@@ -471,10 +471,9 @@ class OhlcvTable(BaseTable):
         if not response.success:
             logger.error(
                 "Error fetching data from %s: %s", self.table_name, response.error
-                )
+            )
             return
 
-        logger.info(f"Received {len(response.data)} rows for {self.table_name}")
         await self.insert(response.data[:-1])
 
 
@@ -489,7 +488,7 @@ class DatabaseManager:
         if not db_user or not db_password:
             raise EnvironmentError(
                 "DB_USER and DB_PASSWORD environment variables must be set."
-                )
+            )
 
         # Encode the username
         encoded_user = quote_plus(db_user)

@@ -13,7 +13,7 @@ from data import ohlcv_repository as repo
 from data.exchange_factory import exchange_factory_fn
 from util.logger_setup import get_logger
 
-logger = get_logger(level="INFO")
+logger = get_logger(level="DEBUG")
 
 # Dummy data for testing
 dummy_candles = [

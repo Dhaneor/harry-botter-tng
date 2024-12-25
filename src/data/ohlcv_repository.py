@@ -45,7 +45,6 @@ import ccxt.pro as ccxt
 import functools
 import json
 import logging
-import os
 import time
 import zmq
 import zmq.asyncio
@@ -61,7 +60,6 @@ from ccxt.base.errors import (
     ExchangeError,
 )
 from datetime import datetime
-from dotenv import load_dotenv
 from typing import Optional, Dict, Tuple, Callable
 
 from .exchange_factory import exchange_factory_fn
