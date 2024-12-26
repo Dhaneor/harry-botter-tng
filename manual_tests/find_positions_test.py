@@ -47,7 +47,7 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 )
 # from src.plotting.minerva import BacktestChart as Chart  # noqa: E402, F401)
 from src.analysis.chart.tikr_charts import BacktestChart as Chart  # noqa: E402, F401
-from src.backtest import result_stats as rs  # noqa: E402, F401
+from analysis.backtest import result_stats as rs  # noqa: E402, F401
 from src.analysis.models import position  # noqa: E402, F401
 
 symbol = "BTCUSDT"
