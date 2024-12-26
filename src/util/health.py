@@ -5,6 +5,7 @@ Created on Sun Nov 28 13:12:20 2022
 
 @author dhaneor
 """
+
 import os
 import random
 from multiprocessing import Process
@@ -13,8 +14,7 @@ import time
 from threading import Thread  # noqa: F401
 
 
-class Health: # Thread
-
+class Health:  # Thread
     def __init__(self):
         self.proc_cpu_times = {}
         self.last_call = 0
@@ -25,26 +25,26 @@ class Health: # Thread
     def get_stats(self, pid: int):
         if not pid:
             return {
-                'cpu_percent': psutil.cpu_percent(interval=None, percpu=True),
-                'cpu_freq': psutil.cpu_freq(),
-                'network_io': psutil.net_io_counters(),
-                'network_connections': self.get_network_connections(),
-                'python_processes': self.get_all_processes_info(),
+                "cpu_percent": psutil.cpu_percent(interval=None, percpu=True),
+                "cpu_freq": psutil.cpu_freq(),
+                "network_io": psutil.net_io_counters(),
+                "network_connections": self.get_network_connections(),
+                "python_processes": self.get_all_processes_info(),
             }
         else:
             return {
-                'cpu_percent': psutil.cpu_percent(interval=None, percpu=True),
-                'cpu_freq': psutil.cpu_freq(),
-                'network_io': psutil.net_io_counters(),
-                'network_connections': self.get_network_connections(),
-                'current_process': self.get_info_for_current_process(),
+                "cpu_percent": psutil.cpu_percent(interval=None, percpu=True),
+                "cpu_freq": psutil.cpu_freq(),
+                "network_io": psutil.net_io_counters(),
+                "network_connections": self.get_network_connections(),
+                "current_process": self.get_info_for_current_process(),
             }
 
     def get_network_connections(self):
         try:
             return psutil.net_connections()
         except psutil.AccessDenied:
-            return 'access denied'
+            return "access denied"
 
     def get_info_for_current_process(self):
         current_pid = os.getpid()
@@ -74,25 +74,25 @@ class Health: # Thread
                 if info := self._get_process_info(process, pid):
                     processes.append(info)
 
-        return [p for p in processes if 'python' in p['name']]
+        return [p for p in processes if "python" in p["name"]]
 
     def _get_process_info(self, process: psutil.Process, pid):
         with process.oneshot():
             try:
                 name = process.name()
             except psutil.AccessDenied:
-                name = 'access denied'
+                name = "access denied"
 
             try:
                 cpu_usage = process.cpu_percent()
             except psutil.AccessDenied:
-                cpu_usage = 'access denied'
+                cpu_usage = "access denied"
 
             total_time_passed = time.time() - self.last_call
-            cpu_times = {'system': 0, 'user': 0}
+            cpu_times = {"system": 0, "user": 0}
             try:
                 cpu_times = process.cpu_times()
-            except:
+            except Exception:
                 pass
             finally:
                 last_call = time.time()
@@ -100,17 +100,17 @@ class Health: # Thread
             cpu_percent = -1
             if (current := cpu_times) and (last := self.proc_cpu_times.get(pid)):
                 try:
-                    spent_time = sum([
-                        current.system - last.system,
-                        current.user - last.user,
-                        current.children_system - last.children_system,
-                        current.children_user - last.children_user
-                    ])
+                    spent_time = sum(
+                        [
+                            current.system - last.system,
+                            current.user - last.user,
+                            current.children_system - last.children_system,
+                            current.children_user - last.children_user,
+                        ]
+                    )
                     if total_time_passed > 0:
-                        cpu_percent =  round(
-                            100 * (spent_time / total_time_passed), 4
-                        )
-                except:
+                        cpu_percent = round(100 * (spent_time / total_time_passed), 4)
+                except Exception:
                     pass
 
             self.proc_cpu_times[pid] = cpu_times
@@ -122,25 +122,25 @@ class Health: # Thread
                 memory_usage = 0
 
             return {
-                'name': name,
-                'cpu_usage': cpu_usage,
-                'cpu_percent': cpu_percent,
-                'memory_usage': memory_usage,
+                "name": name,
+                "cpu_usage": cpu_usage,
+                "cpu_percent": cpu_percent,
+                "memory_usage": memory_usage,
             }
 
 
 def heavy_work(n):
     def the_work(n):
         for x in range(n):
-            _ = x ** 2 + x ** 0.5 + x ** 0.3 - x ** 0.8
+            _ = x**2 + x**0.5 + x**0.3 - x**0.8
             time.sleep(random.random())
 
     for _ in range(20):
         the_work(n)
-        time.sleep(random.randint(1,5))
+        time.sleep(random.randint(1, 5))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     h = Health()
 
     threads = []
@@ -154,7 +154,7 @@ if __name__ == '__main__':
             pid = os.getpid()
             st = time.time()
             stats = h.get_stats(pid)
-            process = stats['current_process']
+            process = stats["current_process"]
             et = time.time()
             if process:
                 # cpu_usage = process['cpu_usage']
@@ -168,9 +168,8 @@ if __name__ == '__main__':
                 print(process)
                 time.sleep(1)
             else:
-                os.system('clear')
-                print('unknown')
+                os.system("clear")
+                print("unknown")
     except KeyboardInterrupt:
         [t.join() for t in threads]
         time.sleep(6)
-

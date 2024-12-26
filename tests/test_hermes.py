@@ -19,7 +19,7 @@ import asyncio
 import logging
 
 from data import hermes
-from data.ohlcv_repository import Ohlcv  # noqa: E402
+from data.data_models import Ohlcv, Markets, Symbols  # noqa: E402
 from util import get_logger
 
 logger = get_logger(level=logging.DEBUG)
@@ -28,7 +28,7 @@ hermes.USE_DB = False
 
 
 # ====================================================================================
-async def test_result_is_instance_of_ohlcv():
+async def test_result_is_instance_of_ohlcv(repo):
     req = {
         "exchange": "binance",
         "symbol": "BTC/USDT",
@@ -37,11 +37,27 @@ async def test_result_is_instance_of_ohlcv():
         "end": 1700760400000
     }
 
-    async with hermes.Hermes() as repo:
-        response = await repo.ohlcv.get_ohlcv(**req)
+    response = await repo.ohlcv.get_ohlcv(**req)
     assert isinstance(response, Ohlcv)
 
 
+async def test_result_is_instance_of_markets(repo):
+    response = await repo.markets.all('binance')
+    assert isinstance(response, Markets)
+    logger.debug(f"Got {len(response.data)} markets from binance")
+
+
+async def main():
+    async with hermes.Hermes() as repo:
+        tasks = [
+            test_result_is_instance_of_ohlcv(repo),
+            test_result_is_instance_of_markets(repo),
+        ]
+        await asyncio.gather(*tasks)
+
+    logger.debug("context manager exited successfully")
+    await asyncio.sleep(3)
+
 # ====================================================================================
 if __name__ == "__main__":
-    asyncio.run(test_result_is_instance_of_ohlcv())
+    asyncio.run(main())

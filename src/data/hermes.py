@@ -21,12 +21,12 @@ from functools import partial
 from typing import Any
 from dotenv import load_dotenv
 
-from .exchange_factory import exchange_factory_fn
+from .exchange_factory import ExchangeFactory
 from .ohlcv_repository import process_request
 from .markets_repository import get_markets
 from .data_models import Ohlcv, Markets, Market
 from .import database
-from .util import timestamp_converter
+from .util.timestamp_converter import timestamp_converter
 
 logger = logging.getLogger(f"main.{__name__}")
 
@@ -40,13 +40,7 @@ db = database.DatabaseManager() if USE_DB else None
 logger.info(f"{'WILL NOT' if not USE_DB else 'WILL'} USE THE DATABASE")
 
 # initialize the exchange factory
-exchange_factory = exchange_factory_fn()
-# prepare to make sure that all modules, that we are working with here,
-# use the same instance of the exchange factory. this is necessary for
-# a clean shutdown process.
-process_request_fn = partial(process_request, exchange_factory=exchange_factory)
-get_markets_fn = partial(get_markets, exchange_factory=exchange_factory)
-database.process_request = process_request_fn
+exchange_factory = ExchangeFactory()
 
 
 class OhlcvRepository:
@@ -90,14 +84,14 @@ class OhlcvRepository:
         Returns:
         Response: An OHLCV object containing the OHLCV data.
         """
-        return await process_request_fn(req=request)
+        return await process_request(req=request)
 
 
 class MarketsRepository:
 
     async def all(self, exchange: str) -> Markets:
         req = {'exchange': exchange, 'data_type': 'markets'}
-        return await get_markets_fn(req)
+        return await get_markets(req)
 
     async def market(self, exchange: str, symbol: str) -> Market:
         return self.all(exchange).get(symbol)
@@ -115,10 +109,12 @@ class Hermes:
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        if exc_type is not None:
-            logger.error(f"An error occurred: {exc_val}")
-
+        logger.debug("Closing exchange connections...")
         await exchange_factory.close_all()
+
         if USE_DB:
+            logger.debug("Closing database connection...")
             await db.disconnect()
 
+        if exc_type is not None:
+            logger.error(f"An error occurred: {exc_val}")

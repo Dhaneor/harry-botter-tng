@@ -22,9 +22,9 @@ from ccxt.base.errors import (
     ExchangeNotAvailable,
     RequestTimeout,
 )
-from typing import Optional, Dict, Tuple, Coroutine
+from typing import Optional
 
-from .exchange_factory import exchange_factory_fn
+from .exchange_factory import ExchangeFactory
 from .data_models import Symbols, Markets
 
 logger = logging.getLogger("main.symbols_repository")
@@ -38,7 +38,7 @@ LOG_STATUS = False  # enable logging of server status and server time
 MAX_RETRIES = 3  # maximum number of retries for fetching OHLCV data
 RETRY_DELAY = 5.0  # delay between retries in seconds
 
-EXCHANGE_FACTORY = exchange_factory_fn()
+exchange_factory = ExchangeFactory()
 
 
 # ====================================================================================
@@ -66,7 +66,7 @@ def cache(ttl_seconds: int = CACHE_TTL_SECONDS):
     """
 
     def decorator(func):
-        symbols_cache: Dict[Tuple[str, str, str], Tuple[Dict, float]] = {}
+        symbols_cache: dict[tuple[str, str, str], tuple[dict, float]] = {}
 
         @functools.wraps(func)
         async def wrapper(response, exchange_factory) -> Symbols:
@@ -129,12 +129,9 @@ def cache(ttl_seconds: int = CACHE_TTL_SECONDS):
 
 
 # @cache()
-async def get_symbols_data_from_exchange(
-    response: Symbols,
-    exchange_factory: Coroutine
-) -> Symbols:
+async def get_symbols_data_from_exchange(response: Symbols) -> Symbols:
     # try to get a working exchange instance
-    if (exchange := await exchange_factory(response.exchange)):
+    if (exchange := await exchange_factory.get_exchange(response.exchange)):
         response.data = exchange.symbols
     else:
         response.exchange_error = f"Exchange {response.exchange} not available"
@@ -143,12 +140,9 @@ async def get_symbols_data_from_exchange(
 
 
 # @cache()
-async def get_markets_data_from_exchange(
-    response: Markets,
-    exchange_factory: Coroutine
-) -> Markets:
+async def get_markets_data_from_exchange(response: Markets) -> Markets:
     # try to get a working exchange instance
-    if (exchange := await exchange_factory(response.exchange)):
+    if (exchange := await exchange_factory.get_exchange(response.exchange)):
         response.data = exchange.markets
     else:
         response.exchange_error = f"Exchange {response.exchange} not available"
@@ -158,7 +152,6 @@ async def get_markets_data_from_exchange(
 
 async def get_symbols(
     req: dict,
-    exchange_factory: Coroutine | None = None,
     socket: zmq.asyncio.Socket | None = None,
     id_: bytes | None = None,
 ) -> None:
@@ -183,7 +176,6 @@ async def get_symbols(
     id_: bytes
         caller identity of the request, default is None
     """
-    exchange_factory = exchange_factory or EXCHANGE_FACTORY
 
     # Create a Symbols object with the request details
     response = Symbols(
@@ -196,7 +188,7 @@ async def get_symbols(
 
     # proceed only if a valid Symbols object has been created
     if response.success:
-        response = await get_symbols_data_from_exchange(response, exchange_factory)
+        response = await get_symbols_data_from_exchange(response)
 
     if response.socket:
         await response.send()
@@ -206,7 +198,6 @@ async def get_symbols(
 
 async def get_markets(
     req: dict,
-    exchange_factory: Coroutine | None = None,
     socket: zmq.asyncio.Socket | None = None,
     id_: bytes | None = None,
 ) -> None:
@@ -220,18 +211,12 @@ async def get_markets(
         and optional keys:
         • "start", "end"
 
-    exchange_factory: Callable | None
-        A factory function for creating exchange instances.
-        If not provided, the default exchange_factory will be
-        used, default is None
-
     socket: zmq.asyncio.Socket
         a working/initialized ZeroMQ socket, default is None.
 
     id_: bytes
         caller identity of the request, default is None
     """
-    exchange_factory = exchange_factory or EXCHANGE_FACTORY
 
     # Create a Markets object with the request details
     response = Markets(
@@ -244,7 +229,7 @@ async def get_markets(
 
     # proceed only if a valid Marktets object has been created
     if response.success:
-        response = await get_markets_data_from_exchange(response, exchange_factory)
+        response = await get_markets_data_from_exchange(response)
 
     if response.socket:
         await response.send()
@@ -254,8 +239,7 @@ async def get_markets(
 
 async def markets_repository(
     ctx: Optional[zmq.asyncio.Context] = None,
-    addr: Optional[str] = None,
-    exchange_factory: Coroutine = None,
+    addr: Optional[str] = None
 ):
     """Start the OHLCV repository.
 
@@ -283,7 +267,6 @@ async def markets_repository(
     """
     context = ctx or zmq.asyncio.Context()
     addr = addr or REQUEST_SOCKET_ADDRESS
-    exchange_factory = exchange_factory or EXCHANGE_FACTORY
 
     socket = context.socket(zmq.ROUTER)
     socket.bind(addr)
@@ -306,7 +289,7 @@ async def markets_repository(
 
                 if request.get("action") == "close":
                     logger.info("shutdown request received ...")
-                    await exchange_factory(None)
+                    await exchange_factory.get_exchange(None)
                     socket.send_multipart([identity, b"", b"OK"])
                     break
 
@@ -331,7 +314,7 @@ async def markets_repository(
             break
 
     # cleanup
-    await exchange_factory(None)
+    await exchange_factory.get_exchange(None)
     socket.close(1)
 
     logger.info("symbols repository shutdown complete: OK")
@@ -341,6 +324,6 @@ if __name__ == "__main__":
     ctx = zmq.asyncio.Context()
 
     try:
-        asyncio.run(symbols_repository(ctx))
+        asyncio.run(markets_repository(ctx))
     except KeyboardInterrupt:
         ctx.term()

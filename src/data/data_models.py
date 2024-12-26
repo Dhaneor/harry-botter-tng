@@ -15,6 +15,7 @@ Created on Tue Dec 24 12:23:23 2024
 
 @author_ dhaneor
 """
+import datetime
 import json
 import logging
 import numpy as np
@@ -22,7 +23,7 @@ import yaml
 
 from dataclasses import dataclass
 from typing import Any
-from util.timeops import seconds_to
+from util import seconds_to
 
 logger = logging.getLogger("main.data_models")
 
@@ -269,6 +270,10 @@ class Ohlcv:
             "close": data_array[4],
             "volume": data_array[5],
         }
+
+    def _timestamp_to_datetime(self, timestamp: int) -> datetime:
+        """Convert a Unix timestamp to a datetime object."""
+        return datetime.datetime.fromtimestamp(timestamp, tz=datetime.UTC)
 
 
 # ====================================================================================

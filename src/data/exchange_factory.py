@@ -27,8 +27,10 @@ import asyncio
 import logging
 import ccxt.pro as ccxt
 from ccxt.base.errors import AuthenticationError
+from uuid import uuid4
 
-from .rawi.util.binance_async import Binance
+from data.rawi.util.binance_async import Binance
+from util import SingletonMeta
 
 logger = logging.getLogger(f"main.{__name__}")
 
@@ -37,6 +39,7 @@ RATE_LIMIT = True
 
 def exchange_factory_fn():
     exchange_instances = {}
+    busy_initializing = set()
 
     async def get_exchange(exchange_name: str | None = None) -> object | None:
         """Get a working exchange instance
@@ -56,6 +59,7 @@ def exchange_factory_fn():
             An exchange instance, or None if the exchange does not exist
         """
         nonlocal exchange_instances
+        nonlocal busy_initializing
 
         if exchange_name:
             exchange_name = exchange_name.lower()
@@ -87,6 +91,17 @@ def exchange_factory_fn():
         #     exchange_instances.clear()
         #     return None
 
+        logger.debug("cached exchanges: %s" % list(exchange_instances.keys()))
+        logger.debug("in preparation: %s" % list(busy_initializing))
+
+        # to prevent two instantiations for the same exchange (because the
+        # first one is still busy with loading the markets and not added to
+        # the cached instances yet), we need to check if it's already in
+        # preparation
+        while exchange_name in busy_initializing:
+            logger.debug(f"Waiting for exchange preparation: {exchange_name}")
+            await asyncio.sleep(0.1)
+
         # Return cached exchange if it exists
         if exchange_name in exchange_instances:
             logger.debug(f"Returning cached exchange for: {exchange_name}")
@@ -97,16 +112,27 @@ def exchange_factory_fn():
 
         # some special treatment for Binance here
         if exchange_name.lower() == "binance":
+            busy_initializing.add(exchange_name)
+            logger.debug("added exchange to set: %s" % busy_initializing)
+
             exchange = Binance()
             await exchange.load_markets()
+
             exchange_instances[exchange_name] = exchange
+            busy_initializing.remove(exchange_name)
             return exchange
 
         try:
+            busy_initializing.add(exchange_name)
+            logger.debug("added exchange to set: %s" % busy_initializing)
+
             exchange = getattr(ccxt, exchange_name)({"enableRateLimit": RATE_LIMIT})
             await exchange.load_markets()
+
             exchange_instances[exchange_name] = exchange
+            busy_initializing.remove(exchange_name)
             return exchange
+
         except AttributeError as e:
             logger.error(f"Exchange {exchange_name.upper()} does not exist ({e})")
             return None
@@ -128,3 +154,28 @@ def exchange_factory_fn():
     get_exchange.close_all = close_all
 
     return get_exchange
+
+
+class ExchangeFactory(metaclass=SingletonMeta):
+    def __init__(self):
+        self.factory = exchange_factory_fn()
+        self.id = str(uuid4())[-4:]
+        logger.debug(f"ExchangeFactory instantiated with ID: {self.id}")
+
+    def __call__(self, exchange: str) -> ccxt.Exchange:
+        logger.debug("[%s] Getting exchange: %s" % (self.id, exchange))
+        return self.factory(exchange)
+
+    async def get_exchange(self, exchange: str | None = None) -> object | None:
+        logger.debug("[%s] Getting exchange: %s" % (self.id, exchange))
+        return await self.factory(exchange)
+
+    async def close_all(self):
+        await self.factory.close_all()
+
+
+if __name__ == "__main__":
+    exchange_factory = ExchangeFactory()
+    exchange = asyncio.run(exchange_factory.get_exchange("binance"))
+    print(exchange)
+    asyncio.run(exchange_factory.close_all())

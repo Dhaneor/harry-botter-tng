@@ -11,7 +11,7 @@ import time
 import zmq
 import zmq.asyncio
 
-from data import ohlcv_repository as repo  # noqa E402
+from data import ohlcv_repository as repo
 from util.logger_setup import get_logger
 
 logger = get_logger(level="DEBUG")

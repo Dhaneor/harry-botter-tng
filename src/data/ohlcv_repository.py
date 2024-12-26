@@ -60,9 +60,8 @@ from ccxt.base.errors import (
     ExchangeError,
 )
 from datetime import datetime
-from typing import Optional, Dict, Tuple, Callable
 
-from .exchange_factory import exchange_factory_fn
+from .exchange_factory import ExchangeFactory
 from .data_models import Ohlcv
 from .util.timestamp_converter import timestamp_converter
 
@@ -77,7 +76,7 @@ LOG_STATUS = False  # enable logging of server status and server time
 MAX_RETRIES = 3  # maximum number of retries for fetching OHLCV data
 RETRY_DELAY = 5.0  # delay between retries in seconds
 
-EXCHANGE_FACTORY = exchange_factory_fn()
+exchange_factory = ExchangeFactory()
 
 
 # ====================================================================================
@@ -132,7 +131,7 @@ def cache_ohlcv(ttl_seconds: int = CACHE_TTL_SECONDS):
     """
 
     def decorator(func):
-        ohlcv_cache: Dict[Tuple[str, str, str], Tuple[Dict, float]] = {}
+        ohlcv_cache: dict[tuple[str, str, str], tuple[dict, float]] = {}
 
         @functools.wraps(func)
         async def wrapper(response, exchange) -> Ohlcv:
@@ -165,7 +164,9 @@ def cache_ohlcv(ttl_seconds: int = CACHE_TTL_SECONDS):
                         response = await func(response, exchange)
                         if response.data:
                             ohlcv_cache[cache_key] = (response.data, current_time)
-                            logger.debug(f"Cached OHLCV data for {cache_key}")
+                            logger.debug(
+                                "OHLCV data for %s added to cache." % f"{cache_key}"
+                                )
                         break
                     except (NetworkError, ExchangeNotAvailable, RequestTimeout) as e:
                         if attempt == MAX_RETRIES - 1:
@@ -347,7 +348,6 @@ async def convert_dates(exchange, symbol, interval, start, end):
 
 async def process_request(
     req: dict,
-    exchange_factory: Callable | None = None,
     socket: zmq.asyncio.Socket | None = None,
     id_: bytes | None = None,
 ) -> None:
@@ -361,11 +361,6 @@ async def process_request(
         and optional keys:
         • "start", "end"
 
-    exchange_factory: Callable | None
-        A factory function for creating exchange instances.
-        If not provided, the default exchange_factory will be
-        used, default is None
-
     socket: zmq.asyncio.Socket
         a working/initialized ZeroMQ socket, default is None.
 
@@ -373,7 +368,6 @@ async def process_request(
         caller identity of the request, default is None
     """
     req = await convert_dates(**req)
-    exchange_factory = exchange_factory or EXCHANGE_FACTORY
 
     # Create a Ohlcv object with the request details
     response = Ohlcv(
@@ -415,9 +409,8 @@ async def process_request(
 
 
 async def ohlcv_repository(
-    ctx: Optional[zmq.asyncio.Context] = None,
-    addr: Optional[str] = None,
-    exchange_factory: Callable = None,
+    ctx: zmq.asyncio.Context | None = None,
+    addr: str | None = None,
 ):
     """Start the OHLCV repository.
 
@@ -445,7 +438,6 @@ async def ohlcv_repository(
     """
     context = ctx or zmq.asyncio.Context()
     addr = addr or REQUEST_SOCKET_ADDRESS
-    exchange_factory = exchange_factory or EXCHANGE_FACTORY
 
     socket = context.socket(zmq.ROUTER)
     socket.bind(addr)
@@ -473,9 +465,7 @@ async def ohlcv_repository(
                     break
 
                 # process request in the background
-                asyncio.create_task(
-                    process_request(request, exchange_factory, socket, identity)
-                    )
+                asyncio.create_task(process_request(request, socket, identity))
 
         except asyncio.CancelledError:
             logger.info("task cancelled -> closing exchange ...")
@@ -489,7 +479,7 @@ async def ohlcv_repository(
             break
 
     # cleanup
-    await exchange_factory(None)
+    await exchange_factory.close_all()
     await asyncio.sleep(3)
     socket.close(1)
 
