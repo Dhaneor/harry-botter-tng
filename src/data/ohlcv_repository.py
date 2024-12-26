@@ -69,7 +69,7 @@ from .util.timestamp_converter import timestamp_converter
 logger = logging.getLogger("main.ohlcv_repository")
 
 REQUEST_SOCKET_ADDRESS = "inproc://ohlcv_repository"  # change this, if necessary
-KLINES_LIMIT = 1000  # number of candles to download in one call
+KLINES_LIMIT = 1500  # number of candles to download in one call
 CACHE_TTL_SECONDS = 30  # cache TTL in seconds
 
 LOG_STATUS = False  # enable logging of server status and server time
@@ -248,6 +248,9 @@ async def get_ohlcv(response: Ohlcv, exchange: ccxt.Exchange) -> Ohlcv:
         return response
 
     try:
+        if response.exchange == "binance":
+            response.symbol = response.symbol.replace("/", "")
+
         if response.symbol not in exchange.symbols:
             response.symbol_error = True
             return response

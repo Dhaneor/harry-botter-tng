@@ -14,7 +14,7 @@ import zmq.asyncio
 from data import ohlcv_repository as repo  # noqa E402
 from util.logger_setup import get_logger
 
-logger = get_logger(level="INFO")
+logger = get_logger(level="DEBUG")
 
 ctx = zmq.asyncio.Context()
 
@@ -37,7 +37,7 @@ async def get_random_exchange():
     return random.choice(candidates)
 
 
-async def example_client(runs=6):
+async def example_client(runs=10):
     socket = ctx.socket(zmq.REQ)
     socket.connect(client_addr)
 
@@ -47,7 +47,7 @@ async def example_client(runs=6):
 
     while counter <= runs:
         if counter > 2:
-            if random.random() < 0.5:
+            if random.random() < 0.1:
                 req = {
                     'exchange': 'binance',
                     'symbol': symbols[0],
@@ -58,7 +58,7 @@ async def example_client(runs=6):
                     'exchange': 'binance',
                     'symbol': symbols[1],
                     'interval': intervals[-1],
-                    'start': '2000 days ago UTC',
+                    'start': '1499 days ago UTC',
                     'end': 'now UTC'
                 }
         else:

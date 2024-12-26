@@ -25,14 +25,13 @@ Created on December 21 14:12:20 2024
 """
 import logging
 import ccxt.pro as ccxt
+from ccxt.base.errors import AuthenticationError
 
 from .rawi.util.binance_async import Binance
 
 logger = logging.getLogger(f"main.{__name__}")
-logger.setLevel(logging.INFO)
 
 RATE_LIMIT = True
-RUNNING_CLEANUP = False
 
 
 def exchange_factory_fn():
@@ -56,7 +55,6 @@ def exchange_factory_fn():
             An exchange instance, or None if the exchange does not exist
         """
         nonlocal exchange_instances
-        global RUNNING_CLEANUP
 
         if exchange_name:
             exchange_name = exchange_name.lower()
@@ -80,7 +78,7 @@ def exchange_factory_fn():
         # some special treatment for Binance here
         if exchange_name.lower() == "binance":
             exchange = Binance()
-            # await exchange.initialize()
+            await exchange.load_markets()
             exchange_instances[exchange_name] = exchange
             return exchange
 
@@ -92,5 +90,12 @@ def exchange_factory_fn():
         except AttributeError as e:
             logger.error(f"Exchange {exchange_name.upper()} does not exist ({e})")
             return None
+        except AuthenticationError as e:
+            logger.error(
+                "Authentication required for exchange %s (%s)",
+                {exchange_name.upper()}, str(e)
+                )
+            return None
 
+        active = exchange_instances
     return get_exchange
