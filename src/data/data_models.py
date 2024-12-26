@@ -300,7 +300,7 @@ class DotDict(dict):
             if isinstance(value, DotDict):  # Check if the value is a DotDict
                 result[key] = value.to_dict()  # Recursively convert nested DotDict
             else:
-                result[key] = value
+                result[key] = value if key != 'info' else None
         return result
 
 

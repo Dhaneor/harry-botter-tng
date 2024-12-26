@@ -244,14 +244,13 @@ async def get_ohlcv(response: Ohlcv, exchange: ccxt.Exchange) -> Ohlcv:
         return response
 
     if interval := response.interval not in exchange.timeframes:
+        logger.error("Invalid interval: %s" % response.interval)
         response.interval_error = True
         return response
 
     try:
-        if response.exchange == "binance":
-            response.symbol = response.symbol.replace("/", "")
-
         if response.symbol not in exchange.symbols:
+            logger.error("Invalid symbol: %s" % response.symbol)
             response.symbol_error = True
             return response
     except:  # noqa: E722

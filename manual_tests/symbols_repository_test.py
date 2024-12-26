@@ -96,6 +96,7 @@ async def example_client(runs=3):
 
     if response and isinstance(response, Markets):
         btc = response.get("BTC/USDT", {})
+        # btc['info'] = None  # too long for printing
         pprint(btc)
 
     logger.info(

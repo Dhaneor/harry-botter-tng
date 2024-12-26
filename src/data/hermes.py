@@ -79,7 +79,7 @@ class OhlcvRepository:
         return await process_request(request, exchange_factory)
 
 
-class SymbolsRepository:
+class MarketsRepository:
     ...
 
 
@@ -87,6 +87,7 @@ class Hermes:
 
     def __init__(self):
         self.ohlcv = OhlcvRepository()
+        self.markets = MarketsRepository()
 
     async def __aenter__(self) -> 'Hermes':
         return self

@@ -12,146 +12,142 @@ TODO:   The 'future' field is set to False be default. This needs to
 
 from pprint import pprint
 
+DEFAULT_FEE = 0.001
 
-class ConvertBinanceMarket:
-    def __init__(self):
-        self.default_fee = 0.001  # Binance default maker/taker fee
 
-    # -------------------------
-    # 🛡️ Generic Helper Methods
-    # -------------------------
-    def safe_string(self, dictionary, key, default=None):
+def safe_string(dictionary, key, default=None):
+    return (
+        str(dictionary[key])
+        if key in dictionary and dictionary[key] is not None
+        else default
+    )
+
+
+def safe_float(dictionary, key, default=None):
+    try:
         return (
-            str(dictionary[key])
+            float(dictionary[key])
             if key in dictionary and dictionary[key] is not None
             else default
         )
+    except (ValueError, TypeError):
+        return default
 
-    def safe_float(self, dictionary, key, default=None):
-        try:
-            return (
-                float(dictionary[key])
-                if key in dictionary and dictionary[key] is not None
-                else default
-            )
-        except (ValueError, TypeError):
-            return default
 
-    def safe_integer(self, dictionary, key, default=None):
-        try:
-            return (
-                int(dictionary[key])
-                if key in dictionary and dictionary[key] is not None
-                else default
-            )
-        except (ValueError, TypeError):
-            return default
+def safe_integer(dictionary, key, default=None):
+    try:
+        return (
+            int(dictionary[key])
+            if key in dictionary and dictionary[key] is not None
+            else default
+        )
+    except (ValueError, TypeError):
+        return default
 
-    def safe_value(self, dictionary, key, default=None):
-        return dictionary[key] if key in dictionary else default
 
-    def safe_number(self, dictionary, key, default=None):
-        value = self.safe_string(dictionary, key, default)
-        return float(value) if value is not None else default
+def safe_value(dictionary, key, default=None):
+    return dictionary[key] if key in dictionary else default
 
-    # -------------------------
-    # 🔄 Parsing Filters
-    # -------------------------
-    def parse_lot_size(self, filters):
-        for f in filters:
-            if f["filterType"] == "LOT_SIZE":
-                return {
-                    "min": self.safe_float(f, "minQty"),
-                    "max": self.safe_float(f, "maxQty"),
-                    "step": self.safe_float(f, "stepSize"),
-                }
-        return {}
 
-    def parse_price_filter(self, filters):
-        for f in filters:
-            if f["filterType"] == "PRICE_FILTER":
-                return {
-                    "min": self.safe_float(f, "minPrice"),
-                    "max": self.safe_float(f, "maxPrice"),
-                    "tickSize": self.safe_float(f, "tickSize"),
-                }
-        return {}
+def safe_number(dictionary, key, default=None):
+    value = safe_string(dictionary, key, default)
+    return float(value) if value is not None else default
 
-    def parse_min_notional(self, filters):
-        for f in filters:
-            if f["filterType"] == "MIN_NOTIONAL":
-                return {
-                    "min": self.safe_float(f, "minNotional"),
-                }
-        return {}
 
-    # -------------------------
-    # 🔍 Parsing Spot and Margin Support
-    # -------------------------
-    def parse_permissions(self, market):
-        """
-        Parses `spot` and `margin` from Binance's permissionSets.
-        """
-        permissions = market["permissionSets"][0]
-        spot = "SPOT" in permissions
-        margin = "MARGIN" in permissions
-        return spot, margin
+def parse_lot_size(filters):
+    for f in filters:
+        if f["filterType"] == "LOT_SIZE":
+            return {
+                "min": safe_float(f, "minQty"),
+                "max": safe_float(f, "maxQty"),
+                "step": safe_float(f, "stepSize"),
+            }
+    return {}
 
-    # -------------------------
-    # 🌐 Main Parse Market Method
-    # -------------------------
-    def parse_market(self, market):
-        """
-        Converts Binance market data to CCXT unified format.
-        """
-        id = self.safe_string(market, "symbol")
-        base_id = self.safe_string(market, "baseAsset")
-        quote_id = self.safe_string(market, "quoteAsset")
-        base = base_id.upper()
-        quote = quote_id.upper()
-        precision = {
-            "price": self.safe_integer(market, "quotePrecision"),
-            "amount": self.safe_integer(market, "baseAssetPrecision"),
-        }
 
-        filters = self.safe_value(market, "filters", [])
-        lot_size = self.parse_lot_size(filters)
-        price_filter = self.parse_price_filter(filters)
-        min_notional = self.parse_min_notional(filters)
+def parse_price_filter(filters):
+    for f in filters:
+        if f["filterType"] == "PRICE_FILTER":
+            return {
+                "min": safe_float(f, "minPrice"),
+                "max": safe_float(f, "maxPrice"),
+                "tickSize": safe_float(f, "tickSize"),
+            }
+    return {}
 
-        # Parse spot and margin from permissions
-        spot, margin = self.parse_permissions(market)
 
-        return {
-            "id": id,
-            "symbol": f"{base}/{quote}",
-            "base": base,
-            "quote": quote,
-            "precision": precision,
-            "limits": {
-                "amount": {
-                    "min": lot_size.get("min"),
-                    "max": lot_size.get("max"),
-                },
-                "price": {
-                    "min": price_filter.get("min"),
-                    "max": price_filter.get("max"),
-                },
-                "cost": {
-                    "min": min_notional.get("min"),
-                },
+def parse_min_notional(filters):
+    for f in filters:
+        if f["filterType"] == "MIN_NOTIONAL":
+            return {
+                "min": safe_float(f, "minNotional"),
+            }
+    return {}
+
+
+def parse_permissions(market):
+    """
+    Parses `spot` and `margin` from Binance's permissionSets.
+    """
+    permissions = market.get("permissionSets", [])[0] \
+        if market.get("permissionSets") else []
+    spot = "SPOT" in permissions
+    margin = "MARGIN" in permissions
+    return spot, margin
+
+
+def convert_market(market):
+    """
+    Converts Binance market data to CCXT unified format.
+    """
+    id = safe_string(market, "symbol")
+    base_id = safe_string(market, "baseAsset")
+    quote_id = safe_string(market, "quoteAsset")
+    base = base_id.upper()
+    quote = quote_id.upper()
+    precision = {
+        "price": safe_integer(market, "quotePrecision"),
+        "amount": safe_integer(market, "baseAssetPrecision"),
+    }
+
+    filters = safe_value(market, "filters", [])
+    lot_size = parse_lot_size(filters)
+    price_filter = parse_price_filter(filters)
+    min_notional = parse_min_notional(filters)
+
+    # Parse spot and margin from permissions
+    spot, margin = parse_permissions(market)
+
+    return {
+        "id": id,
+        "symbol": f"{base}/{quote}",
+        "base": base,
+        "quote": quote,
+        "precision": precision,
+        "limits": {
+            "amount": {
+                "min": lot_size.get("min"),
+                "max": lot_size.get("max"),
             },
-            "taker": self.default_fee,  # Hardcoded default taker fee
-            "maker": self.default_fee,  # Hardcoded default maker fee
-            "margin": margin,  # Derived from permissions
-            "spot": spot,  # Derived from permissions
-            "future": False,  # Assuming non-futures markets
-            "type": "spot" if spot else "unknown",
-            "active": market.get('status') == 'TRADING',
-            "status": market.get('status'),
-            "contract": False,
-            "info": market,  # Raw market data for reference
-        }
+            "price": {
+                "min": price_filter.get("min"),
+                "max": price_filter.get("max"),
+            },
+            "cost": {
+                "min": min_notional.get("min"),
+            },
+        },
+        "taker": DEFAULT_FEE,  # Hardcoded default taker fee
+        "maker": DEFAULT_FEE,  # Hardcoded default maker fee
+        "margin": margin,  # Derived from permissions
+        "spot": spot,  # Derived from permissions
+        "future": False,  # Assuming non-futures markets
+        "type": "spot" if spot else "unknown",
+        "active": market.get('status') == 'TRADING',
+        "status": market.get('status'),
+        "contract": False,
+        "info": market,  # Raw market data for reference
+    }
 
 
 if __name__ == "__main__":
@@ -472,7 +468,6 @@ if __name__ == "__main__":
         "symbol": "BTCUSDT",
     }
 
-    converter = ConvertBinanceMarket()
-    ccxt_format = converter.parse_market(info)
+    ccxt_format = convert_market(info)
     ccxt_format["info"] = None
     pprint(ccxt_format)

@@ -96,6 +96,10 @@ def exchange_factory_fn():
                 {exchange_name.upper()}, str(e)
                 )
             return None
+        except Exception as e:
+            logger.error(
+                f"Failed to instantiate exchange {exchange_name.upper()} ({e})"
+                )
+            return None
 
-        active = exchange_instances
     return get_exchange
