@@ -213,7 +213,7 @@ async def test_ohlcv_table_update() -> None:
         return
 
     symbol = "BTC/USDT"
-    interval = "4h"
+    interval = "12h"
 
     # download OHLCV data from Binance
     request = {
@@ -227,6 +227,10 @@ async def test_ohlcv_table_update() -> None:
     try:
         ohlcv_table = await db_manager.get_table("binance", symbol, interval)
         await ohlcv_table.create()
+        logger.debug(
+            "Table symbol: %s, interval: %s"
+            % (ohlcv_table.symbol, ohlcv_table.interval)
+            )
 
         response = await repo.process_request(request, exchange_factory)
         await ohlcv_table.insert(response.data)

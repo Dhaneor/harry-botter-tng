@@ -149,7 +149,7 @@ def utc_to_unix(date_str):
     return int(timestamp * 1000)
 
 
-def utc_timestamp():
+def now_utc_ts():
     dt = datetime.now(timezone.utc)
     utc_time = dt.replace(tzinfo=timezone.utc)
     return utc_time.timestamp()
@@ -397,8 +397,8 @@ def test_date_to_milliseconds():
     print("\n")
 
 
-def test_utc_timestamp():
-    ts = utc_timestamp()
+def test_now_utc_ts():
+    ts = now_utc_ts()
     print(ts, unix_to_utc(ts))
 
 
@@ -456,7 +456,7 @@ if __name__ == "__main__":
 
     # test_date_to_milliseconds()
 
-    # test_utc_timestamp()
+    # test_now_utc_ts()
 
     # test_utc_to_unix('January 01, 2017 00:00:00')
 

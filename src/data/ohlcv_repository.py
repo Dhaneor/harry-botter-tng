@@ -148,7 +148,10 @@ def cache_ohlcv(ttl_seconds: int = CACHE_TTL_SECONDS):
             for key in expired_keys:
                 del ohlcv_cache[key]
 
-            cache_key = (response.exchange, response.symbol, response.interval)
+            cache_key = (
+                response.exchange, response.symbol, response.interval,
+                response.start, response.end
+                )
 
             if cache_key in ohlcv_cache:
                 cached_data, timestamp = ohlcv_cache[cache_key]

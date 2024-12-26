@@ -13,7 +13,7 @@ from pprint import pprint
 from typing import Union, List
 
 from broker.models.symbol import Symbol
-from util.formatting import scientific_to_str as sts
+from exchange.util.formatting import scientific_to_str as sts
 
 
 # =============================================================================

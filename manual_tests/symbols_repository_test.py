@@ -13,7 +13,7 @@ import zmq
 import zmq.asyncio
 from pprint import pprint
 
-from data import symbols_repository as repo  # noqa E402
+from data import markets_repository as repo  # noqa E402
 from data.data_models import Symbols, Markets
 from util.logger_setup import get_logger
 from util.timeops import seconds_to
@@ -113,7 +113,10 @@ async def example_client(runs=3):
 
 
 async def main():
-    tasks = [repo.symbols_repository(ctx, server_addr), example_client()]
+    tasks = [
+        repo.markets_repository(ctx, server_addr),
+        example_client()
+        ]
 
     try:
         await asyncio.gather(*tasks)

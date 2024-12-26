@@ -75,7 +75,7 @@ logger.debug(f"DB_USER: {os.getenv("DB_USER")}")
 logger.debug(f"DB_PASSWORD: {os.getenv("DB_PASS")}")
 logger.debug(f"DB_HOST: {os.getenv("DB_HOST")}")
 logger.debug(f"DB_PORT: {os.getenv("DB_PORT")}")
-logger.debug(f"DB_NAME: {os.getenv("DB_NAME", "akasha")}")
+logger.debug(f"DB_NAME: {os.getenv("DB_NAME")}")
 
 
 class BaseTable:
@@ -204,9 +204,10 @@ class OhlcvTable(BaseTable):
     ):
         super().__init__(db_manager, repo)
         self.exchange = exchange
-        self.symbol = "".join(symbol.split("/"))
+        self.symbol = symbol
+        self.symbol_stripped = "".join(symbol.split("/"))
         self.interval = interval
-        self.table_name = f"{self.exchange}_{self.symbol}_{self.interval}"
+        self.table_name = f"{self.exchange}_{self.symbol_stripped}_{self.interval}"
         logger.info(f"Creating OHLCV table: {self.table_name} for {exchange} {symbol}")
 
     async def exists(self) -> bool:
@@ -378,13 +379,20 @@ class OhlcvTable(BaseTable):
         """
         query = f"SELECT MAX(openTime) FROM {self.table_name}"
         result = await self.db.fetch_one(query)
-        return result[0] if result else 0
+        return result[0] if result[0] else 0
 
     # ................................................................................
     async def needs_update(self, up_to: int = None) -> bool:
         """
         Checks if the table is up to date based on the latest entry
         and the interval for this table.
+
+        Arguments:
+        ----------
+        up_to : int, optional
+            If provided, checks if the table needs to be updated up to
+            this timestamp. If not provided, the current time is used,
+            default is the current time.
 
         Returns
         -------
@@ -394,13 +402,13 @@ class OhlcvTable(BaseTable):
         interval_ms = interval_to_milliseconds(self.interval)
         latest_open_ms = await self.get_last_entry_ts()
         latest_close_ms = latest_open_ms + interval_ms
-        now_ms = up_to or datetime.datetime.now().timestamp() * 1000
-        delta = now_ms - latest_close_ms
+        required_ms = up_to or datetime.datetime.now().timestamp() * 1000
+        delta = required_ms - latest_close_ms
 
         logger.debug(
-            "now: %s, latest close: %s, time delta: %s interval: %s",
+            "required: %s, latest close: %s, time delta: %s interval: %s",
             latest_close_ms,
-            now_ms,
+            required_ms,
             f"{int(delta):,}",
             f"{interval_ms:,}",
         )
@@ -409,20 +417,22 @@ class OhlcvTable(BaseTable):
             latest_close_ms / 1000, datetime.timezone.utc
         ).strftime("%Y-%m-%d %H:%M:%S")
 
-        now_utc = datetime.datetime.now(datetime.timezone.utc).strftime(
-            "%Y-%m-%d %H:%M:%S"
-        )
+        required_utc = datetime.datetime.fromtimestamp(
+            required_ms / 1000, datetime.timezone.utc
+        ).strftime("%Y-%m-%d %H:%M:%S")
 
         needs_update = delta > interval_ms
 
         logger.info(
-            "%s needs an update: %s  (now_utc: %s, latest_close_utc: %s, "
-            "time delta: %s, interval: %s)",
+            "%s needs an update: %s  (required (UTC): %s, "
+            "latest close in database (UTC): %s, "
+            "time delta %s%s %sinterval)",
             self.table_name,
             needs_update,
-            now_utc,
+            required_utc,
             latest_close_utc,
             seconds_to(delta / 1000),
+            f"{'>' if needs_update else '<'}",
             seconds_to(interval_ms / 1000),
         )
 
@@ -470,11 +480,12 @@ class OhlcvTable(BaseTable):
 
         if not response.success:
             logger.error(
-                "Error fetching data from %s: %s", self.table_name, response.error
+                "Error fetching data from %s: %s", self.table_name, response.errors
             )
             return
 
         await self.insert(response.data[:-1])
+        await self.needs_update(end)
 
 
 class DatabaseManager:

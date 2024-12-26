@@ -23,6 +23,7 @@ Created on December 21 14:12:20 2024
 
 @author dhaneor
 """
+import asyncio
 import logging
 import ccxt.pro as ccxt
 from ccxt.base.errors import AuthenticationError
@@ -61,11 +62,30 @@ def exchange_factory_fn():
 
         # Close all exchanges request
         if exchange_name is None:
+            if not exchange_instances:
+                return None
+
+            logger.debug("Closing all exchanges ...")
+            # Close all exchanges
+            close_tasks = []
             for name, instance in exchange_instances.items():
-                await instance.close()
-                logger.info(f"Exchange closed: {name}")
+                close_tasks.append(instance.close())
+                logger.info(f"Closing exchange: {name}")
+
+            if close_tasks:
+                await asyncio.gather(*close_tasks)
+
             exchange_instances.clear()
             return None
+        # if exchange_name is None:
+        #     if not exchange_instances:
+        #         return None
+
+        #     for name, instance in exchange_instances.items():
+        #         await instance.close()
+        #         logger.info(f"Exchange closed: {name}")
+        #     exchange_instances.clear()
+        #     return None
 
         # Return cached exchange if it exists
         if exchange_name in exchange_instances:
@@ -101,5 +121,10 @@ def exchange_factory_fn():
                 f"Failed to instantiate exchange {exchange_name.upper()} ({e})"
                 )
             return None
+
+    async def close_all():
+        await get_exchange(None)
+
+    get_exchange.close_all = close_all
 
     return get_exchange

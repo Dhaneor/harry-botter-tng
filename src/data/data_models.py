@@ -56,15 +56,18 @@ class Ohlcv:
     _network_error: bool = False
 
     def __repr__(self):
+        data_str, error_str = "", ""
+
         if self.data is not None and len(self.data) > 0:
             data_str = f", data[{len(self.data)}]: {self.data[1]}...{self.data[-1]}"
-        else:
-            data_str = f", errors: {self.errors}"
+
+        if not self.success:
+            error_str = f", bad request: {self.bad_request}, errors: {self.errors}"
 
         return (
-            f"Response(exchange={self.exchange}, symbol={self.symbol}, "
-            f"interval={self.interval}, start={self.start}, end={self.end}, "
-            f"success={self.success}, bad_request={self.bad_request}{data_str})"
+            f"Ohlcv(exchange={self.exchange}, symbol={self.symbol}, "
+            f"interval={self.interval}, start={self.start}, end={self.end}"
+            f"{error_str}{data_str})"
         )
 
     @property
@@ -304,7 +307,7 @@ class DotDict(dict):
         return result
 
 
-class Symbol(DotDict):
+class Market(DotDict):
     ...
 
 
@@ -676,7 +679,7 @@ if __name__ == "__main__":
             },
         'type': 'spot'}
 
-    symbol = Symbol(sym_info)
+    symbol = Market(sym_info)
 
     print(symbol)
     print(symbol.precision.amount)

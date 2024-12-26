@@ -252,7 +252,7 @@ async def get_markets(
     return response
 
 
-async def symbols_repository(
+async def markets_repository(
     ctx: Optional[zmq.asyncio.Context] = None,
     addr: Optional[str] = None,
     exchange_factory: Coroutine = None,
