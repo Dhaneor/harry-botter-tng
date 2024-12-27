@@ -16,51 +16,34 @@ import pandas as pd
 from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
-logger = logging.getLogger('main')
-logger.setLevel(logging.INFO)
-
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
-
-# -----------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-sys.path.append('../backtest.module/')
-# -----------------------------------------------------------------------------
-
-from src.staff.hermes import Hermes  # noqa: E402, F4011
-from src.analysis import strategy_builder as sb  # noqa: E402, F401
-from src.analysis.util import find_positions as fp  # noqa: E402, F401
-from src.analysis import strategy_backtest as bt  # noqa: E402, F401
-from src.analysis.backtest import statistics as st  # noqa: E402, F401
-from src.analysis.strategies.definitions import (  # noqa: E402, F401
+from staff.hermes import Hermes  # noqa: E402, F4011
+from analysis import strategy_builder as sb  # noqa: E402, F401
+from analysis.util import find_positions as fp  # noqa: E402, F401
+from analysis import strategy_backtest as bt  # noqa: E402, F401
+from analysis.backtest import statistics as st  # noqa: E402, F401
+from analysis.strategies.definitions import (  # noqa: E402, F401
     contra_1, trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross,
     s_linreg, s_test_er, s_ema_multi, s_linreg_ma_cross, s_aroon_osc
 )
-# from src.plotting.minerva import BacktestChart as Chart  # noqa: E402, F401)
-from src.analysis.chart.tikr_charts import BacktestChart as Chart  # noqa: E402, F401
+# from plotting.minerva import BacktestChart as Chart  # noqa: E402, F401)
+from analysis.chart.tikr_charts import BacktestChart as Chart  # noqa: E402, F401
 from analysis.backtest import result_stats as rs  # noqa: E402, F401
-from src.analysis.models import position  # noqa: E402, F401
+from analysis.models import position  # noqa: E402, F401
+from util import get_logger
+
+logger = get_logger(__name__)
 
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = int(-365*4)  # 'December 01, 2018 00:00:00'
+start = "7 years ago UTC"
 end = 'now UTC'
 
-strategy = s_aroon_osc
-risk_level, max_leverage = 9, 1.25
+strategy = s_test_er
+risk_level, max_leverage = 9, 2
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
-hermes = Hermes(exchange='kucoin', mode='backtest')
+hermes = Hermes(exchange='binance', mode='backtest')
 strategy = sb.build_strategy(strategy)
 
 
@@ -238,10 +221,10 @@ def run(data, show=False, plot=False):
 
     positions = position.Positions(df_pos, symbol)
 
-    # for pos in positions:
-    #     print(pos)
-    #     for trade in pos.trades:
-    #         print(trade)
+    for pos in positions:
+        print(pos)
+        for trade in pos.trades:
+            print(trade)
 
     print(f"Total number of trades: {len(positions)}")
     print(f"Profit Factor: {positions.profit_factor:.2f}")

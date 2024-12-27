@@ -61,8 +61,8 @@ from . import condition as cnd
 from ..indicators.indicator import Indicator
 from ..indicators.indicator_parameter import Parameter
 
-from src.analysis.chart.plot_definition import SubPlot
-from src.analysis.chart.tikr_charts import SignalChart
+from ..chart.plot_definition import SubPlot
+from ..chart.tikr_charts import SignalChart
 
 logger = logging.getLogger("main.signal_generator")
 logger.setLevel(logging.ERROR)

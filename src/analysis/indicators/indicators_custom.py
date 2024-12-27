@@ -10,7 +10,7 @@ import numpy as np
 from numba import njit
 from .indicator import IIndicator
 from .indicator_parameter import Parameter
-from src.analysis.chart.plot_definition import Line, SubPlot
+from ..chart.plot_definition import Line, SubPlot
 
 # defining parameters for the Noise indicator
 timeperiod = Parameter(

@@ -5,6 +5,7 @@ Created on Nov 10 22:18:20 2024
 
 @author dhaneor
 """
+from datetime import datetime, timedelta, UTC
 import logging
 import pandas as pd
 import numpy as np
@@ -84,6 +85,7 @@ class TradeAction:
 
 
 class Position:
+
     def __init__(self, symbol: str, position_type: str, df: pd.DataFrame):
         self.symbol = symbol
         self.position_type = position_type.upper()
@@ -118,7 +120,7 @@ class Position:
 
     @property
     def entry_time(self) -> pd.Timestamp:
-        return self.df.index[0]
+        return datetime.fromtimestamp(self.df.index[0], tz=UTC)
 
     @property
     def entry_time_utc(self):
@@ -131,15 +133,15 @@ class Position:
 
     @property
     def exit_time(self) -> pd.Timestamp:
-        return self.df.index[-1] if not self.is_open else None
+        return datetime.fromtimestamp(self.df.index[-1], tz=UTC)
 
     @property
     def duration(self) -> pd.Timedelta:
         if self.is_open:
-            now = pd.Timestamp.now().as_unit("ms")
-            return (now - self.entry_time.as_unit("ms")).total_seconds()
+            now = datetime.now(tz=UTC)
+            return (now - self.entry_time).total_seconds()
 
-        return (self.exit_time - self.entry_time).total_seconds()
+        return (self.exit_time - self.entry_time)
 
     @property
     def entry_price(self) -> float:

@@ -6,46 +6,27 @@ Created on Oct 06 10:03:20 2021
 @author dhaneor
 """
 import sys
-import os
 import time
 import logging
 import numpy as np
 import warnings  # noqa: F401
 
-
 # profiler imports
-from cProfile import Profile  # noqa: F401
-from pstats import SortKey, Stats  # noqa: F401
+from cProfile import Profile
+from pstats import SortKey, Stats
 
-logger = logging.getLogger('main')
-logger.setLevel(logging.INFO)
-
-ch = logging.StreamHandler()
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
-
-# ------------------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-sys.path.append('../backtest.module/')
-# ------------------------------------------------------------------------------------
-
-from src.staff.hermes import Hermes  # noqa: E402, F401
-from src.analysis import strategy_builder as sb  # noqa: E402, F401
-from src.analysis.strategies import signal_generator as sg  # noqa: E402, F401
-from src.analysis import optimizer  # noqa: E402, F401
-from src.analysis.indicators import indicators_custom  # noqa: E402, F401
-from src.analysis.strategies.definitions import (  # noqa: E402, F401
+from staff.hermes import Hermes
+from analysis import strategy_builder as sb
+from analysis import optimizer
+from analysis.indicators import indicators_custom
+from analysis.strategies.definitions import (  # noqa: F401
     s_breakout, s_tema_cross, s_linreg, s_kama_cross, s_trix,
     trend_1, contra_1, s_test_er, s_linreg_ma_cross, s_aroon_osc,
     s_test_ema_cross
 )
+from util import get_logger
+
+logger = get_logger('main')
 
 # numpy warnings to exceptions
 # warnings.filterwarnings('error')
@@ -53,8 +34,8 @@ from src.analysis.strategies.definitions import (  # noqa: E402, F401
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = "3 years ago UTC"  # int(-365*6)
-end = "now UTC"  # 'December 20, 2024 00:00:00'
+start = "7 years ago UTC"
+end = "now UTC"
 
 strategy = s_test_er
 risk_levels = [0, 4, 5, 6, 7, 8, 9]

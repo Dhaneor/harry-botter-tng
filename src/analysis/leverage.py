@@ -11,7 +11,7 @@ import bottleneck as bn
 import logging
 from numba import njit  # noqa: F401, E402
 
-from src.analysis.indicators.indicators_fast_nb import atr
+from .indicators.indicators_fast_nb import atr
 from .util import proj_types as tp  # noqa: F401, E402
 
 logger = logging.getLogger("main.position_size_manager")

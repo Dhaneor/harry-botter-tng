@@ -11,10 +11,10 @@ import numpy as np
 from typing import Optional, Tuple
 from numba import jit, int8
 
-from .util import proj_types as tp
-from .strategy_builder import IStrategy
-from .util.find_positions import find_positions_with_dict, merge_signals
-from .leverage import calculate_leverage
+from analysis.util import proj_types as tp
+from analysis.strategy_builder import IStrategy
+from analysis.util.find_positions import find_positions_with_dict, merge_signals
+from analysis.leverage import calculate_leverage
 
 logger = logging.getLogger('main.backtest')
 logger.setLevel('DEBUG')
