@@ -5,6 +5,7 @@ Created on Sun Jan 31 00:21:53 2021
 
 @author: dhaneor
 """
+import datetime
 import logging
 from time import time
 from typing import Union, Optional
@@ -12,8 +13,8 @@ from typing import Union, Optional
 import mysql.connector as dbc
 from mysql.connector import Error, IntegrityError
 
-from src.util.ilabrat import get_exchange_name
-from src.util.timeops import utc_to_unix
+from util.ilabrat import get_exchange_name
+from util.timeops import utc_to_unix
 
 import pandas as pd
 from pprint import pprint
@@ -34,7 +35,7 @@ class Mnemosyne:
         # self.db_ip = '85.214.71.96'
         self.db_name = "akasha"
         self.db_user = self.name
-        self.db_pass = "cp!8R//G6EHhTaO3F6wrx"
+        self.db_pass = "847423"
         self.auth_plugin = "mysql_native_password"
 
         self.error = []
@@ -146,38 +147,37 @@ class Mnemosyne:
         no_of_rows, earliest, latest = 0, 0, 0
         exists = self.check_if_table_exists(table_name)
 
-        if exists:
-            sql = f"SELECT count(*) FROM {table_name}"
-            no_of_rows = self.query(sql)
-            if no_of_rows:
-                no_of_rows = int(no_of_rows[0][0])
-            else:
-                return {}
+        if not exists:
+            return {}
 
-            if no_of_rows > 0:
-                sql = f"SELECT MAX(openTime) from {table_name}"
-                latest = self.query(sql)
-                latest = int(latest[0][0]) if latest else 0
-
-                sql = f"SELECT MIN(openTime) from {table_name}"
-                earliest = self.query(sql)
-                earliest = int(earliest[0][0]) if earliest else 0
-
-            return {
-                "name": table_name,
-                "table exists": exists,
-                "number of entries": no_of_rows,
-                "earliest open": earliest,
-                "latest open": latest,
-            }
-
+        sql = f"SELECT count(*) FROM {table_name}"
+        no_of_rows = self.query(sql)
+        if no_of_rows:
+            no_of_rows = int(no_of_rows[0][0])
         else:
-            return {
-                "name": table_name,
-                "table exists": exists,
-                "number of entries": None,
-                "earliest open": None,
-                "latest open": None,
+            return {}
+
+        sql = f"SELECT MAX(openTime) from {table_name}"
+        latest = self.query(sql)
+        latest = int(latest[0][0]) if latest else 0
+
+        latest_utc = (
+            datetime
+            .datetime
+            .fromtimestamp(latest / 1000, tz=datetime.UTC)
+            .strftime("%Y-%m-%d %H:%M:%S")
+            )
+
+        sql = f"SELECT MIN(openTime) from {table_name}"
+        earliest = self.query(sql)
+        earliest = int(earliest[0][0]) if earliest else 0
+
+        return {
+            "name": table_name,
+            "rows": no_of_rows,
+            "earliest open": earliest,
+            "latest open": latest,
+            "latest_utc": latest_utc,
             }
 
     def check_if_table_exists(self, table_name: str) -> bool:
@@ -309,15 +309,6 @@ class Mnemosyne:
             cursor.close()
 
         return True
-
-    def update(
-        self,
-        table_name,
-        columns,
-        data,
-    ):
-        pass
-        # REPLACE into table (id, name, age) values(1, "A", 19)
 
     # ================================================================================
     # functions for special queries

@@ -6,55 +6,42 @@ Created on Oct 06 10:03:20 2021
 @author dhaneor
 """
 import sys
-import os
 import time
 import logging
+import numpy as np
+import warnings  # noqa: F401
 
 # profiler imports
-from cProfile import Profile  # noqa: F401
-from pstats import SortKey, Stats  # noqa: F401
+from cProfile import Profile
+from pstats import SortKey, Stats
 
-logger = logging.getLogger('main')
-logger.setLevel(logging.INFO)
-
-ch = logging.StreamHandler()
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
-
-# ------------------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-sys.path.append('../backtest.module/')
-# ------------------------------------------------------------------------------------
-
-from src.staff.hermes import Hermes  # noqa: E402, F401
-from src.analysis import strategy_builder as sb  # noqa: E402, F401
-from src.analysis.strategies import signal_generator as sg  # noqa: E402, F401
-from src.analysis import optimizer  # noqa: E402, F401
-from src.analysis.indicators import indicators_custom  # noqa: E402, F401
-from src.analysis.strategies.definitions import (  # noqa: E402, F401
+from staff.hermes import Hermes
+from analysis import strategy_builder as sb
+from analysis import optimizer
+from analysis.indicators import indicators_custom
+from analysis.strategies.definitions import (  # noqa: F401
     s_breakout, s_tema_cross, s_linreg, s_kama_cross, s_trix,
     trend_1, contra_1, s_test_er, s_linreg_ma_cross, s_aroon_osc,
     s_test_ema_cross
 )
+from util import get_logger
+
+logger = get_logger('main')
+
+# numpy warnings to exceptions
+# warnings.filterwarnings('error')
 
 symbol = "BTCUSDT"
-interval = "1h"
+interval = "1d"
 
-start = "1 year ago UTC"  # int(-365*6)
-end = 'now UTC'
+start = "7 years ago UTC"
+end = "now UTC"
 
-strategy = s_breakout
-risk_levels = 7,  # [0, 4, 5, 6, 7, 8, 9]
-max_leverage_levels = 1,  # (0.75, 1, 1.25, 1.5, 1.75, 2)
+strategy = s_test_er
+risk_levels = [0, 4, 5, 6, 7, 8, 9]
+max_leverage_levels = (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5)
 max_drawdown = 30
-initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
+initial_capital = 10_000 if symbol.endswith('USDT') else 0.1
 
 
 strategy: sb.CompositeStrategy = sb.build_strategy(strategy)
@@ -77,7 +64,7 @@ def _get_ohlcv_from_db():
 
     if res.get('success'):
         df = res.get('message')
-        return {col: df[col].to_numpy() for col in df.columns}
+        return {col: df[col].to_numpy() for col in df.columns if col != 'close time'}
 
     else:
         error = res.get('error', 'no error provided in response')
@@ -126,12 +113,20 @@ def test_mutations_for_parameters():
     return mutations
 
 
-def test_optimize(data: dict | None):
+def test_optimize(data: dict | None = None):
     # fetch the OHLCV data from the database
     data = data or _get_ohlcv_from_db()
+    for key, array in data.items():
+        try:
+            if np.isnan(array).any() or np.isinf(array).any():
+                print(f"Warning: {key} contains NaN or inf values")
+                sys.exit()
+        except TypeError:
+            print(f"Warning: {key} is not a numpy array ({type(key)})")
+            sys.exit()
 
     # Optimize the strategy
-    best_parameters = optimizer.optimize(
+    results = optimizer.optimize(
         signal_generator=sig_gen,
         data=data,
         interval=interval,
@@ -139,23 +134,37 @@ def test_optimize(data: dict | None):
         max_leverage_levels=max_leverage_levels
     )
 
+    profitable = []
+    for result in results:
+        if result[3][-1] > initial_capital:
+            portfolio_values = result[3]
+            profitable.append([
+                result[0],
+                result[1],
+                result[2],
+                optimizer.calculate_statistics(
+                    portfolio_values=portfolio_values,
+                    periods_per_year=optimizer.PERIODS_PER_YEAR[interval]
+                ),
+            ])
+
+    profitable = optimizer.filter_results_by_profit_and_leverage(profitable)
+
+    # filter out results with:
+    # a) drawdown greater than max_drawdown,
+    # b) max drawdown equal to 0, which means that no trades occured
+    best_parameters = [
+        res for res in profitable
+        if res[3]['max_drawdown'] > max_drawdown * -1
+        and res[3]['max_drawdown'] != 0.0
+        ]
+
     if not best_parameters:
         logger.info('No profitable parameters with acceptable drawdown found.')
         return
 
-    best_parameters = [
-        res for res in best_parameters if res[3]['max_drawdown'] > max_drawdown * -1
-        ]
-
     # sort results by kalmar ratio
-    best_parameters.sort(
-        key=lambda x: x[3]['kalmar_ratio'],
-        reverse=True
-        )
-
-    # filter out results with max drawdown equal to 0, which means that no trades
-    # occured during the given timeframe
-    best_parameters = [res for res in best_parameters if res[3]['max_drawdown'] != 0.0]
+    best_parameters.sort(key=lambda x: x[3]['kalmar_ratio'], reverse=True)
 
     for result in best_parameters[:50]:
         logger.info(
@@ -165,8 +174,15 @@ def test_optimize(data: dict | None):
             result[2],
             {k: round(v, 3) for k, v in result[3].items()}
         )
+
     logger.info(
-        'Best parameters with less than %s percent drawdown length: %s',
+        "Total profitable results: %s (%.2f)",
+        len(profitable),
+        (len(profitable) / len(results)) * 100
+    )
+
+    logger.info(
+        'Best parameters with less than %s percent drawdown: %s',
         max_drawdown, {len(best_parameters)}
         )
 
@@ -184,9 +200,9 @@ def test_optimize(data: dict | None):
 
     # display the parameters for the best profit, which otherwise might not be disaplyed
     # because parameters with less profit had a better Kalmar ratio
-    for result in best_parameters:
-        if result[3]['profit'] == max(profits):
-            logger.info(f'Best profit parameters: {result}')
+    # for result in best_parameters:
+    #     if result[3]['profit'] == max(profits):
+    #         logger.info(f'Best profit parameters: {result}')
 
     df = optimizer.results_to_dataframe(best_parameters)
     print(df.describe())
@@ -279,7 +295,7 @@ if __name__ == '__main__':
     # test_estimate_combinations()
     # test_vector_generator()
     # test_mutations_for_parameters()
-    # test_optimize()
-    test_check_robustness()
+    test_optimize()
+    # test_check_robustness()
 
     # profile_function()

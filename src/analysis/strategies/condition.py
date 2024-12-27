@@ -244,8 +244,14 @@ class ConditionDefinition(NamedTuple):
 
     Attributes:
     ----------
+    symbol: str | None
+        the symbol to use for the condition
+
     interval
         the interval ('1m', '1h', ... '1w') to use for the condition
+
+    fetch_data_fn: Callable | None
+        a function to fetch the data for the symbol and interval,
 
     comparand_a
         first value to compare
@@ -270,8 +276,9 @@ class ConditionDefinition(NamedTuple):
         bool(val_a > val_b), for trigger: IS_ABOVE
 
     """
-
-    interval: str
+    symbol: str | None = None
+    interval: str | None = None
+    fetch_data_fn: Callable | None = None
 
     operand_a: Optional[tp.OperandDefinitionT] = None
     operand_b: Optional[tp.OperandDefinitionT] = None
@@ -282,7 +289,6 @@ class ConditionDefinition(NamedTuple):
     open_short: Optional[str] = None
     close_long: Optional[str] = None
     close_short: Optional[str] = None
-
 
 @dataclass
 class ConditionResult:

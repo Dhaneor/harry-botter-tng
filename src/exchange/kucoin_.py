@@ -23,18 +23,18 @@ current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
 # ------------------------------------------------------------------------------
-from src.rawi.kucoin.kucoin.client import (  # noqa: F401, E402
+from data.rawi.kucoin.kucoin.client import (  # noqa: F401, E402
     Market, Margin, User, Trade
 )
-from src.exchange.exchange_interface import (  # noqa: F401, E402
+from exchange.exchange_interface import (  # noqa: F401, E402
     IExchangePublic,
     IExchangeTrading,
     IExchangeMargin,
 )
-from src.exchange.util.ohlcv_download_prepper import (  # noqa: F401, E402
+from exchange.util.ohlcv_download_prepper import (  # noqa: F401, E402
     OhlcvDownloadPrepper
 )
-from src.exchange.util.kucoin_order_downloader import (  # noqa: F401, E402
+from exchange.util.kucoin_order_downloader import (  # noqa: F401, E402
     KucoinOrderDownloader
 )
 from util.timeops import (  # noqa: F401, E402

@@ -31,6 +31,31 @@ def calculate_profit(portfolio_values: np.ndarray) -> float:
     return (portfolio_values[-1] / portfolio_values[0] - 1) * 100
 
 
+def calculate_annualized_returns(
+    values: np.ndarray,
+    periods_per_year: int = 365
+) -> float:
+    """
+    Calculate the annualized returns of the strategy.
+
+    Parameters:
+    ----------
+    values : np.ndarray
+        1D array of portfolio values over time.
+    periods_per_year : int, optional
+        Number of periods in a year (default is 365 for daily data).
+
+    Returns:
+    -------
+    float
+        Annualized returns as a percentage.
+    """
+    total_return = values[-1] / values[0] - 1
+    num_periods = len(values) - 1
+    annualized_return = (1 + total_return) ** (periods_per_year / num_periods) - 1
+    return annualized_return * 100
+
+
 def calculate_annualized_volatility(
     portfolio_values: np.ndarray,
     periods_per_year: int = 365,
@@ -151,8 +176,11 @@ def calculate_sortino_ratio(
     expected_return = np.mean(excess_returns) * periods_per_year
 
     # Annualize the downside deviation
-    downside_deviation = np.sqrt(np.mean(downside_returns**2)) \
-        * np.sqrt(periods_per_year)
+    if len(downside_returns) > 0:
+        downside_deviation = np.sqrt(np.mean(downside_returns**2)) \
+            * np.sqrt(periods_per_year)
+    else:
+        downside_deviation = 0
 
     return expected_return / downside_deviation if downside_deviation != 0 else np.inf
 
@@ -231,8 +259,11 @@ def calculate_statistics(
             portfolio_values, risk_free_rate, periods_per_year
             ),
         'kalmar_ratio': calculate_kalmar_ratio(portfolio_values, periods_per_year),
+        'annualized_return': calculate_annualized_returns(
+            portfolio_values, periods_per_year
+            ),
         'annualized_volatility': calculate_annualized_volatility(
-            portfolio_values, periods_per_year, use_log_returns=False
+            portfolio_values, periods_per_year, use_log_returns=True
             )
     }
 

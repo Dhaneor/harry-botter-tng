@@ -6,33 +6,15 @@ Created on Sep 10 20:15:20 2023
 @author dhaneor
 """
 import asyncio
-import logging
-import os
 import random
-import sys
 import time
 import zmq
 import zmq.asyncio
 
-logger = logging.getLogger("main")
-logger.setLevel(logging.DEBUG)
+from data import ohlcv_repository as repo
+from util.logger_setup import get_logger
 
-ch = logging.StreamHandler()
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
-
-# --------------------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# --------------------------------------------------------------------------------------
-
-from src.rawi import ohlcv_repository as repo  # noqa E402
+logger = get_logger(level="INFO")
 
 ctx = zmq.asyncio.Context()
 
@@ -55,8 +37,7 @@ async def get_random_exchange():
     return random.choice(candidates)
 
 
-async def example_client(runs=3):
-
+async def example_client(runs=10):
     socket = ctx.socket(zmq.REQ)
     socket.connect(client_addr)
 
@@ -65,23 +46,32 @@ async def example_client(runs=3):
     await asyncio.sleep(2)
 
     while counter <= runs:
-        if counter > runs - 2:
-            req = {
-                'exchange': 'binance',  # await get_random_exchange(),
-                'symbol': symbols[0],
-                'interval': intervals[-1]
-            }
+        if counter > 2:
+            if random.random() < 0.1:
+                req = {
+                    'exchange': 'bitrue',
+                    'symbol': symbols[-1],
+                    'interval': intervals[5]
+                }
+            else:
+                req = {
+                    'exchange': await get_random_exchange(),  # 'binance',
+                    'symbol': symbols[1],
+                    'interval': intervals[5],
+                    'start': '1499 days ago UTC',
+                    'end': 'now UTC'
+                }
         else:
             req = {
                 'exchange': 'binance',  # await get_random_exchange(),
                 'symbol': random.choice(symbols),
-                'interval': "1d",  # random.choice(intervals)
+                'interval': random.choice(intervals)
             }
 
         snd_time = time.time()
         await socket.send_json(req)
 
-        response = repo.Response.from_json(await socket.recv_string())
+        response = repo.Ohlcv.from_json(await socket.recv_string())
         recv_time = time.time()
         response_times.append(recv_time - snd_time)
 
@@ -91,7 +81,6 @@ async def example_client(runs=3):
         if isinstance(response.to_dict(), dict):
             logger.debug(response.to_dict().keys())
 
-        logger.info(isinstance(response.to_dict(), dict))
         logger.info("===============================================================\n")
 
         counter += 1
@@ -101,7 +90,7 @@ async def example_client(runs=3):
     _ = await socket.recv_string()
     socket.close(1)
 
-    logger.setLevel(logging.INFO)
+    logger.setLevel("INFO")
 
     logger.info(
         "average response time: %s milliseconds",

@@ -17,9 +17,9 @@ from pprint import pprint
 from functools import lru_cache
 from typing import Union, Tuple, Optional, Callable
 
-from src.staff.mnemosyne import Mnemosyne
-from src.exchange.binance_ import Binance
-from src.exchange.kucoin_ import KucoinCrossMargin as Kucoin
+from data.util.mnemosyne import Mnemosyne
+from exchange.binance_ import Binance
+from exchange.kucoin_ import KucoinCrossMargin as Kucoin
 from util.timeops import (
     time_difference_in_ms,
     unix_to_utc,
@@ -364,9 +364,7 @@ class HermesDataBase:
 
             # check if we got only partial data and need to update the table
             latest_open = int(data.at[data.last_valid_index(), "open time"])
-            last_close = latest_open + interval_to_milliseconds(interval)
-            now = int(datetime.datetime.now(datetime.timezone.utc).timestamp() * 1000)
-            update_necessary = last_close + interval_to_milliseconds(interval) < now
+            update_necessary = self._ohlcv_table_needs_update(latest_open, interval)
 
             if not update_necessary:
                 return data
@@ -381,7 +379,7 @@ class HermesDataBase:
         # this period). this can happen if the table has not been updated for a
         # long time and the requested data period starts after the
         # date/time of the last update
-        logger.debug("failed to fetch data from database - going to update table...")
+        logger.warning("failed to fetch data from database - going to update table...")
 
         # try to update the table again
         self._update_ohlcv_table(symbol=symbol, interval=interval)
@@ -504,8 +502,8 @@ class HermesDataBase:
 
     def _write_to_ohlcv_table(
         self, table_name: str, data: list[list], end_of_table=True
-    ) -> bool:
-        """Writes OHLCV data to table in database.
+    ) -> None:
+        """Writes OHLCV data to a table in the database.
 
         :param table_name: name of table to write to
         :type table_name: str
@@ -558,11 +556,6 @@ class HermesDataBase:
 
         logger.debug(f"saving {len(data)} items to {table_name}")
 
-        if len(data) == 1:
-            logger.debug(data)
-            logger.debug(f"skipping saving of 1 item to {table_name}")
-            return True
-
         # prepare the data row by row and do a batch save to database
         # for index in trange(len(data), unit=' items', desc=table_name):
         for index, row in enumerate(data):
@@ -610,7 +603,7 @@ class HermesDataBase:
             #     )
 
         logger.info(f"update of {table_name} successful")
-        return True
+        return
 
     def _get_ohlcv_table_status_for_symbol(self, symbol: str, interval: str) -> dict:
         """Get the table status for a specific symbol.
@@ -623,13 +616,13 @@ class HermesDataBase:
 
         .. code:: python
             {
+                'symbol' : symbol
+                'interval' : interval
                 'name' : table_name,
-                'table exists' : True|False,
                 'rows' : no_of_rows,
                 'earliest open' : earliest timestamp 'open time',
                 'latest open' : latest timestamp 'open time',
-                'symbol' : symbol
-                'interval' : interval
+                'latest utc' : latest 'open time' in UTC
             }
         """
         table_name = self._get_ohlcv_table_name(symbol=symbol, interval=interval)
@@ -677,7 +670,31 @@ class HermesDataBase:
     def _ohlcv_table_needs_update(self, latest_open: int, interval: str) -> bool:
         interval_in_ms = interval_to_milliseconds(interval)
         now = datetime.datetime.now(datetime.UTC).timestamp() * 1000
-        return latest_open + 2 * interval_in_ms < now
+
+        now_utc = (
+            datetime
+            .datetime
+            .fromtimestamp(now / 1000, datetime.UTC)
+            .strftime("%Y-%m-%d %H:%M:%S")
+        )
+
+        latest_open_utc = (
+            datetime
+            .datetime
+            .fromtimestamp(latest_open / 1000, datetime.UTC)
+            .strftime("%Y-%m-%d %H:%M:%S")
+            )
+
+        needs_update = latest_open < now - (2 * interval_in_ms)
+
+        logger.debug(
+            "latest_open_utc: %s, now_utc: %s, interval: %s, needs_update: %s",
+            latest_open_utc,
+            now_utc,
+            interval,
+            needs_update,
+        )
+        return needs_update
 
     # --------------------------------------------------------------------------
     # methods that deal with the symbol(s) information table(s)
@@ -1370,9 +1387,9 @@ class Hermes(HermesDataBase):
             )
         except BadSymbolError:
             return {"success": False, "error": "Bad Symbol"}
-        except Exception as e:
-            logger.debug(f"error while trying to retrieve data from database: {e}")
-            return {"success": False, "error": str(e)}
+        # except Exception as e:
+        #     logger.debug(f"error while trying to retrieve data from database: {e}")
+        #     return {"success": False, "error": str(e)}
 
         if res is not None:
             return {
@@ -1564,7 +1581,7 @@ class Hermes(HermesDataBase):
 
         :raises: ValueError
         """
-        if not exchange_name.lower() in VALID_EXCHANGES:
+        if exchange_name.lower() not in VALID_EXCHANGES:
             valid_exchanges = tuple(VALID_EXCHANGES.keys())
             raise ValueError(
                 f"Exchange must be one of {valid_exchanges} ({exchange_name})"

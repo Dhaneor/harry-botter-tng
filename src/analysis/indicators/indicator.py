@@ -37,7 +37,7 @@ from talib import MA_Type, abstract
 from .iindicator import IIndicator
 from .indicators_custom import custom_indicators
 from .indicator_parameter import Parameter
-from src.analysis.chart.plot_definition import Line, SubPlot
+from ..chart.plot_definition import Line, SubPlot
 
 logger = logging.getLogger("main.indicator")
 logger.setLevel(logging.INFO)

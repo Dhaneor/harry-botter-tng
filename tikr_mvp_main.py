@@ -23,7 +23,7 @@ from src.analysis import strategy_backtest as bt
 from src.analysis.backtest import statistics as st
 from src.analysis.models.position import Positions
 from src.analysis import telegram_signal as ts
-from src.backtest import result_stats as rs
+from analysis.backtest import result_stats as rs
 from src.analysis.chart.tikr_charts import TikrChart as Chart
 from tikr_mvp_strategy import mvp_strategy
 

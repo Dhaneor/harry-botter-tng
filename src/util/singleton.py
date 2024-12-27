@@ -6,6 +6,7 @@ Created on Fri Oct 28 20:22:28 2022
 @author: dhaneor
 """
 
+
 class SingletonMeta(type):
     """
     The Singleton class can be implemented in different ways in Python. Some

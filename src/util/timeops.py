@@ -5,7 +5,7 @@ Created on Tue Jan 19 18:28:11 2021
 
 @author: dhaneor
 """
-from datetime import datetime, timezone
+from datetime import datetime, timezone, UTC
 from time import time
 from typing import Union, Optional, Dict, Tuple
 
@@ -44,7 +44,7 @@ def date_to_milliseconds(date_str: str) -> int:
         "11 hours ago UTC", "now UTC"
     """
     # get epoch value in UTC
-    epoch: datetime = datetime.utcfromtimestamp(0).replace(tzinfo=pytz.utc)
+    epoch: datetime = datetime.fromtimestamp(0, tz=UTC)
     # parse our date string
     d: Optional[datetime] = dateparser.parse(date_str, settings={"TIMEZONE": "UTC"})
 
@@ -98,7 +98,11 @@ def unix_to_utc(unix: int) -> str:
         unix /= 1000
 
     try:
-        humanDate = datetime.utcfromtimestamp(int(unix)).strftime("%Y-%m-%d %H:%M:%S")
+        humanDate = (
+            datetime
+            .fromtimestamp(int(unix), tz=UTC)
+            .strftime("%Y-%m-%d %H:%M:%S")
+            )
 
     except Exception as e:
         print("Conversion to UTC failed: ", e, " :: ", unix)
@@ -145,7 +149,7 @@ def utc_to_unix(date_str):
     return int(timestamp * 1000)
 
 
-def utc_timestamp():
+def now_utc_ts():
     dt = datetime.now(timezone.utc)
     utc_time = dt.replace(tzinfo=timezone.utc)
     return utc_time.timestamp()
@@ -393,8 +397,8 @@ def test_date_to_milliseconds():
     print("\n")
 
 
-def test_utc_timestamp():
-    ts = utc_timestamp()
+def test_now_utc_ts():
+    ts = now_utc_ts()
     print(ts, unix_to_utc(ts))
 
 
@@ -452,7 +456,7 @@ if __name__ == "__main__":
 
     # test_date_to_milliseconds()
 
-    # test_utc_timestamp()
+    # test_now_utc_ts()
 
     # test_utc_to_unix('January 01, 2017 00:00:00')
 

@@ -33,12 +33,12 @@ logger = logging.getLogger("main.exit_order_strategies")
 # initialize (compile) atr function. this is done once here,
 # so on the first invocation teh Numba compiled function
 # is available instantly.
-_ = atr(
-    np.zeros(100, dtype=np.float64),
-    np.zeros(100, dtype=np.float64),
-    np.zeros(100, dtype=np.float64),
-    14,
-)
+# _ = atr(
+#     np.zeros(100, dtype=np.float64),
+#     np.zeros(100, dtype=np.float64),
+#     np.zeros(100, dtype=np.float64),
+#     14,
+# )
 
 # type hint types
 price = float

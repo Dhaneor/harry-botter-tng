@@ -7,7 +7,7 @@ Created on Mon Feb 22 17:01:14 2022
 """
 from typing import Union
 
-from .timeops import unix_to_utc
+from ...util.timeops import unix_to_utc
 
 
 def _get_market_order():

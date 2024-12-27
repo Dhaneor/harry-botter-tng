@@ -28,7 +28,7 @@ from src.analysis import strategy_builder as sb  # noqa: E402
 from src.analysis import strategy_backtest as bt  # noqa: E402
 from src.analysis.backtest import statistics as st  # noqa: E402
 from src.analysis import telegram_signal as ts  # noqa: E402
-from src.backtest import result_stats as rs  # noqa: E402
+from analysis.backtest import result_stats as rs  # noqa: E402
 from src.analysis.chart.tikr_charts import TikrChart as Chart  # noqa: E402
 from tikr_mvp_strategy import mvp_strategy  # noqa: E402
 

@@ -63,11 +63,14 @@ def timestamp_converter(unit: str = "milliseconds") -> Callable:
             _validate_arguments(start, end, interval)
 
             # Convert start and end to timestamps
-            start_ts, end_ts = _convert_to_timestamps(start, end, interval, unit)
+            start_ts, end_ts, interval = _convert_to_timestamps(
+                start, end, interval, unit
+                )
 
             # Replace start and end in args or kwargs
             kwargs['start'] = start_ts
             kwargs['end'] = end_ts
+            kwargs['interval'] = interval
 
             return func(*args, **kwargs)
         return wrapper
@@ -75,21 +78,7 @@ def timestamp_converter(unit: str = "milliseconds") -> Callable:
 
 
 def _validate_arguments(start, end, interval):
-    if all(v is None for v in [start, end, interval]):
-        raise ValueError(
-            "start, end and interval seem to be None. This can happen "
-            "if they are not provided as keyword arguments"
-        )
-
-    if interval is None and isinstance(start, int) and start < 0:
-        raise ValueError(
-            "'interval' must be provided when 'start' is a negative integer."
-        )
-
-    if start is None:
-        raise ValueError("'start' must be provided.")
-
-    if not isinstance(start, (int, str)):
+    if start is not None and not isinstance(start, (int, str)):
         raise ValueError("'start' must be an integer or a string.")
 
     if end is not None and not isinstance(end, (int, str)):
@@ -104,6 +93,10 @@ def _convert_to_timestamps(
 ) -> tuple[int, int]:
     # determine the timestamp for 'now'
     now = int(time() * 1000)
+
+    if interval is None:
+        logger.info("No interval provided. Assuming 1 day.")
+        interval = '1d'
 
     # find the 'end' timestamp
     match end:
@@ -148,7 +141,7 @@ def _convert_to_timestamps(
         start_ts = int(str(start_ts)[:10])
         end_ts = int(str(end_ts)[:10])
 
-    return int(start_ts), int(end_ts)
+    return int(start_ts), int(end_ts), interval
 
 
 def interval_to_milliseconds(interval: str) -> Optional[int]:

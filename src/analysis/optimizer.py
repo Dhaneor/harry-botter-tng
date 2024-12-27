@@ -35,6 +35,7 @@ multiprocessing.set_start_method('spawn', force=True)
 
 INITIAL_CAPITAL = 10_000  # initial capital for backtesting
 RISK_FREE_RATE = 0.04  # risk-free rate for calculating Sharpe Ratio
+CHUNK_SIZE = 50  # size of chunks for processing data
 
 PERIODS_PER_YEAR = {
     '1m': 365 * 24 * 60,
@@ -42,9 +43,15 @@ PERIODS_PER_YEAR = {
     '15m': 365 * 24 * 4,
     '30m': 365 * 24 * 2,
     '1h': 365 * 24,
+    '2h': 365 * 12,
     '4h': 365 * 6,
+    '6h': 365 * 4,
+    '8h': 365 * 3,
     '12h': 365 * 2,
-    '1d': 365
+    '1d': 365,
+    '3d': 365 // 3,
+    '1w': 365 // 7,
+    '1M': 365 // 12
 }
 
 
@@ -434,13 +441,13 @@ def _worker_function(
     """
     signal_generator = sg.factory(condition_definitions)
 
-    profitable_results = []
+    results = []
     for params in chunk:
         for param, value in zip(signal_generator.parameters, params):
             try:
                 param.value = value
             except ValueError:
-                continue
+                logger.error(f'Invalid value for parameter {param.__name__}: {value}')
 
         portfolio_values = backtest_fn(
             strategy=signal_generator,
@@ -450,20 +457,9 @@ def _worker_function(
             max_leverage=max_leverage
         ).get('b.value')
 
-        if portfolio_values[-1] > initial_capital:
-            profitable_results.append(
-                (
-                    params,
-                    risk_level,
-                    max_leverage,
-                    calculate_statistics(
-                        portfolio_values=portfolio_values,
-                        periods_per_year=periods_per_year,
-                    )
-                )
-            )
+        results.append((params, risk_level, max_leverage, portfolio_values))
 
-    return profitable_results
+    return results
 
 
 # ====================================================================================
@@ -506,7 +502,7 @@ def check_robustness(
     num_cores = multiprocessing.cpu_count()
     num_processes = max(1, num_cores - 1)
 
-    profitable_results, chunk_size = [], 100
+    results, chunk_size = [], 100
 
     with multiprocessing.Pool(processes=num_processes) as pool:
         with tqdm(total=combinations, desc="Optimizing") as pbar:
@@ -526,18 +522,18 @@ def check_robustness(
                     chunks = chunk_mutations(mutations, chunk_size)
 
                     for result in pool.imap_unordered(worker, chunks):
-                        profitable_results.extend(result)
+                        results.extend(result)
                         pbar.update(chunk_size)
 
             pbar.close()
 
             logger.info(
                 "Total profitable results: %s (%.2f)",
-                len(profitable_results),
-                (len(profitable_results) / combinations) * 100
+                len(results),
+                (len(results) / combinations) * 100
             )
 
-    return filter_results(profitable_results)
+    return filter_results(results)
 
 
 def optimize(
@@ -588,8 +584,7 @@ def optimize(
     num_processes = max(1, num_cores - 1)  # Use all cores except one, but at least 1
     logger.info("Using %s processes", num_processes)
 
-    profitable_results = []
-    chunk_size = 100  # Adjust this based on your system's capabilities
+    results = []
 
     with multiprocessing.Pool(processes=num_processes) as pool:
         start_time = time.time()
@@ -608,14 +603,14 @@ def optimize(
                         periods_per_year=periods_per_year,
                     )
 
-                    chunks_iterator = chunk_parameters(signal_generator, chunk_size)
+                    chunks_iterator = chunk_parameters(signal_generator, CHUNK_SIZE)
 
                     for result in pool.imap_unordered(
                         worker,
                         chunks_iterator,
                     ):
-                        profitable_results.extend(result)
-                        pbar.update(chunk_size)
+                        results.extend(result)
+                        pbar.update(CHUNK_SIZE)
 
             pbar.close()
             duration = time.time() - start_time
@@ -624,13 +619,8 @@ def optimize(
                 duration,
                 combinations / duration
                 )
-            logger.info(
-                "Total profitable results: %s (%.2f)",
-                len(profitable_results),
-                (len(profitable_results) / combinations) * 100
-            )
 
-    return filter_results_by_profit_and_leverage(profitable_results)
+    return results
 
 
 # ====================================================================================
@@ -653,7 +643,7 @@ def soptimize(
     logger.info("testing %s combinations", combinations)
     logger.info("Estimated execution time: %.2fs", est_exc_time)
 
-    profitable_results = []
+    results = []
     cleanup_threshold = 100 * 1024 * 1024  # 100 MB, adjust as needed
 
     # List of keys representing OHLCV data
@@ -687,7 +677,7 @@ def soptimize(
 
             # If profitable, store the result
             if portfolio_values[-1] > INITIAL_CAPITAL:
-                profitable_results.append(
+                results.append(
                     (
                         params,
                         risk_level,
@@ -706,16 +696,16 @@ def soptimize(
 
     exc_time = time.time() - start_time
 
-    profitable_results = [
-        pr for pr in profitable_results
+    results = [
+        pr for pr in results
         if abs(pr[2].get('max_drawdown')) < max_drawdown_pct
         ]
 
     logger.info("Optimization completed in %.2fs", exc_time)
-    logger.info("Found %s profitable results", len(profitable_results))
+    logger.info("Found %s profitable results", len(results))
     logger.info("Combinations per second: %.2f", combinations_tested / exc_time)
 
-    return profitable_results
+    return results
 
 
 # =====================================================================================
