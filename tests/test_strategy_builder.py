@@ -5,21 +5,12 @@ Created on Aug 22 23:05:20 2023
 
 @author dhaneor
 """
-import os
-import sys
-
-# -----------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# -----------------------------------------------------------------------------
-
-from src.analysis import strategy_builder as sb  # noqa: E402
-from src.analysis.strategies import operand as op  # noqa: E402, F401
-from src.analysis.strategies import condition as cnd  # noqa: E402, F401
-from src.analysis.strategies import signal_generator as sg  # noqa: E402, F401
-from src.analysis.strategies import exit_order_strategies as es  # noqa: E402
-from src.analysis.strategies.definitions import cci, ema_cross  # noqa: E402, F401
+from analysis import strategy_builder as sb
+from analysis.strategies import operand as op
+from analysis.strategies import condition as cnd
+from analysis.strategies import signal_generator as sg
+from analysis.strategies import exit_order_strategies as es
+from analysis.strategies.definitions import cci, ema_cross  # noqa: F401
 
 
 def test_build_single_strategy():

@@ -350,21 +350,21 @@ test_er = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 95}),
-            operand_b=("trending", 0.05, [0.05, 0.55, 0.05]),
+            operand_a=("er", {"timeperiod": 70}),
+            operand_b=("trending", 0.2, [0.05, 0.55, 0.05]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             # close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
-            open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
-            # close_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            # close_short=("a", cn.COMPARISON.IS_BELOW, "b"),
         ),
         cn.ConditionDefinition(
             interval="1d",
             operand_a=("close"),
-            operand_b=("kama", {"timeperiod": 7}),
-            # open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            operand_b=("kama", {"timeperiod": 107}),
+            open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             # close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
-            close_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            # close_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
         ),
     ]
 )

@@ -19,38 +19,20 @@ from random import choice, random, randint
 from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
-# configure logger
-LOG_LEVEL = logging.DEBUG
-logger = logging.getLogger("main")
-logger.setLevel(LOG_LEVEL)
-
-ch = logging.StreamHandler()
-ch.setLevel(LOG_LEVEL)
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
-
-# -----------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# -----------------------------------------------------------------------------
-
-from src.analysis import strategy_builder as sb  # noqa: E402
-from src.analysis.strategies import operand as op  # noqa: E402, F401
-from src.analysis.strategies import condition as cnd  # noqa: E402, F401
-from src.analysis.strategies import signal_generator as sg  # noqa: E402, F401
-from src.analysis.strategies import exit_order_strategies as es  # noqa: E402
-from src.analysis.strategies.definitions import (  # noqa: E402, F401
+from analysis import strategy_builder as sb
+from analysis.strategies import operand as op
+from analysis.strategies import condition as cnd
+from analysis.strategies import signal_generator as sg
+from analysis.strategies import exit_order_strategies as es
+from analysis.strategies.definitions import (  # noqa: F401
     cci, rsi, ema_cross, tema_cross, breakout
 )  # noqa: E402, F401
+from util import get_logger
+
+logger = get_logger("main")
 
 
-df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
+df = pd.read_csv(os.path.join("ohlcv_data", "btcusdt_15m.csv"))
 df.drop(
     ["Unnamed: 0", "close time", "volume", "quote asset volume"], axis=1, inplace=True
 )
@@ -250,14 +232,15 @@ if __name__ == "__main__":
     #     print(s)
 
     # test_sl_strategy_factory()
-    # sdef = __get_single_strategy_definition()
-    sdef = __get_composite_strategy_definition()
+    sdef = __get_single_strategy_definition()
+    # sdef = __get_composite_strategy_definition()
     s = sb.build_strategy(sdef)
     assert isinstance(s, sb.IStrategy)
+    print(s.__dict__)
     print("-" * 200)
     print(s)
 
-    test_strategy_run(s, True)
+    # test_strategy_run(s, True)
 
     # ..........................................................................
     sys.exit()

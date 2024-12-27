@@ -122,7 +122,7 @@ cmp_funcs = {
 # 2) another tuple that holds the names of the dictionary keys for the
 #   values that should be compared against each other
 # 3) the actual function object that is used to do the comparison,
-#   which will be on eof the functions frim the cmp_funcs dictionary
+#   which will be on eof the functions from the cmp_funcs dictionary
 #   defined above.
 #
 # These values are used in the execute method of the Condition class.
@@ -289,6 +289,7 @@ class ConditionDefinition(NamedTuple):
     open_short: Optional[str] = None
     close_long: Optional[str] = None
     close_short: Optional[str] = None
+
 
 @dataclass
 class ConditionResult:
@@ -809,10 +810,10 @@ class ConditionFactory:
 
 
 # ======================================================================================
-condition_factory = ConditionFactory()
+factory = ConditionFactory()
 
 
-def factory(c_def: ConditionDefinition, test_it: bool = False) -> Condition:
+def condition_factory(c_def: ConditionDefinition, test_it: bool = False) -> Condition:
     """Builds a Condition class from a ConditionDefinition class.
 
     This function prepares the (executable) Condition class(es) for a
@@ -859,7 +860,7 @@ def factory(c_def: ConditionDefinition, test_it: bool = False) -> Condition:
     RuntimeError
         if the .run() method of the instance is not working correctly
     """
-    condition = condition_factory.build_condition(c_def)
+    condition = factory.build_condition(c_def)
 
     if test_it and not condition.is_working():
         raise RuntimeError(f"condition {condition} is not working")

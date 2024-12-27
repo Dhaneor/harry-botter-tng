@@ -299,7 +299,7 @@ class SignalGenerator:
 
 
 # ======================================================================================
-def factory(
+def signal_generator_factory(
     sig_def: SignalsDefinition | Sequence[cnd.ConditionDefinition]
 ) -> SignalGenerator:
     """Factory function for SignalGenerator.
@@ -344,7 +344,7 @@ def factory(
     )
     sig_gen = SignalGenerator(
         name,
-        tuple(cnd.factory(c) for c in condition_definitions)
+        tuple(cnd.condition_factory(c) for c in condition_definitions)
         )
     sig_gen.name = name
     sig_gen.condition_definitions = condition_definitions

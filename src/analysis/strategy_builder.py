@@ -50,6 +50,8 @@ from .util import proj_types as tp
 from .strategies import signal_generator as sg
 from .strategies import exit_order_strategies as es
 from .strategies.condition import ConditionResult
+from .indicators.iindicator import Indicator
+from .indicators.indicator_parameter import Parameter
 
 logger = logging.getLogger("main.strategy_builder")
 
@@ -118,8 +120,9 @@ class StrategyDefinition:
     interval: str
     signals_definition: Optional[sg.SignalsDefinition] = None
     weight: float = 1.0
-    params: Optional[dict[str, str | float | int | bool]] = None
-    sub_strategies: Optional[Sequence[NamedTuple]] = None
+    rebalance: bool = False
+    params: dict[str, Any] | None = None
+    sub_strategies: Sequence[NamedTuple] | None = None
     stop_loss: Optional[Sequence[es.StopLossDefinition]] = None
     take_profit: Optional[Sequence[es.StopLossDefinition]] = None
 
@@ -259,8 +262,16 @@ class SubStrategy(IStrategy):
 
     # --------------------------------------------------------------------------
     @property
-    def indicators(self) -> tuple:
+    def indicators(self) -> tuple[Indicator, ...]:
         return self._signal_generator.indicators
+
+    @property
+    def parameters(self) -> tuple[Parameter, ...] | None:
+        return self._signal_generator.paramaters
+
+    @parameters.setter
+    def parameters(self, value: tuple[Any, ...]) -> None:
+        self._signal_generator.paramaters = value
 
     # --------------------------------------------------------------------------
     def speak(self, data: tp.Data) -> tp.Data:

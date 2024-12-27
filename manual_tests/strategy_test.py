@@ -6,31 +6,15 @@ Created on Oct 06 10:03:20 2021
 @author dhaneor
 """
 import asyncio
-import sys
-import os
 import time
-import logging
 from random import random
 
-LOGGER = logging.getLogger('main')
-LOGGER.setLevel(logging.DEBUG)
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-ch.setFormatter(formatter)
-LOGGER.addHandler(ch)
-
-# -----------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# -----------------------------------------------------------------------------
-
-from src.analysis.strategies.definitions import breakout  # noqa: E402, F401
-from src.staff.hermes import Hermes  # noqa: E402, F401
+from analysis.strategies.definitions import breakout  # noqa: E402, F401
+from staff.hermes import Hermes  # noqa: E402, F401
 from analysis.strategies.exit_order_strategies import *  # noqa: E402, F401, F403
+from util import get_logger
+
+logger = get_logger('main')
 
 h = Hermes(exchange='kucoin', mode='live')
 s = breakout()

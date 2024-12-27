@@ -6,40 +6,24 @@ Created on Oct 06 10:03:20 2021
 @author dhaneor
 """
 import sys
-import os
 import time
 import logging
 import numpy as np
 import pandas as pd
 from typing import Iterable
-from pprint import pprint  # noqa: F401
+from pprint import pprint
 from random import choice
 
 # profiler imports
 from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
-# -----------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# -----------------------------------------------------------------------------
+from analysis.strategies import condition as cn
+from analysis.strategies import operand as op
+from helpers_ import get_sample_data
+from util import get_logger
 
-from src.analysis.strategies import condition as cn  # noqa: E402
-from src.analysis.strategies import operand as op  # noqa: E402
-from helpers_ import get_sample_data  # noqa: E402
-
-logger = logging.getLogger("main")
-logger.setLevel(logging.DEBUG)
-
-ch = logging.StreamHandler()
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
+logger = get_logger('main', level="DEBUG")
 
 # ======================================================================================
 interval = "4h"
@@ -172,6 +156,17 @@ def test_condition_indicators(condition: cn.Condition):
     ), "All indicators must be instances of Indicator"
 
     return indicators
+
+
+def test_condition_parameters(condition: cn.Condition):
+    parameters = condition.parameters
+
+    assert isinstance(parameters, tuple), "Parameters must be a dictionary"
+    assert all(
+        isinstance(v, Parameter) for v in parameters
+    ), "All parameters must be strings, integers, or floats"
+
+    return parameters
 
 
 def test_condition_result():
