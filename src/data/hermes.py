@@ -5,11 +5,12 @@ Provides the central data repository.
 
 Hermes is the ancient god of wisdom and knowledge. He knows everything about:
 
-• OHLCV data for all cryptocurrencies (on all exchanges supported by CCXT)
-• Symbol information (like trading pairs, currencies, etc.)
+    • OHLCV data for all cryptocurrencies (on all exchanges supported by CCXT)
+    • Market (Symbol) information, like trading pairs, currencies, etc.
 
-• Sentiment (future feature)
-• On-chain data (future feature)
+TODO:
+    • Sentiment (future feature)
+    • On-chain data (future feature)
 
 Created on July 06 21:12:20 2023
 
@@ -17,15 +18,14 @@ Created on July 06 21:12:20 2023
 """
 import logging
 import os
-from functools import partial
 from typing import Any
 from dotenv import load_dotenv
 
 from .exchange_factory import ExchangeFactory
 from .ohlcv_repository import process_request
-from .markets_repository import get_markets
+from .markets_repository import get_markets, get_symbols
 from .data_models import Ohlcv, Markets, Market
-from .import database
+from .database import DatabaseManager
 from .util.timestamp_converter import timestamp_converter
 
 logger = logging.getLogger(f"main.{__name__}")
@@ -36,7 +36,7 @@ load_dotenv()
 # determine if we should use the database for OHLCV data,
 # and initialize the database if necessary
 USE_DB = os.getenv("USE_DB", "False").lower() == "true"
-db = database.DatabaseManager() if USE_DB else None
+db = DatabaseManager() if USE_DB else None
 logger.info(f"{'WILL NOT' if not USE_DB else 'WILL'} USE THE DATABASE")
 
 # initialize the exchange factory
@@ -44,12 +44,7 @@ exchange_factory = ExchangeFactory()
 
 
 class OhlcvRepository:
-    """
-    Manage and retrieve OHLCV data from various data sources.
-    """
-    def __init__(self) -> None:
-        ...
-
+    """Manage and retrieve OHLCV data from various data sources."""
     @timestamp_converter(unit='milliseconds')
     async def get_ohlcv(self, **kwargs) -> Ohlcv:
         req = kwargs
@@ -94,27 +89,124 @@ class MarketsRepository:
         return await get_markets(req)
 
     async def market(self, exchange: str, symbol: str) -> Market:
-        return self.all(exchange).get(symbol)
+        return await self.all(exchange).get(symbol)
+
+    async def all_symbols(self, exchange: str) -> list[str]:
+        req = {'exchange': exchange, 'data_type': 'symbols'}
+        return await get_symbols(req)
 
 
 class Hermes:
+    """
+    Central data repository for cryptocurrency market information.
+
+    This class provides a unified interface to access OHLCV
+    (Open, High, Low, Close, Volume) data
+    and market information for various cryptocurrencies across different exchanges.
+
+    Attributes:
+        ohlcv (OhlcvRepository): Repository for OHLCV data.
+        markets (MarketsRepository): Repository for market information.
+
+    The class is designed to be used as an asynchronous context manager, which handles
+    database connections and cleanup of resources.
+
+    Example:
+        async with Hermes() as hermes:
+            ohlcv_data = await hermes.get_ohlcv(
+                exchange='binance', symbol='BTC/USDT', interval='1h'
+                start=-1000, end='now UTC')
+            markets_data = await hermes.get_markets('binance')
+
+    Note:
+        This class relies on environment variables and global settings:
+        - USE_DB: Determines whether to use a database for data storage.
+        - exchange_factory: A factory for creating exchange instances.
+    """
 
     def __init__(self):
-        self.ohlcv = OhlcvRepository()
-        self.markets = MarketsRepository()
+        """Initialize Hermes with OHLCV and Markets repositories."""
+        self._ohlcv = OhlcvRepository()
+        self._markets = MarketsRepository()
 
     async def __aenter__(self) -> 'Hermes':
+        """
+        Asynchronous enter method for context management.
+
+        Establishes necessary connections when entering the context.
+
+        Returns:
+            Hermes: The Hermes instance.
+        """
         if USE_DB:
             await db.connect()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        logger.debug("Closing exchange connections...")
+        """
+        Asynchronous exit method for context management.
+
+        Closes all exchange connections and disconnects from the database if used.
+        Logs any errors that occurred during the context.
+
+        Args:
+            exc_type: The type of the exception that caused the context to be exited.
+            exc_val: The instance of the exception that caused the context to be exited.
+            exc_tb: A traceback object encoding the stack trace.
+        """
         await exchange_factory.close_all()
 
         if USE_DB:
-            logger.debug("Closing database connection...")
             await db.disconnect()
 
         if exc_type is not None:
             logger.error(f"An error occurred: {exc_val}")
+
+    async def ohlcv(self, **kwargs) -> Ohlcv:
+        """
+        Retrieve OHLCV data based on the provided parameters.
+
+        Args:
+            **kwargs: Keyword arguments specifying the OHLCV data request parameters.
+
+        Returns:
+            Ohlcv: An object containing the requested OHLCV data.
+        """
+        return await self._ohlcv.get_ohlcv(**kwargs)
+
+    async def markets(self, exchange: str) -> Markets:
+        """
+        Retrieve all markets for a given exchange.
+
+        Args:
+            exchange (str): The name of the exchange.
+
+        Returns:
+            Markets: An object containing all markets for the specified exchange.
+        """
+        return await self._markets.all(exchange)
+
+    async def market(self, exchange: str, symbol: str) -> Market:
+        """
+        Retrieve market information for a specific symbol on a given exchange.
+
+        Args:
+            exchange (str): The name of the exchange.
+            symbol (str): The trading symbol to retrieve market information for.
+
+        Returns:
+            Market: An object containing market information for the specified symbol.
+        """
+        return await self._markets.market(exchange, symbol)
+
+    async def symbols(self, exchange: str) -> list[str]:
+        """
+        Retrieve all trading symbols for a given exchange.
+
+        Args:
+            exchange (str): The name of the exchange.
+
+        Returns:
+            list[str]: A list of all trading symbols for the specified exchange.
+        """
+        return await self._markets.all_symbols(exchange)

@@ -64,11 +64,12 @@ from datetime import datetime
 from .exchange_factory import ExchangeFactory
 from .data_models import Ohlcv
 from .util.timestamp_converter import timestamp_converter
+from util import unix_to_utc
 
 logger = logging.getLogger("main.ohlcv_repository")
 
 REQUEST_SOCKET_ADDRESS = "inproc://ohlcv_repository"  # change this, if necessary
-KLINES_LIMIT = 1500  # number of candles to download in one call
+KLINES_LIMIT = 1000  # number of candles to download in one call
 CACHE_TTL_SECONDS = 30  # cache TTL in seconds
 
 LOG_STATUS = False  # enable logging of server status and server time
@@ -188,37 +189,106 @@ def cache_ohlcv(ttl_seconds: int = CACHE_TTL_SECONDS):
     return decorator
 
 
-async def get_ohlcv_for_no_of_days(
-    response: Ohlcv, exchange: ccxt.Exchange, n_days: int = 1296
-) -> None:
-    # Calculate the starting timestamp
-    end_time = exchange.parse8601(
-        f'{time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}'
+async def fetch_with_ccxt(
+    response: Ohlcv, exchange: ccxt.Exchange, max_retries: int = 3
+) -> Ohlcv:
+    start_time, end_time, data = response.start, response.end, None
+
+    interval_errors = (
+        "period",
+        "interval",
+        "timeframe",
+        "binSize",
+        "candlestick",
+        "step",
     )
-    start_time = end_time - n_days * 24 * 60 * 60 * 1000  # Convert days to milliseconds
 
-    # Store all data
-    ohlcv_data = []
-    current_time = start_time
+    logger.debug(
+        "Fetching OHLCV data for %s from %s to %s...",
+        response.symbol, unix_to_utc(start_time), unix_to_utc(end_time)
+    )
 
-    while current_time < end_time:
-        # Fetch data with limit (usually 1000)
-        batch = await exchange.fetch_ohlcv(
-            symbol=response.symbol,
-            timeframe=response.interval,
-            since=current_time,
-            limit=None,
+    for attempt in range(max_retries):
+        try:
+            data = await exchange.fetch_ohlcv(
+                symbol=response.symbol,
+                timeframe=response.interval,
+                since=start_time,
+                params={'until': end_time}
+            )
+            break
+        except (NetworkError) as e:
+            if attempt == max_retries - 1:
+                logger.error(
+                    "Failed to fetch OHLCV data after %s attempts: %s",
+                    max_retries, str(e)
+                    )
+                raise
+            logger.warning(f"Attempt {attempt + 1} failed, retrying: {e}")
+            await asyncio.sleep(2 ** attempt)  # Exponential backoff
+        except AuthenticationError as e:
+            logger.error(f"[AuthenticationError] {str(e)}")
+            response.authentication_error = str(e)
+        except BadSymbol as e:
+            logger.error(f"[BadSymbol] {str(e)}")
+            response.symbol_error = True
+        # ccxt is inconsistent when encountering an error
+        # that is caused by an invalid interval. some special
+        # handling is required here
+        except InsufficientFunds as e:
+            logger.error(f"[InsufficientFunds] {str(e)}")
+            response.interval_error = True
+        except BadRequest as e:
+            logger.error(f"[BadRequest] {str(e)}")
+            if any(s in str(e) for s in response.interval):
+                response.interval_error = True
+            else:
+                response._bad_request_error = str(e)
+        except ExchangeError as e:
+            logger.error(f"[ExchangeError] {str(e)}")
+            if "poloniex" in str(e):
+                response.interval_error = True
+            elif any(s in str(e) for s in interval_errors):
+                response.interval_error = True
+            else:
+                response.exchange_error = str(e)
+        except ExchangeNotAvailable as e:
+            logger.error(f"[ExchangeNotAvailable] {str(e)}")
+            if any(s in str(e) for s in interval_errors):
+                response.interval_error = True
+            else:
+                response.exchange_error = str(e)
+        except Exception as e:
+            logger.error(f"[Unexpected Error] {str(e)}", exc_info=True)
+            response.unexpected_error = str(e)
+
+    # Filter and sort the data
+    if data:
+        response.data = sorted(
+            [candle for candle in data if start_time <= candle[0] <= end_time],
+            key=lambda x: x[0]
         )
-        if not batch:
-            break  # Exit if no more data is returned
 
-        # Append batch data
-        ohlcv_data.extend(batch)
+    return response
 
-        # Move to the next time interval
-        current_time = batch[-1][0]
 
-    response.data = ohlcv_data
+async def fetch_with_binance(response: Ohlcv, exchange: ccxt.Exchange) -> Ohlcv:
+    logger.debug(
+        f"Fetching OHLCV data for {response.symbol} from "
+        f"{response.start} to {response.end}"
+        )
+    result = await exchange.fetch_ohlcv_for_period(
+        symbol="".join(response.symbol.split("/")),
+        interval=response.interval,
+        start=response.start,
+        end=response.end,
+    )
+
+    response.data = [
+        [float(row[i]) if i != 0 else int(row[i]) for i in range(len(row) - 1)]
+        for row in result
+    ]  # Convert to ccxt format (Binance returns strings)
+
     return response
 
 
@@ -234,104 +304,35 @@ async def get_ohlcv(response: Ohlcv, exchange: ccxt.Exchange) -> Ohlcv:
     -------
     Ohlcv
     """
-    interval_errors = (
-        "period",
-        "interval",
-        "timeframe",
-        "binSize",
-        "candlestick",
-        "step",
-    )
 
     if not hasattr(exchange, "fetch_ohlcv"):
+        logger.error(
+            "%s does not support fetching OHLCV data" % response.exchange
+            )
         response.fetch_ohlcv_not_available = True
         return response
 
-    if interval := response.interval not in exchange.timeframes:
-        logger.error("Invalid interval: %s" % response.interval)
+    if response.interval not in exchange.timeframes:
+        logger.error(
+            "Invalid interval for %s: %s" % (response.exchange, response.interval)
+            )
         response.interval_error = True
         return response
 
-    try:
-        if response.symbol not in exchange.symbols:
-            logger.error("Invalid symbol: %s" % response.symbol)
-            response.symbol_error = True
-            return response
-    except:  # noqa: E722
-        pass
+    if response.symbol not in exchange.symbols:
+        logger.error(
+            "Invalid symbol for %s: %s" % (response.exchange, response.symbol)
+            )
+        response.symbol_error = True
+        return response
 
     # ................................................................................
+
     # with Binance we can use parallel calls to make this step faster
     if exchange.name == "binance":
-        if response.start is not None and response.end is not None:
-            logger.debug(
-                f"Fetching OHLCV data for {response.symbol} from "
-                f"{response.start} to {response.end}"
-                )
-            result = await exchange.fetch_ohlcv_for_period(
-                symbol="".join(response.symbol.split("/")),
-                interval=response.interval,
-                start=response.start,
-                end=response.end,
-            )
-        else:
-            logger.debug(
-                f"Fetching OHLCV data for {response.symbol} for the last 3 years"
-                )
-            result = await exchange.fetch_ohlcv(
-                symbol="".join(response.symbol.split("/")),
-                interval=response.interval,
-                limit=1296,  # 3 years, default for tikr data
-            )
-
-        response.data = [
-            [float(row[i]) if i != 0 else int(row[i]) for i in range(len(row) - 1)]
-            for row in result
-        ]  # Convert to ccxt format (Binance returns strings)
-
-        return response
-
-    # serial calls to fetch OHLCV data for all other exchanges
-    try:
-        response = await get_ohlcv_for_no_of_days(response, exchange)
-    except AuthenticationError as e:
-        logger.error(f"[AuthenticationError] {str(e)}")
-        response.authentication_error = str(e)
-    except BadSymbol as e:
-        logger.error(f"[BadSymbol] {str(e)}")
-        response.symbol_error = True
-
-    # ccxt is inconsistent when encountering an error
-    # that is caused by an invalid interval. some special
-    # handling is required here
-    except InsufficientFunds as e:
-        logger.error(f"[InsufficientFunds] {str(e)}")
-        response.interval_error = True
-    except BadRequest as e:
-        logger.error(f"[BadRequest] {str(e)}")
-        if any(s in str(e) for s in interval):
-            response.interval_error = True
-        else:
-            response._bad_request_error = str(e)
-    except ExchangeError as e:
-        logger.error(f"[ExchangeError] {str(e)}")
-        if "poloniex" in str(e):
-            response.interval_error = True
-        elif any(s in str(e) for s in interval_errors):
-            response.interval_error = True
-        else:
-            response.exchange_error = str(e)
-    except ExchangeNotAvailable as e:
-        logger.error(f"[ExchangeNotAvailable] {str(e)}")
-        if any(s in str(e) for s in interval_errors):
-            response.interval_error = True
-        else:
-            response.exchange_error = str(e)
-    except Exception as e:
-        logger.error(f"[Unexpected Error] {str(e)}", exc_info=True)
-        response.unexpected_error = str(e)
-
-    return response
+        return await fetch_with_binance(response, exchange)
+    else:
+        return await fetch_with_ccxt(response, exchange)
 
 
 @timestamp_converter()
@@ -386,7 +387,10 @@ async def process_request(
     if response.success:
         # try to get a working exchange instance
         if not (exchange := await exchange_factory(response.exchange)):
+            logger.error(f"Exchange {response.exchange} not available")
             response.exchange_error = f"Exchange {response.exchange} not available"
+            if response.socket:
+                await response.send()
             return response
 
         if LOG_STATUS:

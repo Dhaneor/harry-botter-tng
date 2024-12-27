@@ -23,9 +23,25 @@ import yaml
 
 from dataclasses import dataclass
 from typing import Any
-from util import seconds_to
+from util import seconds_to, unix_to_utc
 
 logger = logging.getLogger("main.data_models")
+
+interval_in_ms = {
+    "1m": 60 * 1000,
+    "3m": 3 * 60 * 1000,
+    "5m": 5 * 60 * 1000,
+    "15m": 15 * 60 * 1000,
+    "30m": 30 * 60 * 1000,
+    "1h": 60 * 60 * 1000,
+    "2h": 2 * 60 * 60 * 1000,
+    "4h": 4 * 60 * 60 * 1000,
+    "6h": 6 * 60 * 60 * 1000,
+    "12h": 12 * 60 * 60 * 1000,
+    "1d": 24 * 60 * 60 * 1000,
+    "3d": 3 * 24 * 60 * 60 * 1000,
+    "1w": 7 * 24 * 60 * 60 * 1000
+}
 
 
 # ====================================================================================
@@ -65,11 +81,32 @@ class Ohlcv:
         if not self.success:
             error_str = f", bad request: {self.bad_request}, errors: {self.errors}"
 
+        start = unix_to_utc(self.data[0][0]) if self.data else unix_to_utc(self.start)
+        end = unix_to_utc(self.data[-1][0]) if self.data else unix_to_utc(self.end)
+
         return (
             f"Ohlcv(exchange={self.exchange}, symbol={self.symbol}, "
-            f"interval={self.interval}, start={self.start}, end={self.end}"
+            f"interval={self.interval}, start={start}, end={end}"
             f"{error_str}{data_str})"
         )
+
+    def __post_init__(self):
+        self.exchange_error = True if not isinstance(self.exchange, str) else False
+        self.symbol_error = True if not isinstance(self.symbol, str) else False
+        self.interval_error = True if not isinstance(self.interval, str) else False
+
+        # assume end is now, if not provided
+        if self.end is None:
+            print("No end time provided, assuming now")
+            self.end = datetime.datetime.now(tz=datetime.UTC).timestamp() * 1000
+
+        # assume 1000 intervals by default, if not provided
+        if self.start is None:
+            self.start = self.end - interval_in_ms[self.interval] * 1000
+
+    @property
+    def interval_in_ms(self):
+        return interval_in_ms.get(self.interval, 0)
 
     @property
     def execution_time(self):
@@ -80,10 +117,11 @@ class Ohlcv:
         self._execution_time = value
 
         logger.info(
-            "Fetched %s elements for %s %s in %s: %s",
+            "Fetched %s elements for %s %s on %s in %s: %s",
             len(self.data) if self.data else 0,
             self.symbol,
             self.interval,
+            self.exchange,
             seconds_to(value),
             "OK" if self.data else "FAIL",
         )
@@ -167,12 +205,6 @@ class Ohlcv:
     @property
     def success(self) -> bool:
         return False if self.bad_request else True
-
-    def __post_init__(self):
-        # Basic checks on instantiation
-        self.exchange_error = True if not isinstance(self.exchange, str) else False
-        self.symbol_error = True if not isinstance(self.symbol, str) else False
-        self.interval_error = True if not isinstance(self.interval, str) else False
 
     # ------ Functions for sending the response and reconstructing it from JSON ------
     @classmethod
@@ -689,3 +721,6 @@ if __name__ == "__main__":
     print(symbol)
     print(symbol.precision.amount)
     print(f"{'precision' in symbol}")
+
+    o = Ohlcv(exchange='binance', symbol='Btc/USDT', interval='1d')
+    print(o)

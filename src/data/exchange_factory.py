@@ -11,7 +11,7 @@ a custom implementation which only supports the following methods:
 • fetch_ohlcv
 • load_markets (for symbol information)
 
-The factory supports all exchanges from CCXT. Having this a separate
+The factory supports all exchanges from CCXT. Having this as a separate
 function allows for more efficient management of exchange instances
 because different clients can use the same instance. The instantiation
 of an instance can take some time, so it is better to do this only once.
@@ -60,9 +60,7 @@ def exchange_factory_fn():
         """
         nonlocal exchange_instances
         nonlocal busy_initializing
-
-        if exchange_name:
-            exchange_name = exchange_name.lower()
+        exchange_name = exchange_name.lower() if exchange_name else exchange_name
 
         # Close all exchanges request
         if exchange_name is None:
@@ -81,15 +79,6 @@ def exchange_factory_fn():
 
             exchange_instances.clear()
             return None
-        # if exchange_name is None:
-        #     if not exchange_instances:
-        #         return None
-
-        #     for name, instance in exchange_instances.items():
-        #         await instance.close()
-        #         logger.info(f"Exchange closed: {name}")
-        #     exchange_instances.clear()
-        #     return None
 
         logger.debug("cached exchanges: %s" % list(exchange_instances.keys()))
         logger.debug("in preparation: %s" % list(busy_initializing))
@@ -100,7 +89,7 @@ def exchange_factory_fn():
         # preparation
         while exchange_name in busy_initializing:
             logger.debug(f"Waiting for exchange preparation: {exchange_name}")
-            await asyncio.sleep(0.1)
+            await asyncio.sleep(0.05)
 
         # Return cached exchange if it exists
         if exchange_name in exchange_instances:
@@ -109,44 +98,40 @@ def exchange_factory_fn():
 
         # Create a new exchange instance
         logger.info(f"Instantiating exchange: {exchange_name}")
-
-        # some special treatment for Binance here
-        if exchange_name.lower() == "binance":
-            busy_initializing.add(exchange_name)
-            logger.debug("added exchange to set: %s" % busy_initializing)
-
-            exchange = Binance()
-            await exchange.load_markets()
-
-            exchange_instances[exchange_name] = exchange
-            busy_initializing.remove(exchange_name)
-            return exchange
+        exchange = None
 
         try:
             busy_initializing.add(exchange_name)
             logger.debug("added exchange to set: %s" % busy_initializing)
 
-            exchange = getattr(ccxt, exchange_name)({"enableRateLimit": RATE_LIMIT})
-            await exchange.load_markets()
+            if exchange_name.lower() == "binance":
+                exchange = Binance()
+            else:
+                exchange = getattr(ccxt, exchange_name)({"enableRateLimit": RATE_LIMIT})
 
-            exchange_instances[exchange_name] = exchange
-            busy_initializing.remove(exchange_name)
-            return exchange
+            await exchange.load_markets()
 
         except AttributeError as e:
             logger.error(f"Exchange {exchange_name.upper()} does not exist ({e})")
-            return None
+            exchange = None
         except AuthenticationError as e:
             logger.error(
                 "Authentication required for exchange %s (%s)",
                 {exchange_name.upper()}, str(e)
                 )
-            return None
+            exchange = None
         except Exception as e:
             logger.error(
                 f"Failed to instantiate exchange {exchange_name.upper()} ({e})"
                 )
-            return None
+            exchange = None
+        else:
+            exchange_instances[exchange_name] = exchange
+        finally:
+            busy_initializing.remove(exchange_name)
+            logger.debug("removed exchange from set: %s" % busy_initializing)
+
+        return exchange
 
     async def close_all():
         await get_exchange(None)

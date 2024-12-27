@@ -14,7 +14,7 @@ import zmq.asyncio
 from data import ohlcv_repository as repo
 from util.logger_setup import get_logger
 
-logger = get_logger(level="DEBUG")
+logger = get_logger(level="INFO")
 
 ctx = zmq.asyncio.Context()
 
@@ -49,15 +49,15 @@ async def example_client(runs=10):
         if counter > 2:
             if random.random() < 0.1:
                 req = {
-                    'exchange': 'binance',
-                    'symbol': symbols[0],
-                    'interval': intervals[-1]
+                    'exchange': 'bitrue',
+                    'symbol': symbols[-1],
+                    'interval': intervals[5]
                 }
             else:
                 req = {
-                    'exchange': 'binance',
+                    'exchange': await get_random_exchange(),  # 'binance',
                     'symbol': symbols[1],
-                    'interval': intervals[-1],
+                    'interval': intervals[5],
                     'start': '1499 days ago UTC',
                     'end': 'now UTC'
                 }
