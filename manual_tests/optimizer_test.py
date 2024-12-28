@@ -26,7 +26,7 @@ from analysis.strategies.definitions import (  # noqa: F401
 )
 from util import get_logger
 
-logger = get_logger('main')
+logger = get_logger('main', level="INFO")
 
 # numpy warnings to exceptions
 # warnings.filterwarnings('error')
@@ -37,7 +37,7 @@ interval = "1d"
 start = "7 years ago UTC"
 end = "now UTC"
 
-strategy = s_test_er
+strategy = s_linreg
 risk_levels = [0, 4, 5, 6, 7, 8, 9]
 max_leverage_levels = (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5)
 max_drawdown = 30

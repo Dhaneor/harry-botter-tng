@@ -212,7 +212,7 @@ class OperandIndicator(Operand):
             case _:
                 logger.error("Invalid operand type: %s", self.type_)
 
-        return f"{type_} {name}{param_str}{in_str}"
+        return f"{type_} {name}{param_str}{in_str} -> {self.unique_name}"
 
     def __post_init__(self) -> None:
         # make sure, inputs is a tuple or None
@@ -420,9 +420,11 @@ class OperandIndicator(Operand):
         if indicator_ is None:
             raise ValueError(f"No indicator defined for {self.name}")
 
+        logger.debug(self.output_names)
+
         # when using the same indicator in different conditions,
         # there's no need to run it multiple times
-        if indicator_.unique_name in data:
+        if all(key in data for key in (self.output_names)):
             logger.info(
                 "[%s] Indicator %s already in data, skipping",
                 level,

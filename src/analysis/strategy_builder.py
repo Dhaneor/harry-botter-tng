@@ -50,7 +50,7 @@ from .util import proj_types as tp
 from .strategies import signal_generator as sg
 from .strategies import exit_order_strategies as es
 from .strategies.condition import ConditionResult
-from .indicators.iindicator import Indicator
+from .indicators.iindicator import IIndicator
 from .indicators.indicator_parameter import Parameter
 
 logger = logging.getLogger("main.strategy_builder")
@@ -262,7 +262,7 @@ class SubStrategy(IStrategy):
 
     # --------------------------------------------------------------------------
     @property
-    def indicators(self) -> tuple[Indicator, ...]:
+    def indicators(self) -> tuple[IIndicator, ...]:
         return self._signal_generator.indicators
 
     @property
@@ -517,7 +517,7 @@ def build_sub_strategy(sdef: StrategyDefinition) -> IStrategy:
     strategy.weight = sdef.weight if sdef.weight else 1.0
     strategy.is_sub_strategy = True
 
-    strategy._signal_generator = sg.factory(sdef.signals_definition)
+    strategy._signal_generator = sg.signal_generator_factory(sdef.signals_definition)
 
     # add stop loss strategy if provided
     if sdef.stop_loss:

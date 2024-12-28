@@ -439,7 +439,7 @@ def _worker_function(
         their risk levels, and calculated statistics that meet the
         maximum drawdown criterion.
     """
-    signal_generator = sg.factory(condition_definitions)
+    signal_generator = sg.signal_generator_factory(condition_definitions)
 
     results = []
     for params in chunk:

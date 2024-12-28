@@ -179,6 +179,7 @@ def test_operand_factory():
         logger.debug(operand)
         logger.debug('----------------------------------------------------------------')
         assert isinstance(operand, op.Operand)
+        pprint(operand.__dict__)
 
     return operand
 
@@ -286,7 +287,12 @@ if __name__ == "__main__":
     # operand.update_parameters({operand.unique_name: {'timeperiod': 129}})
     # logger.debug('after: %s', operand)
 
-    # operand.run(data)
+    for _ in range(2):
+        logger.debug('=' * 120)
+        operand.run(data)
+        logger.debug(list(data.keys()))
+
+    sys.exit()
 
     print('-~•~-' * 40)
     print("indicator:")

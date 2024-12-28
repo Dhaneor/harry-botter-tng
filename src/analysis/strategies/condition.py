@@ -66,7 +66,6 @@ from ..util import comp_funcs as cmp
 from . import operand as op
 
 logger = logging.getLogger("main.condition")
-logger.setLevel(logging.INFO)
 
 # data for testing the correct functioning of a Condition class
 TEST_DATA_SIZE = 500
@@ -701,6 +700,8 @@ class ConditionFactory:
             if (arm_def := getattr(condition_definition, arm, None)) is None:
                 continue
 
+            logger.debug("...building arm %s from: %s", arm, arm_def)
+
             match arm_def:
                 case str():
                     setattr(self.condition, arm, self._from_string(arm_def))
@@ -753,10 +754,14 @@ class ConditionFactory:
     def _get_output_name(self, operand: op.Operand, output: str | None) -> str:
         logger.debug("...getting output name for: %s", output)
         if output is None:
+            logger.debug("... output name is '%s' for: %s", operand.output, output)
             return operand.output
         else:
             for out_name in operand.output_names:
                 if output in out_name:
+                    logger.debug(
+                        "... output name is '%s' for: %s", out_name, output
+                        )
                     return out_name
             else:
                 raise ValueError(f"no output named {output} found in {operand}")

@@ -20,6 +20,7 @@ from pstats import SortKey, Stats  # noqa: F401
 
 from analysis.strategies import condition as cn
 from analysis.strategies import operand as op
+from analysis.indicators import Parameter
 from helpers_ import get_sample_data
 from util import get_logger
 
@@ -191,7 +192,7 @@ def test_condition_result():
     print(cr1.close_short)
     print
     print('-' * 120)
-    print(cr1.combined())
+    print(cr1.combined_signal)
 
 
 def test_condition_result_from_combined():
@@ -218,8 +219,8 @@ def test_condition_result_combine():
         close_short=np.array([False, False, np.nan, False, True]),
     )
 
-    print(cr1.combined())
-    assert np.array_equal(cr1.combined(), np.array([1, 0, -1, -1, 0]))
+    print(cr1.combined_signal)
+    assert np.array_equal(cr1.combined_signal, np.array([1, 0, -1, -1, 0]))
 
     cr2 = cn.ConditionResult(
         open_long=np.array([False, True, True, False, False, np.nan, np.nan]),
@@ -228,27 +229,25 @@ def test_condition_result_combine():
         close_short=np.array([True, False, np.nan, True, False, np.nan, True]),
     )
 
-    print(cr2.combined())
-    assert np.array_equal(cr2.combined(), np.array([0, 1, 1, 0, -1, -1, 0]))
+    print(cr2.combined_signal)
+    assert np.array_equal(cr2.combined_signal, np.array([0, 1, 1, 0, -1, -1, 0]))
 
 
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    test_condition_result_combine()
+    # test_condition_result_combine()
 
-    sys.exit()
-
-    c = cn.factory(c_defs["golden_cross"])
+    c = cn.condition_factory(c_defs["golden_cross"])
 
     for comp in (c.operand_a, c.operand_b, c.operand_c, c.operand_d):
         if comp:
             print(comp.indicators)
 
-    # print(c.indicators)
+    pprint(c.__dict__)
 
-    # sys.exit()
+    sys.exit()
 
     test_condition_is_working(c)
     logger.debug("~-*-~" * 30)
