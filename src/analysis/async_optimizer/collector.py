@@ -10,13 +10,16 @@ import asyncio
 import zmq
 import zmq.asyncio
 import logging
-import json
+import time
 
 # Configure logging
 logger = logging.getLogger("main.oracle")
+logger.setLevel(logging.INFO)
+
+TIMEOUT = 5  # Time in seconds to wait for worker messages
 
 
-async def oracle(context, oracle_address="tcp://*:5556", result_file="results.json"):
+async def oracle(context, oracle_address):
     """
     ZeroMQ Oracle (Sink) for collecting backtesting results from workers.
 
@@ -26,49 +29,82 @@ async def oracle(context, oracle_address="tcp://*:5556", result_file="results.js
         result_file (str): File to store aggregated results.
     """
     # Socket for receiving results from workers
-    oracle_socket = context.socket(zmq.PULL)
-    oracle_socket.bind(oracle_address)
+    workers_socket = context.socket(zmq.PULL)
+    workers_socket.bind(oracle_address)
+
+    poller = zmq.asyncio.Poller()
+    poller.register(workers_socket, zmq.POLLIN)
 
     results = []
     errors = []
+    timestamps = []
+    shutdown_requested = False
 
-    logging.info("[ORACLE] Started and waiting for results from workers...")
+    logger.info(
+        "[ORACLE] Started and waiting for results from workers at %s ..."
+        % oracle_address
+        )
 
     try:
-        while True:
+        while not shutdown_requested:
             # Receive messages from workers
-            message = await asyncio.wait_for(
-                oracle_socket.recv_json(),
-                timeout=10
-            )
-            worker_id = message.get("worker", "unknown_worker")
-            task = message.get("task", "unknown_task")
+            events = await poller.poll(TIMEOUT)
+            if events:
+                for socket, _ in events:
+                    if socket == workers_socket:
+                        message = await workers_socket.recv_json()
 
-            if "error" in message:
-                error = message["error"]
-                logging.error(
-                    "[ORACLE] Worker %s reported an error on task %s: %s",
-                    worker_id, task, error
-                )
-                errors.append({"worker": worker_id, "task": task, "error": error})
-            else:
-                result = message["result"]
-                logging.info(
-                    "[ORACLE] Worker %s completed task %s with result: %s",
-                    worker_id, task, result
-                )
-                results.append({"worker": worker_id, "task": task, "result": result})
+                        if message.get("status") == "READY":
+                            logger.info("received READY message")
+                            continue
+
+                        if message.get("status") == "DONE":
+                            logger.info("received DONE message")
+                            shutdown_requested = True
+                            break
+
+                        timestamps.append(time.time())
+                        worker_id = message.get("worker", "unknown_worker")
+                        task = message.get("task", "unknown_task")
+
+                        result = message.get("results", [])
+                        error = message.get("errors", [])
+                        logger.debug(
+                            "[ORACLE] Worker %s completed task %s "
+                            "with %s results and %s errors",
+                            worker_id, task, len(result), len(error)
+                        )
+                        results.extend(result)
+                        errors.extend(error)
+            if len(results) >= 1_000_000_000:
+                break
     except asyncio.TimeoutError:
-        logging.info("[ORACLE] Timeout while waiting for worker messages.")
+        logger.warning("[ORACLE] Timeout while waiting for messages - shutting down...")
     except asyncio.CancelledError:
-        logging.info("[ORACLE] Task cancelled. Shutting down gracefully...")
+        logger.info("[ORACLE] Task cancelled. Shutting down gracefully...")
     except KeyboardInterrupt:
-        logging.info("[ORACLE] Interrupted by user. Shutting down...")
-    finally:
-        # Save results to a file
-        # with open(result_file, "w") as f:
-        #     json.dump({"results": results, "errors": errors}, f, indent=4)
-        # logging.info(f"[ORACLE] Results saved to {result_file}")
+        logger.info("[ORACLE] Interrupted by user. Shutting down...")
+    except Exception as e:
+        logger.error(f"[ORACLE] An error occurred: {e}")
+    else:
+        if timestamps:
+            now = time.time() * 1000  # milliseconds since epoch
+            first_ts = timestamps[0] * 1000
+            last_ts = timestamps[-1] * 1000 if len(timestamps) > 1 else now
+            total_time = last_ts - first_ts
+            num_elems = len(results) + len(errors) + 1
+            avg_time = (last_ts - first_ts) / num_elems
+            per_second = num_elems / total_time * 1000
+            per_minute = per_second * 60
+        else:
+            total_time, avg_time, per_second, per_minute = 0, 0, 0, 0
 
-        oracle_socket.close()
-        logging.info("[ORACLE] Socket closed. Shutdown complete.")
+        logger.info(f"[ORACLE] Total results: {len(results)} (errors: {len(errors)})")
+        logger.info(f"[ORACLE] Processing time: {total_time:.4f} milliseconds")
+        logger.info(
+            "[ORACLE] Average processing time: %s milliseconds (%s/s , %s/min)",
+            f"{avg_time:.2f}", f"{int(per_second):,}", f"{int(per_minute):,}"
+            )
+    finally:
+        workers_socket.close()
+        logger.info("[ORACLE] Socket closed. Shutdown complete.")

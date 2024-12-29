@@ -38,7 +38,7 @@ interval = "1d"
 start = "7 years ago UTC"
 end = 'now UTC'
 
-strategy = s_test_er
+strategy = s_linreg
 risk_level, max_leverage = 8, 2
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
@@ -254,15 +254,15 @@ def test_find_positions(data: dict):
 if __name__ == '__main__':
     logger.info("Starting backtest...")
     logger.info(strategy)
-    run(_get_ohlcv_from_db(), True, True)
+    run(_get_ohlcv_from_db(), True, False)
 
     # ..........................................................................
-    sys.exit()
+    # sys.exit()
 
     logger.setLevel(logging.ERROR)
     runs = 1_000
     data_pre = [_get_ohlcv_from_db() for _ in range(runs)]
-    # st = time.perf_counter()
+    start = time.perf_counter()
 
     # for i in range(runs):
     #     # test_find_positions(data_pre[i])
@@ -285,4 +285,4 @@ if __name__ == '__main__':
 
     et = time.perf_counter()
     print(f'length data: {len(data_pre[0]["close"])} periods')
-    print(f"average execution time: {((et - st)*1_000_000/runs):.2f} microseconds")
+    print(f"average execution time: {((et - start)*1_000_000/runs):.2f} microseconds")

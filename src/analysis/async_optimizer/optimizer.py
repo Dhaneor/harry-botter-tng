@@ -5,7 +5,7 @@ import zmq.asyncio
 
 # Importing components
 from analysis.async_optimizer.broker import broker
-from analysis.async_optimizer.worker import worker
+from analysis.async_optimizer.worker import worker, workers
 from analysis.async_optimizer.collector import oracle
 from util import get_logger
 
@@ -13,13 +13,19 @@ from util import get_logger
 logger = get_logger('main', level="INFO")
 
 # Define task list for the broker
-TASK_LIST = [f"Task-{i}" for i in range(1, 21)]  # Example task list with 20 tasks
+CHUNK_LENGTH = 1000
+TASK_LIST = [f"Task-{i}" for i in range(100)]
 
+# BROKER_ADDRESS = "ipc:///tmp/broker.ipc"
+# ORACLE_ADDRESS = "ipc:///tmp/oracle.ipc"
+
+BROKER_ADDRESS = "tcp://localhost:5555"
+ORACLE_ADDRESS = "tcp://localhost:5556"
 
 def run_broker():
     """Run the broker in a separate process."""
     try:
-        asyncio.run(broker(TASK_LIST))
+        asyncio.run(broker(TASK_LIST, BROKER_ADDRESS))
     except KeyboardInterrupt:
         logger.info("[MAIN] Broker interrupted. Shutting down...")
 
@@ -28,7 +34,7 @@ def run_oracle():
     """Run the Oracle (Sink) in a separate process."""
     try:
         context = zmq.asyncio.Context()
-        asyncio.run(oracle(context))
+        asyncio.run(oracle(context, ORACLE_ADDRESS))
     except KeyboardInterrupt:
         logger.info("[MAIN] Oracle interrupted. Shutting down...")
 
@@ -37,9 +43,22 @@ def run_worker(worker_id):
     """Run a worker in a separate process."""
     try:
         context = zmq.asyncio.Context()
-        asyncio.run(worker(context, worker_id=worker_id))
+        asyncio.run(worker(context, worker_id, BROKER_ADDRESS, ORACLE_ADDRESS))
     except KeyboardInterrupt:
         logger.info(f"[MAIN] Worker {worker_id} interrupted. Shutting down...")
+
+
+def run_a_bunch_of_workers(base_id: str, num_workers: int):
+    """Run multiple workers in one process."""
+    worker_ids = [f"{base_id}-{i+1}" for i in range(num_workers)]
+
+    try:
+        context = zmq.asyncio.Context()
+        asyncio.run(
+            workers(context, worker_ids, BROKER_ADDRESS, ORACLE_ADDRESS, num_workers)
+            )
+    except KeyboardInterrupt:
+        logger.info("[MAIN] Some workers interrupted. Shutting down...")
 
 
 def main():
@@ -48,7 +67,8 @@ def main():
         logger.info("[MAIN] Starting the system...")
 
         # Determine number of workers based on CPU cores
-        num_workers = os.cpu_count() or 4  # Default to 4 if os.cpu_count() returns None
+        # Default to 4 if os.cpu_count() returns None
+        num_workers = os.cpu_count() - 2 or 4
         logger.info(f"[MAIN] Number of workers: {num_workers}")
 
         # Create processes
@@ -71,9 +91,9 @@ def main():
         # Start Worker Processes
         for i in range(num_workers):
             worker_process = multiprocessing.Process(
-                target=run_worker,
-                name=f"Worker-{i+1}",
-                args=(f"worker-{i+1}",)
+                target=run_a_bunch_of_workers,
+                name=f"Team-{i+1}",
+                args=(str(i), 1,)
             )
             processes.append(worker_process)
 

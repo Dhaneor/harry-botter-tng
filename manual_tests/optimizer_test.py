@@ -38,8 +38,8 @@ start = "7 years ago UTC"
 end = "now UTC"
 
 strategy = s_linreg
-risk_levels = [0, 4, 5, 6, 7, 8, 9]
-max_leverage_levels = (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5)
+risk_levels = 0,  # [0, 4, 5, 6, 7, 8, 9]
+max_leverage_levels = 1,  # (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5)
 max_drawdown = 30
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.1
 
