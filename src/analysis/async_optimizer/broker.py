@@ -11,17 +11,15 @@ import zmq
 import zmq.asyncio
 import logging
 
-from .protocol import MT, ROLES, Message, Hoy, Bye, Task
+from .messenger import Messenger
+from .protocol import TYPE, ROLES, Message, Hoy, Bye, Task
 
 # Configure logging
 logger = logging.getLogger("main.broker")
 logger.setLevel(logging.INFO)
 
 NAME = "BROKER"
-
-
-async def process_message(socket, message):
-    ...
+ROLE = ROLES.BROKER
 
 
 async def say_hoy(recv_id: bytes, socket: zmq.asyncio.Socket):
@@ -60,6 +58,9 @@ async def broker(task_list, addr: str, worker_timeout=5):
 
     logger.info("[BROKER] Started and waiting for workers at %s ..." % addr)
 
+    q = asyncio.Queue()
+    messenger = Messenger(origin=NAME, role=ROLE, socket=broker_socket, queue=q)
+
     # Keep track of ready workers
     known_workers = set()
     ready_workers = []
@@ -74,46 +75,47 @@ async def broker(task_list, addr: str, worker_timeout=5):
                 for socket, _ in events:
                     if socket == broker_socket:
                         multipart = await broker_socket.recv_multipart()
-                        message = Message.from_multipart(multipart)
+                        msg = Message.from_multipart(multipart)
 
-                # logger.debug("[BROKER] Received message from worker %s" % message)
+                logger.debug(
+                    "[%s] Received %a message from worker %s"
+                    % (NAME, msg.type.name, msg.origin)
+                    )
 
-                if message:
-                    hex_id, worker_id, _, msg = message
-                    worker_id = worker_id.decode()
+                if msg:
+                    worker = (msg.origin, msg.recv_id)
 
-                    if msg.type == MT.READY:
+                    if msg.type == TYPE.READY:
                         if shutdown_initiated:
-                            await say_goodbye(msg.recv_id, broker_socket)
+                            await messenger.say_goodbye(msg.recv_id)
                         else:
-                            ready_workers.append(msg.origin)
+                            ready_workers.append(worker)
                             logger.debug(
                                 "[BROKER] %s is ready. [ready: %s]"
-                                % (worker_id,  len(ready_workers))
+                                % (worker[0],  len(ready_workers))
                                 )
 
-                    elif msg.type == MT.HOY:
-                        known_workers.add(msg.origin)
-                        ready_workers.append(msg.origin)
+                    elif msg.type == TYPE.HOY:
+                        known_workers.add(worker)
+                        ready_workers.append(worker)
                         logger.info(
                             "[BROKER] 'HOY' from %s ... [known: %s]"
-                            % (worker_id, len(known_workers))
+                            % (worker[0], len(known_workers))
                             )
 
-                    elif msg == b"BYE":
-                        if worker_id in ready_workers:
-                            ready_workers.remove(worker_id)
-                        if worker_id in known_workers:
-                            known_workers.remove(worker_id)
+                    elif msg.type == TYPE.BYE:
+                        if worker in ready_workers:
+                            ready_workers.remove(worker)
+                        if worker in known_workers:
+                            known_workers.remove(worker)
                             logger.debug(
                                 "[BROKER] 'BYE' from %s ... [known: %s]"
-                                % (worker_id, len(known_workers))
+                                % (worker[0], len(known_workers))
                             )
                     else:
                         logger.info(
-                            "[BROKER] Unexpected message from worker %s: %s",
-                            worker_id,
-                            msg,
+                            "[BROKER] Unexpected message type from worker %s: %s",
+                            worker[0], msg.type,
                         )
 
             except asyncio.TimeoutError:
@@ -122,12 +124,13 @@ async def broker(task_list, addr: str, worker_timeout=5):
 
             # Assign tasks if workers are ready and tasks remain
             while task_list and ready_workers:
-                worker_id = ready_workers.pop(0)
+                name, recv_id = ready_workers.pop(0)
                 task = task_list.pop(0)
                 logger.debug(
-                    "[BROKER] Sending task '%s' to worker %s", task, worker_id
+                    "[BROKER] Sending task '%s' to worker %s", task, name
                 )
-                await broker_socket.send_multipart([hex_id, b"", task.encode()])
+                reply = Task(origin=NAME, role=ROLE, recv_id=recv_id, task=task)
+                await reply.send(broker_socket)
 
             logger.debug(
                 "task list: %s, ready workers: %s, known workers: %s",
@@ -137,9 +140,9 @@ async def broker(task_list, addr: str, worker_timeout=5):
 
             if not task_list:
                 if not shutdown_initiated:
-                    for worker_id in ready_workers:
-                        await broker_socket.send_multipart([hex_id, b"", "DONE".encode()])
-                        logger.info("[BROKER] Sent 'DONE' to worker %s", worker_id)
+                    for worker in ready_workers:
+                        await q.put_nowait(("BYE", worker[1]))
+                        logger.info("[BROKER] Sent 'BYE' to worker %s", name)
                     shutdown_initiated = True
 
             if not known_workers:
@@ -147,7 +150,7 @@ async def broker(task_list, addr: str, worker_timeout=5):
                     logger.info("[BROKER] No workers available. Waiting ...")
                 else:
                     logger.info(
-                        "[BROKER] Work completed, all workers are gone. Shutting down..."
+                        "[%s] Work completed, workers gone. Shutting down..." % NAME
                         )
                     break
 
@@ -155,6 +158,7 @@ async def broker(task_list, addr: str, worker_timeout=5):
         logger.info("[BROKER] Interrupted by user. Shutting down...")
 
     finally:
+        await messenger.stop()
         broker_socket.close()
         context.term()
         logger.info("[BROKER] Shutdown complete.")

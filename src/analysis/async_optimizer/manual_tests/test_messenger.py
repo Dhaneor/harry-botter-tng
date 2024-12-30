@@ -12,8 +12,11 @@ from asyncio import create_task
 
 from analysis.async_optimizer.messenger import Messenger
 from analysis.async_optimizer.protocol import (  # noqa: F401
-    MT, ROLES, Message, Bye, Task, Hoy
+    TYPE, ROLES, Message, Bye, Task, Hoy
 )
+from util import get_logger
+
+logger = get_logger("main")
 
 MESSENGER_ADDRESS = "tcp://localhost:5555"
 CLIENT_ADDRESS = "tcp://localhost:5556"
@@ -32,7 +35,7 @@ async def client(context):
         msg = Message.from_multipart(await socket.recv_multipart())
         print(f"Received message from broker: {await msg.get_multipart()}")
 
-        if msg.type == MT.BYE:
+        if msg.type == TYPE.BYE:
             break
 
     print("Client shutting down...")
@@ -43,11 +46,18 @@ async def worker(context):
     socket = context.socket(zmq.DEALER)
     socket.connect(CLIENT_ADDRESS)
 
-    client = Messenger(origin="worker", role=ROLES.WORKER, socket=socket)
+    q = asyncio.Queue()
+    client = Messenger(queue=q, origin="broker", role=ROLES.BROKER, socket=socket)
 
     await client.say_hoy()
+    await client.say_ready()
+    await client.send_task({"name": "example task"})
+    await client.send_result({"result": "example result"})
     await client.say_goodbye()
+
+    await q.put(None)  # signal shutdown
     socket.close()
+    await asyncio.sleep(0.1)  # wait for worker to shutdown
 
 
 async def main():

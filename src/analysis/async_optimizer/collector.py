@@ -12,10 +12,15 @@ import zmq.asyncio
 import logging
 import time
 
+from .protocol import TYPE, ROLES, Message
+from util import seconds_to
+
 # Configure logging
 logger = logging.getLogger("main.oracle")
 logger.setLevel(logging.INFO)
 
+NAME = "ORACLE"
+ROLE = ROLES.COLLECTOR
 TIMEOUT = 5  # Time in seconds to wait for worker messages
 
 
@@ -35,14 +40,15 @@ async def oracle(context, oracle_address):
     poller = zmq.asyncio.Poller()
     poller.register(workers_socket, zmq.POLLIN)
 
+    known_producers = set()
     results = []
     errors = []
     timestamps = []
     shutdown_requested = False
 
     logger.info(
-        "[ORACLE] Started and waiting for results from workers at %s ..."
-        % oracle_address
+        "[%s] Started and waiting for results from workers at %s ..."
+        % (NAME, oracle_address)
         )
 
     try:
@@ -52,34 +58,78 @@ async def oracle(context, oracle_address):
             if events:
                 for socket, _ in events:
                     if socket == workers_socket:
-                        message = await workers_socket.recv_json()
+                        msg = Message.from_multipart(
+                            await workers_socket.recv_multipart()
+                            )
 
-                        if message.get("status") == "READY":
-                            logger.info("received READY message")
-                            continue
-
-                        if message.get("status") == "DONE":
-                            logger.info("received DONE message")
-                            shutdown_requested = True
-                            break
-
-                        timestamps.append(time.time())
-                        worker_id = message.get("worker", "unknown_worker")
-                        task = message.get("task", "unknown_task")
-
-                        result = message.get("results", [])
-                        error = message.get("errors", [])
                         logger.debug(
-                            "[ORACLE] Worker %s completed task %s "
-                            "with %s results and %s errors",
-                            worker_id, task, len(result), len(error)
-                        )
-                        results.extend(result)
-                        errors.extend(error)
+                            "received message from worker %s: %s"
+                            % (msg.origin, msg.type.name)
+                            )
+
+                        match msg.type:
+                            case TYPE.HOY:
+                                known_producers.add(msg.origin)
+
+                            case TYPE.READY:
+                                logger.info("received READY message")
+                                continue
+
+                            case TYPE.BYE:
+                                known_producers.remove(msg.origin)
+                                logger.info(
+                                    "[ORACLE] received BYE message from "
+                                    "worker %s (known: %s)"
+                                    % (msg.origin, len(known_producers))
+                                    )
+
+                                if len(known_producers) == 0:
+                                    shutdown_requested = True
+                                    break
+
+                            case TYPE.RESULT:
+                                timestamps.append(time.time())
+
+                                logger.debug(
+                                    "[ORACLE] Received %s results from worker %s"
+                                    % (
+                                        len(msg.payload.get('results', [])),
+                                        msg.origin
+                                    )
+                                )
+
+                                worker_id = msg.origin
+                                batch = msg.payload if msg.payload else {}
+
+                                if not batch:
+                                    logger.error(
+                                        "[ORACLE] Received invalid batch from worker %s"
+                                        % worker_id
+                                        )
+                                    continue
+
+                                task = batch.get("task", "unknown_task")
+                                batch_results = batch.get("results", None)
+                                batch_errors = batch.get("errors", [])
+                                logger.debug(
+                                    "[ORACLE] Worker %s completed task %s "
+                                    "with %s results and %s errors",
+                                    worker_id, task,
+                                    len(batch_results), len(batch_errors)
+                                )
+                                results.extend(batch_results)
+                                errors.extend(batch_errors)
+                            case _:
+                                logger.error(
+                                    "[%s] Received invalid message type %s from worker %s"
+                                    % (NAME, msg.type.name, msg.origin)
+                                    )
             if len(results) >= 1_000_000_000:
                 break
     except asyncio.TimeoutError:
-        logger.warning("[ORACLE] Timeout while waiting for messages - shutting down...")
+        logger.warning(
+            "[ORACLE] Timeout while waiting for messages - shutting down..."
+            )
     except asyncio.CancelledError:
         logger.info("[ORACLE] Task cancelled. Shutting down gracefully...")
     except KeyboardInterrupt:
@@ -88,22 +138,25 @@ async def oracle(context, oracle_address):
         logger.error(f"[ORACLE] An error occurred: {e}")
     else:
         if timestamps:
-            now = time.time() * 1000  # milliseconds since epoch
-            first_ts = timestamps[0] * 1000
-            last_ts = timestamps[-1] * 1000 if len(timestamps) > 1 else now
+            now = time.time()
+            first_ts = timestamps[0]
+            last_ts = timestamps[-1] if len(timestamps) > 1 else now
             total_time = last_ts - first_ts
-            num_elems = len(results) + len(errors) + 1
-            avg_time = (last_ts - first_ts) / num_elems
-            per_second = num_elems / total_time * 1000
+            num_elems = len(results) + len(errors)
+            avg_time = total_time / (num_elems if num_elems > 0 else 1)
+            logger.info(f"{total_time} / {num_elems} = {total_time / num_elems}")
+            per_second = num_elems / total_time
             per_minute = per_second * 60
         else:
             total_time, avg_time, per_second, per_minute = 0, 0, 0, 0
 
-        logger.info(f"[ORACLE] Total results: {len(results)} (errors: {len(errors)})")
-        logger.info(f"[ORACLE] Processing time: {total_time:.4f} milliseconds")
         logger.info(
-            "[ORACLE] Average processing time: %s milliseconds (%s/s , %s/min)",
-            f"{avg_time:.2f}", f"{int(per_second):,}", f"{int(per_minute):,}"
+            f"[ORACLE] Total results: {len(results):,} (errors: {len(errors):,})"
+            )
+        logger.info(f"[ORACLE] Processing time: {seconds_to(total_time)}")
+        logger.info(
+            "[ORACLE] Average processing time: %s (%s/s , %s/min)",
+            seconds_to(avg_time), f"{int(per_second):,}", f"{int(per_minute):,}"
             )
     finally:
         workers_socket.close()

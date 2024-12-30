@@ -9,9 +9,10 @@ import asyncio
 import logging
 import zmq
 
-from .protocol import MT, ROLES, Message, Ready, Hoy, Bye, Task  # noqa: F401
+from .protocol import ROLES, Ready, Hoy, Bye, Task, Result
 
-logger = logging.getLogger("main.messenger")
+logger = logging.getLogger(f"main.{__name__}")
+logger.setLevel(logging.ERROR)
 
 
 class Messenger:
@@ -20,7 +21,7 @@ class Messenger:
         self,
         origin: str,
         role: ROLES,
-        socket: zmq.Socket | None = None,
+        socket: zmq.Socket,
         queue: asyncio.Queue | None = None
     ):
         if socket is None and queue is None:
@@ -37,41 +38,82 @@ class Messenger:
         Sends messages that clients have put into the queue.
         """
         while True:
-            task = await self.queue.get()
-            self.socket, message = task
+            try:
+                request, recv_id = await self.queue.get()
+            except Exception as e:
+                logger.error("[%s] Error processing request: %s" % (self.role, e))
+                continue
 
-            if message is None:
-                logger.info("Received shutdown request...")
+            if request is None:
                 break
 
-            if isinstance(message, list):
-                try:
-                    logger.debug("sending results to oracle...")
-                    await self.socket.send_multipart(message)
-                    self.queue.task_done()
-                except Exception as e:
-                    logger.error(f"Error sending message: {e}")
-                    self.queue.task_done()
-            elif isinstance(message, dict):
-                try:
-                    await self.socket.send_json(message)
-                    self.queue.task_done()
-                except Exception as e:
-                    logger.error(f"Error sending message: {e}")
-                    self.queue.task_done()
+            if isinstance(request, str):
+                match request:
+                    case "HOY":
+                        await self.say_hoy(recv_id)
+                    case "READY":
+                        logger.debug("[%s] Processing READY message..." % self.origin)
+                        await self.say_ready(recv_id)
+                    case "BYE":
+                        await self.say_goodbye(recv_id)
+                    case _:
+                        logger.error(f"Unknown message type: {request}")
+
+                self.queue.task_done()
+
+            elif isinstance(request, dict):
+                match self.role:
+                    case ROLES.BROKER:
+                        await self.send_task(recv_id, request)
+                    case ROLES.WORKER:
+                        await self.send_result(recv_id, request)
+                    case _:
+                        logger.error("no action defined for role: %s" % self.role)
+
+                self.queue.task_done()
+
+            else:
+                logger.error("Invalid request type: %s" % type(request))
+                self.queue.task_done()
+
+        logger.debug("[%s] Messenger stopped." % self.origin)
+
+    async def stop(self):
+        """Stop the messenger."""
+        await self.queue.put((None, None))
 
     async def say_hoy(self, recv_id: bytes | None = None):
         """Send a HOY message to a worker."""
         hoy_msg = Hoy(origin=self.origin, role=self.role, recv_id=recv_id)
-        logger.debug("Sending HOY message: %s", hoy_msg)
+        logger.debug("[%s] Sending HOY message ..." % self.origin)
         await hoy_msg.send(self.socket)
 
     async def say_ready(self, recv_id: bytes | None = None):
         """Send a HOY message to a worker."""
-        bye_msg = Hoy(recv_id=recv_id)
+        logger.debug("[%s] Sending READY message ..." % self.origin)
+        bye_msg = Ready(origin=self.origin, role=self.role, recv_id=recv_id)
         await bye_msg.send(self.socket)
 
     async def say_goodbye(self, recv_id: bytes | None = None):
         """Send a BYE message."""
+        logger.debug("[%s] Sending BYE message ..." % self.origin)
         bye_msg = Bye(origin=self.origin, role=self.role, recv_id=recv_id)
         await bye_msg.send(self.socket)
+
+    async def send_task(self, recv_id: bytes | None = None, task: dict | None = None):
+        """Send a TASK message."""
+        task_msg = Task(origin=self.origin, role=self.role, recv_id=recv_id, task=task)
+        await task_msg.send(self.socket)
+
+    async def send_result(
+        self, recv_id: bytes | None = None, result: dict | None = None
+    ):
+        """Send a RESULT message."""
+        result_msg = Result(
+            origin=self.origin, role=self.role, recv_id=recv_id, result=result
+            )
+        logger.info(
+            "Sending %s message (%s) ..."
+            % (result_msg.type.name, len(result_msg.payload.get('results', [])))
+            )
+        await result_msg.send(self.socket)

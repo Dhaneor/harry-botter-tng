@@ -8,13 +8,16 @@ Created on Dec 29 01:59:20 2024
 
 import asyncio
 import json
+import logging
 import time
 import zmq
 from enum import Enum
 from pprint import pprint
 
+logger = logging.getLogger(f"main.{__name__}")
 
-class MT(Enum):
+
+class TYPE(Enum):
     HOY = "HOY"
     READY = "READY"
     BYE = "BYE"
@@ -24,16 +27,16 @@ class MT(Enum):
 
 
 class ROLES(Enum):
-    WORKER = "WORKER"
-    BROKER = "BROKER"
     CLIENT = "CLIENT"
-    ORACLE = "ORACLE"
+    BROKER = "BROKER"
+    WORKER = "WORKER"
+    COLLECTOR = "COLLECTOR"
 
 
 class Message:
     def __init__(
         self,
-        type: MT,
+        type: TYPE,
         origin: str,
         role: ROLES,
         socket: zmq.Socket | None = None,
@@ -71,11 +74,11 @@ class Message:
 
         # Extract mandatory parts
         try:
-            msg_type = MT(parts[0].decode())  # First part is message type
+            msg_type = TYPE(parts[0].decode())  # First part is message type
             origin = parts[1].decode()  # Second part is origin
             role = ROLES(parts[2].decode())  # Third part is role
         except (IndexError, UnicodeDecodeError, ValueError) as e:
-            print(parts[0], parts[1], parts[2], e)
+            logger.error(parts[0], parts[1], parts[2], e)
             raise ValueError(f"Failed to parse type or origin from message: {e}")
 
         # Extract optional payload
@@ -115,12 +118,12 @@ class Message:
         if socket.type == zmq.ROUTER:
             if self.recv_id is None:
                 raise ValueError("recv_id is required for ROUTER sockets")
-            message_parts.insert(0, self.recv_id.encode())
+            message_parts.insert(0, self.recv_id)
 
         try:
             await socket.send_multipart(message_parts)
         except Exception as e:
-            print(f"Failed to send message: {e}")
+            logger.error(f"Failed to send message: {e}")
 
     def _encode_payload(self):
         if self.payload is None:
@@ -138,38 +141,56 @@ class Message:
 
 class Hoy(Message):
     def __init__(self, origin: str, role: ROLES, recv_id: bytes | None = None):
-        super().__init__(type=MT.HOY, origin=origin, role=role, recv_id=recv_id)
+        super().__init__(type=TYPE.HOY, origin=origin, role=role, recv_id=recv_id)
 
 
 class Ready(Message):
     def __init__(self, origin: str, role: ROLES, recv_id: bytes | None = None):
-        super().__init__(type=MT.READY, origin=origin, role=role, recv_id=recv_id)
+        super().__init__(type=TYPE.READY, origin=origin, role=role, recv_id=recv_id)
 
 
 class Bye(Message):
     def __init__(self, origin: str, role: ROLES, recv_id: bytes | None = None):
-        super().__init__(type=MT.BYE, origin=origin, role=role, recv_id=recv_id)
+        super().__init__(type=TYPE.BYE, origin=origin, role=role, recv_id=recv_id)
 
 
 class Task(Message):
     def __init__(
-        self, origin: str, role: ROLES, recv_id: bytes | None = None, task: dict | None = None
+        self,
+        origin: str,
+        role: ROLES,
+        recv_id: bytes | None = None,
+        task: dict | None = None
     ):
-        super().__init__(type=MT.TASK, origin=origin, role=role, recv_id=recv_id, payload=task)
+        super().__init__(
+            type=TYPE.TASK, origin=origin, role=role, recv_id=recv_id, payload=task
+            )
 
 
 class Result(Message):
     def __init__(
-        self, origin: str, role: ROLES, recv_id: bytes | None = None, result: dict | None = None
+        self,
+        origin: str,
+        role: ROLES,
+        recv_id: bytes | None = None,
+        result: dict | None = None
     ):
-        super().__init__(type=MT.RESULT, origin=origin, role=role, recv_id=recv_id, payload=result)
+        super().__init__(
+            type=TYPE.RESULT, origin=origin, role=role, recv_id=recv_id, payload=result
+            )
 
 
 class Error(Message):
     def __init__(
-        self, origin: str, role: ROLES, recv_id: bytes | None = None, error: dict | None = None
+        self,
+        origin: str,
+        role: ROLES,
+        recv_id: bytes | None = None,
+        error: dict | None = None
     ):
-        super().__init__(type=MT.READY, origin=origin, role=role, recv_id=recv_id, payload=error)
+        super().__init__(
+            type=TYPE.READY, origin=origin, role=role, recv_id=recv_id, payload=error
+            )
 
 
 # ================================ Some simple tests =================================
@@ -208,7 +229,7 @@ async def test_task():
         return
 
     print(msg.__dict__)
-    print(msg.type == MT.TASK)
+    print(msg.type == TYPE.TASK)
 
     assert await msg.get_multipart() == parts
 
@@ -226,4 +247,6 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 
-    multipart = [MT.READY, b"client_1", ROLES.WORKER, b'{"message": "Hello, Hoy!"}']
+    multipart = [TYPE.READY, b"client_1", ROLES.WORKER, b'{"message": "Hello, Hoy!"}']
+
+    print(ROLES.WORKER.name)

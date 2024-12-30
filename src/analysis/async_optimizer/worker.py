@@ -16,7 +16,7 @@ from typing import Sequence
 
 from util import seconds_to
 from .messenger import Messenger
-from .protocol import MT, ROLES, Message, Ready
+from .protocol import TYPE, ROLES, Message
 
 # Configure logging
 logger = logging.getLogger("main.worker")
@@ -24,8 +24,16 @@ logger.setLevel(logging.INFO)
 
 TIMEOUT = 10  # Time in seconds to wait for broker messages
 CHUNK_SIZE = 1_000  # Number of tasks to process in one chunk
+DURATION = 500  # time for each backtest in microseconds
 
 ROLE = ROLES.WORKER
+
+
+def backtest():
+    process_time = random.uniform(DURATION - 50, DURATION + 50) / 1_000_000
+    time.sleep(process_time)
+    return random.uniform(0, 100)
+
 
 async def run_backtest(task, chunk_length=CHUNK_SIZE):
     """
@@ -41,52 +49,13 @@ async def run_backtest(task, chunk_length=CHUNK_SIZE):
     results = []
     errors = []
     for _ in range(chunk_length):
-        # Simulate variable task duration
-        process_time = random.uniform(450, 550) / 1_000_000
-        time.sleep(process_time)
-        results.append(random.uniform(0, 100))
-
         if random.random() < 0.01:  # Simulate a failure with 1% probability
+            _ = backtest()
             errors.append(f"Simulated failure on task {task}")
-            # raise ValueError("Simulated backtest failure")
+        else:
+            results.append(backtest())
 
     return {"task": task, "results": results, "errors": errors}
-
-
-# class Messenger:
-
-#     def __init__(self, queue: asyncio.Queue):
-#         self.queue = queue
-
-#     async def run(self):
-#         """
-#         Main worker loop.
-
-#         Pulls tasks from the broker and executes them.
-#         """
-#         while True:
-#             task = await self.queue.get()
-#             socket, message = task
-
-#             if message is None:
-#                 logger.info("Received shutdown request...")
-#                 break
-
-#             if isinstance(message, list):
-#                 try:
-#                     logger.debug("sending results to oracle...")
-#                     await socket.send_multipart(message)
-#                     self.queue.task_done()
-#                 except Exception as e:
-#                     logger.error(f"Error sending message: {e}")
-#                     self.queue.task_done()
-#             elif isinstance(message, dict):
-#                 try:
-#                     await socket.send_json(message)
-#                     self.queue.task_done()
-#                 except Exception as e:
-#                     logger.error(f"Error sending message: {e}")
-#                     self.queue.task_done()
 
 
 async def worker(
@@ -105,8 +74,8 @@ async def worker(
         oracle_address (str): Address of the Oracle (Sink).
     """
     logger.info("[%s] Connecting to Broker (%s)...", worker_id, broker_address)
-    await asyncio.sleep(random.uniform(0.1, 2))  # Simulate worker startup delay
-    # await asyncio.sleep(2)
+    # await asyncio.sleep(random.uniform(0.1, 2))  # Simulate worker startup delay
+    await asyncio.sleep(0.2)
 
     # Initialize sockets
     broker_socket = context.socket(zmq.DEALER)
@@ -114,8 +83,6 @@ async def worker(
 
     oracle_socket = context.socket(zmq.PUSH)
     oracle_socket.connect(oracle_address)
-
-    q = asyncio.Queue()
 
     if worker_id is None:
         worker_id = f"worker-{random.randint(1000, 9999)}"
@@ -125,75 +92,99 @@ async def worker(
         worker_id, broker_address, oracle_address
         )
 
-    # Notify broker that the worker is ready
-    register_msg = [worker_id.encode(), b"", b"HOY"]
-    ready_msg = [worker_id.encode(), b"", b"READY"]
-    bye_msg = [worker_id.encode(), b"", b"BYE"]
+    # set up the messengers to broker and oracle
+    broker_q = asyncio.Queue()
+    oracle_q = asyncio.Queue()
+    broker = Messenger(worker_id, ROLE, broker_socket, broker_q)
+    asyncio.create_task(broker.run())
+    oracle = Messenger(worker_id, ROLE, oracle_socket, oracle_q)
+    asyncio.create_task(oracle.run())
 
-    messenger = Messenger(q)
-    asyncio.create_task(messenger.run())
+    logger.info(f"[{worker_id}] Received READY from Broker and Oracle...")
+
+    await broker.say_hoy()
+    await oracle.say_hoy()
 
     execution_times = []
-
-    await oracle_socket.send_json({"status": "READY"})
-    await broker_socket.send_multipart(register_msg)
 
     try:
         while True:
             # Receive task from broker
-            _, task = await asyncio.wait_for(
+            msg = await asyncio.wait_for(
                 broker_socket.recv_multipart(),
                 timeout=TIMEOUT
             )
+            msg = Message.from_multipart(msg)
 
             start_time = time.time()
-            task = task.decode()
-            logger.debug("[%s] Received task: %s" % (worker_id, task))
 
-            if task == "DONE":
-                logger.info(f"[{worker_id}] Received DONE. Shutting down...")
-                await q.put((broker_socket, bye_msg))
-                await oracle_socket.send_json({"status": "DONE"})
-                await q.put((None, None))  # Signal the Messenger to stop
+            # perform task if we got one
+            if msg.type == TYPE.TASK:
+                # signal READY to already request the next task
+                # from broker before processing the current one
+                logger.debug("[%s] Sending READY to Broker..." % worker_id)
+                await broker.say_ready()
+                # await broker_q.put(("READY", None))
+                # await asyncio.sleep(0)  # wait for a little bit
+
+                task = msg.payload
+                logger.debug("[%s] Received task: %s" % (worker_id, task))
+
+                try:
+                    result = await run_backtest(task)
+                    # result = {
+                    #     "worker": worker_id,
+                    #     "task": task,
+                    #     "results": [random.uniform(0, 100) for _ in range(CHUNK_SIZE)],
+                    #     }
+                except Exception as e:
+                    logger.error(e)
+                    result = {"worker": worker_id, "task": task, "error": str(e)}
+                else:
+                    await oracle.send_result(result=result)
+                    # await oracle_q.put((result, None))
+
+            # stop operation if received BYE message
+            elif msg.type == TYPE.BYE:
+                logger.info(
+                    "[%s] Received BYE from %s. Shutting down..."
+                    % (worker_id, msg.origin)
+                    )
+                await broker.say_goodbye()
+                await oracle.say_goodbye()
                 break
 
-            await q.put((broker_socket, ready_msg))
-
-            try:
-                # Run the backtest
-                # result = await run_backtest(task)
-                result = {
-                    "worker": worker_id,
-                    "task": task,
-                    "results": [random.uniform(0, 100) for _ in range(CHUNK_SIZE)],
-                    }
-
-            except Exception as e:
-                result = {"worker": worker_id, "task": task, "error": str(e)}
-            finally:
-                # Notify broker that the worker is ready again
-                logger.debug("[%s] Sending READY to Broker..." % worker_id)
-                await q.put((oracle_socket, result))
+            # log an error and do nothing if we get other message types
+            else:
+                logger.error(
+                    "[%s] Received unknown message type: %s" % (worker_id, msg.type)
+                )
 
             execution_time = (time.time() - start_time)
             execution_times.append(execution_time)
-            logger.debug("[%s] time taken: %s µs" % (worker_id, execution_time))
+            logger.debug(
+                "[%s] message processed in : %s"
+                % (worker_id, seconds_to(execution_time))
+                )
 
     except asyncio.TimeoutError:
         logger.error(
             "[%s] Timeout waiting for Broker message." % worker_id
         )
+        await oracle.say_goodbye()
     except asyncio.CancelledError:
         logger.info("[%s] Task cancelled. Shutting down..." % worker_id)
     except KeyboardInterrupt:
         logger.info("[%s] Interrupted by user. Shutting down..." % worker_id)
     finally:
-        # Graceful shutdown
-        broker_socket.close(1)
-        oracle_socket.close()
+        await broker.stop()  # Signal the Messenger to stop
+        await oracle.stop()  # Signal the Messenger to stop
+        await asyncio.sleep(0.1)  # Wait for all tasks to finish
+        broker_socket.close()
+        oracle_socket.close(1)
         context.term()
         avg_exc_time = seconds_to(sum(execution_times) / (len(execution_times) + 1))
-        logger.info("[%s] average execution time: %s", worker_id, avg_exc_time)
+        logger.debug("[%s] average execution time: %s", worker_id, avg_exc_time)
         logger.info(f"[{worker_id}] Shutdown complete.")
 
 

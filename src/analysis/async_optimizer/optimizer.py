@@ -22,6 +22,7 @@ TASK_LIST = [f"Task-{i}" for i in range(100)]
 BROKER_ADDRESS = "tcp://localhost:5555"
 ORACLE_ADDRESS = "tcp://localhost:5556"
 
+
 def run_broker():
     """Run the broker in a separate process."""
     try:
@@ -68,8 +69,8 @@ def main():
 
         # Determine number of workers based on CPU cores
         # Default to 4 if os.cpu_count() returns None
-        num_workers = os.cpu_count() - 2 or 4
-        logger.info(f"[MAIN] Number of workers: {num_workers}")
+        num_workers = os.cpu_count() or 4
+        logger.info(f"[MAIN] Number of worker processes: {num_workers}")
 
         # Create processes
         processes = []
@@ -100,7 +101,7 @@ def main():
         # Start all processes
         for process in processes:
             process.start()
-            logger.info(f"[MAIN] Started process: {process.name} (PID: {process.pid})")
+            logger.debug(f"[MAIN] Started process: {process.name} (PID: {process.pid})")
 
         # Monitor processes
         for process in processes:
