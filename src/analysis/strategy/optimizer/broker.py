@@ -34,7 +34,12 @@ async def say_goodbye(recv_id: bytes, socket: zmq.asyncio.Socket):
     await bye_msg.send(socket)
 
 
-async def broker(task_list, addr: str, worker_timeout=5):
+async def broker(
+    ctx: zmq.asyncio.Context | None = None,
+    task_list: list | None = None,
+    addr: str | None = None,
+    worker_timeout: int = 5,
+):
     """
     Async ZeroMQ Broker for distributing backtesting tasks to workers.
 
@@ -49,14 +54,14 @@ async def broker(task_list, addr: str, worker_timeout=5):
         - Workers send 'BYE' when they're leaving.
     """
 
-    context = zmq.asyncio.Context()
+    context = ctx or zmq.asyncio.Context()
     broker_socket = context.socket(zmq.ROUTER)
     broker_socket.bind(addr)
 
     poller = zmq.asyncio.Poller()
     poller.register(broker_socket, zmq.POLLIN)
 
-    logger.info("[BROKER] Started and waiting for workers at %s ..." % addr)
+    logger.debug("[BROKER] Started and waiting for workers at %s ..." % addr)
 
     q = asyncio.Queue()
     messenger = Messenger(origin=NAME, role=ROLE, socket=broker_socket, queue=q)
@@ -80,7 +85,7 @@ async def broker(task_list, addr: str, worker_timeout=5):
                 logger.debug(
                     "[%s] Received %a message from worker %s"
                     % (NAME, msg.type.name, msg.origin)
-                    )
+                )
 
                 if msg:
                     worker = (msg.origin, msg.recv_id)
@@ -92,16 +97,16 @@ async def broker(task_list, addr: str, worker_timeout=5):
                             ready_workers.append(worker)
                             logger.debug(
                                 "[BROKER] %s is ready. [ready: %s]"
-                                % (worker[0],  len(ready_workers))
-                                )
+                                % (worker[0], len(ready_workers))
+                            )
 
                     elif msg.type == TYPE.HOY:
                         known_workers.add(worker)
                         ready_workers.append(worker)
-                        logger.info(
+                        logger.debug(
                             "[BROKER] 'HOY' from %s ... [known: %s]"
                             % (worker[0], len(known_workers))
-                            )
+                        )
 
                     elif msg.type == TYPE.BYE:
                         if worker in ready_workers:
@@ -115,7 +120,8 @@ async def broker(task_list, addr: str, worker_timeout=5):
                     else:
                         logger.info(
                             "[BROKER] Unexpected message type from worker %s: %s",
-                            worker[0], msg.type,
+                            worker[0],
+                            msg.type,
                         )
 
             except asyncio.TimeoutError:
@@ -126,16 +132,16 @@ async def broker(task_list, addr: str, worker_timeout=5):
             while task_list and ready_workers:
                 name, recv_id = ready_workers.pop(0)
                 task = task_list.pop(0)
-                logger.debug(
-                    "[BROKER] Sending task '%s' to worker %s", task, name
-                )
+                logger.debug("[BROKER] Sending task '%s' to worker %s", task, name)
                 reply = Task(origin=NAME, role=ROLE, recv_id=recv_id, task=task)
                 await reply.send(broker_socket)
 
             logger.debug(
                 "task list: %s, ready workers: %s, known workers: %s",
-                len(task_list), len(ready_workers), len(known_workers)
-                )
+                len(task_list),
+                len(ready_workers),
+                len(known_workers),
+            )
             logger.debug("shutdown intiated: %s" % shutdown_initiated)
 
             if not task_list:
@@ -151,7 +157,7 @@ async def broker(task_list, addr: str, worker_timeout=5):
                 else:
                     logger.info(
                         "[%s] Work completed, workers gone. Shutting down..." % NAME
-                        )
+                    )
                     break
 
     except KeyboardInterrupt:

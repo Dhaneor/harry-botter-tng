@@ -27,9 +27,9 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # -----------------------------------------------------------------------------
 
-from src.analysis.strategies import signal_generator as sg  # noqa: E402
-from src.analysis.strategies import condition as cn  # noqa: E402
-from src.analysis.strategies.definitions import (  # noqa: E402, F401
+from src.analysis.strategy import signal_generator as sg  # noqa: E402
+from src.analysis.strategy import condition as cn  # noqa: E402
+from src.analysis.strategy.definitions import (  # noqa: E402, F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
     linreg_roc_btc_1d, linreg_roc_eth_1d, test_er, linreg, aroonosc,
     linreg_ma_cross

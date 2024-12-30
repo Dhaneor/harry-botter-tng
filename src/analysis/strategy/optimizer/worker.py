@@ -7,16 +7,30 @@ Created on Dec 28 03:46:20 2024
 """
 
 import asyncio
+import numpy as np
 import zmq
 import zmq.asyncio
 import logging
 import random
 import time
-from typing import Sequence
+from typing import Sequence, Coroutine
 
 from util import seconds_to
 from .messenger import Messenger
 from .protocol import TYPE, ROLES, Message
+
+from data import ohlcv_repository as repo
+from data.data_models import Ohlcv
+from analysis.strategy_builder import build_strategy
+from analysis.strategy.definitions import s_aroon_osc  # noqa: F401
+
+"""
+NOTE:For development purposes, we are using a specific
+strategy. This logic needs to be extended and replaced
+by the possibility to receive strategy names from the
+broker and build and execute the corresponding strategy.
+"""
+DEV_STRATEGY = build_strategy(s_aroon_osc)
 
 # Configure logging
 logger = logging.getLogger("main.worker")
@@ -29,40 +43,83 @@ DURATION = 500  # time for each backtest in microseconds
 ROLE = ROLES.WORKER
 
 
+ohlcv_request = {
+    'exchange': 'binance',
+    'symbol': 'BTC/USDT',
+    'interval': '1d',
+    'start': '1499 days ago UTC',
+    'end': 'now UTC'
+}
+
+
+async def fetch_ohlcv(
+    repo_socket: zmq.asyncio.Socket,
+    request: dict
+) -> dict[str, np.ndarray]:
+    await repo_socket.send_json(request)
+    response = Ohlcv.from_json(await repo_socket.recv_string())
+    return response.to_dict()
+
+
 def backtest():
     process_time = random.uniform(DURATION - 50, DURATION + 50) / 1_000_000
     time.sleep(process_time)
     return random.uniform(0, 100)
 
 
-async def run_backtest(task, chunk_length=CHUNK_SIZE):
-    """
-    Simulate backtest execution.
-    Replace this with your actual backtesting logic.
+def backtest_closure(worker_id: str, repo_socket: zmq.asyncio.Socket) -> Coroutine:
+    worker_id = str(worker_id)
+    repo_socket: zmq.asyncio.Socket
 
-    Args:
-        task (str): The task/parameters for backtesting.
+    last_task: dict = {}
+    current_strategy: str = None
 
-    Returns:
-        dict: Results of the backtest or raises an exception.
-    """
-    results = []
-    errors = []
-    for _ in range(chunk_length):
-        if random.random() < 0.01:  # Simulate a failure with 1% probability
-            _ = backtest()
-            errors.append(f"Simulated failure on task {task}")
-        else:
-            results.append(backtest())
+    async def run_backtest(task, chunk_length=CHUNK_SIZE):
+        """
+        Simulate backtest execution.
+        Replace this with your actual backtesting logic.
 
-    return {"task": task, "results": results, "errors": errors}
+        Args:
+            task (str): The task/parameters for backtesting.
+
+        Returns:
+            dict: Results of the backtest or raises an exception.
+        """
+        nonlocal last_task
+        nonlocal current_strategy
+
+        logger.info("[%s] Running backtest for task: %s" % (worker_id, task))
+
+        if task != last_task:
+            strategy_name = task.get("strategy")
+            parameters = task.get("parameters")  # noqa: F841
+            current_strategy = strategy_name
+            strategy = DEV_STRATEGY
+            # ... add logic to chagne the strategy here for real use
+
+        if task.get('ohlcv_request') != last_task.get('ohlcv_request'):
+            data = await fetch_ohlcv(repo_socket, task.get('ohlcv_request'))
+
+        results = []
+        errors = []
+        for _ in range(chunk_length):
+            try:
+                bt_result = backtest(strategy.speak(data))
+                results.append(bt_result)
+            except Exception as e:
+                errors.append(str(e))
+
+        return {"task": task, "results": results, "errors": errors}
+
+    return run_backtest
 
 
 async def worker(
-    context: zmq.asyncio.Context,
+    ctx: zmq.asyncio.Context,
     worker_id: str | None,
     broker_address: str,
     oracle_address: str,
+    ohlcv_repository_address: str,
 ):
     """
     Async ZeroMQ Worker for executing backtesting tasks.
@@ -73,21 +130,25 @@ async def worker(
         broker_address (str): Address of the broker.
         oracle_address (str): Address of the Oracle (Sink).
     """
-    logger.info("[%s] Connecting to Broker (%s)...", worker_id, broker_address)
+    logger.debug("[%s] Connecting to Broker (%s)...", worker_id, broker_address)
     # await asyncio.sleep(random.uniform(0.1, 2))  # Simulate worker startup delay
     await asyncio.sleep(0.2)
 
+    worker_id = worker_id or f"{random.randint(1000, 9999)}"
+
     # Initialize sockets
-    broker_socket = context.socket(zmq.DEALER)
+    broker_socket = ctx.socket(zmq.DEALER)
     broker_socket.connect(broker_address)
 
-    oracle_socket = context.socket(zmq.PUSH)
+    oracle_socket = ctx.socket(zmq.PUSH)
     oracle_socket.connect(oracle_address)
 
-    if worker_id is None:
-        worker_id = f"worker-{random.randint(1000, 9999)}"
+    repo_socket = ctx.socket(zmq.REQ)
+    repo_socket.connect(ohlcv_repository_address)
 
-    logger.info(
+    backtest_fn = backtest_closure(worker_id, repo_socket)
+
+    logger.debug(
         "[%s] Started and connecting to Broker (%s) and Oracle (%s)...",
         worker_id, broker_address, oracle_address
         )
@@ -99,8 +160,6 @@ async def worker(
     asyncio.create_task(broker.run())
     oracle = Messenger(worker_id, ROLE, oracle_socket, oracle_q)
     asyncio.create_task(oracle.run())
-
-    logger.info(f"[{worker_id}] Received READY from Broker and Oracle...")
 
     await broker.say_hoy()
     await oracle.say_hoy()
@@ -128,15 +187,31 @@ async def worker(
                 # await asyncio.sleep(0)  # wait for a little bit
 
                 task = msg.payload
+
+                task = {
+                    'strategy': 'dummy',
+                    'parameters': tuple(),
+                    'ohlcv_request': {
+                        'exchange': 'binance',
+                        'symbol': 'BTC/USDT',
+                        'interval': '1d',
+                        'start': '1499 days ago UTC',
+                        'end': 'now UTC'
+                    }
+                }
+
                 logger.debug("[%s] Received task: %s" % (worker_id, task))
 
                 try:
-                    result = await run_backtest(task)
+                    result = await backtest_fn(task)
                     # result = {
                     #     "worker": worker_id,
                     #     "task": task,
-                    #     "results": [random.uniform(0, 100) for _ in range(CHUNK_SIZE)],
+                    #     "results": [
+                    #         random.uniform(0, 100) for _ in range(CHUNK_SIZE)
+                    #         ],
                     #     }
+                    # await asyncio.sleep(0.000_001)  # wait for a little bit
                 except Exception as e:
                     logger.error(e)
                     result = {"worker": worker_id, "task": task, "error": str(e)}
@@ -146,7 +221,7 @@ async def worker(
 
             # stop operation if received BYE message
             elif msg.type == TYPE.BYE:
-                logger.info(
+                logger.debug(
                     "[%s] Received BYE from %s. Shutting down..."
                     % (worker_id, msg.origin)
                     )
@@ -182,10 +257,10 @@ async def worker(
         await asyncio.sleep(0.1)  # Wait for all tasks to finish
         broker_socket.close()
         oracle_socket.close(1)
-        context.term()
+        ctx.term()
         avg_exc_time = seconds_to(sum(execution_times) / (len(execution_times) + 1))
         logger.debug("[%s] average execution time: %s", worker_id, avg_exc_time)
-        logger.info(f"[{worker_id}] Shutdown complete.")
+        logger.debug(f"[{worker_id}] Shutdown complete.")
 
 
 async def workers(
@@ -193,6 +268,7 @@ async def workers(
     worker_ids: Sequence[str],
     broker_address: str,
     oracle_address: str,
+    ohlcv_repository_address: str,
     num_workers: int,
 ):
     """
@@ -205,8 +281,16 @@ async def workers(
         oracle_address (str): Address of the Oracle (Sink).
         num_workers (int): Number of workers to start.
     """
-    logger.info(f"[MAIN] Starting {num_workers} worker processes...")
+    logger.debug("[MAIN] Starting worker process with %s parallel workers ...")
     tasks = []
     for worker_id in worker_ids:
-        tasks.append(worker(context, worker_id, broker_address, oracle_address))
+        tasks.append(
+            worker(
+                context,
+                worker_id,
+                broker_address,
+                oracle_address,
+                ohlcv_repository_address
+                )
+            )
     await asyncio.gather(*tasks)

@@ -26,14 +26,6 @@ functions
         addr: Optional[str]
             the 0MQ address to connect to
 
-You cannot set start/end, or the number of returned values. So, this
-module is not intended for general purpose use, it will always return
-the n most recent candlestick values for the SPOT market on given
-exchange (n depends on the exchange but will usually equal 1000).
-
-The configuration can be changed in the zmq_config.py file which must
-be in the same directory as this file.
-
 Created on Sat Sep 16 13:58:23 2023
 
 @author_ dhaneor

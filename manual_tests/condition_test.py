@@ -18,8 +18,8 @@ from random import choice
 from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
-from analysis.strategies import condition as cn
-from analysis.strategies import operand as op
+from analysis.strategy import condition as cn
+from analysis.strategy import operand as op
 from analysis.indicators import Parameter
 from helpers_ import get_sample_data
 from util import get_logger

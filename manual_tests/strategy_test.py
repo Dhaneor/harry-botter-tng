@@ -9,9 +9,9 @@ import asyncio
 import time
 from random import random
 
-from analysis.strategies.definitions import breakout  # noqa: E402, F401
+from analysis.strategy.definitions import breakout  # noqa: E402, F401
 from staff.hermes import Hermes  # noqa: E402, F401
-from analysis.strategies.exit_order_strategies import *  # noqa: E402, F401, F403
+from analysis.strategy.exit_order_strategies import *  # noqa: E402, F401, F403
 from util import get_logger
 
 logger = get_logger('main')

@@ -6,11 +6,11 @@ Created on Aug 22 23:05:20 2023
 @author dhaneor
 """
 from analysis import strategy_builder as sb
-from analysis.strategies import operand as op
-from analysis.strategies import condition as cnd
-from analysis.strategies import signal_generator as sg
-from analysis.strategies import exit_order_strategies as es
-from analysis.strategies.definitions import cci, ema_cross  # noqa: F401
+from analysis.strategy import operand as op
+from analysis.strategy import condition as cnd
+from analysis.strategy import signal_generator as sg
+from analysis.strategy import exit_order_strategies as es
+from analysis.strategy.definitions import cci, ema_cross  # noqa: F401
 
 
 def test_build_single_strategy():

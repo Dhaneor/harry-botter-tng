@@ -7,6 +7,7 @@ Created on Oct 06 10:03:20 2021
 """
 import sys
 import os
+import pickle
 import time
 import logging
 import numpy as np
@@ -20,11 +21,11 @@ from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
 from analysis import strategy_builder as sb
-from analysis.strategies import operand as op
-from analysis.strategies import condition as cnd
-from analysis.strategies import signal_generator as sg
-from analysis.strategies import exit_order_strategies as es
-from analysis.strategies.definitions import (  # noqa: F401
+from analysis.strategy import operand as op
+from analysis.strategy import condition as cnd
+from analysis.strategy import signal_generator as sg
+from analysis.strategy import exit_order_strategies as es
+from analysis.strategy.definitions import (  # noqa: F401
     cci, rsi, ema_cross, tema_cross, breakout
 )  # noqa: E402, F401
 from util import get_logger
@@ -182,6 +183,19 @@ def build_valid_composite_strategy(
     print("\n", s, "\n\n")
 
 
+def test_serialize_object(strategy):
+    try:
+        with open("strategy.pkl", "wb") as f:
+            pickle.dump(strategy, f)
+
+        with open("strategy.pkl", "rb") as f:
+            loaded_strategy = pickle.load(f)
+
+        assert loaded_strategy == strategy
+    except Exception as e:
+        logger.exception(e)
+        return False
+
 # ..............................................................................
 def test_get_strategy_definition():
     pprint(__get_single_strategy_definition())
@@ -239,6 +253,8 @@ if __name__ == "__main__":
     print(s.__dict__)
     print("-" * 200)
     print(s)
+
+    test_serialize_object(s)
 
     # test_strategy_run(s, True)
 

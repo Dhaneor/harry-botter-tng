@@ -46,10 +46,10 @@ async def oracle(context, oracle_address):
     timestamps = []
     shutdown_requested = False
 
-    logger.info(
+    logger.debug(
         "[%s] Started and waiting for results from workers at %s ..."
         % (NAME, oracle_address)
-        )
+    )
 
     try:
         while not shutdown_requested:
@@ -60,12 +60,12 @@ async def oracle(context, oracle_address):
                     if socket == workers_socket:
                         msg = Message.from_multipart(
                             await workers_socket.recv_multipart()
-                            )
+                        )
 
                         logger.debug(
                             "received message from worker %s: %s"
                             % (msg.origin, msg.type.name)
-                            )
+                        )
 
                         match msg.type:
                             case TYPE.HOY:
@@ -77,11 +77,11 @@ async def oracle(context, oracle_address):
 
                             case TYPE.BYE:
                                 known_producers.remove(msg.origin)
-                                logger.info(
+                                logger.debug(
                                     "[ORACLE] received BYE message from "
                                     "worker %s (known: %s)"
                                     % (msg.origin, len(known_producers))
-                                    )
+                                )
 
                                 if len(known_producers) == 0:
                                     shutdown_requested = True
@@ -92,10 +92,7 @@ async def oracle(context, oracle_address):
 
                                 logger.debug(
                                     "[ORACLE] Received %s results from worker %s"
-                                    % (
-                                        len(msg.payload.get('results', [])),
-                                        msg.origin
-                                    )
+                                    % (len(msg.payload.get("results", [])), msg.origin)
                                 )
 
                                 worker_id = msg.origin
@@ -105,7 +102,7 @@ async def oracle(context, oracle_address):
                                     logger.error(
                                         "[ORACLE] Received invalid batch from worker %s"
                                         % worker_id
-                                        )
+                                    )
                                     continue
 
                                 task = batch.get("task", "unknown_task")
@@ -114,22 +111,22 @@ async def oracle(context, oracle_address):
                                 logger.debug(
                                     "[ORACLE] Worker %s completed task %s "
                                     "with %s results and %s errors",
-                                    worker_id, task,
-                                    len(batch_results), len(batch_errors)
+                                    worker_id,
+                                    task,
+                                    len(batch_results),
+                                    len(batch_errors),
                                 )
                                 results.extend(batch_results)
                                 errors.extend(batch_errors)
                             case _:
                                 logger.error(
-                                    "[%s] Received invalid message type %s from worker %s"
-                                    % (NAME, msg.type.name, msg.origin)
-                                    )
+                                    "[%s] Received invalid message type %s from %s %s"
+                                    % (NAME, msg.type.name, msg.role.name, msg.origin)
+                                )
             if len(results) >= 1_000_000_000:
                 break
     except asyncio.TimeoutError:
-        logger.warning(
-            "[ORACLE] Timeout while waiting for messages - shutting down..."
-            )
+        logger.warning("[ORACLE] Timeout while waiting for messages - shutting down...")
     except asyncio.CancelledError:
         logger.info("[ORACLE] Task cancelled. Shutting down gracefully...")
     except KeyboardInterrupt:
@@ -144,7 +141,6 @@ async def oracle(context, oracle_address):
             total_time = last_ts - first_ts
             num_elems = len(results) + len(errors)
             avg_time = total_time / (num_elems if num_elems > 0 else 1)
-            logger.info(f"{total_time} / {num_elems} = {total_time / num_elems}")
             per_second = num_elems / total_time
             per_minute = per_second * 60
         else:
@@ -152,12 +148,14 @@ async def oracle(context, oracle_address):
 
         logger.info(
             f"[ORACLE] Total results: {len(results):,} (errors: {len(errors):,})"
-            )
+        )
         logger.info(f"[ORACLE] Processing time: {seconds_to(total_time)}")
         logger.info(
             "[ORACLE] Average processing time: %s (%s/s , %s/min)",
-            seconds_to(avg_time), f"{int(per_second):,}", f"{int(per_minute):,}"
-            )
+            seconds_to(avg_time),
+            f"{int(per_second):,}",
+            f"{int(per_minute):,}",
+        )
     finally:
         workers_socket.close()
         logger.info("[ORACLE] Socket closed. Shutdown complete.")

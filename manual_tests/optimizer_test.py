@@ -19,7 +19,7 @@ from staff.hermes import Hermes
 from analysis import strategy_builder as sb
 from analysis import optimizer
 from analysis.indicators import indicators_custom
-from analysis.strategies.definitions import (  # noqa: F401
+from analysis.strategy.definitions import (  # noqa: F401
     s_breakout, s_tema_cross, s_linreg, s_kama_cross, s_trix,
     trend_1, contra_1, s_test_er, s_linreg_ma_cross, s_aroon_osc,
     s_test_ema_cross

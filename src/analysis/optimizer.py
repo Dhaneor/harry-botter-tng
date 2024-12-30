@@ -23,7 +23,7 @@ from typing import TypeVar, Generator, Dict, Any, List, Tuple, Callable, Sequenc
 from tqdm import tqdm
 
 from . import strategy_backtest as bt
-from .strategies import signal_generator as sg
+from .strategy import signal_generator as sg
 from .backtest.statistics import calculate_statistics
 logger = logging.getLogger('main.optimizer')
 logger.setLevel(logging.INFO)

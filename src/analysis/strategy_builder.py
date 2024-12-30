@@ -47,9 +47,9 @@ from functools import reduce
 from typing import Any, NamedTuple, Optional, Sequence, Callable
 
 from .util import proj_types as tp
-from .strategies import signal_generator as sg
-from .strategies import exit_order_strategies as es
-from .strategies.condition import ConditionResult
+from .strategy import signal_generator as sg
+from .strategy import exit_order_strategies as es
+from .strategy.condition import ConditionResult
 from .indicators.iindicator import IIndicator
 from .indicators.indicator_parameter import Parameter
 
@@ -438,7 +438,7 @@ class CompositeStrategy(IStrategy):
             logger.error(e, exc_info=True)
             raise
 
-        logger.info("Got signals from %s sub-strategies" % len(condition_results))
+        logger.debug("Got signals from %s sub-strategies" % len(condition_results))
 
         # add the signals column from each sub-strategy to the data dictionary
         as_dict = {
@@ -447,7 +447,7 @@ class CompositeStrategy(IStrategy):
 
         data.update(as_dict)
 
-        logger.info(tuple(data.keys()))
+        logger.debug(tuple(data.keys()))
 
         # combine the signals from all sub-strategies into one
         combined_signal = reduce(lambda x, y: np.add(x, y), condition_results)
@@ -514,7 +514,7 @@ def build_sub_strategy(sdef: StrategyDefinition) -> IStrategy:
     strategy = SubStrategy(name=sdef.strategy, params=sdef.params)
     strategy.symbol = sdef.symbol
     strategy.interval = sdef.interval
-    strategy.weight = sdef.weight if sdef.weight else 1.0
+    strategy.weight = sdef.weight or 1.0
     strategy.is_sub_strategy = True
 
     strategy._signal_generator = sg.signal_generator_factory(sdef.signals_definition)
@@ -620,3 +620,7 @@ def build_strategy(sdef: StrategyDefinition) -> IStrategy:
             ]
 
         return strategy
+
+
+async def strategy_repository() -> CompositeStrategy:
+    ...

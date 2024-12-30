@@ -21,7 +21,7 @@ from analysis import strategy_builder as sb
 from analysis.util import find_positions as fp
 from analysis import strategy_backtest as bt
 from analysis.backtest import statistics as st
-from analysis.strategies.definitions import (  # noqa: F401
+from analysis.strategy.definitions import (  # noqa: F401
     contra_1, trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross,
     s_linreg, s_test_er, s_ema_multi, s_linreg_ma_cross, s_aroon_osc
 )

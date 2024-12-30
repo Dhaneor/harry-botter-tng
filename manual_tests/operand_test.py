@@ -39,7 +39,7 @@ parent = os.path.dirname(current)
 sys.path.append(parent)
 # -----------------------------------------------------------------------------
 
-from src.analysis.strategies import operand as op  # noqa: E402
+from src.analysis.strategy import operand as op  # noqa: E402
 from src.analysis.chart.plot_definition import SubPlot  # noqa: E402
 
 # ======================================================================================
