@@ -19,10 +19,10 @@ from util import seconds_to
 from .messenger import Messenger
 from .protocol import TYPE, ROLES, Message
 
-from data import ohlcv_repository as repo
 from data.data_models import Ohlcv
 from analysis.strategy_builder import build_strategy
 from analysis.strategy.definitions import s_aroon_osc  # noqa: F401
+from analysis import strategy_backtest as bt
 
 """
 NOTE:For development purposes, we are using a specific
@@ -36,8 +36,8 @@ DEV_STRATEGY = build_strategy(s_aroon_osc)
 logger = logging.getLogger("main.worker")
 logger.setLevel(logging.INFO)
 
-TIMEOUT = 10  # Time in seconds to wait for broker messages
-CHUNK_SIZE = 1_000  # Number of tasks to process in one chunk
+TIMEOUT = 100  # Time in seconds to wait for broker messages
+CHUNK_SIZE = 1000  # Number of tasks to process in one chunk
 DURATION = 500  # time for each backtest in microseconds
 
 ROLE = ROLES.WORKER
@@ -47,8 +47,8 @@ ohlcv_request = {
     'exchange': 'binance',
     'symbol': 'BTC/USDT',
     'interval': '1d',
-    'start': '1499 days ago UTC',
-    'end': 'now UTC'
+    'start': '2021-11-30 00:00:00 UTC',
+    'end': '2024-12-01 00:00:00 UTC'
 }
 
 
@@ -58,6 +58,7 @@ async def fetch_ohlcv(
 ) -> dict[str, np.ndarray]:
     await repo_socket.send_json(request)
     response = Ohlcv.from_json(await repo_socket.recv_string())
+    logger.debug(f"Received OHLCV data for {request['symbol']} from repository")
     return response.to_dict()
 
 
@@ -74,6 +75,8 @@ def backtest_closure(worker_id: str, repo_socket: zmq.asyncio.Socket) -> Corouti
     last_task: dict = {}
     current_strategy: str = None
 
+    ohlcv_data = {}
+
     async def run_backtest(task, chunk_length=CHUNK_SIZE):
         """
         Simulate backtest execution.
@@ -87,30 +90,60 @@ def backtest_closure(worker_id: str, repo_socket: zmq.asyncio.Socket) -> Corouti
         """
         nonlocal last_task
         nonlocal current_strategy
+        nonlocal ohlcv_data
 
-        logger.info("[%s] Running backtest for task: %s" % (worker_id, task))
+        # ################ REMOVE AFTER DEVELOPMENT IS DONE #################
+        task['ohlcv_request'] = ohlcv_request  # replace with actual request
+
+        logger.debug("[%s] Running backtest for task: %s" % (worker_id, task))
+
+        if task.get('ohlcv_request') == last_task.get('ohlcv_request', None):
+            logger.debug(
+                "[%s] Using cached OHLCV data for %s (%s)"
+                % (worker_id, task['ohlcv_request'], len(ohlcv_data))
+                )
+        else:
+            logger.debug(
+                "[%s] Fetching new OHLCV data for %s"
+                % (worker_id, task['ohlcv_request']['symbol'])
+                )
+            ohlcv_data = await fetch_ohlcv(repo_socket, task.get('ohlcv_request'))
+
+        data = ohlcv_data
 
         if task != last_task:
+            last_task = task
             strategy_name = task.get("strategy")
             parameters = task.get("parameters")  # noqa: F841
             current_strategy = strategy_name
             strategy = DEV_STRATEGY
-            # ... add logic to chagne the strategy here for real use
+            # ... add logic to change the strategy here for real use
 
-        if task.get('ohlcv_request') != last_task.get('ohlcv_request'):
-            data = await fetch_ohlcv(repo_socket, task.get('ohlcv_request'))
+        else:
+            strategy = DEV_STRATEGY
 
-        results = []
-        errors = []
+        results, errors, error_logged = [], [], False
+
+        if not data:
+            raise ValueError("No OHLCV data received")
+
         for _ in range(chunk_length):
             try:
-                bt_result = backtest(strategy.speak(data))
-                results.append(bt_result)
+                bt_result = bt.run(
+                    strategy=strategy,
+                    data=data,
+                    initial_capital=10_000,
+                    risk_level=7,
+                    max_leverage=1
+                    )
+                results.append(bt_result.get('b.value')[-1])
             except Exception as e:
+                if not error_logged:
+                    logger.error("[%s] Error running backtest: %s", worker_id, str(e))
+                    error_logged = True
                 errors.append(str(e))
 
         return {"task": task, "results": results, "errors": errors}
-
     return run_backtest
 
 
@@ -204,14 +237,10 @@ async def worker(
 
                 try:
                     result = await backtest_fn(task)
-                    # result = {
-                    #     "worker": worker_id,
-                    #     "task": task,
-                    #     "results": [
-                    #         random.uniform(0, 100) for _ in range(CHUNK_SIZE)
-                    #         ],
-                    #     }
-                    # await asyncio.sleep(0.000_001)  # wait for a little bit
+                    logger.debug(
+                        "[%s] Received result for task %s from backtest"
+                        % (worker_id, task)
+                        )
                 except Exception as e:
                     logger.error(e)
                     result = {"worker": worker_id, "task": task, "error": str(e)}
@@ -225,8 +254,10 @@ async def worker(
                     "[%s] Received BYE from %s. Shutting down..."
                     % (worker_id, msg.origin)
                     )
+                await repo_socket.send_json({"action": "close"})
                 await broker.say_goodbye()
                 await oracle.say_goodbye()
+                logger.debug("[%s] Sent BYE to everyone. Exiting..." % worker_id)
                 break
 
             # log an error and do nothing if we get other message types
@@ -252,15 +283,21 @@ async def worker(
     except KeyboardInterrupt:
         logger.info("[%s] Interrupted by user. Shutting down..." % worker_id)
     finally:
-        await broker.stop()  # Signal the Messenger to stop
-        await oracle.stop()  # Signal the Messenger to stop
-        await asyncio.sleep(0.1)  # Wait for all tasks to finish
-        broker_socket.close()
-        oracle_socket.close(1)
-        ctx.term()
+        await broker.stop()  # Signal the Broker Messenger to stop
+        await oracle.stop()  # Signal the Oracle Messenger to stop
+        await asyncio.sleep(0.2)  # Wait for all tasks to finish
+        logger.debug("[%s] Messengers stopped. Closing sockets...", worker_id)
+        broker_socket.close(0.5)
+        oracle_socket.close(0.5)
+        repo_socket.close(0.5)
+        logger.debug("[%s] broker socket closed: %s.", worker_id, broker_socket.closed)
+        logger.debug("[%s] oracle socket closed: %s.", worker_id, oracle_socket.closed)
+        # ctx.term()
+        # logger.debug("[%s] ZMQ Context termintated.")
         avg_exc_time = seconds_to(sum(execution_times) / (len(execution_times) + 1))
         logger.debug("[%s] average execution time: %s", worker_id, avg_exc_time)
         logger.debug(f"[{worker_id}] Shutdown complete.")
+        return
 
 
 async def workers(

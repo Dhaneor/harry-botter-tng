@@ -581,7 +581,7 @@ def optimize(
     logger.info("Estimated execution time: %.2fs", est_exc_time)
 
     num_cores = multiprocessing.cpu_count()
-    num_processes = max(1, num_cores - 1)  # Use all cores except one, but at least 1
+    num_processes = max(1, num_cores)  # Use all cores except one, but at least 1
     logger.info("Using %s processes", num_processes)
 
     results = []

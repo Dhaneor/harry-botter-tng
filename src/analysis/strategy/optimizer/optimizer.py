@@ -15,7 +15,7 @@ logger = get_logger('main', level="INFO")
 
 # Define task list for the broker
 CHUNK_LENGTH = 1000
-TASK_LIST = [f"Task-{i}" for i in range(10)]
+TASK_LIST = [f"Task-{i}" for i in range(100)]
 
 # BROKER_ADDRESS = "ipc:///tmp/broker.ipc"
 # ORACLE_ADDRESS = "ipc:///tmp/oracle.ipc"

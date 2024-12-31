@@ -21,7 +21,7 @@ logger.setLevel(logging.INFO)
 
 NAME = "ORACLE"
 ROLE = ROLES.COLLECTOR
-TIMEOUT = 5  # Time in seconds to wait for worker messages
+TIMEOUT = 1  # Time in seconds to wait for worker messages
 
 
 async def oracle(context, oracle_address):
@@ -52,7 +52,7 @@ async def oracle(context, oracle_address):
     )
 
     try:
-        while not shutdown_requested:
+        while True:
             # Receive messages from workers
             events = await poller.poll(TIMEOUT)
             if events:
@@ -68,25 +68,6 @@ async def oracle(context, oracle_address):
                         )
 
                         match msg.type:
-                            case TYPE.HOY:
-                                known_producers.add(msg.origin)
-
-                            case TYPE.READY:
-                                logger.info("received READY message")
-                                continue
-
-                            case TYPE.BYE:
-                                known_producers.remove(msg.origin)
-                                logger.debug(
-                                    "[ORACLE] received BYE message from "
-                                    "worker %s (known: %s)"
-                                    % (msg.origin, len(known_producers))
-                                )
-
-                                if len(known_producers) == 0:
-                                    shutdown_requested = True
-                                    break
-
                             case TYPE.RESULT:
                                 timestamps.append(time.time())
 
@@ -118,13 +99,33 @@ async def oracle(context, oracle_address):
                                 )
                                 results.extend(batch_results)
                                 errors.extend(batch_errors)
+
+                            case TYPE.HOY:
+                                known_producers.add(msg.origin)
+
+                            case TYPE.READY:
+                                logger.info("received READY message")
+                                continue
+
+                            case TYPE.BYE:
+                                known_producers.remove(msg.origin)
+                                logger.debug(
+                                    "[ORACLE] received BYE message from "
+                                    "worker %s (known: %s)"
+                                    % (msg.origin, len(known_producers))
+                                )
+
+                                if len(known_producers) == 0:
+                                    shutdown_requested = True
+
                             case _:
                                 logger.error(
                                     "[%s] Received invalid message type %s from %s %s"
                                     % (NAME, msg.type.name, msg.role.name, msg.origin)
                                 )
-            if len(results) >= 1_000_000_000:
-                break
+            else:
+                if shutdown_requested:
+                    break
     except asyncio.TimeoutError:
         logger.warning("[ORACLE] Timeout while waiting for messages - shutting down...")
     except asyncio.CancelledError:
@@ -157,5 +158,5 @@ async def oracle(context, oracle_address):
             f"{int(per_minute):,}",
         )
     finally:
-        workers_socket.close()
+        workers_socket.close(0.2)
         logger.info("[ORACLE] Socket closed. Shutdown complete.")

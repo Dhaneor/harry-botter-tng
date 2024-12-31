@@ -125,9 +125,11 @@ def cache_ohlcv(ttl_seconds: int = CACHE_TTL_SECONDS):
 
     def decorator(func):
         ohlcv_cache: dict[tuple[str, str, str], tuple[dict, float]] = {}
+        processing: set = set()
 
         @functools.wraps(func)
         async def wrapper(response, exchange) -> Ohlcv:
+            logger.debug("-" * 120)
             start_time = time.time()
             current_time = start_time
 
@@ -145,6 +147,9 @@ def cache_ohlcv(ttl_seconds: int = CACHE_TTL_SECONDS):
                 response.start, response.end
                 )
 
+            logger.debug("ohlcv cache: %s" % list(ohlcv_cache.keys()))
+            logger.debug("processing: %s" % processing)
+
             if cache_key in ohlcv_cache:
                 cached_data, timestamp = ohlcv_cache[cache_key]
                 if current_time - timestamp <= ttl_seconds:
@@ -152,6 +157,17 @@ def cache_ohlcv(ttl_seconds: int = CACHE_TTL_SECONDS):
                     response.data = cached_data
                     response.cached = True
             else:
+                if cache_key in processing:
+                    while cache_key in processing:
+                        await asyncio.sleep(0.05)
+                        logger.debug(
+                            f"Waiting for previous request to complete: {cache_key}"
+                        )
+                    return await wrapper(response, exchange)
+
+                processing.add(cache_key)
+                logger.debug("adding request to processing: %s" % f"{cache_key}")
+
                 for attempt in range(MAX_RETRIES):
                     try:
                         response = await func(response, exchange)
@@ -160,6 +176,7 @@ def cache_ohlcv(ttl_seconds: int = CACHE_TTL_SECONDS):
                             logger.debug(
                                 "OHLCV data for %s added to cache." % f"{cache_key}"
                                 )
+                            processing.remove(cache_key)
                         break
                     except (NetworkError, ExchangeNotAvailable, RequestTimeout) as e:
                         if attempt == MAX_RETRIES - 1:
@@ -362,7 +379,7 @@ async def process_request(
     """
     req = await convert_dates(**req)
 
-    # Create a Ohlcv object with the request details
+    # Create an Ohlcv object with the request details
     response = Ohlcv(
         exchange=req.get("exchange"),
         symbol=req.get("symbol"),
@@ -383,6 +400,9 @@ async def process_request(
             response.exchange_error = f"Exchange {response.exchange} not available"
             if response.socket:
                 await response.send()
+                logger.debug("[FAIL] Response sent ...")
+            else:
+                logger.debug("[FAIL] No socket provided, no response sent.")
             return response
 
         if LOG_STATUS:
@@ -397,9 +417,13 @@ async def process_request(
             )
         else:
             response = await get_ohlcv(response=response, exchange=exchange)
+            logger.debug("[SUCCESS] got data/response.")
 
     if response.socket:
         await response.send()
+        logger.debug("[SUCCESS] Response sent ...")
+    else:
+        logger.debug("[SUCCESS] No socket provided, no response sent.")
 
     return response
 
@@ -476,7 +500,7 @@ async def ohlcv_repository(
 
     # cleanup
     await exchange_factory.close_all()
-    await asyncio.sleep(3)
+    # await asyncio.sleep(3)
     socket.close(1)
 
     logger.info("ohlcv repository shutdown complete: OK")

@@ -66,7 +66,8 @@ class Messenger:
                     case ROLES.BROKER:
                         await self.send_task(recv_id, request)
                     case ROLES.WORKER:
-                        await self.send_result(recv_id, request)
+                        logger.debug("Queue received result")
+                        await self.send_result(recv_id, result=request)
                     case _:
                         logger.error("no action defined for role: %s" % self.role)
 
@@ -112,8 +113,9 @@ class Messenger:
         result_msg = Result(
             origin=self.origin, role=self.role, recv_id=recv_id, result=result
             )
-        logger.info(
-            "Sending %s message (%s) ..."
-            % (result_msg.type.name, len(result_msg.payload.get('results', [])))
-            )
-        await result_msg.send(self.socket)
+        try:
+            await result_msg.send(self.socket)
+        except Exception as e:
+            logger.error(f"Error sending result: {e}")
+        else:
+            logger.debug("[%s] Sent result message." % self.origin)
