@@ -164,8 +164,6 @@ async def worker(
         oracle_address (str): Address of the Oracle (Sink).
     """
     logger.debug("[%s] Connecting to Broker (%s)...", worker_id, broker_address)
-    # await asyncio.sleep(random.uniform(0.1, 2))  # Simulate worker startup delay
-    await asyncio.sleep(0.2)
 
     worker_id = worker_id or f"{random.randint(1000, 9999)}"
 
