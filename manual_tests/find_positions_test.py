@@ -22,7 +22,7 @@ from analysis.util import find_positions as fp
 from analysis import strategy_backtest as bt
 from analysis.backtest import statistics as st
 from analysis.strategy.definitions import (  # noqa: F401
-    contra_1, trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross,
+    contra_1, s_trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross,
     s_linreg, s_test_er, s_ema_multi, s_linreg_ma_cross, s_aroon_osc
 )
 from analysis.chart.tikr_charts import BacktestChart as Chart
@@ -35,10 +35,10 @@ logger = get_logger(__name__)
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = "7 years ago UTC"
+start = "6 years ago UTC"
 end = 'now UTC'
 
-strategy = s_linreg
+strategy = s_trend_1
 risk_level, max_leverage = 8, 2
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
@@ -257,10 +257,10 @@ if __name__ == '__main__':
     run(_get_ohlcv_from_db(), True, False)
 
     # ..........................................................................
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
-    runs = 1_000
+    runs = 10_000
     data_pre = [_get_ohlcv_from_db() for _ in range(runs)]
     start = time.perf_counter()
 

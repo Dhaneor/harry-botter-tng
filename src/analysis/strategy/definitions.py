@@ -160,11 +160,7 @@ aroonosc = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=(
-                'aroonosc',
-                'high', 'low',
-                {"timeperiod": 4},
-            ),
+            operand_a=('aroonosc', 'high', 'low', {"timeperiod": 4}),
             operand_b=('trigger', 1, [-5, 5, 1]),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
@@ -298,8 +294,8 @@ ema_cross = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("ema", {"timeperiod": 7}),
-            operand_b=("ema", {"timeperiod": 82}),
+            operand_a=("ema", {"timeperiod": 47}),
+            operand_b=("ema", {"timeperiod": 182}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
@@ -350,8 +346,8 @@ test_er = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 70}),
-            operand_b=("trending", 0.2, [0.05, 0.55, 0.05]),
+            operand_a=("er", {"timeperiod": 7}),
+            operand_b=("trending", 0.01, [0.005, 0.055, 0.005]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             # close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
@@ -360,7 +356,7 @@ test_er = sg.SignalsDefinition(
         cn.ConditionDefinition(
             interval="1d",
             operand_a=("close"),
-            operand_b=("kama", {"timeperiod": 107}),
+            operand_b=("kama", {"timeperiod": 9}),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             # close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             open_short=("a", cn.COMPARISON.IS_BELOW, "b"),
@@ -394,7 +390,7 @@ contra_1 = sb.StrategyDefinition(
     ]
 )
 
-trend_1 = sb.StrategyDefinition(
+s_trend_1 = sb.StrategyDefinition(
     strategy="EMA Cross",
     symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
     interval="1d",
@@ -625,6 +621,5 @@ s_ema_multi = sb.StrategyDefinition(
 # ====================================================================================
 #                                   END OF DEFINitiONS                               #
 # ====================================================================================
-
 def get_all_strategies():
-    return [contra_1, trend_1]
+    return [contra_1, s_trend_1]

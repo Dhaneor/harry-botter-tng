@@ -15,32 +15,18 @@ from cProfile import Profile  # noqa: E402, F401
 import pstats  # noqa: E402, F401
 import logging
 
+import analysis.indicators.indicator as indicator  # noqa: E402
+from analysis.chart.plot_definition import SubPlot  # noqa: E402, F401
+from util import get_logger
+
+logger = get_logger('main', level="DEBUG")
+
+# import sample data for BTCUSDT 15min
 current = os.path.dirname(os.path.realpath(__file__))
 parent = os.path.dirname(current)
 sys.path.append(parent)
-
-import src.analysis.indicators.indicator as indicator  # noqa: E402
-from src.analysis.chart.plot_definition import SubPlot  # noqa: E402
-
-# configure logger
-LOG_LEVEL = logging.DEBUG
-logger = logging.getLogger("main")
-logger.setLevel(LOG_LEVEL)
-
-ch = logging.StreamHandler()
-ch.setLevel(LOG_LEVEL)
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
-logger.info("Logger initialized")
-
-
-# import sample data for BTCUSDT 15min
 file_name = os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv")
+
 data = pd.read_csv(file_name, index_col=0, parse_dates=True)
 
 # clean the ohlcv data
@@ -72,15 +58,15 @@ defs = {
     'SMA': {
         'src': 'talib',
         'params': {'timeperiod': 100},
-        "plot_desc": SubPlot(
-            label='sma_100',
-            is_subplot=False,
-            lines=[('sma_100', 'Line')],
-            triggers=[],
-            channel=[],
-            hist=[],
-            level='indicator'
-        )
+        # "plot_desc": SubPlot(
+        #     label='sma_100',
+        #     is_subplot=False,
+        #     elements=[('sma_100', 'Line')],
+        #     triggers=[],
+        #     channel=[],
+        #     hist=[],
+        #     level='indicator'
+        # )
     },
     "STOCH": {
         "src": "talib",
@@ -91,18 +77,6 @@ defs = {
             "slowk_matype": 0,
             "slowd_matype": 0,
         },
-        # "plot_desc": SubPlot(
-        #     label='stoch_14_10_0_10_0',
-        #     is_subplot=True,
-        #     lines=[
-        #         ('stoch_14_5_0_5_0_slowk', 'Dashed Line'),
-        #         ('stoch_14_5_0_5_0_slowd', 'Dashed Line')
-        #     ],
-        #     triggers=[],
-        #     channel=[],
-        #     hist=[],
-        #     level='indicator'
-        # )
     },
     "BBANDS": {
         "src": "talib",
@@ -115,7 +89,7 @@ defs = {
         # "plot_desc": SubPlot(
         #     label='bbands_20_2.0_2.0_0',
         #     is_subplot=False,
-        #     lines=[('bbands_20_2.0_2.0_0_middleband', 'Line')],
+        #     elements=[('bbands_20_2.0_2.0_0_middleband', 'Line')],
         #     triggers=[],
         #     channel=[
         #         'bbands_20_2.0_2.0_0_upperband',
@@ -135,7 +109,7 @@ defs = {
         # "plot_desc": SubPlot(
         #     label='macd_12_26_9',
         #     is_subplot=True,
-        #     lines=[
+        #     elements=[
         #         ('macd_12_26_9_macd', 'Line'),
         #         ('macd_12_26_9_macdsignal', 'Dashed Line')
         #     ],
@@ -152,7 +126,7 @@ defs = {
         # "plot_desc": SubPlot(
         #     label='rsi_overbought_70',
         #     is_subplot=True,
-        #     lines=[],
+        #     elements=[],
         #     triggers=[('rsi_overbought_70', 'Line')],
         #     channel=[],
         #     hist=[],
@@ -166,7 +140,7 @@ defs = {
         # "plot_desc": SubPlot(
         #     label='rsi_oversold_30',
         #     is_subplot=True,
-        #     lines=[],
+        #     elements=[],
         #     triggers=[('rsi_oversold_30', 'Line')],
         #     channel=[],
         #     hist=[],
@@ -177,6 +151,10 @@ defs = {
 
 
 # ==============================================================================
+def _notify_about_change(msg: str | None = None):
+    logger.info(">>>>> Parameter changed: %s", msg)
+
+
 def test_indicator_factory(
     name: str,
     params: dict | None = None,
@@ -187,12 +165,14 @@ def test_indicator_factory(
     ind = indicator.factory(name, params, src)
 
     if show:
+        print(ind)
+        ind.help()
+        print('-------------------------')
         print("name:", ind.name)
         print("input:", ind.input)
         print("params:", ind.parameters)
         print("out:", ind.output)
-        print(ind)
-        ind.help()
+        print("unique name:", ind.unique_name)
 
     assert isinstance(ind, indicator.IIndicator)
     assert ind.input is not None
@@ -204,16 +184,22 @@ def test_indicator_factory(
 def test_set_indicator_parameters():
     for cand in defs:
         i = indicator.factory(
-            indicator_name=cand, params=defs[cand]["params"], source=defs[cand]["src"]
+            indicator_name=cand,
+            params=defs[cand]["params"],
+            source=defs[cand]["src"],
+            on_change=_notify_about_change,
         )
 
         if params := defs[cand].get("params"):
             for k, v in params.items():
                 logger.info("setting parameter %s for %s -> %s", k, i, v * 2)
                 i.parameters = {k: v * 2}
-                assert i.parameters[k] == v * 2
+                assert i.parameters_dict[k] == v * 2
 
-        logger.debug(i)
+        logger.debug("   indicator: %s" % i)
+        logger.debug("   unique name: %s" % i.unique_name)
+        logger.debug("   unique output: %s" % i.unique_output)
+        break
 
 
 def test_indicator_run(i: indicator.IIndicator, params: dict | None = None):
@@ -358,11 +344,54 @@ def test_parameter_iter():
         logger.info(elem)
 
 
+def test_run_with_mutiple_parameters(ind):
+    logger.info(ind.parameters)
+    logger.info(
+        "unique name: %s, output name(s): %s",
+        ind.unique_name, ind.unique_output
+        )
+    first = test_indicator_run(ind)
+    logger.info(first[-5:])
+
+    for p in ind.parameters:
+        p.increase()
+
+    logger.info(ind.parameters)
+    logger.info(
+        "unique name: %s, output name(s): %s",
+        ind.unique_name, ind.unique_output
+        )
+    second = test_indicator_run(ind)
+    logger.info(second[-5:])
+
+    assert list(first) != list(second), "same result for different parameters"
+
+
+def test_randomize(ind):
+    logger.info(ind.parameters)
+    logger.info(ind.parameter_space)
+
+    for _ in range(10):
+        logger.info("-" * 80)
+
+        try:
+            ind.randomize()
+        except Exception as e:
+            logger.error("randomize failed: %s", e, exc_info=True)
+            return
+
+        logger.info(ind.parameters)
+
+
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    # test_set_indicator_parameters()
+    # test_indicator_factory("SMA", show=True)
+    test_set_indicator_parameters()
+    # test_randomize(test_indicator_factory("BBANDS"))
+
+    sys.exit()
 
     # test_parameter_space()
     # test_parameter_iter()
@@ -371,9 +400,9 @@ if __name__ == "__main__":
 
     # arr, res = test_is_above()
 
-    ind = test_indicator_factory(
-        "BBANDS", {"timeperiod": 80, "nbdevup": 1.5}, show=False
-    )
+    # ind = test_indicator_factory(
+    #     "BBANDS", {"timeperiod": 80, "nbdevup": 1.5}, show=False
+    # )
 
     # ind = test_indicator_factory(
     #     'LINEARREG', params={'timeperiod': 20}, show=False
@@ -401,9 +430,9 @@ if __name__ == "__main__":
     pprint(ind.__dict__)
     print("unqiue_output: ", ind.unique_output)
     print("unique_name: ", ind.unique_name)
-    print(ind.plot_desc)
+    # print(ind.plot_desc)
 
-    # print(test_indicator_run(ind))
+    test_run_with_mutiple_parameters(ind)
 
     sys.exit(0)
 

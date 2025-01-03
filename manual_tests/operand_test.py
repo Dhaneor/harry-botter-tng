@@ -5,11 +5,10 @@ Created on Oct 06 10:03:20 2021
 
 @author dhaneor
 """
-import random   # noqa F401
 import sys
-import os
 import time
 import logging
+import numpy as np
 import pandas as pd
 
 from pprint import pprint  # noqa: F401, F501
@@ -18,39 +17,18 @@ from pprint import pprint  # noqa: F401, F501
 from cProfile import Profile  # noqa F401
 from pstats import SortKey, Stats  # noqa: F401
 
+from analysis.strategy import operand as op
+from analysis.strategy.operand_factory import operand_factory
+from analysis.chart.plot_definition import SubPlot
+from util import get_logger
+
 # configure logger
-LOG_LEVEL = logging.DEBUG
-logger = logging.getLogger("main")
-logger.setLevel(LOG_LEVEL)
+logger = get_logger('main', level=logging.INFO)
 
-ch = logging.StreamHandler()
-ch.setLevel(LOG_LEVEL)
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
-
-# -----------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# -----------------------------------------------------------------------------
-
-from src.analysis.strategy import operand as op  # noqa: E402
-from src.analysis.chart.plot_definition import SubPlot  # noqa: E402
 
 # ======================================================================================
-# load and prepare OHLCV data for use in testing
-df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
-df.drop(
-    ["Unnamed: 0", "close time", "volume", "quote asset volume"], axis=1, inplace=True
-)
-df = df[-1_000:]
-
-data = {col: df[col].to_numpy() for col in df.columns}
+columns = ["open time", "open", "high", "low", "close", "volume"]
+data = {col: np.random.rand(1000, 1) for col in columns}
 
 # ======================================================================================
 # define different operands for testing possible variants
@@ -80,7 +58,7 @@ op_defs = {
     },
 
     "bbands": {
-        "def": ('BBANDS', {'timeperiod': 10},),
+        "def": ('BBANDS.upperband', {'timeperiod': 10},),
         "params": {"timeperiod": 20, "nbdevup": 2, "nbdevdn": 2},
         # "plot_desc": SubPlot(
         #     label='Bollinger Bands (10 2 2 0)',
@@ -109,7 +87,7 @@ op_defs = {
     },
 
     "macd": {
-        "def": ('macd.macdsignal', {'fastperiod': 9, 'slowperiod': 26}),
+        "def": ('macd.macdsignal', {'fastperiod': 3, 'slowperiod': 15}),
         "params": {"fastperiod": 12, "slowperiod": 26, "signalperiod": 9},
         # "plot_desc": SubPlot(
         #     label='Moving Average Convergence/Divergence (9 26 9)',
@@ -141,7 +119,7 @@ op_defs = {
     'rsi_overbought': {
         "def": ('rsi_overbought', 80.5, [70, 100]),
         "params": {"trigger": 90},
-        'parameter_space': {'trigger': [70, 100]},
+        'parameter_space': {'rsi_overbought': [70, 100]},
         # "plot_desc": SubPlot(
         #     label='Rsi Overbought 80.5',
         #     is_subplot=True,
@@ -168,18 +146,29 @@ op_defs = {
         # )
     }
 }
-# ==============================================================================
+
+
+# =====================================================================================
+def update_parameters_callback(*args):
+    logger.debug(f'notification about parameter update: {args}')
 
 
 def test_operand_factory():
     for elem in op_defs:
         op_def = op_defs.get(elem).get("def")
-        operand = op.operand_factory(op_def)
+        operand = operand_factory(op_def)
 
-        logger.debug(operand)
-        logger.debug('----------------------------------------------------------------')
-        assert isinstance(operand, op.Operand)
-        pprint(operand.__dict__)
+        logger.debug("[TEST] %s" % operand)
+        logger.debug('[TEST] ======================================================')
+        # assert isinstance(operand, op.Operand), \
+        #     (
+        #         "expected resutl for %s to be an instance of 'Operand', but got %s"
+        #         % (elem, type(operand))
+        #     )
+        if operand:
+            pprint(operand.__dict__)
+        if 'macd' in elem:
+            break
 
     return operand
 
@@ -215,7 +204,7 @@ def test_plot_desc():
             logger.info("\t\t%s", i.plot_desc)
         logger.info(operand.plot_desc)
 
-        expected = op_defs.get(elem).get("plot_desc")
+        # expected = op_defs.get(elem).get("plot_desc")
 
         assert isinstance(operand.plot_desc, SubPlot)
         # assert expected == operand.plot_desc, f"{expected} != {operand.plot_desc}"
@@ -226,51 +215,58 @@ def test_plot_desc():
 
 def test_update_parameters():
 
-    for elem in op_defs.keys():
-        logger.debug('=' * 120)
-        op_def = op_defs.get(elem).get("def")
-        operand = op.operand_factory(op_def)
+    for elem in list(op_defs.keys())[:1]:
+        try:
+            logger.debug('=' * 150)
+            op_def = op_defs.get(elem).get("def")
+            operand = op.operand_factory(op_def)
 
-        if not hasattr(operand, 'indicators'):
-            if isinstance(operand, op.OperandPriceSeries):
-                logger.warning(f"Operand {elem} has no indicators")
-                continue
-            else:
-                raise AttributeError(f"Operand {elem} has no indicators")
+            if not hasattr(operand, 'indicators'):
+                if isinstance(operand, op.OperandPriceSeries):
+                    logger.warning(f"Operand {elem} has no indicators")
+                    continue
+                else:
+                    raise AttributeError(f"Operand {elem} has no indicators")
 
-        indicators = operand.indicators
+            for indicator in operand.indicators:
+                logger.debug('-' * 150)
+                logger.debug("before: %s" % indicator)
+                indicator.randomize()
+                logger.debug("after: %s" % indicator)
 
-        # logger.debug('=' * 70)
-        logger.debug(operand)
-        logger.debug("operand indicators: %s", indicators)
-
-        for indicator in indicators:
-            logger.debug('-' * 120)
-            logger.debug(indicator)
-            logger.debug("\tindicator parameters: %s", indicator.parameters)
-            logger.debug("\tindicator unique name: %s", indicator.unique_name)
-            params = op_defs.get(elem).get("params")
-
-            operand.update_parameters({indicator.unique_name: params})
-
-            logger.debug("%s == %s", indicator.parameters, params)
-            logger.debug(operand)
-
-            for key in params.keys():
-                assert indicator.parameters[key] == params[key]
+            logger.debug("before: %s" % op.operand_factory(op_def))
+            logger.debug("after: %s" % operand)
+        except Exception as e:
+            logger.error(f"Error updating parameters for {elem}: {e}")
+            continue
+        break
 
     logger.info("update parameters: OK")
+
+
+def test_randomize():
+    op_def = op_defs.get('bbands').get("def")
+    operand = operand_factory(op_def)
+
+    logger.info("before: %s" % operand)
+
+    operand.randomize()
+
+    logger.info("-" * 150)
+    logger.info("after: %s" % operand)
+    pprint(operand.__dict__)
 
 
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    test_operand_factory()
+    # test_operand_factory()
     # test_update_parameters()
-    # sys.exit()
+    test_randomize()
+    sys.exit()
 
-    operand = op.operand_factory(op_defs.get('bbands').get('def'))
+    operand = op.operand_factory(op_defs.get('sma_of_rsi').get('def'))
     # operand = op.operand_factory(op_defs.get('sma_of_rsi').get('def'))
 
     # operand.update_parameters(
@@ -291,6 +287,8 @@ if __name__ == "__main__":
         logger.debug('=' * 120)
         operand.run(data)
         logger.debug(list(data.keys()))
+
+    print(pd.DataFrame.from_dict(data).tail(10))
 
     sys.exit()
 

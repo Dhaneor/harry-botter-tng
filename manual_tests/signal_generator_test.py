@@ -6,14 +6,13 @@ Created on Oct 06 10:03:20 2021
 @author dhaneor
 """
 import sys
-import os
 import time
 import logging
 import random
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from pprint import pprint  # noqa: E402, F401
+from pprint import pprint  # noqa: F401
 from typing import Hashable
 from scipy.stats import norm
 
@@ -21,43 +20,32 @@ from scipy.stats import norm
 from cProfile import Profile
 from pstats import SortKey, Stats
 
-# -----------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# -----------------------------------------------------------------------------
-
-from src.analysis.strategy import signal_generator as sg  # noqa: E402
-from src.analysis.strategy import condition as cn  # noqa: E402
-from src.analysis.strategy.definitions import (  # noqa: E402, F401
+from analysis.strategy import signal_generator as sg
+from analysis.strategy import condition as cn
+from analysis.strategy.definitions import (  # noqa: F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
     linreg_roc_btc_1d, linreg_roc_eth_1d, test_er, linreg, aroonosc,
     linreg_ma_cross
 )
-from src.analysis.chart.tikr_charts import SignalChart  # noqa: E402
-from helpers_ import get_ohlcv  # noqa: E402, F401
+from analysis.chart.tikr_charts import SignalChart
+from helpers_ import get_ohlcv
+from util import get_logger
 
-logger = logging.getLogger("main")
-logger.setLevel(logging.ERROR)
-
-ch = logging.StreamHandler()
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
+logger = get_logger(__name__)
 
 # set interval and length of test data
-interval = "1d"
+interval = "2h"
 length = 365*6
 
-sig_def = linreg_ma_cross
+sig_def = test_er
 
 # ======================================================================================
 try:
     df = get_ohlcv(symbol="BTCUSDT", interval=interval, as_dataframe=True)
+    # print(df.info())
+    # print(df.describe())
+    # print(df.isnull().values.any())
+    # raise Exception("That's all we need for now. Exiting... 2 seconds")
 except Exception as e:
     logger.error(f"Error fetching data: {e}")
     sys.exit()
@@ -118,7 +106,7 @@ def test_signal_definition(show=False):
 
 def test_factory(sig_def):
     try:
-        sig_gen = sg.factory(sig_def)
+        sig_gen = sg.signal_generator_factory(sig_def)
     except Exception as exc:
         logger.exception(exc)
         sys.exit()
@@ -130,7 +118,7 @@ def test_factory(sig_def):
 
 def test_factory_from_existing(sig_gen):
     try:
-        sig_gen_new = sg.factory(sig_gen.condition_definitions)
+        sig_gen_new = sg.signal_generator_factory(sig_gen.condition_definitions)
     except Exception as exc:
         logger.exception(exc)
         sys.exit()
@@ -343,6 +331,36 @@ def test_get_all_operands():
             logger.debug("-" * 160)
 
 
+def test_set_parameters():
+    """Tests setting parameters in the SignalGenerator. """
+    global data
+    sig_gen = sg.signal_generator_factory(sig_def)
+    logger.info(sig_gen.parameters)
+
+    params = tuple((p.value for p in sig_gen.parameters))
+    logger.info(f"Original parameters: {params}")
+
+    df = pd.DataFrame.from_dict(sig_gen.execute(data))
+    print(df)
+
+    keep_keys = [
+        'open time', 'human open time', 'open', 'high', 'low', 'close', 'volume'
+        ]
+    data = {k: data[k] for k in keep_keys}
+
+    for p in sig_gen.parameters:
+        p.increase()
+
+    new_params = tuple((p.value for p in sig_gen.parameters))
+    logger.info(f"New parameters: {new_params}")
+
+    for c in sig_gen.conditions:
+        print(f"Condition: {c}")
+
+    df = pd.DataFrame.from_dict(sig_gen.execute(data))
+    print(df)
+
+
 def test_plot_desc(sig_gen):
     pprint(sig_gen.plot_desc)
 
@@ -351,7 +369,9 @@ def test_plot_desc(sig_gen):
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    sig_gen = test_factory(sig_def)
+    # sig_gen = test_factory(sig_def)
+
+    test_set_parameters()
 
     # sig_gen = test_factory_from_existing(sig_gen)
 
@@ -363,11 +383,8 @@ if __name__ == "__main__":
     # test_get_all_used_indicators()
     # test_get_all_operands()
 
-    if not sig_gen:
-        sys.exit()
-
     # test_plot_desc(sig_gen)
-    test_plot(sig_gen, data)
+    # test_plot(sig_gen, data)
     # test_returns(sig_gen, data, True)
 
     sys.exit()

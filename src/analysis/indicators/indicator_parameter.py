@@ -16,7 +16,7 @@ Created on Sat Aug 05 22:39:50 2023
 import logging
 import numpy as np
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import (
     Literal,
     Union,
@@ -24,13 +24,16 @@ from typing import (
     Tuple,
     Optional,
     Iterable,
-    Sequence
+    Sequence,
+    Callable
 )
+from random import uniform, randint
 from talib import MA_Type
 
 
-logger = logging.getLogger("main.parameter")
+logger = logging.getLogger(f"main.{__name__}")
 logger.setLevel(logging.ERROR)
+logger.debug("Initializing Parameter class")
 
 Params = Dict[str, Union[str, float, int, bool]]
 IndicatorSource = Literal["talib", "nb"]
@@ -44,6 +47,10 @@ class Parameter(Iterable):
 
     A hardened class that encapsulates the functionality of
     parameters (and their parameter space) for technical indicators.
+
+    The class is iterable, which is used to iterate over the parameters
+    during optimization (grid search) using the defined step size.
+
     It tries to prevent clients from setting parameters to values:
 
     - that do not make sense, ex: timeperiod=0
@@ -72,14 +79,16 @@ class Parameter(Iterable):
     hard_min: float | int | bool
     hard_max: float | int | bool
     step: Optional[float | int]
+    on_change: Callable | None = None
+    _subscribers: set[Callable] = field(default_factory=set)
     _value: float | int = None
     _enforce_int: bool = False
 
     def __str__(self):
-        return f"Parameter {self.name} -> {self.value}"
+        return self.__repr__()
 
     def __repr__(self):
-        return f"Parameter {self.name} -> {self.value}"
+        return f"{self.name}: {self.value}"
 
     def __iter__(self):
         return iter(
@@ -138,6 +147,9 @@ class Parameter(Iterable):
             raise TypeError(f"Invalid value {self._value} for parameter {self.name}")
 
         logger.info(f"Set parameter {self.name} to {self._value}")
+        logger.debug(f"Calling subscribers for parameter {self.name}")
+        for subscriber in self._subscribers:
+            subscriber(self.name)
 
     @property
     def space(self) -> Tuple[float | int | bool]:
@@ -154,6 +166,29 @@ class Parameter(Iterable):
             if an attempt is made to change the parameter space.
         """
         raise PermissionError("Changing the parameter space is not allowed.")
+
+    def increase(self, step: int | float | None = None) -> None:
+        step = step or self.step
+        self.value += step
+
+    def decrease(self, step: int | float | None = None) -> None:
+        step = step or self.step
+        self.value -= step
+
+    def randomize(self) -> None:
+        """Randomizes the parameter value within the hard limits."""
+        if self._enforce_int:
+            value = randint(self.hard_min, self.hard_max)
+        else:
+            value = uniform(self.hard_min, self.hard_max)
+            value = round(value / self.step) * self.step
+
+        logger.debug("Randomizing parameter %s to %s", self.name, value)
+        self.value = value
+
+    def add_subscriber(self, callback: Callable) -> None:
+        """Adds a callback function to the list of subscribers."""
+        self._subscribers.add(callback)
 
     def as_dict(self) -> Params:
         """Returns a dictionary representation of the parameter."""
@@ -212,6 +247,14 @@ class Parameter(Iterable):
 
     def _validate_numerical_value(self, value):
         # some values just can't be floats, flag is set in __post_init__
+        logger.debug(f"Validating numerical value {value} for parameter {self.name}")
+
+        if not isinstance(value, (int, float, np.number)):
+            raise TypeError(
+                f"expected numerical value for parameter {self.name}, "
+                "but got: {type(value)}"
+            )
+
         value = int(round(value)) if self._enforce_int else value
 
         if not self.hard_min <= value <= self.hard_max:
@@ -230,3 +273,8 @@ class Parameter(Iterable):
 
     def _get_steps(self):
         return range(self.hard_min, self.hard_max + 1, self.step)
+
+
+if __name__ == "__main__":
+    p = Parameter("timeperiod", 5, 1, 50, 1)
+    print(p)

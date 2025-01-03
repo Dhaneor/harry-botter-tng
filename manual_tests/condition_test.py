@@ -239,7 +239,7 @@ def test_condition_result_combine():
 if __name__ == "__main__":
     # test_condition_result_combine()
 
-    c = cn.condition_factory(c_defs["golden_cross"])
+    c = cn.condition_factory(c_defs["golden_cross"], {'test', 'test'})
 
     for comp in (c.operand_a, c.operand_b, c.operand_c, c.operand_d):
         if comp:

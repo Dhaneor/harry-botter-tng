@@ -142,6 +142,8 @@ class IStrategy(abc.ABC):
         self.sl_strategy: Optional[Sequence[es.IStopLossStrategy]] = None
         self.tp_strategy: Optional[Sequence[es.ITakeProfitStrategy]] = None
 
+        self.definition: Optional[StrategyDefinition] = None
+
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} ({self.sl_strategy}, {self.tp_strategy})"
 
@@ -226,12 +228,12 @@ class SubStrategy(IStrategy):
     def __init__(self, name: str, params: Optional[dict] = None):
         super().__init__()
         self.name: str = name
-        self._signal_generator: sg.SignalGenerator
+        self.signal_generator: sg.SignalGenerator
 
     def __repr__(self) -> str:
 
         try:
-            sg_str = f'{str(self._signal_generator)}'
+            sg_str = f'{str(self.signal_generator)}'
         except AttributeError:
             sg_str = 'None'
 
@@ -263,15 +265,15 @@ class SubStrategy(IStrategy):
     # --------------------------------------------------------------------------
     @property
     def indicators(self) -> tuple[IIndicator, ...]:
-        return self._signal_generator.indicators
+        return self.signal_generator.indicators
 
     @property
     def parameters(self) -> tuple[Parameter, ...] | None:
-        return self._signal_generator.paramaters
+        return self.signal_generator.paramaters
 
     @parameters.setter
     def parameters(self, value: tuple[Any, ...]) -> None:
-        self._signal_generator.paramaters = value
+        self.signal_generator.paramaters = value
 
     # --------------------------------------------------------------------------
     def speak(self, data: tp.Data) -> tp.Data:
@@ -300,7 +302,7 @@ class SubStrategy(IStrategy):
         processing, and or combining of multiple signals/strategies.
         """
         return self\
-            ._signal_generator\
+            .signal_generator\
             .execute(data, as_dict=False)\
             .apply_weight(self.weight)
 
@@ -517,7 +519,8 @@ def build_sub_strategy(sdef: StrategyDefinition) -> IStrategy:
     strategy.weight = sdef.weight or 1.0
     strategy.is_sub_strategy = True
 
-    strategy._signal_generator = sg.signal_generator_factory(sdef.signals_definition)
+    strategy.signal_generator = sg.signal_generator_factory(sdef.signals_definition)
+    strategy.definition = sdef
 
     # add stop loss strategy if provided
     if sdef.stop_loss:

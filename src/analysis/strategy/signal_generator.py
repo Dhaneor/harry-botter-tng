@@ -49,7 +49,7 @@ Created on Sat Aug 18 11:14:50 2023
 @author: dhaneor
 """
 from dataclasses import dataclass
-from typing import Optional, Sequence, Literal
+from typing import Optional, Sequence, Literal, Any
 from functools import reduce
 import itertools
 import logging
@@ -58,6 +58,7 @@ import pandas as pd
 
 from ..util import proj_types as tp
 from . import condition as cnd
+from .transform_condition_definition import transform_condition_definition
 from ..indicators.indicator import Indicator
 from ..indicators.indicator_parameter import Parameter
 
@@ -142,6 +143,7 @@ class SignalGenerator:
         self.name: str = name
         self.conditions: Sequence[cnd.Condition] = conditions
         self.conditions_definitions: Sequence[cnd.ConditionDefinition] | None = None
+        self.columns: dict[str, str] = {}
 
     def __repr__(self):
         return (
@@ -178,6 +180,17 @@ class SignalGenerator:
             the parameters used by the signal generator
         """
         return tuple(p for ind in self.indicators for p in ind.parameters)
+
+    @parameters.setter
+    def parameters(self, params: tuple[Any, ...]) -> None:
+        for p_current, p_new in zip(self.parameters, params):
+            try:
+                p_current.value = p_new
+            except Exception as e:
+                logger.error(
+                    "Unable to set parameter %s to %s: %s",
+                    p_current.name, p_new, str(e)
+                    )
 
     @property
     def subplots(self) -> list[SubPlot]:
@@ -299,6 +312,9 @@ class SignalGenerator:
 
 
 # ======================================================================================
+# using the decorator to transform the 'old' form of defining the signals
+# into the new form and remain backwards compatible
+@transform_condition_definition
 def signal_generator_factory(
     sig_def: SignalsDefinition | Sequence[cnd.ConditionDefinition]
 ) -> SignalGenerator:
@@ -348,5 +364,9 @@ def signal_generator_factory(
         )
     sig_gen.name = name
     sig_gen.condition_definitions = condition_definitions
+
+    for idx, condition in enumerate(sig_gen.conditions):
+        condition.id = idx
+        condition.columns = sig_gen.columns
 
     return sig_gen

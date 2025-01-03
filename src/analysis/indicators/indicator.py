@@ -29,8 +29,8 @@ from typing import (
     Generator,
     Tuple,
     Union,
-    Dict,
-    Any
+    Any,
+    Callable
 )
 from talib import MA_Type, abstract
 
@@ -40,9 +40,9 @@ from .indicator_parameter import Parameter
 from ..chart.plot_definition import Line, SubPlot
 
 logger = logging.getLogger("main.indicator")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
-Params = Dict[str, Union[str, float, int, bool]]
+Params = dict[str, Union[str, float, int, bool]]
 IndicatorSource = Literal["talib", "nb"]
 
 MA_TYPES = MA_Type.__dict__.get("_lookup", [])
@@ -143,7 +143,7 @@ class Indicator(IIndicator):
     def __init__(self) -> None:
         super().__init__()
         self._is_subplot: bool = self._name.upper() not in Indicator.not_subplot
-        self._plot_desc: Dict[str, Tuple[str, Any]] = OrderedDict()
+        self._plot_desc: dict[str, Tuple[str, Any]] = OrderedDict()
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} - {self.parameters}"
@@ -440,9 +440,7 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
 
     # ..........................................................................
     # define the run function based on the indicator requested
-    def run(
-        self, *inputs: tuple[np.ndarray]
-    ) -> np.ndarray | tuple[np.ndarray, ...]:  # type: ignore
+    def run(self, *inputs: tuple[np.ndarray]) -> np.ndarray:  # type: ignore
 
         logger.debug("provided data is in format %s", type(inputs))
         logger.debug("parameters: %s", self.parameters_dict)
@@ -562,7 +560,8 @@ def fixed_indicator_factory(name, params):
 
     if not isinstance(space, (list, tuple)) or len(space) < 2:
         raise ValueError(
-            "parameter_space['value'] must be a list/tuple with at least two values"
+            "parameter_space['value'] must be a list/tuple with at least two values, "
+            f"but was provided: {space}"
         )
 
     try:
@@ -630,7 +629,8 @@ def _custom_indicator_factory(name, params):
 def factory(
     indicator_name: str,
     params: Params | None = None,
-    source: IndicatorSource | None = None
+    source: IndicatorSource | None = None,
+    on_change: Callable | None = None,
 ) -> Indicator:
     """Creates an indicator object based on its name .
 
@@ -641,6 +641,8 @@ def factory(
     ----------
     indicator_name : str
         name of the indicator,
+    on_change : Callable
+        A function that will be called when the indicator value changes.
     params : dict
         parameters for the indicator
     source : str
@@ -658,7 +660,10 @@ def factory(
     NotImplementedError
         if the indicator source is not supported
     """
-    logger.debug("creating indicator %s (%s) from %s", indicator_name, params, source)
+    logger.debug(
+        "creating indicator %s (params: %s) from %s",
+        indicator_name, params, f" from {source}" if source else ""
+        )
 
     if (source == "talib") | (indicator_name in talib.get_functions()):
         ind_instance = _indicator_factory_talib(indicator_name)
@@ -670,8 +675,12 @@ def factory(
         ind_instance = fixed_indicator_factory(indicator_name, params)
 
     else:
-        print(custom_indicators)
         raise NotImplementedError(f"Indicator source {source} not supported.")
+
+    ind_instance.on_change = on_change
+
+    for param in ind_instance._parameters:
+        param.add_subscriber(ind_instance.on_parameter_change)
 
     logger.debug(ind_instance.__dict__)
 

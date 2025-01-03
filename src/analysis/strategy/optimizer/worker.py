@@ -21,7 +21,7 @@ from .protocol import TYPE, ROLES, Message
 
 from data.data_models import Ohlcv
 from analysis.strategy_builder import build_strategy
-from analysis.strategy.definitions import s_aroon_osc  # noqa: F401
+from analysis.strategy.definitions import s_aroon_osc, s_linreg  # noqa: F401
 from analysis import strategy_backtest as bt
 
 """
@@ -30,7 +30,7 @@ strategy. This logic needs to be extended and replaced
 by the possibility to receive strategy names from the
 broker and build and execute the corresponding strategy.
 """
-DEV_STRATEGY = build_strategy(s_aroon_osc)
+DEV_STRATEGY = build_strategy(s_linreg)
 
 # Configure logging
 logger = logging.getLogger("main.worker")
@@ -41,15 +41,6 @@ CHUNK_SIZE = 1000  # Number of tasks to process in one chunk
 DURATION = 500  # time for each backtest in microseconds
 
 ROLE = ROLES.WORKER
-
-
-ohlcv_request = {
-    'exchange': 'binance',
-    'symbol': 'BTC/USDT',
-    'interval': '1d',
-    'start': '2021-11-30 00:00:00 UTC',
-    'end': '2024-12-01 00:00:00 UTC'
-}
 
 
 async def fetch_ohlcv(
@@ -91,9 +82,6 @@ def backtest_closure(worker_id: str, repo_socket: zmq.asyncio.Socket) -> Corouti
         nonlocal last_task
         nonlocal current_strategy
         nonlocal ohlcv_data
-
-        # ################ REMOVE AFTER DEVELOPMENT IS DONE #################
-        task['ohlcv_request'] = ohlcv_request  # replace with actual request
 
         logger.debug("[%s] Running backtest for task: %s" % (worker_id, task))
 
@@ -226,8 +214,8 @@ async def worker(
                         'exchange': 'binance',
                         'symbol': 'BTC/USDT',
                         'interval': '1d',
-                        'start': '1499 days ago UTC',
-                        'end': 'now UTC'
+                        'start': '2021-11-30 00:00:00 UTC',
+                        'end': '2024-12-01 00:00:00 UTC'
                     }
                 }
 

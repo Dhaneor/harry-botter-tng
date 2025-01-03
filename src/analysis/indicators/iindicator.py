@@ -143,7 +143,6 @@ class IIndicator(ABC):
 
     def __init__(self) -> None:
         self._name = self.__class__.__name__.lower()
-        self._update_name: bool = True
         self.input: Sequence[str] = []
         self.output: Sequence[str] = []
         self.output_flags: dict
@@ -153,9 +152,13 @@ class IIndicator(ABC):
         self._apply_func: Callable
         self._parameters: tuple[Parameter, ...] = ()
 
+        self.on_change: Callable = None
+        self.subscribers: set = set()
+
     def __repr__(self) -> str:
         return f"{self.name} - {self.parameters}"
 
+    # ................................ PROPERTIES .....................................
     @property
     def name(self) -> str:
         """Returns the name of the indicator."""
@@ -177,11 +180,12 @@ class IIndicator(ABC):
         return (
             f"{self.name.lower()}_"
             f"{'_'.join((str(p.value) for p in self._parameters))}"
+            f"_{"_".join((i for i in self.input))}"
         )
 
     @property
     def unique_output(self) -> tuple[str, ...]:
-        """Returns a unique output name for the indicator.
+        """Returns a tuple with unique outputs for the indicator.
 
         Returns
         -------
@@ -213,7 +217,7 @@ class IIndicator(ABC):
 
     @property
     def parameters(self) -> tuple[Parameter]:
-        """Returns a tuple of parameters for the indicator.
+        """Returns a tuple of parameter values for the indicator.
 
         Returns
         -------
@@ -223,7 +227,7 @@ class IIndicator(ABC):
         return self._parameters
 
     @parameters.setter
-    def parameters(self, params: Params | tuple) -> None:
+    def parameters(self, params: Params | tuple[int | float | bool]) -> None:
         """
         Sets the parameters for the indicator.
 
@@ -326,6 +330,18 @@ class IIndicator(ABC):
             Error if self._apply_func is not implemented.
         """
 
+    def add_subscriber(self, callback: Callable) -> None:
+        self.subscribers.add(callback)
+
+    def on_parameter_change(self, *args) -> None:
+        """Callback function for when parameters change."""
+        logger.info("parameters changed for %s", self.name)
+        # if self.on_change is not None:
+        #     logger.debug("calling: %s" % self.on_change)
+        #     self.on_change()
+        for callback in self.subscribers:
+            callback()
+
     @abstractmethod
     def help(self):
         """Prints help information (docstring) for the class.
@@ -333,6 +349,11 @@ class IIndicator(ABC):
         Can be used to have easy access to the parameters of
         each indicator.
         """
+
+    def randomize(self) -> None:
+        """Randomizes the parameters of the indicator."""
+        for param in self.parameters:
+            param.randomize()
 
     # .............................. Private methods .................................
     def _set_parameters_from_dict(self, params: dict) -> None:

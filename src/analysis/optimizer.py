@@ -23,6 +23,7 @@ from typing import TypeVar, Generator, Dict, Any, List, Tuple, Callable, Sequenc
 from tqdm import tqdm
 
 from . import strategy_backtest as bt
+from . import strategy_builder as sb
 from .strategy import signal_generator as sg
 from .backtest.statistics import calculate_statistics
 logger = logging.getLogger('main.optimizer')
@@ -74,13 +75,13 @@ def number_of_combinations(generator: sg.SignalGenerator) -> int:
 
 
 def estimate_exc_time(
-    backtest_fn: Callable, signal_generator: sg.SignalGenerator, data: dict[np.ndarray]
+    backtest_fn: Callable, strategy: sb.IStrategy, data: dict[np.ndarray]
 ) -> float:
 
     # Run the backtest function once to warm up the JIT compiler
     backtest_fn(
         data=data,
-        strategy=signal_generator,
+        strategy=strategy,
         initial_capital=INITIAL_CAPITAL
     )
 
@@ -90,7 +91,7 @@ def estimate_exc_time(
         start_time = time.time()
         _ = backtest_fn(
             data=data,
-            strategy=signal_generator,
+            strategy=strategy,
             initial_capital=INITIAL_CAPITAL
         )
         execution_time += time.time() - start_time
@@ -258,7 +259,7 @@ def filter_results_by_profit_and_leverage(results_list, rel_tol=1e-9):
         profits_seen = []
 
         for res in results:
-            _, _, max_leverage, stats = res
+            stats = res[3]
             profit = stats['profit']
             # Check if this profit is close to any seen profits
             found = False
@@ -394,9 +395,9 @@ def mutations_for_parameters(params: tuple[int | float, ...]):
     return tuple(product(*mutated_params))
 
 
-def _worker_function(
+def worker(
     chunk: tuple[tuple[Any, ...], ...],
-    condition_definitions: Sequence[object],
+    strategy_definition: sb.StrategyDefinition,
     data: dict[np.ndarray],
     risk_level: int,
     max_leverage: float,
@@ -439,105 +440,55 @@ def _worker_function(
         their risk levels, and calculated statistics that meet the
         maximum drawdown criterion.
     """
-    signal_generator = sg.signal_generator_factory(condition_definitions)
-
+    strategy = sb.build_strategy(strategy_definition)
+    cleanup_threshold = 10 * 1024 * 1024  # 10 MB, adjust as needed
+    ohlcv_keys = ['open time', 'open', 'high', 'low', 'close', 'volume']
     results = []
-    for params in chunk:
-        for param, value in zip(signal_generator.parameters, params):
-            try:
-                param.value = value
-            except ValueError:
-                logger.error(f'Invalid value for parameter {param.__name__}: {value}')
+    # seen = set()
 
-        portfolio_values = backtest_fn(
-            strategy=signal_generator,
-            data=data,
+    for params in chunk:
+        strategy.signal_generator.parameters = params
+        data_new = {k: v for k, v in data.items() if k in ohlcv_keys}
+
+        bt_result = backtest_fn(
+            strategy=strategy,
+            data=data_new,
             risk_level=risk_level,
             initial_capital=initial_capital,
             max_leverage=max_leverage
-        ).get('b.value')
+        )
 
-        results.append((params, risk_level, max_leverage, portfolio_values))
+        equity = bt_result.get('b.value')
 
-    return results
+        print(data_new.keys())
+
+        # print(f'Portfolio value: {equtiy[-10:]}')
+
+        # last = equity[-1]
+        # seen.add(last)
+
+        # print(strategy.signal_generator.parameters, seen)
+
+        results.append(
+            (
+                params,
+                risk_level,
+                max_leverage,
+                calculate_statistics(equity, 0, periods_per_year)
+            )
+        )
+
+        if sys.getsizeof(data) > cleanup_threshold:
+            data = {k: v for k, v in data.items() if k in ohlcv_keys}
+
+        del bt_result
+
+    return filter_results_by_profit_and_leverage(results)
 
 
 # ====================================================================================
-def check_robustness(
-    signal_generator: sg.SignalGenerator,
-    data: OhlcvData,
-    params: tuple[int | float, ...],
-    interval: str = '1d',
-    risk_levels: Iterable[float] = (1,),
-    max_leverage_levels: tuple[float, ...] = (1,),
-    backtest_fn: Callable = bt.run
-):
-    """
-    Tests the robustness of the strategy by optimizing its parameters and
-    backtesting them against a given market data.
-
-    Parameters:
-    -----------
-    signal_generator : sg.SignalGenerator
-    Signal generator for creating the strategy.
-    data : OhlcvData
-    Market data for backtesting.
-    interval : str, optional
-    Time interval for backtesting. Default is '1d'.
-    risk_levels : Iterable[float], optional
-    Risk levels for backtesting. Default is (1,).
-    max_leverage : float, optional
-    Maximum allowed leverage. Default is 1.
-
-    Returns:
-    results : tuple[tuple[int | float], Dict[str, float]]]
-    """
-    mutations = mutations_for_parameters(params)
-    combinations = len(mutations) * len(risk_levels) * len(max_leverage_levels)
-    periods_per_year = PERIODS_PER_YEAR.get(interval, 365)
-
-    logger.info("Starting robustness check ...")
-    logger.info("testing %s combinations", combinations)
-
-    num_cores = multiprocessing.cpu_count()
-    num_processes = max(1, num_cores - 1)
-
-    results, chunk_size = [], 100
-
-    with multiprocessing.Pool(processes=num_processes) as pool:
-        with tqdm(total=combinations, desc="Optimizing") as pbar:
-            for max_leverage in max_leverage_levels:
-                for risk_level in risk_levels:
-                    worker = partial(
-                        _worker_function,
-                        condition_definitions=signal_generator.condition_definitions,
-                        data=data,
-                        risk_level=risk_level,
-                        backtest_fn=backtest_fn,
-                        initial_capital=INITIAL_CAPITAL,
-                        max_leverage=max_leverage,
-                        periods_per_year=periods_per_year,
-                    )
-
-                    chunks = chunk_mutations(mutations, chunk_size)
-
-                    for result in pool.imap_unordered(worker, chunks):
-                        results.extend(result)
-                        pbar.update(chunk_size)
-
-            pbar.close()
-
-            logger.info(
-                "Total profitable results: %s (%.2f)",
-                len(results),
-                (len(results) / combinations) * 100
-            )
-
-    return filter_results(results)
-
-
 def optimize(
-    signal_generator: sg.SignalGenerator,
+    strategy: sb.SubStrategy,
     data: OhlcvData,
     interval: str = '1d',
     risk_levels: Iterable[float] = (1,),
@@ -569,19 +520,20 @@ def optimize(
         and the backtest statistics. The list is unsorted.
     """
     periods_per_year = PERIODS_PER_YEAR.get(interval, 365)
-    combinations = number_of_combinations(signal_generator) \
+    combinations = number_of_combinations(strategy.signal_generator) \
         * len(risk_levels) \
         * len(max_leverage_levels)
 
-    est_exc_time = combinations * estimate_exc_time(backtest_fn, signal_generator, data)
+    est_exc_time = combinations * estimate_exc_time(
+        backtest_fn, strategy, data)
 
     logger.info("Starting parallel optimization...")
     logger.info("leverage levels: %s", max_leverage_levels)
     logger.info("testing %s combinations", combinations)
     logger.info("Estimated execution time: %.2fs", est_exc_time)
 
-    num_cores = multiprocessing.cpu_count()
-    num_processes = max(1, num_cores)  # Use all cores except one, but at least 1
+    num_cores = 1  # multiprocessing.cpu_count()
+    num_processes = max(1, num_cores - 1)  # Use all cores, but at least 1
     logger.info("Using %s processes", num_processes)
 
     results = []
@@ -592,9 +544,9 @@ def optimize(
         with tqdm(total=combinations, desc="Optimizing") as pbar:
             for max_leverage in max_leverage_levels:
                 for risk_level in risk_levels:
-                    worker = partial(
-                        _worker_function,
-                        condition_definitions=signal_generator.condition_definitions,
+                    worker_fn = partial(
+                        worker,
+                        strategy_definition=strategy.definition,
                         data=data,
                         risk_level=risk_level,
                         backtest_fn=backtest_fn,
@@ -603,12 +555,11 @@ def optimize(
                         periods_per_year=periods_per_year,
                     )
 
-                    chunks_iterator = chunk_parameters(signal_generator, CHUNK_SIZE)
+                    chunks_iterator = chunk_parameters(
+                        strategy.signal_generator, CHUNK_SIZE
+                        )
 
-                    for result in pool.imap_unordered(
-                        worker,
-                        chunks_iterator,
-                    ):
+                    for result in pool.imap_unordered(worker_fn, chunks_iterator):
                         results.extend(result)
                         pbar.update(CHUNK_SIZE)
 
@@ -620,7 +571,7 @@ def optimize(
                 combinations / duration
                 )
 
-    return results
+    return results, combinations
 
 
 # ====================================================================================
@@ -706,6 +657,79 @@ def soptimize(
     logger.info("Combinations per second: %.2f", combinations_tested / exc_time)
 
     return results
+
+
+def check_robustness(
+    signal_generator: sg.SignalGenerator,
+    data: OhlcvData,
+    params: tuple[int | float, ...],
+    interval: str = '1d',
+    risk_levels: Iterable[float] = (1,),
+    max_leverage_levels: tuple[float, ...] = (1,),
+    backtest_fn: Callable = bt.run
+):
+    """
+    Tests the robustness of the strategy by optimizing its parameters and
+    backtesting them against a given market data.
+
+    Parameters:
+    -----------
+    signal_generator : sg.SignalGenerator
+    Signal generator for creating the strategy.
+    data : OhlcvData
+    Market data for backtesting.
+    interval : str, optional
+    Time interval for backtesting. Default is '1d'.
+    risk_levels : Iterable[float], optional
+    Risk levels for backtesting. Default is (1,).
+    max_leverage : float, optional
+    Maximum allowed leverage. Default is 1.
+
+    Returns:
+    results : tuple[tuple[int | float], Dict[str, float]]]
+    """
+    mutations = mutations_for_parameters(params)
+    combinations = len(mutations) * len(risk_levels) * len(max_leverage_levels)
+    periods_per_year = PERIODS_PER_YEAR.get(interval, 365)
+
+    logger.info("Starting robustness check ...")
+    logger.info("testing %s combinations", combinations)
+
+    num_cores = multiprocessing.cpu_count()
+    num_processes = max(1, num_cores - 1)
+
+    results, chunk_size = [], 100
+
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        with tqdm(total=combinations, desc="Optimizing") as pbar:
+            for max_leverage in max_leverage_levels:
+                for risk_level in risk_levels:
+                    worker_fn = partial(
+                        worker,
+                        condition_definitions=signal_generator.condition_definitions,
+                        data=data,
+                        risk_level=risk_level,
+                        backtest_fn=backtest_fn,
+                        initial_capital=INITIAL_CAPITAL,
+                        max_leverage=max_leverage,
+                        periods_per_year=periods_per_year,
+                    )
+
+                    chunks = chunk_mutations(mutations, chunk_size)
+
+                    for result in pool.imap_unordered(worker_fn, chunks):
+                        results.extend(result)
+                        pbar.update(chunk_size)
+
+            pbar.close()
+
+            logger.info(
+                "Total profitable results: %s (%.2f)",
+                len(results),
+                (len(results) / combinations) * 100
+            )
+
+    return filter_results(results)
 
 
 # =====================================================================================
