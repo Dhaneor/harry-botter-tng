@@ -233,19 +233,34 @@ def test_condition_result_combine():
     assert np.array_equal(cr2.combined_signal, np.array([0, 1, 1, 0, -1, -1, 0]))
 
 
+def test_parameter_change_notification():
+    c = cn.condition_factory(c_defs["ema"], {})
+    key_store_before = list(c.key_store.values())
+
+    logger.debug("~-*-~" * 30)
+    pprint(c.__dict__)
+
+    for operand in (c.operand_a, c.operand_b, c.operand_c, c.operand_d):
+        if operand is not None:
+            operand.randomize()
+
+    key_store_after = list(c.key_store.values())
+
+    logger.debug("~-*-~" * 30)
+    pprint(c.__dict__)
+
+    assert key_store_before != key_store_after, "Key did not change"
+
+
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
     # test_condition_result_combine()
+    test_parameter_change_notification()
 
-    c = cn.condition_factory(c_defs["golden_cross"], {'test', 'test'})
-
-    for comp in (c.operand_a, c.operand_b, c.operand_c, c.operand_d):
-        if comp:
-            print(comp.indicators)
-
-    pprint(c.__dict__)
+    # c = cn.condition_factory(c_defs["golden_cross"], {})
+    # pprint(c.__dict__)
 
     sys.exit()
 

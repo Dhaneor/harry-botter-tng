@@ -65,9 +65,6 @@ class OperandDefinition:
         self.shift: int = 0
         self._parameter_space: list = []
 
-        logger.debug("-------------- first: CREATING OPERAND DEFINITION -------------")
-        logger.debug(f"OperandDefinition: {definition}")
-
         self._parse_definition(definition)
 
     def __repr__(self):
@@ -254,19 +251,24 @@ class Factory:
     """Class to build operands from OperandDefinition instances."""
     def __init__(self):
         self.all_indicators = None
+        self.id_keys = 0
 
     def build_operand(self, definition: OperandDefinition) -> Operand:
         self.all_indicators = []  # keep track of all indicators created
 
         match definition.type_:
             case OperandType.INDICATOR:
-                return self._build_indicator(definition)
+                operand = self._build_indicator(definition)
             case OperandType.SERIES:
-                return self._build_series(definition)
+                operand = self._build_series(definition)
             case OperandType.TRIGGER:
-                return self._build_trigger(definition)
+                operand = self._build_trigger(definition)
             case _:
                 raise ValueError(f"Invalid operand type: {definition.type_}")
+
+        operand.id = self.id_keys
+        self.id_keys += 1
+        return operand
 
     def _build_indicator(self, definition: OperandDefinition, level=0) -> OperandIndicator:
         logger.debug(f"[{level}] Building indicator: {definition.name}")
@@ -589,8 +591,8 @@ def operand_factory(operand_definition: tuple | str) -> Operand:
     Operand
         an Operand class, ready for use
     """
+    logger.debug("-------------- first: CREATING OPERAND DEFINITION -----------------")
     operand_def = OperandDefinition(operand_definition)
-
     logger.debug(vars(operand_def))
     logger.debug("--------------------- next: BUILDING OPERAND ----------------------")
     try:

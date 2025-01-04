@@ -170,8 +170,6 @@ def test_operand_factory():
         #     )
         if operand:
             pprint(operand.__dict__)
-        if elem == "rsi_overbought":
-            break
 
     return operand
 
@@ -284,20 +282,21 @@ def test_randomize():
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    # test_operand_factory()
+    test_operand_factory()
     # test_nested_indicators()
     # test_update_parameters()
     # test_randomize()
-    # sys.exit()
+    sys.exit()
 
     # operand = operand_factory(op_defs.get('bbands').get('def'))
     operand = operand_factory("sma")
 
     pprint(operand.__dict__)
 
-    for _ in range(2):
+    for _ in range(20):
         logger.debug('=' * 120)
         operand.run(data)
+        operand.randomize()
         logger.debug(list(data.keys()))
 
     # print(pd.DataFrame.from_dict(data).tail(10))

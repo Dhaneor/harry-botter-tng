@@ -54,7 +54,7 @@ from ..util import proj_types as tp
 from ..chart.plot_definition import SubPlot, Line, Channel
 
 logger = logging.getLogger("main.operand")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 # build a list of all available indicators, that can later be used
 # to do a fast check if requested indicators are available.
@@ -146,7 +146,7 @@ class Operand(ABC):
     params: dict[str, Any] = field(default_factory=dict)
     _parameter_space: Optional[Sequence[Number]] = None
     shift: int = 0
-    columns: dict[str, str] = field(default_factory=dict)
+    key_store: dict[str, str] = field(default_factory=dict)
 
     id: int = field(default=0)
 
@@ -157,8 +157,10 @@ class Operand(ABC):
     def __repr__(self) -> str:
         name = f"{self.name.upper()}" if isinstance(self.name, str) else f"{self.name}"
 
+        id_str = f"[{self.id}]"
+
         if not self.indicator:
-            return f"{self.type_}{name}"
+            return f"{id_str} {self.type_}{name}"
 
         match self.type_:
             case OperandType.INDICATOR:
@@ -174,7 +176,7 @@ class Operand(ABC):
                 logger.error("Invalid operand type: %s", self.type_)
                 param_str, in_str = "", ""
 
-        return f"{self.type_} {name}{param_str}{in_str} -> {self.unique_name}"
+        return f"{id_str} {self.type_} {name}{param_str}{in_str} -> {self.unique_name}"
 
     def __str__(self) -> str:
         return self.__repr__()
@@ -196,7 +198,7 @@ class Operand(ABC):
     def on_parameter_change(self) -> None:
         logger.debug("Parameter change detected for operand %s", self.name)
         self._update_names()
-        self.columns[self.id] = self.unique_name
+        self.key_store[self.id] = self.unique_name
 
     def randomize(self) -> None:
         logger.debug("Randomizing parameters for operand %s", self.name)
@@ -319,6 +321,7 @@ class OperandIndicator(Operand):
             space.update({indicator.name: indicator.parameter_space})
 
         self._parameter_space = space
+        self.key_store[self.id] = self.unique_name
 
     @property
     def display_name(self) -> str:
@@ -1013,6 +1016,9 @@ class OperandSeries(Operand):
         raise NotImplementedError(
             "It's not possible to update parameters for a price series"
         )
+
+    def randomize(self) -> None:
+        return
 
     def run(self, data: tp.Data) -> str:
         """Run the operand on the given data.

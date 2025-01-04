@@ -358,9 +358,15 @@ def signal_generator_factory(
     logger.debug(
         "... Processing %s condition definition(s) ...", len(condition_definitions),
     )
+
+    key_store = {}
+
     sig_gen = SignalGenerator(
         name,
-        tuple(cnd.condition_factory(c) for c in condition_definitions)
+        tuple(
+            cnd.condition_factory(c, key_store=key_store)
+            for c in condition_definitions
+            )
         )
     sig_gen.name = name
     sig_gen.condition_definitions = condition_definitions

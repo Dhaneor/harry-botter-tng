@@ -65,6 +65,7 @@ import numpy as np
 from ..util import proj_types as tp
 from ..util import comp_funcs as cmp
 from . import operand as op
+from .operand_factory import operand_factory
 
 logger = logging.getLogger("main.condition")
 
@@ -721,9 +722,10 @@ class ConditionFactory:
             operand_desc = getattr(condition_definition, operand_name, None)
 
             if getattr(condition_definition, operand_name, None) is not None:
-                setattr(self.condition, operand_name, op.operand_factory(operand_desc))
+                operand = operand_factory(operand_desc)
+                setattr(self.condition, operand_name, operand)
 
-                logger.debug("...built operand %s", op.operand_factory(operand_desc))
+                logger.debug("...built operand %s" % operand)
 
         # now let's check the sub-conditions for opening and closing
         # longs and/or shorts
@@ -740,6 +742,11 @@ class ConditionFactory:
                     setattr(self.condition, arm, self._from_tuple(arm_def))
                 case _:
                     raise ValueError(f"{arm_def} is not supported")
+
+        if self.key_store is None:
+            raise RuntimeError("key_store not set")
+
+        self.condition.set_key_store(self.key_store)
 
         return self.condition
 
@@ -774,7 +781,8 @@ class ConditionFactory:
                 if isinstance(op_def, (int, float, bool)):
                     op_def = self._get_fixed_indicator_definition(op_def)
 
-                operand = op.operand_factory(op_def)
+                operand = operand_factory(op_def)
+                operand.key_store = self.key_store
                 self._set_operand(operand)
 
             comparands[idx] = self._get_output_name(operand, output)
@@ -902,6 +910,9 @@ def condition_factory(
         if the .run() method of the instance is not working correctly
     """
     factory.key_store = key_store
+
+    logger.debug("ConditionFactory.key_store set to: %s", key_store)
+
     condition = factory.build_condition(c_def)
 
     if test_it and not condition.is_working():
