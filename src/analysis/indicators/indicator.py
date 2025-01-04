@@ -233,7 +233,7 @@ class FixedIndicator(IIndicator):
         self._parameters = parameter,
         self.output: tuple[str] = (self.unique_name,)
         self.output_names: tuple[str] = (self.unique_name,)
-        self.input: tuple[str] = ("close",)
+        self.input: tuple[str] = tuple()
         self._is_subplot: bool = True
         self._plot_desc: dict = {"name": ["Line"]}
 
@@ -250,6 +250,20 @@ class FixedIndicator(IIndicator):
         return False
 
     # ..................................................................................
+    @property
+    def unique_name(self) -> str:
+        """Returns a unique name for the indicator.
+
+        Returns
+        -------
+        str
+            Unique name for the indicator.
+        """
+        return (
+            f"{self.name.lower()}_"
+            f"{'_'.join((str(p.value) for p in self._parameters))}"
+        )
+
     @property
     def plot_desc(self) -> SubPlot:
         return SubPlot(
@@ -327,6 +341,9 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     talib_func = getattr(talib, func_name)
     info = abstract.Function(func_name).info
 
+    # instesd of telling the indicators which inputs they should
+    # use, every time we run them, these values are hard-coded here
+    # (but cann be overridden at runtime)
     if isinstance(info["input_names"], OrderedDict):
         if "prices" in info["input_names"].keys():
             input_names = set(info["input_names"]["prices"])
@@ -349,7 +366,7 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     parameters = dict(info["parameters"])
     display_name = info["display_name"]
 
-    # ..........................................................................
+    # .................................................................................
     # helper functions
     def _build_apply_func_doc_str() -> str:
         # build the function docstring dynamically
@@ -438,7 +455,7 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
 
         return inspect.Signature(parameters=sig_params)
 
-    # ..........................................................................
+    # .................................................................................
     # define the run function based on the indicator requested
     def run(self, *inputs: tuple[np.ndarray]) -> np.ndarray:  # type: ignore
 
@@ -457,7 +474,7 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
         #       block does not work as it is! This will be necessary for
         #       running an indicator for multiple assets at once.
         if isinstance(inputs[0], np.ndarray) and inputs[0].ndim == 2:
-            raise NotImplementedError()
+            raise NotImplementedError("Indicator.run() unsupported for 2D arrays")
 
             # for i in range(inputs[0].shape[1]):
             # out = np.empty(

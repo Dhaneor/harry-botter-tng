@@ -12,7 +12,9 @@ import re
 from enum import Enum, unique
 from typing import Any, Sequence
 
-from .operand import Operand, OperandIndicator, OperandSeries, OperandTrigger
+from .operand import (
+    Operand, OperandIndicator, OperandSeries, OperandTrigger, OperandType
+    )
 from ..indicators import indicator as ind
 from ..indicators import indicators_custom
 
@@ -42,24 +44,6 @@ class PriceSeries(Enum):
     def __contains__(self, item) -> bool:
         return next((True for member in self if member.value == item), False)
 
-
-class OperandType(Enum):
-    """Enums representing operator types."""
-
-    INDICATOR = "indicator"
-    SERIES = "series"
-    TRIGGER = "trigger"
-    VALUE_INT = "integer value"
-    VALUE_FLOAT = "float value"
-    BOOL = "boolean"
-
-    def __str__(self):
-        return self.name
-
-    def __repr__(self):
-        return self.name
-
-
 VALID_PRICE_INPUTS = {member.value for member in PriceSeries}
 
 
@@ -81,6 +65,7 @@ class OperandDefinition:
         self.shift: int = 0
         self._parameter_space: list = []
 
+        logger.debug("-------------- first: CREATING OPERAND DEFINITION -------------")
         logger.debug(f"OperandDefinition: {definition}")
 
         self._parse_definition(definition)
@@ -102,10 +87,14 @@ class OperandDefinition:
 
     def _parse_string(self, definition: str):
         self.name = definition
-        self.type_ = OperandType.INDICATOR \
-            if definition.lower() in ALL_INDICATORS \
-            else OperandType.SERIES
-        self.inputs = [definition]
+
+        if definition.upper() in ALL_INDICATORS:
+            self.type_ = OperandType.INDICATOR
+        elif definition.upper() in CUSTOM_INDICATORS:
+            self.type_ = OperandType.INDICATOR
+        else:
+            self.type_ = OperandType.SERIES
+            self.inputs = [definition]
 
     def _parse_tuple(self, definition: tuple):
         self.parse_name(definition[0])
@@ -263,7 +252,12 @@ class OperandDefinition:
 # --------------------------------------------------------------------------------------
 class Factory:
     """Class to build operands from OperandDefinition instances."""
+    def __init__(self):
+        self.all_indicators = None
+
     def build_operand(self, definition: OperandDefinition) -> Operand:
+        self.all_indicators = []  # keep track of all indicators created
+
         match definition.type_:
             case OperandType.INDICATOR:
                 return self._build_indicator(definition)
@@ -276,8 +270,6 @@ class Factory:
 
     def _build_indicator(self, definition: OperandDefinition, level=0) -> OperandIndicator:
         logger.debug(f"[{level}] Building indicator: {definition.name}")
-        all_indicators = []
-        inputs = []
 
         # get indicator class instance from factory
         try:
@@ -291,14 +283,13 @@ class Factory:
             logger.error("indicator not found: %s (%s)", definition.name, err)
             raise ValueError(f"invalid indicator: {definition.name}") from err
 
-        all_indicators.append(indicator)
+        self.all_indicators.append(indicator)
 
         # set the indicator parameters, if provided
         if definition.params:
             indicator.parameters = definition.params
 
-        if definition.inputs:
-            inputs = self._eval_inputs(definition.inputs, indicator, level)
+        inputs = self._eval_inputs(definition.inputs, indicator, level)
 
         # Some indicators (like the MACD) have more than one output. But
         # for one Operand, we are only interested in one of them (e.g.:
@@ -330,13 +321,16 @@ class Factory:
         else:
             output = indicator.unique_output[0]
 
+        logger.debug(f"[{level}] Setting indicator output: {output}")
+        logger.debug("[%s ]all indicators: %s" % (level, self.all_indicators))
+
         return OperandIndicator(
             name=indicator.name,
             extension=definition.extension,
             type_=OperandType.INDICATOR,
             inputs=inputs,
             indicator=indicator,
-            indicators=all_indicators,
+            indicators=self.all_indicators[level:],
             output=output,
         )
 
@@ -369,12 +363,18 @@ class Factory:
         TypeError
             if the inputs descriptions are not a string or a tuple
         """
+        logger.debug(
+            "[%s] evaluating inputs (%s) for %s", level, inputs_pre, i.name
+            )
+
         inputs_pre = inputs_pre or i.input
         inputs: list[Any] = []
 
+        logger.debug("[%s]   indicator inputs: %s", level, i.input)
+
         for idx, input_ in enumerate(inputs_pre):
             logger.debug(
-                "[%s][%s] evaluating input for %s: %s", idx, level, i.name, input_
+                "[%s][%s]   evaluating input for %s: %s", idx, level, i.name, input_
             )
 
             match input_:
@@ -383,7 +383,8 @@ class Factory:
                     inputs.append(self._build_indicator(input_, level + 1))
                 # input_ indicator or price series, given as string
                 case str():
-                    inputs.append(self.input_from_str(input_))
+                    definition = OperandDefinition(input_)
+                    inputs.append(self._build_series(definition))
                 # don't accept anything else
                 case _:
                     raise TypeError(
@@ -413,6 +414,8 @@ class Factory:
             )
             inputs.extend(i.input)
             inputs = inputs[: len(i.input)]
+
+        logger.debug(f"[{level}]   returning inputs for {i.name}: {inputs}")
 
         return tuple(inputs)
 

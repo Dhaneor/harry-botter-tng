@@ -8,7 +8,8 @@ Created on Dec 28 00:29:20 2024
 from .condition import (
     Condition, ConditionDefinition, ConditionResult, condition_factory
 )
-from .operand import Operand, operand_factory
+from .operand import Operand
+from .operand_factory import operand_factory
 from .signal_generator import (
     SignalGenerator, SignalsDefinition, signal_generator_factory
 )

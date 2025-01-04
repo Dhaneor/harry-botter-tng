@@ -5,11 +5,11 @@ Created on Oct 06 10:03:20 2021
 
 @author dhaneor
 """
-import sys
 import time
 import logging
 import numpy as np
 import pandas as pd
+import sys
 
 from pprint import pprint  # noqa: F401, F501
 
@@ -23,12 +23,12 @@ from analysis.chart.plot_definition import SubPlot
 from util import get_logger
 
 # configure logger
-logger = get_logger('main', level=logging.INFO)
+logger = get_logger('main', level=logging.DEBUG)
 
 
 # ======================================================================================
 columns = ["open time", "open", "high", "low", "close", "volume"]
-data = {col: np.random.rand(1000, 1) for col in columns}
+data = {col: np.random.rand(1_000) for col in columns}
 
 # ======================================================================================
 # define different operands for testing possible variants
@@ -144,6 +144,9 @@ op_defs = {
         #     channel=[],
         #     level='operand'
         # )
+    },
+    'er': {
+        'def': ("er", {"timeperiod": 7})
     }
 }
 
@@ -167,11 +170,27 @@ def test_operand_factory():
         #     )
         if operand:
             pprint(operand.__dict__)
-        if 'macd' in elem:
+        if elem == "rsi_overbought":
             break
 
     return operand
 
+
+def test_nested_indicators():
+    op_def = ("sma", ("rsi", {"timeperiod": 16}), {"timeperiod": 48},)
+    operand = operand_factory(op_def)
+    operand.randomize()
+    operand.randomize()
+
+    logger.debug("[TEST] %s" % operand)
+    logger.debug('[TEST] ======================================================')
+    assert isinstance(operand, op.Operand), \
+        (
+            "expected resutl for %s to be an instance of 'Operand', but got %s"
+            % (op_def, type(operand))
+        )
+    if operand:
+        pprint(operand.__dict__)
 
 def test_operand_run(operand: op.Operand, data: dict, show_result: bool = False):
     logger.debug(operand)
@@ -215,41 +234,45 @@ def test_plot_desc():
 
 def test_update_parameters():
 
-    for elem in list(op_defs.keys())[:1]:
-        try:
-            logger.debug('=' * 150)
-            op_def = op_defs.get(elem).get("def")
-            operand = op.operand_factory(op_def)
+    for elem in list(op_defs.keys()):
+        if elem == 'rsi_overbought':
+            try:
+                logger.debug('=' * 150)
+                op_def = op_defs.get(elem).get("def")
+                operand = op.operand_factory(op_def)
 
-            if not hasattr(operand, 'indicators'):
-                if isinstance(operand, op.OperandPriceSeries):
-                    logger.warning(f"Operand {elem} has no indicators")
-                    continue
-                else:
-                    raise AttributeError(f"Operand {elem} has no indicators")
+                if not hasattr(operand, 'indicators'):
+                    if isinstance(operand, op.OperandPriceSeries):
+                        logger.warning(f"Operand {elem} has no indicators")
+                        continue
+                    else:
+                        raise AttributeError(f"Operand {elem} has no indicators")
 
-            for indicator in operand.indicators:
-                logger.debug('-' * 150)
-                logger.debug("before: %s" % indicator)
-                indicator.randomize()
-                logger.debug("after: %s" % indicator)
+                for indicator in operand.indicators:
+                    logger.debug('-' * 150)
+                    logger.debug("before: %s" % indicator)
+                    indicator.randomize()
+                    logger.debug("after: %s" % indicator)
 
-            logger.debug("before: %s" % op.operand_factory(op_def))
-            logger.debug("after: %s" % operand)
-        except Exception as e:
-            logger.error(f"Error updating parameters for {elem}: {e}")
-            continue
-        break
+                logger.debug("before: %s" % op.operand_factory(op_def))
+                logger.debug("after: %s" % operand)
+            except Exception as e:
+                logger.error(f"Error updating parameters for {elem}: {e}")
+                continue
+
+            pprint(operand.__dict__)
+            pprint(operand.indicators[0].__dict__)
 
     logger.info("update parameters: OK")
 
 
 def test_randomize():
-    op_def = op_defs.get('bbands').get("def")
+    op_def = op_defs.get('sma').get("def")
     operand = operand_factory(op_def)
 
     logger.info("before: %s" % operand)
 
+    operand.randomize()
     operand.randomize()
 
     logger.info("-" * 150)
@@ -262,81 +285,65 @@ def test_randomize():
 # ============================================================================ #
 if __name__ == "__main__":
     # test_operand_factory()
+    # test_nested_indicators()
     # test_update_parameters()
-    test_randomize()
-    sys.exit()
+    # test_randomize()
+    # sys.exit()
 
-    operand = op.operand_factory(op_defs.get('sma_of_rsi').get('def'))
-    # operand = op.operand_factory(op_defs.get('sma_of_rsi').get('def'))
+    # operand = operand_factory(op_defs.get('bbands').get('def'))
+    operand = operand_factory("sma")
 
-    # operand.update_parameters(
-    #     {
-    #         'rsi_overbought_80.5': {
-    #             'value': 90,
-    #             'this_is_wrong': 'wrongest',
-    #             'parameter_space': {'value': [80, 100]}
-    #         },
-    #     }
-    # )
-    # operand.update_parameters({'sma_10': {'timeperiod': 35}})
-    # logger.debug('before: %s', operand)
-    # operand.update_parameters({operand.unique_name: {'timeperiod': 129}})
-    # logger.debug('after: %s', operand)
+    pprint(operand.__dict__)
 
     for _ in range(2):
         logger.debug('=' * 120)
         operand.run(data)
         logger.debug(list(data.keys()))
 
-    print(pd.DataFrame.from_dict(data).tail(10))
+    # print(pd.DataFrame.from_dict(data).tail(10))
 
-    sys.exit()
+    # sys.exit()
 
-    print('-~•~-' * 40)
-    print("indicator:")
-    pprint(operand.indicator.plot_desc)
-    print('-~•~-' * 40)
-    print("operand:")
-    pprint(operand.as_dict())
-    print(operand.indicator.display_name)
-    print('-~•~-' * 40)
-    print("plot description:")
-    pprint(operand.plot_desc)
+    # print('-~•~-' * 40)
+    # print("indicator:")
+    # pprint(operand.indicator.plot_desc)
+    # print('-~•~-' * 40)
+    # print("operand:")
+    # pprint(operand.as_dict())
+    # print(operand.indicator.display_name)
+    # print('-~•~-' * 40)
+    # print("plot description:")
+    # pprint(operand.plot_desc)
 
     sys.exit()
 
     logger.setLevel(logging.ERROR)
-    runs = 1_000
+    runs = 10_000
     data = data
     st = time.time()
 
-    opdef = op_defs.get('sma').get('def')
+    op_def = op_defs.get('sma').get('def')
+    operand = op.operand_factory(op_def)
 
-    for i in range(runs):
-        operand = op.operand_factory(opdef)
+    with Profile(timeunit=0.001) as p:
+        for i in range(runs):
+            _ = operand.randomize()
+            # op.update_parameters({op.unique_name: {'timeperiod': i}})
 
-    #     # operand.update_parameters({operand.unique_name: {'timeperiod': i}})
-    #     # test_operand_run(op, data, False)
-
-    # with Profile(timeunit=0.001) as p:
-    #     for i in range(runs):
-    #         _ = op.operand_factory(opdef)
-    #         # op.update_parameters({op.unique_name: {'timeperiod': i}})
-
-    # (
-    #     Stats(p)
-    #     .strip_dirs()
-    #     .sort_stats(SortKey.CUMULATIVE)  # (SortKey.CALLS)
-    #     # .reverse_order()
-    #     .print_stats(30)
-    # )
+    (
+        Stats(p)
+        .strip_dirs()
+        .sort_stats(SortKey.CUMULATIVE)  # (SortKey.CALLS)
+        # .reverse_order()
+        .print_stats(30)
+    )
 
     # for _ in range(runs):
     #     test_execute_condition(data)
 
     print(f'length data: {len(data["close"])} periods')
     print(
-        f"execution time: {(((time.time() - st) * 1_000_000) / runs):.2f} microseconds"
+        f"avg execution time: {(((time.time() - st) * 1_000_000) / runs):.2f} microseconds"
     )
 
     # pprint(operand.as_dict())

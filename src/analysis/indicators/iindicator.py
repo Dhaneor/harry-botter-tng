@@ -336,10 +336,9 @@ class IIndicator(ABC):
     def on_parameter_change(self, *args) -> None:
         """Callback function for when parameters change."""
         logger.info("parameters changed for %s", self.name)
-        # if self.on_change is not None:
-        #     logger.debug("calling: %s" % self.on_change)
-        #     self.on_change()
+        logger.debug("Calling subscribers: %s", self.subscribers)
         for callback in self.subscribers:
+            logger.debug("Calling callback %s", callback)
             callback()
 
     @abstractmethod
@@ -352,6 +351,8 @@ class IIndicator(ABC):
 
     def randomize(self) -> None:
         """Randomizes the parameters of the indicator."""
+        logger.info("randomizing parameters for %s", self.name)
+        logger.debug("Randomizing parameters: %s", self.parameters)
         for param in self.parameters:
             param.randomize()
 
