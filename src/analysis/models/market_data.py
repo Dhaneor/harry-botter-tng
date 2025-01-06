@@ -63,7 +63,7 @@ class MarketDataStore:
             for j in range(cols):
                 self.log_returns[i, j] = math.log(self.close[i, j] / self.close[i-1, j])
 
-    def compute_atr(self, period=14):
+    def compute_atr(self, period=21):
         """
         Compute Wilder's ATR (exponential smoothing) for each column.
         Fills self.atr with shape (rows, cols).
@@ -131,7 +131,7 @@ class MarketDataStore:
                         window_sum += TR[k, j]
                     self.atr[i, j] = window_sum / period
 
-    def compute_annual_vol(self, period=30):
+    def compute_annual_vol(self, period=21):
         """
         Fill self.annual_vol as rolling stdev of log_returns * sqrt(252).
         """

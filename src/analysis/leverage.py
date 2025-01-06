@@ -368,12 +368,40 @@ class LeverageCalculator:
         market_data: MarketData,
         risk_level: int = 1,
         max_leverage: float = 1.0,
-        atr_window: int = 21):
+        smmothing: int = 1,
+        atr_window: int = 21
+    ):
+        """
+        Initialize the LeverageCalculator with market data and configuration parameters.
+
+        This constructor sets up the LeverageCalculator with the provided market data
+        and configuration settings. It also pre-populates the leverage cache based on
+        the size of the market data.
+
+        Parameters:
+        -----------
+        market_data : MarketData
+            The market data object containing price and volume information.
+        risk_level : int, optional
+            The risk level for leverage calculations (default is 1).
+        max_leverage : float, optional
+            The maximum allowed leverage (default is 1.0).
+        smmothing : int, optional
+            The smoothing factor for calculations (default is 1).
+        atr_window : int, optional
+            The window size for Average True Range calculations (default is 21).
+
+        Returns:
+        --------
+        None
+        """
         self.market_data = market_data
 
         self._validate_risk_level(risk_level)
         self.risk_level = risk_level
         self.max_leverage = max_leverage
+
+        self.smoothing = smmothing
 
         self.interval = market_data.interval
         self.interval_in_ms = market_data.interval_in_ms
@@ -381,6 +409,12 @@ class LeverageCalculator:
         self.atr_window = atr_window
 
         self._cache = {}
+
+        # The ATR calculation has already been done in market_data
+        # with a window size of 21. We only need to recalculate it
+        # for a different window size.
+        if atr_window != 21:
+            self.market_data.compute_atr(atr_window)
 
         # pre-populate the cache ...
         if len(market_data) < 5_000:
@@ -423,9 +457,48 @@ class LeverageCalculator:
                 self._cache.clear()
                 logger.info("Cache cleared due to high memory usage.")
 
+            # necessary??? np.nan_to_num(leverage)
+
             self._cache[risk_level] = np.minimum(lv, self.max_leverage)
 
         return self._cache[risk_level]
+
+    def _conservative_sizing(
+        self,
+        annualized_volatility: np.ndarray,
+        target_risk_annual: float
+    ) -> np.ndarray:
+        """Calculates the maximum leverage based on 'close' prices.
+
+        This is the method described by Robert Carver in 'Leveraged
+        Trading'. It is very conservative, at least when the account
+        level risk target is also calculated by the method(s) described
+        in the book (he proposes to target 12% annualized volatility
+        for the portfolio).
+
+        This algorithm uses the standard deviation.
+
+        Parameters
+        ----------
+        close
+            the close prices
+        target_risk_annual
+            the target risk per year
+        smoothing
+            the smoothing period (less erratic results)
+        interval
+            the trading interval in milliseconds
+
+        Returns
+        -------
+        np.ndarray
+            the maximum leverage
+        """
+        # Apply smoothing to volatility
+        if self.smoothing > 1:
+            annualized_volatility = bn.move_mean(annualized_volatility, self.smoothing)
+
+        return target_risk_annual / annualized_volatility
 
     def _validate_risk_level(self, risk_level: int) -> None:
         if risk_level not in valid_risk_levels():
