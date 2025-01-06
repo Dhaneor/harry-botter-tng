@@ -1,8 +1,16 @@
-from numba import int64, float32
-from numba.experimental import jitclass
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Jan 06 01:28:53 2024
+
+@author: dhaneor
+"""
 import numpy as np
 import pandas as pd
 import math
+from numba import int64, float32
+from numba.experimental import jitclass
+
 
 spec = [
     ('timestamp', int64[:, :]),
@@ -155,6 +163,12 @@ class MarketDataStore:
 
 
 class MarketData:
+    """A class to hold OHLCV data for multiple symbols.
+
+    NOTE: This class assumes that the provided data is for
+    the same interval for all symbols.
+    """
+
     def __init__(self, market_data, symbols):
         """
         market_data : MarketData instance (the jitclass)
@@ -162,9 +176,25 @@ class MarketData:
         """
         self.mds = market_data  # the jitclass instance
         self.symbols = symbols
+
         # create a dictionary symbol -> column index
         self.symbol_to_col = {sym: i for i, sym in enumerate(symbols)}
 
+        # We define the fields we have in the MarketData
+        # The array names in your jitclass might differ
+        self.available_fields = [
+            "open", "high", "low", "close", "volume",
+            "log_ret", "atr", "ann_vol"
+        ]
+
+        self._interval = None
+
+        timestamps = self.mds.timestamp[:, 0]
+        self._interval_in_ms = int(
+            np.min(
+                np.diff(timestamps[~np.isnan(timestamps)])
+                )
+            )
 
     def __repr__(self):
         """
@@ -172,6 +202,46 @@ class MarketData:
         with multi-level columns: top level = symbol, second level = field.
         The row index is taken from the first column in timestamp (assuming
         all columns share the same time dimension).
+        """
+        return self.dataframe.__repr__()
+
+    def __len__(self):
+        """
+        Return the number of rows in the MarketData.
+        """
+        return len(self.mds.close)
+
+    def __getitem__(self, key):
+        """
+        Return a DataFrame by:
+          - Symbol (if `key` is in self.symbols),
+          - Field  (if `key` is in self.available_fields).
+
+        Examples:
+          wrapper['BTCUSDT'] -> all fields for that symbol as single-level columns
+          wrapper['open']    -> all symbols for that field as a multi-level column
+
+        If `key` is in both sets, you may need a tie-break rule.
+        If `key` is in neither, raise KeyError.
+        """
+        if key in self.symbol_to_col:
+            # User requested a SYMBOL
+            return self._build_symbol_df(key)
+        elif key in self.available_fields:
+            # User requested a FIELD
+            return self._build_field_df(key)
+        else:
+            raise KeyError(f"'{key}' not found in symbols or fields.")
+
+    # .................................................................................
+    @property
+    def dataframe(self):
+        """Returns the data as a DataFrame.
+
+        Returns:
+            pd.DataFrame: Returns the data as a DataFrame,
+            with multi-level columns as symbols/prices and
+            rows as timestamps.
         """
         mds = self.mds  # shorthand
         rows, cols = mds.close.shape
@@ -182,10 +252,7 @@ class MarketData:
             # No data, return something minimal
             return "MarketDataWrapper: (empty)"
 
-        time_index = mds.timestamp[:, 0]
-        # If you want to convert it to an actual DatetimeIndex (in ms),
-        # uncomment the line below:
-        # time_index = pd.to_datetime(time_index, unit='ms')
+        time_index = pd.to_datetime(mds.timestamp[:, 0], unit='ms')
 
         # Define which fields to show in the multi-level columns
         fields = ["open", "high", "low", "close", "volume",
@@ -227,56 +294,185 @@ class MarketData:
         df = pd.DataFrame(data_matrix, columns=col_index, index=time_index)
 
         # Optionally name the index
-        df.index.name = "open_time"
-
-        # Return the DataFrame's string representation
-        # so that printing the wrapper shows the multi-level columns.
-        return df.__repr__()
-
-    def __getitem__(self, symbol):
-        """
-        Return data for a specific symbol as a Pandas DataFrame.
-        E.g. usage: df = wrapper['BTCUSDT']
-        """
-        col = self.symbol_to_col.get(symbol, None)
-        if col is None:
-            raise KeyError(f"Symbol '{symbol}' not found in MarketDataWrapper")
-
-        # Extract columns from the jitclass arrays (using normal Python slicing)
-        # The arrays themselves are still NumPy arrays.
-        timestamps = self.mds.timestamp[:, col]
-        opens      = self.mds.open_[:, col]
-        highs      = self.mds.high[:, col]
-        lows       = self.mds.low[:, col]
-        closes     = self.mds.close[:, col]
-        volumes    = self.mds.volume[:, col]
-        logrets    = self.mds.log_returns[:, col]
-        atrvals    = self.mds.atr[:, col]
-        volvals    = self.mds.annual_vol[:, col]
-
-        human_open_time = pd.to_datetime(timestamps, unit='ms')
-
-        # Build a DataFrame (time index optional)
-        df = pd.DataFrame({
-            'open_time': timestamps,
-            'human_open_time': human_open_time,
-            'open':      opens,
-            'high':      highs,
-            'low':       lows,
-            'close':     closes,
-            'volume':    volumes,
-            'log_ret':   logrets,
-            'atr':       atrvals,
-            'ann_vol':   volvals
-        })
-        # Optionally convert timestamp to DatetimeIndex if you'd like:
-        # df['human open time'] = pd.to_datetime(df['open_time'], unit='ms')
-        df.set_index('open_time', inplace=True)
+        df.index.name = None
 
         return df
 
-    def get_symbol_col(self, symbol):
+    @property
+    def open(self) -> np.ndarray:
+        """Returnsa 2D NumPy array of 'open' prices.
+
+        Returns:
+            np.ndarray: 2D array of open prices for all symbols.
         """
-        Return the integer column index for the given symbol, or -1 if not found.
+        return self.mds.open_
+
+    @property
+    def high(self) -> np.ndarray:
+        """Returnsa 2D NumPy array of 'high' prices.
+
+        Returns:
+            np.ndarray: 2D array of high prices for all symbols.
         """
-        return self.symbol_to_col.get(symbol, -1)
+        return self.mds.high
+
+    @property
+    def low(self) -> np.ndarray:
+        """Returnsa 2D NumPy array of 'low' prices.
+
+        Returns:
+            np.ndarray: 2D array of low prices for all symbols.
+        """
+        return self.mds.low
+
+    @property
+    def close(self) -> np.ndarray:
+        """Returnsa 2D NumPy array of 'close' prices.
+
+        Returns:
+            np.ndarray: 2D array of close prices for all symbols.
+        """
+        return self.mds.close
+
+    @property
+    def volume(self) -> np.ndarray:
+        """Returnsa 2D NumPy array of 'volumne' data.
+
+        Returns:
+            np.ndarray: 2D array of volume data for all symbols.
+        """
+        return self.mds.volume
+
+    def interval(self) -> str:
+        return self._interval
+
+    @property
+    def interval_in_ms(self) -> int:
+        """Return the interval in milliseconds.
+
+        Returns:
+            int: interval in milliseconds.
+        """
+        return self._interval_in_ms
+
+    def get_array(self, field, symbol=None):
+        """Returns a Numpy array of the specified field for the given symbol.
+
+        Parameters:
+        -----------
+        field: str -> e.g. "close"
+        symbol: str -> optional symbol to slice
+        if None, return the entire 2D array
+        if provided, return a 1D slice
+
+        Returns:
+        --------
+        np.ndarray: 1D or 2D array of specified field for the given symbol.
+        """
+        arr_2d = None
+        if field == "close":
+            arr_2d = self.md.close
+        elif field == "open":
+            arr_2d = self.md.open_
+        # ...
+        else:
+            raise KeyError(f"Unknown field: {field}")
+
+        if symbol is not None:
+            col = self.symbol_to_col.get(symbol, -1)
+            if col == -1:
+                raise KeyError(f"Unknown symbol: {symbol}")
+            return arr_2d[:, col]  # shape (rows,)
+        return arr_2d  # shape (rows, cols)
+
+    # .................................................................................
+    def _build_symbol_df(self, symbol):
+        """
+        Return a DataFrame with columns = all fields, rows = time,
+        for the given symbol.
+        """
+        col = self.symbol_to_col[symbol]
+
+        # For convenience, define a small dictionary to map field_name -> actual array
+        mds = self.mds
+        field_arrays = {
+            "open":    mds.open_[:, col],
+            "high":    mds.high[:, col],
+            "low":     mds.low[:, col],
+            "close":   mds.close[:, col],
+            "volume":  mds.volume[:, col],
+            "log_ret": mds.log_returns[:, col],
+            "atr":     mds.atr[:, col],
+            "ann_vol": mds.annual_vol[:, col],
+        }
+
+        time_index = mds.timestamp[:, col]  # or mds.timestamp[:, 0] if aligned
+        df = pd.DataFrame({f: field_arrays[f] for f in self.available_fields},
+                          index=time_index)
+        df.index.name = None
+        return df
+
+    def _build_field_df(self, field):
+        """
+        Return a DataFrame with columns = all symbols, rows = time,
+        but only for the specified field.
+
+        We'll use a multi-level column index with (symbol, field).
+        If you want single-level with just the symbol,
+        you could do something else.
+        """
+        mds = self.mds
+        rows, cols = mds.close.shape
+
+        # Prepare a 2D array for all symbols
+        data_matrix = np.zeros((rows, len(self.symbols)), dtype=np.float64)
+
+        # Map the user-friendly name to the actual array in the jitclass
+        # Notice that we have `mds.open_`, `mds.close`, etc. are separate arrays
+        # if field == "open":
+        #     arr = mds.open_
+        # elif field == "high":
+        #     arr = mds.high
+        # elif field == "low":
+        #     arr = mds.low
+        # elif field == "close":
+        #     arr = mds.close
+        # elif field == "volume":
+        #     arr = mds.volume
+        # elif field == "log_ret":
+        #     arr = mds.log_returns
+        # elif field == "atr":
+        #     arr = mds.atr
+        # elif field == "ann_vol":
+        #     arr = mds.annual_vol
+        # else:
+        #     raise KeyError(f"Unsupported field '{field}'")
+
+        field_arrays = {
+            "open":    mds.open_,
+            "high":    mds.high,
+            "low":     mds.low,
+            "close":   mds.close,
+            "volume":  mds.volume,
+            "log_ret": mds.log_returns,
+            "atr":     mds.atr,
+            "ann_vol": mds.annual_vol,
+        }
+
+        arr = field_arrays.get(field, None)
+
+        if arr is None:
+            raise KeyError(f"Unsupported field '{field}'")
+
+        for sym_idx, sym in enumerate(self.symbols):
+            data_matrix[:, sym_idx] = arr[:, sym_idx]
+
+        # Build a multi-level column index: (symbol, field)
+        col_tuples = [(sym, field) for sym in self.symbols]
+        col_index = pd.MultiIndex.from_tuples(col_tuples, names=["Symbol", ""])
+
+        # Use, e.g., the first column of timestamp as a universal index
+        time_index = pd.to_datetime(mds.timestamp[:, 0], unit='ms')
+        df = pd.DataFrame(data_matrix, columns=col_index, index=time_index)
+        df.index.name = None
+        return df

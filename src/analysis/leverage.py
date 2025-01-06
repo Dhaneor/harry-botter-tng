@@ -8,8 +8,10 @@ Created on Thu Feb 11 01:28:53 2021
 import numpy as np
 import bottleneck as bn
 import logging
+
 from numba import njit  # noqa: F401, E402
 from functools import partial
+from sys import getsizeof
 from typing import Generator
 
 from analysis.models.market_data import MarketData
@@ -188,7 +190,9 @@ def _conservative_sizing(
     This is the method described by Robert Carver in 'Leveraged
     Trading'. It is very conservative, at least when the account
     level risk target is also calculated by the method(s) described
-    in the book (he proposes 12%).
+    in the book (he proposes to target 12% annualized volatility
+    for the portfolio).
+
     This algorithm uses the standard deviation.
 
     Parameters
@@ -215,13 +219,13 @@ def _conservative_sizing(
     )
 
     # Apply smoothing to volatility
-    smoothed_volatility = bn.move_mean(annualized_volatility, smoothing)
+    if smoothing > 1:
+        annualized_volatility = bn.move_mean(annualized_volatility, smoothing)
 
     # Calculate leverage
-    leverage = target_risk_annual / smoothed_volatility
+    leverage = target_risk_annual / annualized_volatility
 
-    # Apply maximum leverage limit
-    leverage = np.minimum(leverage, max_leverage)
+
 
     return np.nan_to_num(leverage)
 
@@ -359,13 +363,35 @@ def diversification_multiplier(
 
 class LeverageCalculator:
 
-    def __init__(self, market_data: MarketData, interval: str, atr_window: int = 21):
+    def __init__(
+        self,
+        market_data: MarketData,
+        risk_level: int = 1,
+        max_leverage: float = 1.0,
+        atr_window: int = 21):
         self.market_data = market_data
 
-        self.interval_in_ms = INTERVAL_IN_MS[interval]
+        self._validate_risk_level(risk_level)
+        self.risk_level = risk_level
+        self.max_leverage = max_leverage
+
+        self.interval = market_data.interval
+        self.interval_in_ms = market_data.interval_in_ms
+
         self.atr_window = atr_window
 
-    def run(self, max_leverage: float, risk_level: int = 1) -> np.ndarray:
+        self._cache = {}
+
+        # pre-populate the cache ...
+        if len(market_data) < 5_000:
+            # ...for all risk levels for smaller datasets
+            for risk_level in valid_risk_levels():
+                self.leverage(risk_level)
+        else:
+            #...for the current risk level for larger datasets
+            self.leverage(self.risk_level)
+
+    def leverage(self, risk_level: int = None) -> np.ndarray:
         """Calculates the maximum leverage based on 'close' prices.
 
         Parameters
@@ -380,12 +406,33 @@ class LeverageCalculator:
 
         Raises
         ------
-        KeyError
+        ValueError
             if the risk level is not valid
         """
-        return run_funcs[risk_level](
-            data=self.market_data, interval_in_ms=self.interval_in_ms, max_leverage=max_leverage
+        risk_level = risk_level or self.risk_level
+        self._validate_risk_level(risk_level)
+
+        if self._cache.get(risk_level, None) is None:
+            lv = run_funcs[risk_level](
+                data=self.market_data,
+                interval_in_ms=self.interval_in_ms,
+                max_leverage=self.max_leverage
             )
+
+            if getsizeof(self.cache) > 100_000_000:
+                self._cache.clear()
+                logger.info("Cache cleared due to high memory usage.")
+
+            self._cache[risk_level] = np.minimum(lv, self.max_leverage)
+
+        return self._cache[risk_level]
+
+    def _validate_risk_level(self, risk_level: int) -> None:
+        if risk_level not in valid_risk_levels():
+            raise ValueError(
+                f"Invalid risk level: {risk_level}. Valid risk levels: "
+                f"{valid_risk_levels()}"
+                )
 
     def _yield_single(self) -> Generator[np.ndarray, ...]:
         for idx in range(len(self.market_data.open.shape[1])):

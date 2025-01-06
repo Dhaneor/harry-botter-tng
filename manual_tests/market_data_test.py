@@ -52,8 +52,14 @@ def test_market_data():
     mds = MarketDataStore(**data)
     md = MarketData(mds, symbols)
 
-    print(md["BTCUSDT"])
-    print(md)
+    # print(md["BTCUSDT"]['open'])
+    # print(md['close'])
+    # print(md.dataframe.info())
+
+    test = np.random.randint(0, 100_000, size=(999, 1), dtype=np.int32)
+
+    print(md.open > test)
+    print(md.interval_in_ms)
 
 if __name__ == '__main__':
     test_market_data()
