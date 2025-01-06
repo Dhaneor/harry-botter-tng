@@ -13,7 +13,6 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from pprint import pprint  # noqa: F401
-from typing import Hashable
 from scipy.stats import norm
 
 # profiler imports
@@ -21,90 +20,58 @@ from cProfile import Profile
 from pstats import SortKey, Stats
 
 from analysis.strategy import signal_generator as sg
-from analysis.strategy import condition as cn
 from analysis.strategy.definitions import (  # noqa: F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
     linreg_roc_btc_1d, linreg_roc_eth_1d, test_er, linreg, aroonosc,
     linreg_ma_cross
 )
 from analysis.chart.tikr_charts import SignalChart
-from helpers_ import get_ohlcv
+from helpers_ import get_ohlcv  # noqa: F401
 from util import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger('main', level='DEBUG')
 
 # set interval and length of test data
 interval = "2h"
 length = 365*6
 
-sig_def = test_er
+sig_def = test_er  # linreg_roc_btc_1d
 
 # ======================================================================================
-try:
-    df = get_ohlcv(symbol="BTCUSDT", interval=interval, as_dataframe=True)
-    # print(df.info())
-    # print(df.describe())
-    # print(df.isnull().values.any())
-    # raise Exception("That's all we need for now. Exiting... 2 seconds")
-except Exception as e:
-    logger.error(f"Error fetching data: {e}")
-    sys.exit()
+# try:
+#     df = get_ohlcv(symbol="BTCUSDT", interval=interval, as_dataframe=True)
+#     # print(df.info())
+#     # print(df.describe())
+#     # print(df.isnull().values.any())
+#     # raise Exception("That's all we need for now. Exiting... 2 seconds")
+# except Exception as e:
+#     logger.error(f"Error fetching data: {e}")
+#     sys.exit()
 
-data = {col: df[col].to_numpy() for col in df.columns}
+# data = {col: df[col].to_numpy() for col in df.columns}
+
+data = {
+    'open time': np.random.rand(length),
+    'open': np.random.rand(length),
+    'high': np.random.rand(length),
+    'low': np.random.rand(length),
+    'close': np.random.rand(length),
+    'volume': np.random.rand(length)
+}
+
 
 # ======================================================================================
+def _get_test_data(length=1000):
+    return {
+        'open time': np.arange(length),
+        'open': np.random.rand(length),
+        'high': np.random.rand(length),
+        'low': np.random.rand(length),
+        'close': np.random.rand(length),
+        'volume': np.random.rand(length)
+    }
 
-
-def test_signal_definition(show=False):
-    timeperiod = 14
-
-    try:
-        open_long = cn.ConditionDefinition(
-            interval="1d",
-            operand_a=(
-                "cci",
-                {"timeperiod": timeperiod},
-            ),
-            operand_b={'oversold': -150},
-            open_long=cn.COMPARISON.CROSSED_ABOVE,
-        )
-
-        open_short = cn.ConditionDefinition(
-            interval="1d",
-            operand_a=(
-                "cci",
-                {"timeperiod": timeperiod},
-            ),
-            operand_b={'overbought': 150},
-            open_short=cn.COMPARISON.CROSSED_BELOW,
-        )
-        success = True
-    except TypeError as e:
-        logger.error(e)
-        success = False
-
-    logger.info("open long: %s", open_long)
-    logger.info("open short: %s", open_short)
-    logger.info("operands are equal: %s", (open_long.operand_a == open_short.operand_a))
-    logger.info("operand is hashable: %s", isinstance(open_long.operand_a, Hashable))
-
-    if success:
-        sig_def = sg.SignalsDefinition(
-            name='test name',
-            conditions=[
-                open_long,
-                open_short,
-            ],
-        )
-
-        if show:
-            print(sig_def)
-        return sig_def
-    else:
-        logger.error("unable to create signal definition")
-
-
-def test_factory(sig_def):
+def test_factory(sig_def) -> sg.SignalGenerator:
     try:
         sig_gen = sg.signal_generator_factory(sig_def)
     except Exception as exc:
@@ -112,7 +79,6 @@ def test_factory(sig_def):
         sys.exit()
 
     logger.info("created signal generator: %s", sig_gen)
-    logger.info("subplots: %s", sig_gen.subplots)
     return sig_gen
 
 
@@ -127,9 +93,98 @@ def test_factory_from_existing(sig_gen):
     return sig_gen_new
 
 
+def test_randomize():
+    try:
+        sig_gen = sg.signal_generator_factory(sig_def)
+    except Exception as exc:
+        logger.exception(exc)
+        sys.exit()
+
+    logger.info("original signal generator: %s", sig_gen)
+
+    sig_gen.randomize()
+
+    logger.info("randomized signal generator: %s", sig_gen)
+
+
+def test_get_all_used_indicators():
+    sig_gen = test_factory(linreg_roc_btc_1d)
+
+    logger.debug(sig_gen.indicators)
+
+    for n, ind in enumerate(sig_gen.indicators):
+        logger.info(ind)
+        # logger.debug(
+        #     "[%s] %s-> %s -> %s (%s)",
+        #     n, ind, ind.parameters, ind.parameter_space, type(ind)
+        #     )
+        # logger.debug(ind.__dict__)
+        # methods = [m for m in dir(ind) if '_' not in m]
+        # logger.debug(methods)
+        logger.debug("-" * 160)
+
+
+def test_get_all_parameters():
+    sig_gen = test_factory(linreg_roc_btc_1d)
+
+    logger.info(sig_gen.operands)
+    logger.info(sig_gen.indicators)
+
+    for param in sig_gen.parameters:
+        logger.info(param)
+        logger.debug("-" * 160)
+
+def test_get_all_operands():
+    """Gets all operands in the SignalGenerator. """
+    sig_gen = test_factory(linreg_roc_btc_1d)
+
+    for n, cond in enumerate(sig_gen.conditions):
+        for op in filter(lambda x: x is not None, cond.operands):
+            logger.debug("[%s] %s", n, op)
+            logger.debug("-" * 160)
+
+
+def test_set_parameters():
+    """Tests setting parameters in the SignalGenerator. """
+    global data
+    sig_gen = sg.signal_generator_factory(sig_def)
+    logger.info(sig_gen.parameters)
+
+    params = tuple((p.value for p in sig_gen.parameters))
+    logger.info(f"Original parameters: {params}")
+
+    df = pd.DataFrame.from_dict(sig_gen.execute(data))
+    print(df)
+
+    keep_keys = [
+        'open time', 'human open time', 'open', 'high', 'low', 'close', 'volume'
+        ]
+    data = {k: data[k] for k in keep_keys}
+
+    for p in sig_gen.parameters:
+        p.increase()
+
+    new_params = tuple((p.value for p in sig_gen.parameters))
+    logger.info(f"New parameters: {new_params}")
+
+    for c in sig_gen.conditions:
+        print(f"Condition: {c}")
+
+    df = pd.DataFrame.from_dict(sig_gen.execute(data))
+    print(df)
+
+
+def test_plot_desc(sig_gen):
+    pprint(sig_gen.plot_desc)
+
+
 def test_execute(sig_gen: sg.SignalGenerator, data, weight, show=False, plot=False):
-    data = sig_gen.execute(data)
-    logger.info(sig_gen)
+    sig_gen = sig_gen or sg.signal_generator_factory(sig_def)
+
+    data = sig_gen.execute(data, as_dict=False)
+    data = sig_gen.execute(data, as_dict=False)
+    logger.info("got data of type: %s", type(data).__name__)
+    logger.info(data.as_dict().keys())
 
     if show:
         df = pd.DataFrame.from_dict(data)
@@ -305,99 +360,46 @@ def test_returns(sig_gen: sg.SignalGenerator, data, show=False):
         print(df1.tail(25))
 
 
-def test_get_all_used_indicators():
-    sig_gen = test_factory(linreg_roc_btc_1d)
-
-    logger.debug(sig_gen.indicators)
-
-    for n, ind in enumerate(sig_gen.indicators):
-        logger.debug(
-            "[%s] %s-> %s -> %s (%s)",
-            n, ind, ind.parameters, ind.parameter_space, type(ind)
-            )
-        logger.debug(ind.__dict__)
-        methods = [m for m in dir(ind) if '_' not in m]
-        logger.debug(methods)
-        logger.debug("-" * 160)
-
-
-def test_get_all_operands():
-    """Gets all operands in the SignalGenerator. """
-    sig_gen = test_factory(linreg_roc_btc_1d)
-
-    for n, cond in enumerate(sig_gen.conditions):
-        for op in filter(lambda x: x is not None, cond.operands):
-            logger.debug("[%s] %s", n, op)
-            logger.debug("-" * 160)
-
-
-def test_set_parameters():
-    """Tests setting parameters in the SignalGenerator. """
-    global data
-    sig_gen = sg.signal_generator_factory(sig_def)
-    logger.info(sig_gen.parameters)
-
-    params = tuple((p.value for p in sig_gen.parameters))
-    logger.info(f"Original parameters: {params}")
-
-    df = pd.DataFrame.from_dict(sig_gen.execute(data))
-    print(df)
-
-    keep_keys = [
-        'open time', 'human open time', 'open', 'high', 'low', 'close', 'volume'
-        ]
-    data = {k: data[k] for k in keep_keys}
-
-    for p in sig_gen.parameters:
-        p.increase()
-
-    new_params = tuple((p.value for p in sig_gen.parameters))
-    logger.info(f"New parameters: {new_params}")
-
-    for c in sig_gen.conditions:
-        print(f"Condition: {c}")
-
-    df = pd.DataFrame.from_dict(sig_gen.execute(data))
-    print(df)
-
-
-def test_plot_desc(sig_gen):
-    pprint(sig_gen.plot_desc)
-
-
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    # sig_gen = test_factory(sig_def)
+    # test_factory(sig_def)
+    # test_randomize()
+    # test_execute(None, data, 1)
 
-    test_set_parameters()
+    # test_set_parameters()
 
     # sig_gen = test_factory_from_existing(sig_gen)
-
-    # test_signal_definition(True)
 
     # sig_gen = test_factory(linreg_roc)
     # test_plot_desc(sig_gen)
 
     # test_get_all_used_indicators()
+    # test_get_all_parameters()
     # test_get_all_operands()
 
     # test_plot_desc(sig_gen)
     # test_plot(sig_gen, data)
     # test_returns(sig_gen, data, True)
 
-    sys.exit()
-
-    runs = 1_000
-    data = data
-    st = time.time()
+    # sys.exit()
 
     logger.setLevel(logging.ERROR)
 
+    runs = 100_000
+    data = _get_test_data()
+    sig_gen = test_factory(test_er)
+
+    sig_gen.execute(data)
+
+    data = _get_test_data()
+
+    st = time.time()
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            _ = sig_gen.execute(data)
+            _ = sig_gen.execute(data, as_dict=False)
+            # sig_gen.randomize()
 
     (
         Stats(p)
@@ -410,3 +412,4 @@ if __name__ == "__main__":
 
     print(f'length data: {len(data["close"])} periods')
     print(f"execution time: {((time.time() - st)*1_000_000/runs):.2f} microseconds")
+    print(f"iterations per second: {runs/(time.time() - st):.2f} iterations/second")

@@ -49,7 +49,7 @@ from typing import Any, NamedTuple, Optional, Sequence, Callable
 from .util import proj_types as tp
 from .strategy import signal_generator as sg
 from .strategy import exit_order_strategies as es
-from .strategy.condition import ConditionResult
+from .strategy.condition import ConditionResult, merge_signals_nb
 from .indicators.iindicator import IIndicator
 from .indicators.indicator_parameter import Parameter
 
@@ -294,17 +294,15 @@ class SubStrategy(IStrategy):
         """
         raise NotImplementedError(f"optimize() not implemented for {self.name}")
 
-    def get_signals(self, data: tp.Data) -> sg.cnd.ConditionResult:
+    def get_signals(self, data: tp.Data) -> ConditionResult:
         """Gets the signals as ConditionResult object.
 
         Instead of adding keys/values to the original data structure,
         this method returns a ConditionResult object which allows further
         processing, and or combining of multiple signals/strategies.
         """
-        return self\
-            .signal_generator\
-            .execute(data, as_dict=False)\
-            .apply_weight(self.weight)
+        return self.signal_generator.execute(data, as_dict=False)
+            # .apply_weight(self.weight)
 
     # --------------------------------------------------------------------------
     def _add_positions(self, data: tp.Data) -> None:
@@ -323,7 +321,7 @@ class SubStrategy(IStrategy):
         :return: _description_
         :rtype: _type_
         """
-        return data.update(self.get_signals(data).as_dict())
+        return data.update(self.get_signals(data))  # .as_dict())
 
     def _add_stop_loss(self, data: tp.Data) -> tp.Data:
         """Calculates stop loss and adds it to the data dictionary.
@@ -433,37 +431,38 @@ class CompositeStrategy(IStrategy):
         # combined signal here.
         try:
             condition_results = tuple(
-                strat.get_signals(data).combined_signal
+                strat.get_signals(data)
                 for strat, _ in self.sub_strategies.values()
             )
         except Exception as e:
+            logger.error(data.keys())
             logger.error(e, exc_info=True)
             raise
 
         logger.debug("Got signals from %s sub-strategies" % len(condition_results))
 
         # add the signals column from each sub-strategy to the data dictionary
-        as_dict = {
-            f"signal.{idx + 1}": elem for idx, elem in enumerate(condition_results)
-            }
+        # as_dict = {
+        #     f"signal.{idx + 1}": elem for idx, elem in enumerate(condition_results)
+        #     }
 
-        data.update(as_dict)
+        # data.update(as_dict)
 
         logger.debug(tuple(data.keys()))
 
         # combine the signals from all sub-strategies into one
-        combined_signal = reduce(lambda x, y: np.add(x, y), condition_results)
+        # combined_signal = reduce(lambda x, y: np.add(x, y), condition_results)
 
         # add the combine signal to the data dictionary. We need to
         # construct a ConditionResult object first to get all columns
         # (for open_long, open_short, etc., plus the combined signal)
-        data.update(
-            ConditionResult
-            .from_combined(combined_signal)
-            .as_dict()
-            )
+        # data.update(
+        #     ConditionResult
+        #     .from_combined(combined_signal)
+        #     .as_dict()
+        #     )
 
-        return data
+        return data.update(condition_results[0])
 
     def _add_stop_loss(self, data: tp.Data) -> tp.Data:
         """Calculates stop loss and adds it to the data dictionary.

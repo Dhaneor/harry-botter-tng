@@ -44,6 +44,7 @@ from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
 from enum import Enum, unique
 from numbers import Number
+from numba import njit
 from typing import Any, Callable, Optional, Sequence
 
 import numpy as np
@@ -51,6 +52,7 @@ import numpy as np
 from ..indicators import indicator as ind
 from ..indicators import indicators_custom
 from ..util import proj_types as tp
+from util import log_execution_time
 from ..chart.plot_definition import SubPlot, Line, Channel
 
 logger = logging.getLogger("main.operand")
@@ -147,6 +149,7 @@ class Operand(ABC):
     _parameter_space: Optional[Sequence[Number]] = None
     shift: int = 0
     key_store: dict[str, str] = field(default_factory=dict)
+    indicators: list[ind.Indicator] = field(default_factory=list)
 
     id: int = field(default=0)
 
@@ -201,17 +204,21 @@ class Operand(ABC):
         self.key_store[self.id] = self.unique_name
 
     def randomize(self) -> None:
-        logger.debug("Randomizing parameters for operand %s", self.name)
-        for indicator in self.indicators:
-            indicator.randomize()
+        logger.debug("skipping non-randomizable operand: %s" % self.name)
+
+    def update_key_store(self) -> None:
+        """Update the key_store with the current unique_name."""
+        self.key_store[self.id] = self.unique_name
+
+        logger.info("[%s]   updated key_store: %s" % (self.name, self.key_store))
 
     def _update_names(self) -> str:
         """Update the output names and uniqe_name of the operand."""
 
         def update_unique_name():
-            logger.debug("[%s]   updating unique_name" % self.name)
-            logger.debug("[%s]   current unique_name: %s" % (self.name, self._unique_name))
-            logger.debug("[%s]   indicators: %s" % (self.name, self.indicators))
+            # logger.debug("[%s]   updating unique_name" % self.name)
+            # logger.debug("[%s]   current unique_name: %s" % (self.name, self._unique_name))
+            # logger.debug("[%s]   indicators: %s" % (self.name, self.indicators))
             ind_unique = [ind.unique_name for ind in self.indicators]
             last = ind_unique.pop(-1)
 
@@ -233,7 +240,7 @@ class Operand(ABC):
 
         def update_output():
             self._output = self.unique_name
-            logger.debug("[%s]   updated output: %s" % (self.name, self._output))
+            # logger.debug("[%s]   updated output: %s" % (self.name, self._output))
 
         def update_output_names():
 
@@ -256,18 +263,18 @@ class Operand(ABC):
             self._output_names = list(set(self._output_names))
             self._output_names.reverse()
 
-            logger.debug("[%s]\toutput names after update: %s", self.name, self._output_names)
+            # logger.debug("[%s]\toutput names after update: %s", self.name, self._output_names)
 
-        logger.debug(
-            "----------------- [%s] - UPDATE NAMES -----------------"
-            % self.name.upper()
-            )
+        # logger.debug(
+        #     "----------------- [%s] - UPDATE NAMES -----------------"
+        #     % self.name.upper()
+        #     )
 
         update_unique_name()
         update_output()
         update_output_names()
 
-        logger.debug("[%s]\tUpdated operand: %s", self.name, self)
+        # logger.debug("[%s]\tUpdated operand: %s", self.name, self)
 
 
 @dataclass(kw_only=True)
@@ -472,6 +479,7 @@ class OperandIndicator(Operand):
         if post_init:
             self.__post_init__()
 
+    # @log_execution_time(logger)
     def run(self, data: tp.Data) -> str:
         """Run the operand on the given data.
 
@@ -503,8 +511,14 @@ class OperandIndicator(Operand):
         return asdict(self)
 
     def on_parameter_change(self) -> None:
-        logger.debug("Parameter change event for %s", self.unique_name)
-        super().on_parameter_change()
+        # logger.debug("Parameter change event for %s", self.unique_name)
+        self._update_names()
+        self.key_store[self.id] = self.unique_name
+
+    def randomize(self) -> None:
+        logger.debug("Randomizing parameters for operand %s", self.name)
+        for indicator in self.indicators:
+            indicator.randomize()
 
     # ..........................................................................
     def _run_indicator(
@@ -534,24 +548,26 @@ class OperandIndicator(Operand):
         ValueError
             if unable to get indicator instance
         """
+        # when using the same indicator in different conditions,
+        # there's no need to run it multiple times
+        if all(key in data for key in (self.output_names)):
+            # if self.output in data:
+            logger.debug(
+                "[%s] !!! SKIPPING %s --- %s already in data",
+                level, self.unique_name, self.output_names,
+            )
+            return self.output_names if level > 0 else self.output_names[0]
+
         indicator_ = indicator_ or self.indicator
 
         if indicator_ is None:
             raise ValueError(f"No indicator defined for {self.name}")
 
-        # when using the same indicator in different conditions,
-        # there's no need to run it multiple times
-        if all(key in data for key in (self.output_names)):
-            logger.info(
-                "[%s] !!! SKIPPING %s --- %s already in data: %s",
-                level, self.name, self.output_names, list(data.keys()),
-            )
-            return self.output_names if level > 0 else self.output_names[0]
-
-        logger.info("[%s] Running indicator: %s", level, indicator_.name)
+        logger.debug("[%s] Running indicator: %s", level, indicator_.unique_name)
 
         # get the required input(s) for the indicator from the data
         logger.debug("Getting inputs for indicator: %s", self.inputs)
+
         inputs = self._get_ind_inputs(
             req_in=self.inputs,
             data=data,
@@ -562,14 +578,12 @@ class OperandIndicator(Operand):
         logger.debug("%s inputs for indicator: %s",  len(inputs), indicator_.name)
         logger.debug("requested inputs: %s", self.inputs)
 
-        for i in self.inputs:
-            logger.debug(i.output_names)
-
         indicator_values = indicator_.run(*inputs)
 
         # the indicator may return a single array, or a tuple of arrays
         if isinstance(indicator_values, np.ndarray):
-            data[self.output_names[0]] = indicator_values
+            logger.debug("[%s] %s adding %s to data", level, indicator_.name, self._output)
+            data[self._output] = indicator_values
 
         elif isinstance(indicator_values, tuple):
             data.update(
@@ -627,14 +641,14 @@ class OperandIndicator(Operand):
         """
         inputs = []
 
-        logger.info("[%s] processing requested inputs: %s", level, req_in)
+        logger.debug("[%s] processing requested inputs: %s", level, req_in)
 
         for idx, i in enumerate(req_in[:max_inputs]):
             logger.debug("[%s][%s] ... input: %s (%s)", level, idx, i, type(i))
 
             # input is a price series
             if (isinstance(i, Operand)) and (i.type_ == OperandType.SERIES):
-                logger.info("[%s][%s] ... processing price series: %s", level, idx, i)
+                logger.debug("[%s][%s] ... processing price series: %s", level, idx, i)
 
                 try:
                     inputs.append(data[i.output])
@@ -646,8 +660,6 @@ class OperandIndicator(Operand):
 
             # input is another indicator
             elif isinstance(i, Operand) and (i.type_ == OperandType.INDICATOR):
-                if isinstance(i, str):
-                    logger.error("[%s][%s] how did this end up here? %s", level, idx, i)
                 logger.debug(
                     "[%s][%s] ... processing indicator: %s", level, idx, i.name
                 )
@@ -786,7 +798,7 @@ class OperandTrigger(Operand):
     indicators: list[ind.Indicator] = field(default_factory=list)
 
     def __repr__(self) -> str:
-        return f"[{self.type_}] {self.name}={self.indicator.parameters[0].value}"
+        return f"[{self.id}] {self.type_} {self.name}={self.indicator.parameters[0].value}"
 
     def __post_init__(self) -> None:
         # make sure, inputs is a tuple or None
@@ -905,7 +917,7 @@ class OperandTrigger(Operand):
             name of the key in data that was added by this operand
         """
         data[self.unique_name] = np.full_like(
-            data[self.inputs[0]],
+            data['close'],
             fill_value=self.indicator.parameters[0].value,
         )
         return self.unique_name
@@ -919,6 +931,10 @@ class OperandTrigger(Operand):
         self.__post_init__()
         self.inputs = [self.indicator.parameters[0].value]
         super().on_parameter_change()
+
+    def randomize(self) -> None:
+        logger.debug("Randomizing parameters for %s", self.unique_name)
+        self.indicator.randomize()
 
 @dataclass(slots=True, kw_only=True)
 class OperandSeries(Operand):
@@ -954,7 +970,7 @@ class OperandSeries(Operand):
     output: str = ""
 
     def __repr__(self) -> str:
-        return f"[{self.type_}] {self.name.upper()}"
+        return f"[{self.id}] {self.type_} {self.name.upper()}"
 
     def __post_init__(self) -> None:
         # make sure, inputs is a tuple or None
@@ -1016,9 +1032,6 @@ class OperandSeries(Operand):
         raise NotImplementedError(
             "It's not possible to update parameters for a price series"
         )
-
-    def randomize(self) -> None:
-        return
 
     def run(self, data: tp.Data) -> str:
         """Run the operand on the given data.

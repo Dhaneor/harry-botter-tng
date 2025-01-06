@@ -19,6 +19,7 @@ from ..indicators import indicator as ind
 from ..indicators import indicators_custom
 
 logger = logging.getLogger("main.operand_factory")
+logger.setLevel(logging.ERROR)
 
 ALL_INDICATORS = set(i.upper() for i in ind.talib.get_functions())
 CUSTOM_INDICATORS = tuple(name.upper() for name in indicators_custom.custom_indicators)
@@ -115,6 +116,7 @@ class OperandDefinition:
                         self.shift = item
                     else:
                         self.type_ = OperandType.TRIGGER
+                        self.inputs.append(item)
 
                 case float():
                     self.type_ = OperandType.TRIGGER
@@ -143,14 +145,22 @@ class OperandDefinition:
 
     def parse_name(self, name) -> str:
         splitted_name = re.split(r"[\s\-.]+", name)
-        base_name = splitted_name[0]
+        base_name = splitted_name[0].upper()
         extension = splitted_name[1] if len(splitted_name) > 1 else None
         logger.debug(f"{self.name} going to parse the name... {base_name}")
 
-        if base_name.upper() in ALL_INDICATORS or name in CUSTOM_INDICATORS:
+        is_custom = base_name in CUSTOM_INDICATORS
+
+        logger.debug(
+            "%s is in custom indicators %s: %s", base_name, CUSTOM_INDICATORS, is_custom
+            )
+
+        if base_name in ALL_INDICATORS or base_name in CUSTOM_INDICATORS:
             self.type_ = OperandType.INDICATOR
         elif name in PriceSeries:
             self.type_ = OperandType.SERIES
+        elif isinstance(name, str):
+            self.type_ = OperandType.TRIGGER
         elif isinstance(name, int):
             self.type_ = OperandType.VALUE_INT
         elif isinstance(name, float):
@@ -158,7 +168,9 @@ class OperandDefinition:
         elif isinstance(name, bool):
             self.type_ = OperandType.BOOL
 
-        self.name = base_name.upper()
+        logger.debug("[%s] determined type: %s", base_name, self.type_)
+
+        self.name = base_name
 
         if extension:
             self.extension = extension
@@ -172,14 +184,20 @@ class OperandDefinition:
         if self.type_ == OperandType.INDICATOR:
             result = []
             for input_ in requested:
+                logger.debug(f"   [{level}] {self.name} input found: {input_}")
                 match input_:
 
                     case str():
+                        logger.debug("[%s] %s processing string: %s", self.name, level, input_)
+                        logger.debug("[%s] %s inputs: %s", level, self.name, self.inputs)
                         if input_ in self.inputs:
-                            result.append(OperandDefinition(input_))
+                            if input_ in VALID_PRICE_INPUTS:
+                                result.append(input_)
+                            else:
+                                result.append(OperandDefinition(input_))
 
                     case tuple():
-                        logger.debug(f"   [{level}] {self.name} input found: {input_}")
+
                         result.append(OperandDefinition(input_))
 
                     case OperandDefinition():
@@ -253,7 +271,7 @@ class Factory:
         self.all_indicators = None
         self.id_keys = 0
 
-    def build_operand(self, definition: OperandDefinition) -> Operand:
+    def build_operand(self, definition: OperandDefinition, key_store: dict) -> Operand:
         self.all_indicators = []  # keep track of all indicators created
 
         match definition.type_:
@@ -267,7 +285,11 @@ class Factory:
                 raise ValueError(f"Invalid operand type: {definition.type_}")
 
         operand.id = self.id_keys
+        # operand.key_store = key_store
+        # operand.update_key_store()
+
         self.id_keys += 1
+
         return operand
 
     def _build_indicator(self, definition: OperandDefinition, level=0) -> OperandIndicator:
@@ -376,7 +398,7 @@ class Factory:
 
         for idx, input_ in enumerate(inputs_pre):
             logger.debug(
-                "[%s][%s]   evaluating input for %s: %s", idx, level, i.name, input_
+                "[%s][%s]   evaluating input for %s: %s", level, idx, i.name, input_
             )
 
             match input_:
@@ -450,7 +472,7 @@ class Factory:
 
         raise ValueError(
             f"Invalid input type or name requested: "
-            f"{definition.name} (type{definition.type_}))"
+            f"{definition.name} (type: {definition.type_}))"
         )
 
     def _build_trigger(self, definition: OperandDefinition) -> OperandTrigger:
@@ -572,7 +594,7 @@ factory = Factory()
 
 
 # -------------------------------------------------------------------------------------
-def operand_factory(operand_definition: tuple | str) -> Operand:
+def operand_factory(operand_definition: tuple | str, key_store: dict) -> Operand:
     """Factory function to create an operand from a given definition.
 
     The 'definition' can have different formats, depending on the type
@@ -591,12 +613,19 @@ def operand_factory(operand_definition: tuple | str) -> Operand:
     Operand
         an Operand class, ready for use
     """
-    logger.debug("-------------- first: CREATING OPERAND DEFINITION -----------------")
+    logger.info("-------------- first: CREATING OPERAND DEFINITION -----------------")
+    logger.info("key store: %s", key_store)
+    logger.debug("operand_definition: %s", operand_definition)
     operand_def = OperandDefinition(operand_definition)
+    logger.info("%s" % operand_def)
     logger.debug(vars(operand_def))
-    logger.debug("--------------------- next: BUILDING OPERAND ----------------------")
+
+    logger.info("--------------------- next: BUILDING OPERAND ----------------------")
     try:
-        return factory.build_operand(operand_def)
+        operand = factory.build_operand(operand_def, key_store)
     except ValueError as e:
-        logger.error(e)
-        return None
+        logger.exception(e)
+        operand = None
+
+    logger.info(operand)
+    return operand

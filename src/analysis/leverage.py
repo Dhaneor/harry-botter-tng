@@ -5,12 +5,14 @@ Created on Thu Feb 11 01:28:53 2021
 
 @author: dhaneor
 """
-from functools import partial
 import numpy as np
 import bottleneck as bn
 import logging
 from numba import njit  # noqa: F401, E402
+from functools import partial
+from typing import Generator
 
+from analysis.models.market_data import MarketData
 from .indicators.indicators_fast_nb import atr
 from .util import proj_types as tp  # noqa: F401, E402
 
@@ -44,6 +46,23 @@ MILLISECONDS_PER_YEAR = TRADING_DAYS_PER_YEAR * MILLISECONDS_PER_DAY
 
 risk_levels = {
     1: 0.12,
+}
+
+INTERVAL_IN_MS = {
+    '1m': 60 * 1000,
+    '3m': 180 * 1000,
+    '5m': 300 * 1000,
+    '15m': 900 * 1000,
+    '30m': 1800 * 1000,
+    '1h': 3600 * 1000,
+    '2h': 7200 * 1000,
+    '4h': 14400 * 1000,
+    '6h': 21600 * 1000,
+    '12h': 43200 * 1000,
+    '1d': 86400 * 1000,
+    '3d': 259200 * 1000,
+    '1w': 604800 * 1000,
+    '1M': MILLISECONDS_PER_YEAR,
 }
 
 
@@ -158,7 +177,11 @@ def _aggressive_sizing(
 
 
 def _conservative_sizing(
-    data: dict, max_leverage: float, target_risk_annual: float, smoothing: int = 1
+    data: dict,
+    interval_in_ms: int,
+    max_leverage: float,
+    target_risk_annual: float,
+    smoothing: int = 1
 ) -> np.ndarray:
     """Calculates the maximum leverage based on 'close' prices.
 
@@ -184,11 +207,11 @@ def _conservative_sizing(
     np.ndarray
         the maximum leverage
     """
-    annualized_volatility = vol_anno(
-        close=data["close"],
-        interval_in_ms=_interval_in_ms(data),
+    annualized_volatility = vol_anno_nb(
+        close=data,
+        interval_in_ms=interval_in_ms,
         lookback=21,
-        use_log_returns=False
+        # use_log_returns=False
     )
 
     # Apply smoothing to volatility
@@ -221,7 +244,8 @@ run_funcs = {
 
 
 def calculate_leverage(
-    data: dict,
+    data: np.ndarray,
+    interval_in_ms: int,
     max_leverage: float,
     risk_level: int = 1
 ) -> np.ndarray:
@@ -245,7 +269,11 @@ def calculate_leverage(
     KeyError
         if the risk level is not valid
     """
-    return run_funcs[risk_level](data=data, max_leverage=max_leverage)
+    return run_funcs[risk_level](
+        data=data,
+        interval_in_ms=interval_in_ms,
+        max_leverage=max_leverage
+        )
 
 
 def valid_risk_levels() -> tuple[int]:
@@ -327,3 +355,44 @@ def diversification_multiplier(
     )
 
     return DM_MATRIX[closest_corr][closest_no_of_assets]
+
+
+class LeverageCalculator:
+
+    def __init__(self, market_data: MarketData, interval: str, atr_window: int = 21):
+        self.market_data = market_data
+
+        self.interval_in_ms = INTERVAL_IN_MS[interval]
+        self.atr_window = atr_window
+
+    def run(self, max_leverage: float, risk_level: int = 1) -> np.ndarray:
+        """Calculates the maximum leverage based on 'close' prices.
+
+        Parameters
+        ----------
+        risk_level
+            the risk level, default is 1
+
+        Returns
+        -------
+        np.ndarray
+            the maximum/recommended leverage
+
+        Raises
+        ------
+        KeyError
+            if the risk level is not valid
+        """
+        return run_funcs[risk_level](
+            data=self.market_data, interval_in_ms=self.interval_in_ms, max_leverage=max_leverage
+            )
+
+    def _yield_single(self) -> Generator[np.ndarray, ...]:
+        for idx in range(len(self.market_data.open.shape[1])):
+            yield (
+                self.market_data.open[:, idx],
+                self.market_data.high[:, idx],
+                self.market_data.low[:, idx],
+                self.market_data.close[:, idx],
+                self.market_data.volume[:, idx],
+            )

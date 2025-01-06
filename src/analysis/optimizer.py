@@ -441,7 +441,7 @@ def worker(
         maximum drawdown criterion.
     """
     strategy = sb.build_strategy(strategy_definition)
-    cleanup_threshold = 10 * 1024 * 1024  # 10 MB, adjust as needed
+    cleanup_threshold = 100 * 1024 * 1024  # 10 MB, adjust as needed
     ohlcv_keys = ['open time', 'open', 'high', 'low', 'close', 'volume']
     results = []
     # seen = set()
@@ -460,7 +460,7 @@ def worker(
 
         equity = bt_result.get('b.value')
 
-        print(data_new.keys())
+        # print(data_new.keys())
 
         # print(f'Portfolio value: {equtiy[-10:]}')
 
@@ -474,7 +474,7 @@ def worker(
                 params,
                 risk_level,
                 max_leverage,
-                calculate_statistics(equity, 0, periods_per_year)
+                equity[-1]  # calculate_statistics(equity, 0, periods_per_year)
             )
         )
 
@@ -483,7 +483,7 @@ def worker(
 
         del bt_result
 
-    return filter_results_by_profit_and_leverage(results)
+    return results
 
 
 # ====================================================================================
@@ -532,8 +532,8 @@ def optimize(
     logger.info("testing %s combinations", combinations)
     logger.info("Estimated execution time: %.2fs", est_exc_time)
 
-    num_cores = 1  # multiprocessing.cpu_count()
-    num_processes = max(1, num_cores - 1)  # Use all cores, but at least 1
+    num_cores = multiprocessing.cpu_count()
+    num_processes = max(1, num_cores)  # Use all cores, but at least 1
     logger.info("Using %s processes", num_processes)
 
     results = []

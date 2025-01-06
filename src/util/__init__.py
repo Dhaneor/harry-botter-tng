@@ -27,6 +27,7 @@ __version__ = "0.1.0"
 from .accounting import Accounting
 from .fibonacci import fibonacci, fibonacci_series
 from .health import Health
+from .log_execution_time import log_execution_time
 from .logger_setup import get_logger
 from .singleton import SingletonMeta
 from .timed_lru_cache import timed_lru_cache
@@ -46,6 +47,7 @@ __all__ = [
     "fibonacci",
     "fibonacci_series",
     "Health",
+    "log_execution_time",
     "get_logger",
     "SingletonMeta",
     "timed_lru_cache",

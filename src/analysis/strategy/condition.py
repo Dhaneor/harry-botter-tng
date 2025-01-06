@@ -58,16 +58,15 @@ import logging
 from enum import Enum, unique
 from dataclasses import dataclass
 from numba import jit
-from pprint import pprint
 from typing import Callable, NamedTuple, Iterable, Optional, TypeAlias
 import numpy as np
 
 from ..util import proj_types as tp
 from ..util import comp_funcs as cmp
 from . import operand as op
-from .operand_factory import operand_factory
 
 logger = logging.getLogger("main.condition")
+logger.setLevel(logging.ERROR)
 
 # data for testing the correct functioning of a Condition class
 TEST_DATA_SIZE = 500
@@ -483,14 +482,6 @@ class Condition:
 
     Attributes:
     ----------
-    operands
-        a list of all operands used by the condition
-    comparand_a
-        one output name of an Operand (in self.operands)
-    comparand_b
-        ...
-    comparand_c
-        ...
     open_long
         a tuple with a comparison function, and two operands
         that are the arguments for the comaprison function
@@ -500,34 +491,27 @@ class Condition:
         ...
     close_short
         ...
+    key_store: dict[int, str]
+
     """
 
-    operand_a: Optional[op.Operand] = None
-    operand_b: Optional[op.Operand] = None
-    operand_c: Optional[op.Operand] = None
-    operand_d: Optional[op.Operand] = None
-
-    comparand_a: Optional[str] = None
-    comparand_b: Optional[str] = None
-    comparand_c: Optional[str] = None
-    comparand_d: Optional[str] = None
-
-    open_long: ConditionBranch | None = None
-    open_short: ConditionBranch | None = None
-    close_long: ConditionBranch | None = None
-    close_short: ConditionBranch | None = None
+    open_long: tuple[str, COMPARISON, str] | None = None
+    open_short: tuple[str, COMPARISON, str] | None = None
+    close_long: tuple[str, COMPARISON, str] | None = None
+    close_short: tuple[str, COMPARISON, str] | None = None
 
     key_store: dict[int, str] = None
 
     def __repr__(self) -> str:
-        out = ["Condition("]
-        for arm in ("open_long", "open_short", "close_long", "close_short"):
-            if getattr(self, arm) is not None:
-                a = getattr(self, arm)
-                desc = f"{a[1][0]} --> {a[0]}  --> {a[1][1]}"
-                out.append(f"\n\t{arm}:\t{desc}")
-        out.append("\n)")
-        return "".join(out)
+        return (
+            f"[Conditions]\n"
+            f"  open_long: {self.open_long}\n  close_long: {self.close_long}\n"
+            f"  open_short: {self.open_short}\n  close_short: {self.close_short}"
+        )
+
+    def __post_init__(self):
+        if self.key_store is None:
+            logger.error("No key store provided for condition.")
 
     @property
     def operands(self) -> Iterable[op.Operand]:
@@ -579,7 +563,7 @@ class Condition:
         )
 
     # ..................................................................................
-    def execute(self, data: tp.Data) -> ConditionResult:
+    def execute(self, data: tp.Data) -> dict:
         """Execute the condition.
 
         Parameters
@@ -593,39 +577,11 @@ class Condition:
             A condition result object with four attached arrays for each of:
             open_long, open_short, close_long, close_short
         """
-        for operand in (self.operand_a, self.operand_b, self.operand_c, self.operand_d):
-            if operand is not None:
-                logger.debug("running operand %s", operand.name)
-                operand.run(data)
-
-        logger.error(data.keys())
-        pprint(self.__dict__)
-
-        return ConditionResult(
-            # open long
-            open_long=self.open_long[2](
-                data[self.open_long[1][0]], data[self.open_long[1][1]]
-            )
-            if self.open_long is not None
-            else np.full_like(data["close"], False, dtype=bool),
-            # open short
-            open_short=self.open_short[2](
-                data[self.open_short[1][0]], data[self.open_short[1][1]]
-            )
-            if self.open_short is not None
-            else np.full_like(data["close"], False, dtype=bool),
-            # close long
-            close_long=self.close_long[2](
-                data[self.close_long[1][0]], data[self.close_long[1][1]]
-            )
-            if self.close_long is not None
-            else np.full_like(data["close"], False, dtype=bool),
-            # close short
-            close_short=self.close_short[2](
-                data[self.close_short[1][0]], data[self.close_short[1][1]]
-            )
-            if self.close_short is not None
-            else np.full_like(data["close"], False, dtype=bool),
+        return dict(
+            open_long=self._execute_type("open_long", data),
+            open_short=self._execute_type("open_short", data),
+            close_long=self._execute_type("close_long", data),
+            close_short=self._execute_type("close_short", data),
         )
 
     def is_working(self) -> bool:
@@ -681,241 +637,27 @@ class Condition:
 
         self.key_store = key_store
 
+    # ............................... helper methods ..................................
+    def _execute_type(self, type_str: str, data: dict[str, np.ndarray]) -> np.ndarray:
+        conditions = getattr(self, type_str)
 
-class ConditionFactory:
-    def __init__(self):
-        self.condition: Optional[Condition] = None
-        self.key_store: dict = None
+        if conditions is None:
+            return np.full(data["close"].shape, np.nan)
 
-    def build_condition(self, condition_definition: ConditionDefinition) -> Condition:
-        """Builds a Condition class from a ConditionDefinition class.
+        result = None
 
-        Parameters
-        ----------
-        c_def: ConditionDefinition
-            a condition definition class with all necessary parameters
+        for condition in conditions:
+            left_key = self.key_store.get(condition[0])
+            right_key = self.key_store.get(condition[2])
+            comp_fn = cmp_funcs.get(condition[1])
 
-        test_it: bool
-            test whether the condition is working properly, defaults to False
+            logger.debug("left key: %s, right key: %s", left_key, right_key)
 
-        Returns
-        -------
-        Condition
-            a condition class instance
+            single_condition_result = comp_fn(data[left_key], data[right_key])
 
-        Raises
-        ------
-        ValueError
-            if the requested comparison function is not supported
-        KeyError
-            if c_def is not a ConditionDefinition
-        RuntimeError
-            if the .run() method of the instance is not working correctly
-        """
-        self.condition = Condition()
-
-        if not isinstance(condition_definition, ConditionDefinition):
-            raise ValueError(f"{condition_definition} is not a ConditionDefinition")
-
-        # start with building Operand instances, if they were defined
-        for operand_name in ("operand_a", "operand_b", "operand_c", "operand_d"):
-            operand_desc = getattr(condition_definition, operand_name, None)
-
-            if getattr(condition_definition, operand_name, None) is not None:
-                operand = operand_factory(operand_desc)
-                setattr(self.condition, operand_name, operand)
-
-                logger.debug("...built operand %s" % operand)
-
-        # now let's check the sub-conditions for opening and closing
-        # longs and/or shorts
-        for arm in ("open_long", "open_short", "close_long", "close_short"):
-            if (arm_def := getattr(condition_definition, arm, None)) is None:
-                continue
-
-            logger.debug("...building arm %s from: %s", arm, arm_def)
-
-            match arm_def:
-                case str():
-                    setattr(self.condition, arm, self._from_string(arm_def))
-                case tuple():
-                    setattr(self.condition, arm, self._from_tuple(arm_def))
-                case _:
-                    raise ValueError(f"{arm_def} is not supported")
-
-        if self.key_store is None:
-            raise RuntimeError("key_store not set")
-
-        self.condition.set_key_store(self.key_store)
-
-        return self.condition
-
-    def _from_string(self, desc: str):
-        logger.debug("...building arm from string: %s", desc)
-        splitted = desc.split(" ")
-        comparison = COMPARISON(" ".join(splitted[1:-1]))
-        return self._from_tuple((splitted[0], comparison, splitted[-1]))
-
-    def _from_tuple(self, desc: tuple):
-        """Build an Operand instance from a tuple (description)"""
-
-        left_arm, right_arm = desc[0], desc[-1]
-        comparison, comparands = desc[1], [None, None]
-
-        # process left and right arm of the sub-condition
-        for idx, op_def in enumerate((left_arm, right_arm)):
-            output = None
-
-            # handle cases where specific output is requested (for
-            # indicators with multiple outputs, like Bollinger Bands)
-            if isinstance(op_def, str) and "." in op_def:
-                op_def, output = op_def.split(".")
-
-            # each arm of this sub_condition can be either the name of an
-            # indicator or a reference to an operand (= "a" .. "c") that
-            # was defined in the condition definition.
-            if op_def in ("a", "b", "c", "d"):
-                if (operand := getattr(self.condition, f"operand_{op_def}")) is None:
-                    raise ValueError(f"no operand_{op_def} defined for {desc}")
+            if result is None:
+                result = single_condition_result
             else:
-                if isinstance(op_def, (int, float, bool)):
-                    op_def = self._get_fixed_indicator_definition(op_def)
+                result = np.logical_and(result, single_condition_result)
 
-                operand = operand_factory(op_def)
-                operand.key_store = self.key_store
-                self._set_operand(operand)
-
-            comparands[idx] = self._get_output_name(operand, output)
-
-        [self._set_comparand(c) for c in comparands]
-
-        return comparison, comparands, self._prep_comp_func(comparison)
-
-    def _get_output_name(self, operand: op.Operand, output: str | None) -> str:
-        logger.debug("...getting output name for: %s", output)
-        if output is None:
-            logger.debug("... output name is '%s' for: %s", operand.output, output)
-            return operand.output
-        else:
-            for out_name in operand.output_names:
-                if output in out_name:
-                    logger.debug(
-                        "... output name is '%s' for: %s", out_name, output
-                        )
-                    return out_name
-            else:
-                raise ValueError(f"no output named {output} found in {operand}")
-
-    def _set_operand(self, operand: op.Operand) -> None:
-        logger.debug("...setting operand for: %s", operand.output)
-        for operand_name in ("operand_a", "operand_b", "operand_c", "operand_d"):
-            if getattr(self.condition, operand_name) == operand:
-                break
-
-            if getattr(self.condition, operand_name) is None:
-                setattr(self.condition, operand_name, operand)
-                break
-
-    def _set_comparand(self, output: str) -> None:
-        logger.debug("...setting comparand for: %s", output)
-        for comparand_name in (
-            "comparand_a",
-            "comparand_b",
-            "comparand_c",
-            "comparand_d",
-        ):
-            if getattr(self.condition, comparand_name) == output:
-                break
-
-            if getattr(self.condition, comparand_name) is None:
-                setattr(self.condition, comparand_name, output)
-                break
-
-    def _get_fixed_indicator_definition(self, value: tp.Numeric) -> tuple:
-        return ("trigger", value)
-
-    def _prep_comp_func(self, comp: COMPARISON) -> Callable:
-        """Selects a comparison function based on a condition definition.
-
-        Parameters
-        ----------
-        comparison
-            the requested comparison, ex: COMPARISON.IS_ABOVE
-
-        Returns
-        -------
-        Callable
-            a comparison function based on the given condition definition
-        """
-        try:
-            return cmp_funcs[comp]
-        except KeyError as err:
-            logger.error("invalid comparison function: %s", comp)
-            raise ValueError(f"invalid comparison function: {comp}") from err
-
-
-# ======================================================================================
-factory = ConditionFactory()
-
-
-def condition_factory(
-    c_def: ConditionDefinition,
-    key_store: dict[int, str],
-    test_it: bool = False
-) -> Condition:
-    """Builds a Condition class from a ConditionDefinition class.
-
-    This function prepares the (executable) Condition class(es) for a
-    strategy. This happens here, during building of the strategy class:
-    a) to make sure they work properly before using them
-    b) to save time when the conditions are executed
-
-    If test_it is True, the run() method of the condition will be
-    tested with synthetic data before giving it to the caller. This
-    is for convenience and to make sure that we are not using faulty
-    instances of Condition (for instance, maybe the  ConditionDefiniton
-    was written poorly and the operator.factory() did not catch the
-    error).
-
-    Parameters
-    ----------
-    c_def: ConditionDefinition
-        a condition definition class with all necessary parameters
-
-    test_it: bool
-        test whether the condition is working properly, defaults to False
-
-    Returns
-    -------
-    Condition
-        the condition class
-
-        This condition class has three elements:
-        - comparand_a: a ready-to-go the indicator class or a
-        numeric/boolean value, or the name of a price series
-        (e.g 'close').
-        - comparand_b: same as a
-        - cmp_func: a comparison function to compare a & b
-
-        Everything is ready for use in the signal generater of the
-        strategy class.
-
-    Raises
-    ------
-    ValueError
-        if the requested comparison function is not supported
-    KeyError
-        if the value for c_def is not a ConditionDefinition
-    RuntimeError
-        if the .run() method of the instance is not working correctly
-    """
-    factory.key_store = key_store
-
-    logger.debug("ConditionFactory.key_store set to: %s", key_store)
-
-    condition = factory.build_condition(c_def)
-
-    if test_it and not condition.is_working():
-        raise RuntimeError(f"condition {condition} is not working")
-
-    return condition
+        return result

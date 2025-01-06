@@ -34,7 +34,7 @@ data = {col: np.random.rand(1_000) for col in columns}
 # define different operands for testing possible variants
 op_defs = {
     "sma": {
-        "def": ('sma', {'timeperiod': 20},),
+        "def": ('sma', 'close', {'timeperiod': 20},),
         "params": {"timeperiod": 30},
         # "plot_desc": SubPlot(
         #     label='Simple Moving Average (20)',
@@ -159,7 +159,7 @@ def update_parameters_callback(*args):
 def test_operand_factory():
     for elem in op_defs:
         op_def = op_defs.get(elem).get("def")
-        operand = operand_factory(op_def)
+        operand = operand_factory(op_def, key_store={})
 
         logger.debug("[TEST] %s" % operand)
         logger.debug('[TEST] ======================================================')
@@ -172,6 +172,19 @@ def test_operand_factory():
             pprint(operand.__dict__)
 
     return operand
+
+def test_with_price_series_input():
+    op_def = ('sma', 'close', {'timeperiod': 20},)
+    operand = operand_factory(op_def, key_store={})
+
+    logger.info(operand)
+
+def test_with_fixed_value_input():
+    op_def = ('trigger', 100, [90, 110, 1])
+    op_def_2 = ("trending", 0.01, [0.005, 0.055, 0.005])
+    operand = operand_factory(op_def, key_store={})
+
+    logger.info(operand)
 
 
 def test_nested_indicators():
@@ -282,22 +295,31 @@ def test_randomize():
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    test_operand_factory()
+    # test_operand_factory()
+    # test_with_price_series_input()
+    # test_with_fixed_value_input()
     # test_nested_indicators()
     # test_update_parameters()
     # test_randomize()
-    sys.exit()
+    # sys.exit()
 
-    # operand = operand_factory(op_defs.get('bbands').get('def'))
-    operand = operand_factory("sma")
+    operand = operand_factory(op_defs.get('sma_of_rsi').get('def'), {})
+    # operand = operand_factory("sma", {})
+
+    if operand is None:
+        logger.error("Operand creation failed")
+        sys.exit(1)
 
     pprint(operand.__dict__)
 
-    for _ in range(20):
+    for _ in range(100):
         logger.debug('=' * 120)
-        operand.run(data)
         operand.randomize()
-        logger.debug(list(data.keys()))
+        operand.run(data)
+        # logger.debug(list(data.keys()))
+    logger.debug('•' * 120)
+    operand.run(data)
+    logger.debug(list(data.keys()))
 
     # print(pd.DataFrame.from_dict(data).tail(10))
 

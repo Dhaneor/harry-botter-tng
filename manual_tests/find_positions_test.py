@@ -35,10 +35,10 @@ logger = get_logger(__name__)
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = "6 years ago UTC"
+start = "1000 days ago UTC"
 end = 'now UTC'
 
-strategy = s_trend_1
+strategy = s_test_er
 risk_level, max_leverage = 8, 2
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
@@ -254,10 +254,10 @@ def test_find_positions(data: dict):
 if __name__ == '__main__':
     logger.info("Starting backtest...")
     logger.info(strategy)
-    run(_get_ohlcv_from_db(), True, False)
+    run(_get_ohlcv_from_db(), False, False)
 
     # ..........................................................................
-    sys.exit()
+    # sys.exit()
 
     logger.setLevel(logging.ERROR)
     runs = 10_000
@@ -267,6 +267,9 @@ if __name__ == '__main__':
     # for i in range(runs):
     #     # test_find_positions(data_pre[i])
     #     bt.run(strategy, data_pre[i], initial_capital, risk_level)
+
+    for sub, _ in strategy.sub_strategies.values():
+        sub.signal_generator.randomize()
 
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
@@ -286,3 +289,4 @@ if __name__ == '__main__':
     et = time.perf_counter()
     print(f'length data: {len(data_pre[0]["close"])} periods')
     print(f"average execution time: {((et - start)*1_000_000/runs):.2f} microseconds")
+    print(f"iterations per second: {runs / ((et - start)):.2f} iterations/second")

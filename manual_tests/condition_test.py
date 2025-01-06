@@ -259,10 +259,12 @@ if __name__ == "__main__":
     # test_condition_result_combine()
     test_parameter_change_notification()
 
-    # c = cn.condition_factory(c_defs["golden_cross"], {})
-    # pprint(c.__dict__)
-
     sys.exit()
+
+    c = cn.condition_factory(c_defs["golden_cross"], {})
+    pprint(c.__dict__)
+
+    # sys.exit()
 
     test_condition_is_working(c)
     logger.debug("~-*-~" * 30)

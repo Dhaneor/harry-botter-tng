@@ -18,7 +18,7 @@ classes:
         long/short positions.
 
 functions:
-    factory(sig_def: SignalsDefinition | dict[str, ConditionDefinition]
+    factory(sig_def: SignalsDefinition | dict[str, cnd.ConditionDefinition]
         function to create a SignalGenerator object from a
         SignalsDefinition object or a dictionary of the form:
 
@@ -57,9 +57,7 @@ import numpy as np
 import pandas as pd
 
 from ..util import proj_types as tp
-from .condition import Condition, ConditionDefinition, ConditionResult
-from .operand import Operand
-from .operand_factory import operand_factory
+from . import condition as cnd
 from .transform_condition_definition import transform_condition_definition
 from ..indicators.indicator import Indicator
 from ..indicators.indicator_parameter import Parameter
@@ -67,15 +65,13 @@ from ..indicators.indicator_parameter import Parameter
 from ..chart.plot_definition import SubPlot
 from ..chart.tikr_charts import SignalChart
 
-from util import log_execution_time
-
 logger = logging.getLogger("main.signal_generator")
 logger.setLevel(logging.ERROR)
 
 PositionTypeT = Literal["open_long", "open_short", "close_long", "close_short"]
 
 ConditionDefinitionsT = Optional[
-    Sequence[ConditionDefinition] | ConditionDefinition
+    Sequence[cnd.ConditionDefinition] | cnd.ConditionDefinition
 ]
 
 
@@ -91,9 +87,9 @@ class SignalsDefinition:
         A sequence of conditions that must all be True to open a long position.
         For convenience, intead of a sequence, a single ConditionDefinition
         can be passed. So, you can pass here:
-        - Sequence[ConditionDefinition]
-        - ConditionDefinition
-        - dict[PositionTypeT, ConditionDefinition]
+        - Sequence[cnd.ConditionDefinition]
+        - cnd.ConditionDefinition
+        - dict[PositionTypeT, cnd.ConditionDefinition]
 
     open_short: ConditionDefinitionsT
         a sequence of conditions that must all be True to open a short position
@@ -122,8 +118,9 @@ class SignalGeneratorDefinition:
     """Class to hold the definition of a SignalGenerator."""
 
     name: str
+    operands: dict[str, tuple | str]
     conditions: dict[str, tuple | str]
-    operands: dict[str, tuple | str] | None = None
+
 
 
 class SignalGenerator:
@@ -146,13 +143,7 @@ class SignalGenerator:
         "close_short",
     )
 
-    def __init__(
-        self,
-        name,
-        operands: dict[str, Operand],
-        conditions: Sequence[Condition],
-        key_store: dict[str, str],
-    ):
+    def __init__(self, name, conditions: Sequence[cnd.Condition]):
         """Initializes the signal generator.
 
         The instance attributes are not set here. Use the factory
@@ -160,17 +151,14 @@ class SignalGenerator:
 
         """
         self.name: str = name
-        self.operands = operands
-        self.conditions = conditions
-        self.key_store = key_store
+        self.conditions: Sequence[cnd.Condition] = conditions
+        self.conditions_definitions: Sequence[cnd.ConditionDefinition] | None = None
+        self.columns: dict[str, str] = {}
 
     def __repr__(self):
-        op_str = "\n  ".join(f"{k}: {v}" for k, v in self.operands.items())
-
         return (
-            f"\nSignalGenerator: {self.name}\n"
-            f"{self.conditions}\n[Operands]  \n  {op_str}\n"
-            f"[KEY STORE]\n  {self.key_store}"
+            f"SignalsGenerator(name={self.name}\n"
+            f"\t\t{self.conditions}\n"
         )
 
     @property
@@ -188,7 +176,7 @@ class SignalGenerator:
         """
         return tuple(
             itertools.chain(
-                ind for op in self.operands.values() for ind in op.indicators
+                ind for cond in self.conditions for ind in cond.indicators
             )
         )
 
@@ -214,30 +202,29 @@ class SignalGenerator:
                     p_current.name, p_new, str(e)
                     )
 
-    # @property
-    # def subplots(self) -> list[SubPlot]:
-    #     """Get the plot parameters for the signal generator.
+    @property
+    def subplots(self) -> list[SubPlot]:
+        """Get the plot parameters for the signal generator.
 
-    #     Returns
-    #     -------
-    #     list[SubPlot]
-    #         A list of unique SubPlot objects for all conditions.
-    #     """
-    #     # Collect all PlotDescription objects for all conditions
-    #     all_plots = [c.plot_desc for c in self.conditions]
+        Returns
+        -------
+        list[SubPlot]
+            A list of unique SubPlot objects for all conditions.
+        """
+        # Collect all PlotDescription objects for all conditions
+        all_plots = [c.plot_desc for c in self.conditions]
 
-    #     # Remove duplicates while preserving order
-    #     unique_plots = []
-    #     seen = set()
-    #     for plot in all_plots:
-    #         if plot.label not in seen:
-    #             seen.add(plot.label)
-    #             unique_plots.append(plot)
+        # Remove duplicates while preserving order
+        unique_plots = []
+        seen = set()
+        for plot in all_plots:
+            if plot.label not in seen:
+                seen.add(plot.label)
+                unique_plots.append(plot)
 
-    #     return unique_plots
+        return unique_plots
 
-    # @log_execution_time(logger)
-    def execute(self, data: tp.Data, as_dict=True) -> ConditionResult:
+    def execute(self, data: tp.Data, as_dict=True) -> cnd.ConditionResult:
         """Execute the signal generator.
 
         Parameters
@@ -250,49 +237,36 @@ class SignalGenerator:
         tp.Data
             OHLCV data dictionary
         """
-        # signals = reduce(
-        #     lambda x, y: x & y, (cond.execute(data) for cond in self.conditions)
-        # )
-
-        logger.debug("running operands...")
-        for operand in self.operands.values():
-            operand.run(data)
-        logger.debug("running conditions...")
-
-        signals = self.conditions.execute(data)
-
-        logger.debug("finished executing conditions...")
+        signals = reduce(
+            lambda x, y: x & y,
+            (cond.execute(data) for cond in self.conditions)
+        )
 
         if not as_dict:
             return signals
 
-        data.update(signals)
-        logger.debug("finished converting to dictionary...")
+        data.update(signals.as_dict())
         return data
 
     def speak(self, data: tp.Data, weight: tp.Weight = 1) -> tp.Data:
         return self.execute(data, weight)
 
-    def randomize(self) -> None:
-        for operand in self.operands.values():
-            operand.randomize()
+    def plot(self, data: tp.Data) -> None:
+        self.make_plot(data).draw()
 
-    # def plot(self, data: tp.Data) -> None:
-    #     self.make_plot(data).draw()
+    def make_plot(self, data: tp.Data, style='night') -> SignalChart:
+        # run the signal generator and convert the result
+        # to a pandas DataFrame
+        df = pd.DataFrame.from_dict(self.execute(data))
 
-    # def make_plot(self, data: tp.Data, style='night') -> SignalChart:
-    #     # run the signal generator and convert the result
-    #     # to a pandas DataFrame
-    #     df = pd.DataFrame.from_dict(self.execute(data))
+        # set open time to datetime format and set it as index
+        df['open time'] = pd.to_datetime(df['open time'], unit='ms')
+        df.set_index('open time', inplace=True)
+        df.index = df.index.strftime('%Y-%m-%d %X')
 
-    #     # set open time to datetime format and set it as index
-    #     df['open time'] = pd.to_datetime(df['open time'], unit='ms')
-    #     df.set_index('open time', inplace=True)
-    #     df.index = df.index.strftime('%Y-%m-%d %X')
-
-    #     return SignalChart(
-    #         data=df, subplots=self.subplots, style=style, title=self.name
-    #         )
+        return SignalChart(
+            data=df, subplots=self.subplots, style=style, title=self.name
+            )
 
     def is_working(self) -> bool:
         """Check if the signal generator is working.
@@ -348,50 +322,11 @@ class SignalGenerator:
 
 
 # ======================================================================================
-@transform_condition_definition
-def signal_generator_factory(definition: SignalGeneratorDefinition) -> SignalGenerator:
-    logger.debug("building SignalGenerator from definition:\n")
-    """Build a SignalGenerator from a SignalGeneratorDefinition.
-
-    Parameters
-    ----------
-    definition : SignalGeneratorDefinition
-        the signal generator definition
-
-    Returns
-    -------
-    SignalGenerator
-        the signal generator
-    """
-    key_store = {"test": "test"}
-    definition.conditions.update({"key_store": key_store})
-
-    # logger.info(definition.conditions.keys())
-    # logger.info(definition.to_dict().get('conditions'))
-
-    operands = dict()
-
-    for name, op_def in definition.operands.items():
-        operand = operand_factory(op_def, key_store)
-        operand.key_store = key_store
-        operand.id = name
-        operand.update_key_store()
-        logger.info(operand)
-        logger.info(key_store)
-        operands[name] = operand
-
-    conditions = Condition(**definition.conditions)
-    conditions.key_store = key_store
-
-    return SignalGenerator(definition.name, operands, conditions, key_store)
-    # return builder.build_signal_generator(definition)
-
-
 # using the decorator to transform the 'old' form of defining the signals
 # into the new form and remain backwards compatible
 @transform_condition_definition
-def signal_generator_factory_old(
-    sig_def: SignalsDefinition | Sequence[ConditionDefinition]
+def signal_generator_factory(
+    sig_def: SignalsDefinition | Sequence[cnd.ConditionDefinition]
 ) -> SignalGenerator:
     """Factory function for SignalGenerator.
 
@@ -416,7 +351,7 @@ def signal_generator_factory_old(
             # later in the condition factory function
             condition_definitions = (
                 tuple((condition_definitions,))
-                if isinstance(condition_definitions, ConditionDefinition)
+                if isinstance(condition_definitions, cnd.ConditionDefinition)
                 else condition_definitions
             )
 
@@ -439,7 +374,7 @@ def signal_generator_factory_old(
     sig_gen = SignalGenerator(
         name,
         tuple(
-            condition_factory(c, key_store=key_store)
+            cnd.condition_factory(c, key_store=key_store)
             for c in condition_definitions
             )
         )

@@ -39,8 +39,8 @@ interval = "1d"
 start = "6 years ago UTC"
 end = "now UTC"
 
-strategy = s_trend_1
-risk_levels = 5,  # [0, 4, 5, 6, 7, 8, 9]
+strategy = s_test_er
+risk_levels = [0, 4, 5, 6, 7, 8, 9]
 max_leverage_levels = 1,  # (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5)
 max_drawdown = 50
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.1
@@ -139,6 +139,8 @@ def test_optimize(data: dict | None = None):
         risk_levels=risk_levels,
         max_leverage_levels=max_leverage_levels
     )
+
+    return
 
     # filter out results with:
     # a) drawdown greater than max_drawdown,

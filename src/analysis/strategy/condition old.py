@@ -65,6 +65,7 @@ import numpy as np
 from ..util import proj_types as tp
 from ..util import comp_funcs as cmp
 from . import operand as op
+from .operand_factory import operand_factory
 
 logger = logging.getLogger("main.condition")
 
@@ -516,6 +517,8 @@ class Condition:
     close_long: ConditionBranch | None = None
     close_short: ConditionBranch | None = None
 
+    key_store: dict[int, str] = None
+
     def __repr__(self) -> str:
         out = ["Condition("]
         for arm in ("open_long", "open_short", "close_long", "close_short"):
@@ -654,10 +657,35 @@ class Condition:
             )
         )
 
+    def set_key_store(self, key_store: dict) -> None:
+        """Sets the key store for the condition.
+
+        Parameters
+        ----------
+        key_store : dict
+            a dictionary where the keys are the operand IDs, and the
+            values are the unique names of the operands,  which are
+            used in the 'data' dictionary for storing the data that
+            is produced by the operands.
+        """
+        if not isinstance(key_store, dict):
+            raise ValueError("key_store must be a dictionary")
+
+        for elem in ('operand_a', 'operand_b', 'operand_c', 'operand_d'):
+            if hasattr(self, elem):
+                operand = getattr(self, elem)
+            if operand is None:
+                continue
+            key_store[operand.id] = operand.unique_name
+            operand.key_store = key_store
+
+        self.key_store = key_store
+
 
 class ConditionFactory:
     def __init__(self):
         self.condition: Optional[Condition] = None
+        self.key_store: dict = None
 
     def build_condition(self, condition_definition: ConditionDefinition) -> Condition:
         """Builds a Condition class from a ConditionDefinition class.
@@ -694,9 +722,10 @@ class ConditionFactory:
             operand_desc = getattr(condition_definition, operand_name, None)
 
             if getattr(condition_definition, operand_name, None) is not None:
-                setattr(self.condition, operand_name, op.operand_factory(operand_desc))
+                operand = operand_factory(operand_desc)
+                setattr(self.condition, operand_name, operand)
 
-                logger.debug("...built operand %s", op.operand_factory(operand_desc))
+                logger.debug("...built operand %s" % operand)
 
         # now let's check the sub-conditions for opening and closing
         # longs and/or shorts
@@ -713,6 +742,11 @@ class ConditionFactory:
                     setattr(self.condition, arm, self._from_tuple(arm_def))
                 case _:
                     raise ValueError(f"{arm_def} is not supported")
+
+        if self.key_store is None:
+            raise RuntimeError("key_store not set")
+
+        self.condition.set_key_store(self.key_store)
 
         return self.condition
 
@@ -747,7 +781,8 @@ class ConditionFactory:
                 if isinstance(op_def, (int, float, bool)):
                     op_def = self._get_fixed_indicator_definition(op_def)
 
-                operand = op.operand_factory(op_def)
+                operand = operand_factory(op_def)
+                operand.key_store = self.key_store
                 self._set_operand(operand)
 
             comparands[idx] = self._get_output_name(operand, output)
@@ -823,7 +858,11 @@ class ConditionFactory:
 factory = ConditionFactory()
 
 
-def condition_factory(c_def: ConditionDefinition, test_it: bool = False) -> Condition:
+def condition_factory(
+    c_def: ConditionDefinition,
+    key_store: dict[int, str],
+    test_it: bool = False
+) -> Condition:
     """Builds a Condition class from a ConditionDefinition class.
 
     This function prepares the (executable) Condition class(es) for a
@@ -870,6 +909,10 @@ def condition_factory(c_def: ConditionDefinition, test_it: bool = False) -> Cond
     RuntimeError
         if the .run() method of the instance is not working correctly
     """
+    factory.key_store = key_store
+
+    logger.debug("ConditionFactory.key_store set to: %s", key_store)
+
     condition = factory.build_condition(c_def)
 
     if test_it and not condition.is_working():

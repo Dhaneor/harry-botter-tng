@@ -5,9 +5,7 @@ Created on Dec 28 00:29:20 2024
 
 @author dhaneor
 """
-from .condition import (
-    Condition, ConditionDefinition, ConditionResult, condition_factory
-)
+from .condition import  Condition, ConditionDefinition, ConditionResult
 from .operand import Operand
 from .operand_factory import operand_factory
 from .signal_generator import (
@@ -20,7 +18,6 @@ __all__ = [
     "Condition",
     "ConditionDefinition",
     "ConditionResult",
-    "condition_factory",
     "Operand",
     "operand_factory",
     "SignalGenerator",

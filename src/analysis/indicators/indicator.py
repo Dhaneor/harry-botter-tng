@@ -237,6 +237,8 @@ class FixedIndicator(IIndicator):
         self._is_subplot: bool = True
         self._plot_desc: dict = {"name": ["Line"]}
 
+        self._data = None
+
     def __repr__(self) -> str:
         return self.display_name
 
@@ -286,11 +288,24 @@ class FixedIndicator(IIndicator):
         Returns
         -------
         np.ndarray
-            array with the same dimensions as the close prices of the
-            data dictionary, filled with the fixed value that was set
-            for the instance of this class.
+            Array with shape (n, 1) where n is the length of the input array's first dimension,
+            filled with the fixed value that was set for the instance of this class.
         """
-        return np.full_like(inputs[0], self._parameters[0].value)
+        input_array = inputs[0]
+        value = self._parameters[0].value
+
+        if self._data is None or self._data.shape[0] != input_array.shape[0]:
+            # Initialize or update self._data
+            self._data = np.full((input_array.shape[0], 1), value, dtype=np.float32)
+        elif not np.can_cast(self._data.dtype, input_array.dtype, casting='same_kind'):
+            # Update dtype if necessary
+            self._data = self._data.astype(input_array.dtype)
+
+        return self._data
+
+    def on_parameter_change(self, *args) -> None:
+        super().on_parameter_change(*args)
+        self._data = None
 
     def help(self):
         """Prints help information (docstring) for the class.

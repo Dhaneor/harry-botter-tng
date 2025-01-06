@@ -7,8 +7,10 @@ Created on Oct 06 10:03:20 2021
 """
 
 import yaml
+from collections import defaultdict
 from dataclasses import dataclass
 from functools import wraps
+from pprint import pprint
 from typing import Callable, Any
 
 from analysis.strategy.condition import ConditionDefinition, COMPARISON
@@ -73,15 +75,69 @@ aroon_osc = SignalsDefinition(
 )
 
 
+ema_cross = SignalsDefinition(
+    name="EMA cross",
+    conditions=[
+        ConditionDefinition(
+            interval="1d",
+            operand_a=("ema", {"timeperiod": 47}),
+            operand_b=("ema", {"timeperiod": 182}),
+            open_long=("a", COMPARISON.CROSSED_ABOVE, "b"),
+            open_short=("a", COMPARISON.CROSSED_BELOW, "b"),
+        ),
+    ]
+)
+
+
+test_er = SignalsDefinition(
+    name="KAMA with Noise Filter",
+    conditions=[
+        ConditionDefinition(
+            interval="1d",
+            operand_a=("er", {"timeperiod": 7}),
+            operand_b=("trending", 0.01, [0.005, 0.055, 0.005]),
+            open_long=("a", COMPARISON.IS_ABOVE, "b"),
+            close_long=("a", COMPARISON.IS_BELOW, "b"),
+            open_short=("a", COMPARISON.IS_ABOVE, "b"),
+            close_short=("a", COMPARISON.IS_BELOW, "b"),
+        ),
+        ConditionDefinition(
+            interval="1d",
+            operand_a=("close"),
+            operand_b=("kama", {"timeperiod": 9}),
+            open_long=("a", COMPARISON.IS_ABOVE, "b"),
+            close_long=("a", COMPARISON.IS_BELOW, "b"),
+            open_short=("a", COMPARISON.IS_BELOW, "b"),
+            close_short=("a", COMPARISON.IS_ABOVE, "b"),
+        ),
+    ]
+)
+
+
 class DotDict(dict):
     def __getattr__(self, item):
-        value = self.get(item)
-        if isinstance(value, dict):
-            return DotDict(value)
-        return value
+        try:
+            value = self[item]
+            if isinstance(value, dict) and not isinstance(value, DotDict):
+                return DotDict(value)
+            return value
+        except KeyError:
+            raise AttributeError(f"'DotDict' object has no attribute '{item}'")
 
     def __setattr__(self, key, value):
         self[key] = value
+
+    def __setitem__(self, key, value):
+        if isinstance(value, dict) and not isinstance(value, DotDict):
+            value = DotDict(value)
+        super().__setitem__(key, value)
+
+    def __getitem__(self, key):
+        value = super().__getitem__(key)
+        if isinstance(value, dict) and not isinstance(value, DotDict):
+            value = DotDict(value)
+            super().__setitem__(key, value)
+        return value
 
     def __repr__(self):
         return self.to_yaml()
@@ -134,44 +190,9 @@ aroon_osc_new = SignalGeneratorDefinition(
 
 
 def transform_condition_definition(func: Callable[..., Any]) -> Callable[..., Any]:
-    """
-    A decorator that transforms a SignalsDefinition object into
-    a SignalGeneratorDefinition object.
-
-    This function wraps another function and intercepts its first
-    argument if it's a SignalsDefinition. It then transforms this
-    SignalsDefinition into a SignalGeneratorDefinition with restructured
-    operands and conditions.
-
-    Parameters:
-    func (Callable[..., Any]):
-        The function to be wrapped. It should accept a SignalsDefinition
-        as its first argument.
-
-    Returns:
-    Callable[..., Any]:
-        A wrapped version of the input function that performs the
-        transformation before calling the original function.
-
-    The transformation process includes:
-    1. Extracting operands from the conditions in the SignalsDefinition.
-    2. Restructuring the conditions into open_long, close_long, open_short,
-    and close_short categories.
-    3. Replacing operand placeholders (a, b, c, d) with their actual names
-    in the conditions.
-    4. Creating a new SignalGeneratorDefinition with the transformed data.
-    5. Replacing the original SignalsDefinition argument with the new
-    SignalGeneratorDefinition.
-
-    Note: This function modifies the arguments passed to the wrapped function.
-    """
-
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
-        """TEST"""
-
-        # Check if the first argument is a SignalsDefinition
-        if args and isinstance(args[0], SignalsDefinition):
+        if args:  #  and isinstance(args[0], SignalsDefinition):
             signals_def = args[0]
 
             operands = {}
@@ -181,26 +202,36 @@ def transform_condition_definition(func: Callable[..., Any]) -> Callable[..., An
                 "open_short": [],
                 "close_short": [],
             }
+            indicator_counters = defaultdict(int)
+            indicator_names = {}
+
+            def get_unique_operand_name(operand_value):
+                if isinstance(operand_value, tuple):
+                    indicator_name = operand_value[0]
+                    if indicator_name in ['open', 'high', 'low', 'close', 'volume']:
+                        return indicator_name
+
+                    # Check if we've already assigned a unique name to this exact indicator
+                    indicator_key = str(operand_value)
+                    if indicator_key in indicator_names:
+                        return indicator_names[indicator_key]
+
+                    indicator_counters[indicator_name] += 1
+                    unique_name = f"{indicator_name}_{indicator_counters[indicator_name]}"
+                    indicator_names[indicator_key] = unique_name
+                    return unique_name
+                return operand_value
 
             for condition in signals_def.conditions:
-                for i, operand in enumerate(["a", "b", "c", "d"]):
+                for operand in ["a", "b", "c", "d"]:
                     operand_attr = f"operand_{operand}"
                     if hasattr(condition, operand_attr):
                         operand_value = getattr(condition, operand_attr)
                         if operand_value:
-                            operand_name = (
-                                operand_value[0]
-                                if isinstance(operand_value, tuple)
-                                else operand_value
-                            )
-                            operands[operand_name] = operand_value
+                            unique_name = get_unique_operand_name(operand_value)
+                            operands[unique_name] = operand_value
 
-                for condition_type in [
-                    "open_long",
-                    "close_long",
-                    "open_short",
-                    "close_short",
-                ]:
+                for condition_type in ["open_long", "close_long", "open_short", "close_short"]:
                     if hasattr(condition, condition_type):
                         condition_value = getattr(condition, condition_type)
                         if condition_value:
@@ -210,36 +241,40 @@ def transform_condition_definition(func: Callable[..., Any]) -> Callable[..., An
                                     operand_attr = f"operand_{item}"
                                     if hasattr(condition, operand_attr):
                                         operand_value = getattr(condition, operand_attr)
-                                        operand_name = (
-                                            operand_value[0]
-                                            if isinstance(operand_value, tuple)
-                                            else operand_value
-                                        )
-                                        transformed_condition[i] = operand_name
-                            conditions[condition_type].append(
-                                tuple(transformed_condition)
-                            )
+                                        unique_name = get_unique_operand_name(operand_value)
+                                        transformed_condition[i] = unique_name
+                            conditions[condition_type].append(tuple(transformed_condition))
 
             transformed_def = SignalGeneratorDefinition(
                 name=signals_def.name,
                 operands=operands,
                 conditions={k: v if v else None for k, v in conditions.items()},
             )
-            # Replace the SignalsDefinition with the transformed
-            # SignalGeneratorDefinition
             args = (transformed_def,) + args[1:]
+
+        else:
+            print(f"Invalid input: {func.__name__} expects a SignalsDefinition")
+            print(f"Got: {args} (type: {type(args[0])})")
 
         return func(*args, **kwargs)
 
     return wrapper
 
-
 @transform_condition_definition
 def dummy_test_function(signals_def: SignalsDefinition) -> None:
     print(f"Testing {signals_def.name}")
-    print(signals_def.to_yaml())
+    pprint(signals_def)
     print("-" * 80)
+
+    signals_def.conditions.test = ("test", "a", "b", "c")
+    print("Updated conditions: ", signals_def.conditions.test)
+
+    for k,v in signals_def.conditions.items():
+        print(f"{k}:")
+        for condition in v:
+            print(f"  - {condition}")
+        print()
 
 
 if __name__ == "__main__":
-    dummy_test_function(aroon_osc)
+    dummy_test_function(test_er)
