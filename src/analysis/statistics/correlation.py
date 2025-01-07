@@ -64,7 +64,6 @@ def rolling_mean_correlation(arr: np.ndarray, period: int) -> np.ndarray:
     return rolling_mean_corr
 
 
-
 class Correlation:
 
     def matrix(self, data: np.ndarray) -> np.ndarray:

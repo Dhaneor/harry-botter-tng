@@ -5,6 +5,7 @@ Created on Thu Feb 11 01:28:53 2021
 
 @author: dhaneor
 """
+
 import time
 import numpy as np
 import sys
@@ -20,31 +21,39 @@ from util import execution_time, seconds_to
 
 length = 50
 assets = [
-    'BTCUSDT', 'ETHUSDT', 'XRPUSDT', 'ADAUSDT', 'BNBUSDT',
-    'XDCUSDT', 'QNTUSDT', 'XLMUSDT'
+    "BTCUSDT",
+    "ETHUSDT",
+    "XRPUSDT",
+    "ADAUSDT",
+    "BNBUSDT",
+    "XDCUSDT",
+    "QNTUSDT",
+    "XLMUSDT",
 ]
 cols = len(assets)
 
-ts = np.arange(length, dtype=np.int64) * 10_000_000,  # 10 seconds intervals
+ts = (np.arange(length, dtype=np.int64) * 10_000_000,)  # 10 seconds intervals
 
 ohlcv = {
-    'timestamp': np.random.randint(5,  size=(length, cols)),
-    'open_': np.random.rand(length, cols).astype(np.float32),
-    'high': np.random.rand(length, cols).astype(np.float32),
-    'low': np.random.rand(length, cols).astype(np.float32),
-    'close': np.random.rand(length, cols).astype(np.float32),
-    'volume': np.random.rand(length, cols).astype(np.float32),
+    "timestamp": np.random.randint(5, size=(length, cols)),
+    "open_": np.random.rand(length, cols).astype(np.float32),
+    "high": np.random.rand(length, cols).astype(np.float32),
+    "low": np.random.rand(length, cols).astype(np.float32),
+    "close": np.random.rand(length, cols).astype(np.float32),
+    "volume": np.random.rand(length, cols).astype(np.float32),
 }
 
-periods, assets = ohlcv.get('close').shape
+periods, assets = ohlcv.get("close").shape
 print(f"periods: {periods}, assets: {assets}")
 
 mds = MarketDataStore(**ohlcv)
-md = MarketData(mds, ['BTCUSDT'])
+md = MarketData(mds, ["BTCUSDT"])
 
 
 # ======================================================================================
-def generate_stock_prices(initial_price=100, num_days=365, num_assets=2, volatility=0.01):
+def generate_stock_prices(
+    initial_price=100, num_days=365, num_assets=2, volatility=0.01
+):
     """
     Generate simulated stock prices using a random walk model.
 
@@ -62,7 +71,8 @@ def generate_stock_prices(initial_price=100, num_days=365, num_assets=2, volatil
     Returns:
     --------
     np.ndarray
-        A 2D array of shape (num_days, num_assets) containing the simulated prices.
+        A 2D array of shape (num_days, num_assets) containing the 
+        simulated prices.
     """
     # Generate daily returns
     daily_returns = np.random.normal(0, volatility, (num_days, num_assets))
@@ -88,17 +98,14 @@ def get_diversifcation_multiplier(close_prices: np.ndarray):
 # --------------------------------------------------------------------------------------
 @execution_time
 def test_vol_anno(close: np.ndarray):
-    ohlcv['volatility'] = lv.vol_anno(
-        close=close,
-        interval_in_ms=90_000,
-        lookback=14,
-        use_log_returns=False
+    ohlcv["volatility"] = lv.vol_anno(
+        close=close, interval_in_ms=90_000, lookback=14, use_log_returns=False
     )
 
 
 @execution_time
 def test_vol_anno_nb(close: np.ndarray):
-    ohlcv['volatility'] = lv.vol_anno_nb(
+    ohlcv["volatility"] = lv.vol_anno_nb(
         close=close,
         interval_in_ms=90_000,
         lookback=14,
@@ -117,25 +124,29 @@ def test_aggressive_sizing(data: dict):
 
 @execution_time
 def test_max_leverage_fast(data: dict):
-    ohlcv['leverage'] = lv.max_leverage(data=data, risk_level=1)
+    ohlcv["leverage"] = lv.max_leverage(data=data, risk_level=1)
 
 
-def test_get_diversification_multiplier(rows: int = 30, number_of_assets: int = 2):
+def test_get_diversification_multiplier(
+    rows: int = 30, number_of_assets: int = 2
+):
     dmc = lv.DiversificationMultiplier()
-    data = generate_stock_prices(num_days=10_000, num_assets=2, volatility=0.05)
+    data = generate_stock_prices(
+        num_days=10_000, num_assets=2, volatility=0.05
+        )
 
     print(data[-10:])
 
     for _ in range(5):
         dm = dmc.multiplier(data)
 
-    print(dm[-10:])
+    print(dm[-11:])
 
 
 # -----------------------------------------------------------------------------
 #                                   MAIN                                      #
 # -----------------------------------------------------------------------------
-if __name__ == '__main__':
+if __name__ == "__main__":
     test_get_diversification_multiplier(rows=30, number_of_assets=3)
     sys.exit()
 

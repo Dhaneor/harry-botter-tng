@@ -44,6 +44,7 @@ INTERVAL_IN_MS = {
 
 tst = 'test'
 
+
 # ======================================================================================
 class DiversificationMultiplier:
     """
