@@ -145,7 +145,7 @@ class MarketDataStore:
             # partial fill
             for i in range(period):
                 if i < rows:
-                    self.annual_vol[i, j] = 0.0
+                    self.annual_vol[i, j] = np.nan
             for i in range(period, rows):
                 # compute stdev over the last `period` bars
                 sum_lr = 0.0
