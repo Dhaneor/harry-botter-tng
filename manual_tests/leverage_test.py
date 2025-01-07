@@ -15,8 +15,9 @@ from cProfile import Profile
 from pstats import SortKey, Stats
 
 from analysis import leverage as lv
+from analysis.statistics import correlation as corr
 from analysis.models.market_data import MarketData, MarketDataStore
-from util import execution_time, seconds_to
+from util import seconds_to, execution_time
 
 
 length = 50
@@ -42,9 +43,6 @@ ohlcv = {
     "close": np.random.rand(length, cols).astype(np.float32),
     "volume": np.random.rand(length, cols).astype(np.float32),
 }
-
-periods, assets = ohlcv.get("close").shape
-print(f"periods: {periods}, assets: {assets}")
 
 mds = MarketDataStore(**ohlcv)
 md = MarketData(mds, ["BTCUSDT"])
@@ -86,87 +84,75 @@ def generate_stock_prices(
     return price_path
 
 
-def get_max_leverage():
-    return lv.max_leverage(data=ohlcv, risk_level=3)
-
-
-@execution_time
-def get_diversifcation_multiplier(close_prices: np.ndarray):
-    return lv.diversification_multiplier(close_prices=close_prices)
-
-
 # --------------------------------------------------------------------------------------
-@execution_time
-def test_vol_anno(close: np.ndarray):
-    ohlcv["volatility"] = lv.vol_anno(
-        close=close, interval_in_ms=90_000, lookback=14, use_log_returns=False
-    )
-
 
 @execution_time
-def test_vol_anno_nb(close: np.ndarray):
-    ohlcv["volatility"] = lv.vol_anno_nb(
-        close=close,
-        interval_in_ms=90_000,
-        lookback=14,
-    )
-
-
-@execution_time
-def test_conservative_sizing(data: dict):
-    lv._conservative_sizing(data=data, target_risk_annual=0.1, smoothing=1)
-
-
-@execution_time
-def test_aggressive_sizing(data: dict):
-    lv._aggressive_sizing(data=data, risk_limit_per_trade=0.05)
-
-
-@execution_time
-def test_max_leverage_fast(data: dict):
-    ohlcv["leverage"] = lv.max_leverage(data=data, risk_level=1)
-
-
-def test_get_diversification_multiplier(
-    rows: int = 30, number_of_assets: int = 2
-):
+def test_get_diversification_multiplier(data):
     dmc = lv.DiversificationMultiplier()
-    data = generate_stock_prices(
-        num_days=10_000, num_assets=2, volatility=0.05
-        )
+    multiplier = dmc.multiplier(data)
 
-    print(data[-10:])
+    print(f"simulated prices for {number_of_assets} assets:\n {data[-2:]}")
+    print('-' * 120)
+    print(f"Diversification Multiplier (last 10 days): {multiplier[-11:]}")
+    print(f"unique values: {np.unique(multiplier)}")
+    print(f"min: {np.min(multiplier)}, max: {np.max(multiplier)}")
+
+
+def test_rolling_correlation():
+    @execution_time
+    def numpy_version(arr):
+        return corr.rolling_mean_correlation(arr, period=20)
+
+    @execution_time
+    def numba_version(arr, period=20):
+        return corr.rolling_mean_correlation_nb(arr, period=20)
+
+    arr = np.random.rand(100, 3)
 
     for _ in range(5):
-        dm = dmc.multiplier(data)
+        np_ = numpy_version(arr)
+        assert np_ is not None
 
-    print(dm[-11:])
+    print('-' * 80)
+
+    for _ in range(5):
+        nb_ = numba_version(arr)
+        assert nb_ is not None
+
+    print(f"Numpy version: {np_[-11:]}")
+    print(f"Numba version: {nb_[-11:]}")
+
+    assert np.allclose(numpy_version(arr), numba_version(arr)), \
+        f"Results are not equal:\n {np.round(np.diff(np.subtract(np_, nb_)), 3)}" \
 
 
-# -----------------------------------------------------------------------------
-#                                   MAIN                                      #
-# -----------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------
+#                                        MAIN                                         #
+# -------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    test_get_diversification_multiplier(rows=30, number_of_assets=3)
-    sys.exit()
+    number_of_assets = 2
+    number_of_days = 2_000
+
+    data = generate_stock_prices(
+        num_days=number_of_days, num_assets=number_of_assets, volatility=0.05
+        )
+    
+    # test_get_diversification_multiplier(data=data)
+    # test_rolling_correlation()
+    # sys.exit()
 
     # =================================================================================
-    runs = 10_000
-    length = 100_000
-    data = np.random.rand(length)
+    runs = 1000
 
-    lc = lv.LeverageCalculator(md)
-
-    func = lc.leverage
-
-    # func(3)
-
+    # lc = lv.LeverageCalculator(md)
+    dmc = lv.DiversificationMultiplier(data=data)
+    print(dmc.multiplier[-11:])
     # sys.exit()
 
     start = time.perf_counter()
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            func(3)
+            _ = dmc.multiplier
 
     (
         Stats(p)
@@ -176,10 +162,7 @@ if __name__ == "__main__":
         .print_stats(30)
     )
 
-    # for _ in range(runs):
-    #     test_strategy_run(s, False)
-
     et = time.perf_counter()
-    print(f"length data: {length}")
+    print(f"data: {number_of_assets} assets / {len(data)} periods")
     print(f"average execution time: {seconds_to((et - start) / runs)}")
     print(f"iterations per second: {int(runs / ((et - start))):,} iterations/second")

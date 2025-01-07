@@ -5,16 +5,15 @@ Created on Thu Feb 11 01:28:53 2021
 
 @author: dhaneor
 """
+
 import numpy as np
 import bottleneck as bn
 import logging
-
-from numba import njit  # noqa: F401, E402
 from sys import getsizeof
 
 from analysis.models.market_data import MarketData
-from .statistics.correlation import Correlation
-from .util import proj_types as tp  # noqa: F401, E402
+from analysis.statistics.correlation import Correlation
+from analysis.util import proj_types as tp  # noqa: F401, E402
 
 logger = logging.getLogger("main.leverage")
 logger.setLevel(logging.DEBUG)
@@ -26,23 +25,21 @@ MILLISECONDS_PER_DAY = 1000 * 60 * 60 * 24
 MILLISECONDS_PER_YEAR = TRADING_DAYS_PER_YEAR * MILLISECONDS_PER_DAY
 
 INTERVAL_IN_MS = {
-    '1m': 60 * 1000,
-    '3m': 180 * 1000,
-    '5m': 300 * 1000,
-    '15m': 900 * 1000,
-    '30m': 1800 * 1000,
-    '1h': 3600 * 1000,
-    '2h': 7200 * 1000,
-    '4h': 14400 * 1000,
-    '6h': 21600 * 1000,
-    '12h': 43200 * 1000,
-    '1d': 86400 * 1000,
-    '3d': 259200 * 1000,
-    '1w': 604800 * 1000,
-    '1M': MILLISECONDS_PER_YEAR,
+    "1m": 60 * 1000,
+    "3m": 180 * 1000,
+    "5m": 300 * 1000,
+    "15m": 900 * 1000,
+    "30m": 1800 * 1000,
+    "1h": 3600 * 1000,
+    "2h": 7200 * 1000,
+    "4h": 14400 * 1000,
+    "6h": 21600 * 1000,
+    "12h": 43200 * 1000,
+    "1d": 86400 * 1000,
+    "3d": 259200 * 1000,
+    "1w": 604800 * 1000,
+    "1M": MILLISECONDS_PER_YEAR,
 }
-
-tst = 'test'
 
 
 # ======================================================================================
@@ -59,7 +56,7 @@ class DiversificationMultiplier:
     The multiplier is meant to be applied to:
 
     1) The leverage/position size that was determined by the position
-    sizing algorithm of a strategy that operates on multiple assets.
+    sizing algorithm of a strategy which operates on multiple assets.
     The input array should contain the 'close' prices for each asset.
 
     2) The leverage/position size of multiple strategies for the same
@@ -75,83 +72,95 @@ class DiversificationMultiplier:
 
     This is taken from Robert Carver´s book: Systematic Trading (p.131)
     """
+
     DM_MATRIX = {
         0: {2: 1.41, 3: 1.73, 4: 2.0, 5: 2.2, 10: 3.2, 15: 3.9, 20: 4.5, 50: 7.1},
-        0.25: {2: 1.27, 3: 1.41, 4: 1.51, 5: 1.58, 10: 1.75, 15: 1.83, 20: 1.86, 50: 1.94},   # noqa: E501
-        0.5: {2: 1.15, 3: 1.22, 4: 1.27, 5: 1.29, 10: 1.35, 15: 1.37, 20: 1.38, 50: 1.40},   # noqa: E501
-        0.75: {2: 1.10, 3: 1.12, 4: 1.13, 5: 1.15, 10: 1.17, 15: 1.17, 20: 1.18, 50: 1.19},   # noqa: E501
+        0.25: {
+            2: 1.27,
+            3: 1.41,
+            4: 1.51,
+            5: 1.58,
+            10: 1.75,
+            15: 1.83,
+            20: 1.86,
+            50: 1.94,
+        },  # noqa: E501
+        0.5: {
+            2: 1.15,
+            3: 1.22,
+            4: 1.27,
+            5: 1.29,
+            10: 1.35,
+            15: 1.37,
+            20: 1.38,
+            50: 1.40,
+        },  # noqa: E501
+        0.75: {
+            2: 1.10,
+            3: 1.12,
+            4: 1.13,
+            5: 1.15,
+            10: 1.17,
+            15: 1.17,
+            20: 1.18,
+            50: 1.19,
+        },  # noqa: E501
         1.0: {2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 10: 1.0, 15: 1.0, 20: 1.0, 50: 1.0},
     }
 
-    def __init__(self, period: int = 14):
-        """Imitializes the DiversificationMultiplier class.
-
-        Parameters:
-        -----------
-        period: int, optional
-            lookback period for the rolling correlation, by default 14
-        """
-        self.correlation_analyzer = Correlation()
+    def __init__(self, data: np.ndarray, period: int = 14):
+        self._data = data
         self.period = period
+        self.correlation_analyzer = Correlation()
+        self._multiplier = None
 
-    def multiplier(self, arr: tp.Array_2d) -> float:
-        """Calculates the diversification multiplier based on at
-        least two series of asset prices or equity curves for
-        different strategies.
+    def _calculate_rolling_mean_correlation(self):
+        return self.correlation_analyzer.rolling(self._data, self.period)
 
-        The multiplier is always '1' if the array has only one column.
+    @property
+    def data(self):
+        return self._data
 
-        This is the method described by Robert Carver in 'Leveraged
-        Trading'. It is very conservative, at least when the account
-        level risk target is also calculated by the method(s) described
-        in the book (he proposes 12%).
-        This algorithm uses the standard deviation.
+    @data.setter
+    def data(self, new_data: np.ndarray):
+        if not np.array_equal(self._data, new_data):
+            self._data = new_data
+            self._rolling_mean_correlation = self._calculate_rolling_mean_correlation()
+            self._multiplier = self._calculate_multiplier()
 
-        Parameters
-        ----------
-        arr: np.ndarray
-            A 2D Numpy array, one column for each asset
-        period
-            the lookback period
+    @property
+    def multiplier(self) -> np.ndarray:
+        if self._multiplier is None:
+            self._multiplier = self._calculate_multiplier()
+        return self._multiplier
 
-        Returns
-        -------
-        np.ndarray
-            A 1D numpy array with diversification multiplier values
-        """
+    def _calculate_multiplier(self) -> np.ndarray:
+        rolling_mean_correlation = self._calculate_rolling_mean_correlation()
 
-        # multiplier is always '1' for one asset
-        if arr.shape[1] < 2:
-            return 1
+        if self._data.shape[1] < 2:
+            return np.ones(self._data.shape[0], dtype=np.float16)
 
-        rolling_mean_correlation = self.correlation_analyzer.rolling(arr, self.period)
-        choices_for_correlations = self.DM_MATRIX.keys()
+        choices_for_correlations = np.array(list(self.DM_MATRIX.keys()))
+        choices_for_no_of_assets = np.array(list(self.DM_MATRIX[0].keys()))
 
-        # find the closest number of assets in our matrix to the actual
-        # number of assets, the multiplier value does not increase
-        # anymore if the number of assets is above 50
-        choices_for_no_of_assets = self.DM_MATRIX[0].keys()
-        # limit the number of assets to 50 if it's more than that
-        no_of_assets = 50 if arr.shape[1] > 50 else arr.shape[1]
+        no_of_assets = min(self._data.shape[1], 50)
+        closest_no_of_assets = choices_for_no_of_assets[
+            np.argmin(np.abs(choices_for_no_of_assets - no_of_assets))
+        ]
 
-        closest_no_of_assets = min(
-            choices_for_no_of_assets, key=lambda x: abs(x - no_of_assets)
-            )
+        closest_corr_indices = np.searchsorted(
+            choices_for_correlations, rolling_mean_correlation, side="left"
+        )
+        closest_corr_indices = np.clip(
+            closest_corr_indices, 0, len(choices_for_correlations) - 1
+        )
+        closest_corrs = choices_for_correlations[closest_corr_indices]
 
-        # find the closest correlation value in our matrix (see
-        # explanation at top of the class) to the actual mean
-        # correlation between the assets in the lookback period
-        # for each row of the passed array
-        out = np.full_like(rolling_mean_correlation, 1)
-
-        for i, corr in enumerate(rolling_mean_correlation):
-            closest_corr = min(
-                choices_for_correlations,
-                key=lambda x: abs(x - rolling_mean_correlation[i]),
-            )
-            out[i] = self.DM_MATRIX[closest_corr][closest_no_of_assets]
-
-        return out
+        result = np.array(
+            [self.DM_MATRIX[corr][closest_no_of_assets] for corr in closest_corrs],
+            dtype=np.float16,
+        )
+        return result
 
 
 class LeverageCalculator:
@@ -164,6 +173,7 @@ class LeverageCalculator:
     based on the volatility of the daily returns
     • for 11-12 this is the risk per trade, based on the ATR
     """
+
     RISK_LEVELS = {
         1: 0.12,
         2: 0.18,
@@ -185,7 +195,7 @@ class LeverageCalculator:
         risk_level: int = 1,
         max_leverage: float = 1.0,
         smoothing: int = 1,
-        atr_window: int = 21
+        atr_window: int = 21,
     ):
         """
         Initialize the LeverageCalculator with market data and configuration parameters.
@@ -213,16 +223,16 @@ class LeverageCalculator:
         """
         self.market_data = market_data
 
-        self._validate_risk_level(risk_level)
         self.risk_level = risk_level
         self.max_leverage = max_leverage
 
         self.smoothing = smoothing
+        self.atr_window = atr_window
 
         self.interval = market_data.interval
         self.interval_in_ms = market_data.interval_in_ms
 
-        self.atr_window = atr_window
+        self.dmc = DiversificationMultiplier()
 
         self._cache = {}
 
@@ -238,7 +248,7 @@ class LeverageCalculator:
             for risk_level in self.RISK_LEVELS:
                 self.leverage(risk_level)
         else:
-            #...for the current risk level for larger datasets
+            # ...for the current risk level for larger datasets
             self.leverage(self.risk_level)
 
     def leverage(self, risk_level: int = None) -> np.ndarray:
@@ -308,7 +318,8 @@ class LeverageCalculator:
         np.ndarray
             the maximum leverage
         """
-        annualized_volatility = self.market.data.annual_vol
+        print(type(self.market_data))
+        annualized_volatility = self.market_data.annual_vol
 
         # Apply smoothing to volatility
         if self.smoothing > 1:
@@ -335,8 +346,9 @@ class LeverageCalculator:
         -------
         np.ndarray
         """
-        leverage = risk_limit_per_trade \
-            / (self.market_data.mds.atr / self.market_data.close)
+        leverage = risk_limit_per_trade / (
+            self.market_data.mds.atr / self.market_data.close
+        )
 
         # Apply maximum leverage limit
         return np.minimum(leverage, self.max_leverage)
