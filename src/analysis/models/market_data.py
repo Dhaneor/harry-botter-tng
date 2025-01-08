@@ -385,6 +385,25 @@ class MarketData:
             return arr_2d[:, col]  # shape (rows,)
         return arr_2d  # shape (rows, cols)
 
+    def to_dictionary(self):
+        """Returns a dictionary of the MarketData object.
+
+        Returns:
+        --------
+        dict[str, np.ndarray] 
+            A dictionary with keys 'open time', 'open', 'high', 'low', 
+            'close', and 'volume', containing the corresponding numpy 
+            arrays (1D).
+        """
+        return {
+            'open time': self.mds.timestamp[:, 0].reshape(-1),
+            'open': self.mds.open_[:, 0].reshape(-1),
+            'high': self.mds.high[:, 0].reshape(-1),
+            'low': self.mds.low[:, 0].reshape(-1),
+            'close': self.mds.close[:, 0].reshape(-1),
+            'volume': self.mds.volume[:, 0].reshape(-1),
+        }
+
     # .................................................................................
     @classmethod
     def from_dictionary(self, symbol, data: dict):
@@ -397,9 +416,25 @@ class MarketData:
             volume=data['volume'].reshape(-1, 1).astype(np.float32),
             timestamp=data['open time'].reshape(-1, 1).astype(np.int64)
         )
-        symbols = [symbol]
 
-        return MarketData(mds, symbols)
+        return MarketData(mds, [symbol])
+    
+    @classmethod
+    def from_dataframe(cls, symbol, df: pd.DataFrame):
+        """Builds a new MarketData object from a DataFrame."""
+
+        # Create MarketDataStore
+        mds = MarketDataStore(
+            open_= df['open'].values.astype(np.float32),
+            high=df['high'].values.astype(np.float32),
+            low=df['low'].values.astype(np.float32),
+            close=df['close'].values.astype(np.float32),
+            volume=df['volume'].values.astype(np.float32),
+            timestamp=df['open time'].values.astype(np.int64)
+        )
+
+        return MarketData(mds, [symbol])
+
 
     # .................................................................................
     def _build_symbol_df(self, symbol):

@@ -173,6 +173,10 @@ class IStrategy(abc.ABC):
         """
         ...
 
+    @abc.abstractmethod
+    def randomize(self) -> None:
+        ...
+
     # ----------------------------------------------------------------------------------
     @abc.abstractmethod
     def _add_signals(self, data: tp.Data) -> None:
@@ -286,6 +290,11 @@ class SubStrategy(IStrategy):
                 self._add_signals(data)
             )
         )
+    
+    def randomize(self) -> None:
+        """Randomizes the parameters of the strategy.
+        """
+        self.signal_generator.randomize()
 
     def optimize(self, data: tp.Data, *args, **kwargs) -> None:
         """
@@ -384,6 +393,12 @@ class CompositeStrategy(IStrategy):
 
     def speak(self, data: tp.Data) -> tp.Data:
         return self._add_signals(data)
+
+    def randomize(self) -> None:
+        """Randomize the parameters of the strategies.
+        """
+        for strategy, _ in self.sub_strategies.values():
+            strategy.randomize()
 
     def optimize(self) -> None:
         """Optimize the strategy by testing param combinations.

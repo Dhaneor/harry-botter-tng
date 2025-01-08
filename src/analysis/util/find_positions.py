@@ -17,36 +17,35 @@ def merge_signals_nb(open_long, open_short, close_long, close_short):
     signal = np.zeros(n, dtype=np.float64)
     position = np.zeros(n, dtype=np.float64)
 
+    if open_long[0] > 0:
+        signal[0] = open_long[0]
+        position[0] = 1
+    elif open_short[0] > 0:
+        signal[0] = open_short[0] * -1
+        position[0] = -1
+
     for i in range(n):
-        if i == 0:
-            if open_long[i] > 0:
-                signal[i] = open_long[i]
-                position[i] = 1
-            elif open_short[i] > 0:
-                signal[i] = open_short[i] * -1
-                position[i] = -1
-        else:
-            prev_position = position[i-1]
-            signal[i] = signal[i-1]
-            position[i] = prev_position
+        prev_position = position[i-1]
+        signal[i] = signal[i-1]
+        position[i] = prev_position
 
-            if open_long[i] > 0:
-                signal[i] = open_long[i]
-                position[i] = 1
+        if open_long[i] > 0:
+            signal[i] = open_long[i]
+            position[i] = 1
 
-            elif close_long[i] > 0:
-                if prev_position > 0:
-                    signal[i] = 0
-                    position[i] = 0
+        elif close_long[i] > 0:
+            if prev_position > 0:
+                signal[i] = 0
+                position[i] = 0
 
-            elif open_short[i] > 0:
-                signal[i] = open_short[i] * -1
-                position[i] = -1
+        elif open_short[i] > 0:
+            signal[i] = open_short[i] * -1
+            position[i] = -1
 
-            elif close_short[i] > 0:
-                if prev_position < 0:
-                    signal[i] = 0
-                    position[i] = 0
+        elif close_short[i] > 0:
+            if prev_position < 0:
+                signal[i] = 0
+                position[i] = 0
 
     return signal, position
 

@@ -18,6 +18,8 @@ from pstats import SortKey, Stats  # noqa: F401
 
 from staff.hermes import Hermes
 from analysis import strategy_builder as sb
+from analysis.models.market_data import MarketData, MarketDataStore
+from analysis.leverage import LeverageCalculator
 from analysis.util import find_positions as fp
 from analysis import strategy_backtest as bt
 from analysis.backtest import statistics as st
@@ -102,8 +104,16 @@ def _get_ohlcv_from_db():
         raise Exception(error)
 
 
-def _run_backtest(data: dict):
-    result = bt.run(strategy, data, initial_capital, risk_level, max_leverage)
+def _run_backtest(data: dict) -> pd.DataFrame:
+    md = MarketData.from_dictionary(strategy.symbol, data)
+    leverage_calculator = LeverageCalculator(md, risk_level, max_leverage)
+
+    result = bt.run(
+        strategy=strategy, 
+        leverage_calculator=leverage_calculator,
+        data=data, 
+        initial_capital=initial_capital
+        )
     df = pd.DataFrame.from_dict(result)
 
     # Check if portfolio value ever goes negative
@@ -210,8 +220,8 @@ def display_problematic_rows(df):
 
 # ..............................................................................
 def run(data, show=False, plot=False):
-
-    df = _add_stats(pd.DataFrame.from_dict(_run_backtest(data)))
+    result = _run_backtest(data)
+    df = _add_stats(result)
 
     df_pos = df.copy()
 
@@ -255,7 +265,7 @@ def test_find_positions(data: dict):
 if __name__ == '__main__':
     logger.info("Starting backtest...")
     logger.info(strategy)
-    run(_get_ohlcv_from_db(), True, True)
+    run(_get_ohlcv_from_db(), False, False)
 
     # ..........................................................................
     sys.exit()
@@ -263,18 +273,19 @@ if __name__ == '__main__':
     logger.setLevel(logging.ERROR)
     runs = 10_000
     data_pre = [_get_ohlcv_from_db() for _ in range(runs)]
-    start = time.perf_counter()
 
-    # for i in range(runs):
-    #     # test_find_positions(data_pre[i])
-    #     bt.run(strategy, data_pre[i], initial_capital, risk_level)
+    md = MarketData.from_dictionary(strategy.symbol, data_pre[0])
+    leverage_calculator = LeverageCalculator(md, risk_level, max_leverage)
+
+    start = time.perf_counter()
 
     for sub, _ in strategy.sub_strategies.values():
         sub.signal_generator.randomize()
 
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            bt.run(strategy, data_pre[i], initial_capital, risk_level)
+            strategy.randomize()
+            bt.run(strategy, leverage_calculator, data_pre[i], initial_capital)
 
     (
         Stats(p)
@@ -284,10 +295,7 @@ if __name__ == '__main__':
         .print_stats(30)
     )
 
-    # for _ in range(runs):
-    #     test_strategy_run(s, False)
-
-    et = time.perf_counter()
+    et = time.perf_counter() - start
     print(f'length data: {len(data_pre[0]["close"])} periods')
-    print(f"average execution time: {((et - start)*1_000_000/runs):.2f} microseconds")
-    print(f"iterations per second: {runs / ((et - start)):.2f} iterations/second")
+    print(f"average execution time: {(et * 1_000_000 / runs):.2f} microseconds")
+    print(f"iterations per second: {runs / (et):.2f} iterations/second")

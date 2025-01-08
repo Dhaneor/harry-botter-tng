@@ -60,6 +60,7 @@ def test_market_data():
 
     print(md.open > test)
     print(md.interval_in_ms)
+    print(md.to_dictionary())
 
 if __name__ == '__main__':
     test_market_data()

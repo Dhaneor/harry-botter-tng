@@ -42,6 +42,9 @@ def calculate_trades_nb(close: np.ndarray, position: np.ndarray,
             b_base[i] = b_base[i - 1]
             b_quote[i] = b_quote[i - 1]
 
+        if position[i] == 0:
+            continue
+
         leverage[i] = 1 if leverage[i] == np.nan else leverage[i]
 
         # process LONG position
@@ -190,14 +193,12 @@ def calculate_trades(data: tp.Data, initial_capital: float = 1000) -> None:
 # @execution_time
 def run(
     strategy: IStrategy,
+    leverage_calculator: LeverageCalculator,
     data: tp.Data,
     initial_capital: float,
-    risk_level: float = 0,
-    max_leverage: float = 1
+    # risk_level: float = 0,
+    # max_leverage: float = 1
 ):
-
-    md = MarketData.from_dictionary(strategy.symbol, data)
-    leverage_calculator = LeverageCalculator(md, risk_level, max_leverage)
 
     # add signals
     if isinstance(strategy, IStrategy):
@@ -208,11 +209,7 @@ def run(
     merge_signals(data)
 
     # add leverage
-    if risk_level:
-        data["leverage"] = leverage_calculator.leverage().reshape(-1,)
-    else:
-        data['leverage'] = np.full_like(data['close'], max_leverage, dtype=np.float64)
-
+    data["leverage"] = leverage_calculator.leverage().reshape(-1,)
     data["leverage"] = data["leverage"] * np.abs(data["signal"])
 
     # before cutting off the first 200 data points, we need to make

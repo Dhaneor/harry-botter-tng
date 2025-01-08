@@ -274,7 +274,7 @@ class LeverageCalculator:
         if self._cache.get(risk_level, None) is None:
             if risk_level == 0:
                 lv = np.full_like(
-                    self.market_dataclose, self.max_leverage, dtype=np.float16
+                    self.market_data.close, self.max_leverage, dtype=np.float16
                     )
             elif 1 <= risk_level <= 10:
                 lv = self._conservative_sizing(self.RISK_LEVELS[risk_level])

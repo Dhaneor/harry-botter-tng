@@ -80,6 +80,7 @@ class Parameter(Iterable):
     hard_max: float | int | bool
     step: Optional[float | int]
     on_change: Callable | None = None
+    validate: bool = False
     _subscribers: set[Callable] = field(default_factory=set)
     _value: float | int = None
     _enforce_int: bool = False
@@ -141,7 +142,7 @@ class Parameter(Iterable):
             • if negative values for a timeperiod a requested
             • if negative values for categorical parameters are requested
         """
-        self._value = self._validate(value)
+        self._value = self._validate(value) if self.validate else value
 
         if self._value is None:
             raise TypeError(f"Invalid value {self._value} for parameter {self.name}")
