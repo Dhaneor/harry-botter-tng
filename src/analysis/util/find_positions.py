@@ -161,8 +161,6 @@ def find_positions_nb(open_, high, low, close, signal, position,
             continue
 
         # ........................... LONG POSITION ...................................
-        # continue LONG position
-
         # open LONG position
         if active_position != 1:
             if signal[i - 1] > 0:
@@ -173,7 +171,7 @@ def find_positions_nb(open_, high, low, close, signal, position,
                 sl_current[i] = sl_long[i - 1]
 
         # close LONG position
-        elif active_position == 1:
+        if active_position == 1:
             position[i] = 1
             sl_current[i] = max(sl_current[i - 1], sl_long[i - 1])
 

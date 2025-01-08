@@ -52,7 +52,6 @@ import numpy as np
 from ..indicators import indicator as ind
 from ..indicators import indicators_custom
 from ..util import proj_types as tp
-from util import log_execution_time
 from ..chart.plot_definition import SubPlot, Line, Channel
 
 logger = logging.getLogger("main.operand")

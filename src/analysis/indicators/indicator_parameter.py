@@ -147,10 +147,10 @@ class Parameter(Iterable):
         if self._value is None:
             raise TypeError(f"Invalid value {self._value} for parameter {self.name}")
 
-        logger.info(f"Set parameter {self.name} to {self._value}")
-        logger.debug(f"Calling subscribers for parameter {self.name}")
-        for subscriber in self._subscribers:
-            subscriber(self.name)
+        # logger.info(f"Set parameter {self.name} to {self._value}")
+        # logger.debug(f"Calling subscribers for parameter {self.name}")
+        # for subscriber in self._subscribers:
+        #     subscriber(self.name)
 
     @property
     def space(self) -> Tuple[float | int | bool]:

@@ -242,14 +242,14 @@ class LeverageCalculator:
         if atr_window != 21:
             self.market_data.compute_atr(atr_window)
 
-        # pre-populate the cache ...
-        if len(market_data) < 5_000:
-            # ...for all risk levels for smaller datasets
-            for risk_level in self.RISK_LEVELS:
-                self.leverage(risk_level)
-        else:
-            # ...for the current risk level for larger datasets
-            self.leverage(self.risk_level)
+        # # pre-populate the cache ...
+        # if len(market_data) < 5_000:
+        #     # ...for all risk levels for smaller datasets
+        #     for risk_level in self.RISK_LEVELS:
+        #         self.leverage(risk_level)
+        # else:
+        #     # ...for the current risk level for larger datasets
+        #     self.leverage(self.risk_level)
 
     def leverage(self, risk_level: int = None) -> np.ndarray:
         """Calculates the maximum leverage based on 'close' prices.

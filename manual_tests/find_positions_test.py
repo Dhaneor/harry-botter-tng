@@ -37,7 +37,7 @@ logger = get_logger('main')
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = "4 years ago UTC"
+start = "7 years ago UTC"
 end = 'now UTC'
 
 strategy = s_test_er
@@ -259,16 +259,16 @@ def test_find_positions(data: dict):
     assert "position" in data, "'position' not found in data dictionary"
 
 
-# ==================================================================------========== #
-#                                       MAIN                                         #
-# ================================================================================== #
+# ==================================================================------=========== #
+#                                       MAIN                                          #
+# =================================================================================== #
 if __name__ == '__main__':
     logger.info("Starting backtest...")
     logger.info(strategy)
     run(_get_ohlcv_from_db(), False, False)
 
-    # ..........................................................................
-    sys.exit()
+    # .................................................................................
+    # sys.exit()
 
     logger.setLevel(logging.ERROR)
     runs = 10_000
@@ -297,5 +297,9 @@ if __name__ == '__main__':
 
     et = time.perf_counter() - start
     print(f'length data: {len(data_pre[0]["close"])} periods')
-    print(f"average execution time: {(et * 1_000_000 / runs):.2f} microseconds")
-    print(f"iterations per second: {runs / (et):.2f} iterations/second")
+    print(f"average execution time: {(et * 1_000_000 / runs):.0f} microseconds")
+    iterations = runs / (et)
+    periods = len(data_pre[0]["close"]) * iterations
+    print(f"periods/s: {periods:,.0f}")
+    print(f"iter/s (1 core): ~{iterations:,.0f}")
+    print(f"iter/s (8 core): ~{iterations * 5:,.0f}")

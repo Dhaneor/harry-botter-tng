@@ -7,6 +7,8 @@ Created on Fri July 28 20:08:20 2023
 """
 import bottleneck as bn
 import numpy as np
+
+from functools import lru_cache
 from numba import njit
 from .indicator import IIndicator
 from .indicator_parameter import Parameter
@@ -31,6 +33,7 @@ class EfficiencyRatio(IIndicator):
 
         self._is_subplot = True
         self._method: int = 0  # calculation method (0=numpy, 1=numba)
+        self._cache = None
 
     def run(self, data: np.ndarray) -> np.ndarray:
         """
@@ -55,22 +58,35 @@ class EfficiencyRatio(IIndicator):
             The Noise indicator values for the lookback set
             in the 'timeperiod' parameter (default: 14).
         """
-        if data.ndim == 1:
-            if self._method:
-                return self._noise_index_numba(data=data, lookback=14)
+        
+        if self._cache is None:
+
+            if data.ndim == 1:
+                if self._method:
+                    self._cache = self._noise_index_numba(
+                        data=data, lookback=self.parameter.value
+                        )
+                else:
+                    self._cache = self._noise_index_numpy(data)
+            # elif data.ndim == 2:
+            #     return np.apply_along_axis(
+            #         self._noise_index_numpy
+            #         if self._method == 0
+            #         else self._noise_index_numba, 0, data
+            #         )
             else:
-                return self._noise_index_numpy(data)
-        # elif data.ndim == 2:
-        #     return np.apply_along_axis(
-        #         self._noise_index_numpy
-        #         if self._method == 0
-        #         else self._noise_index_numba, 0, data
-        #         )
-        else:
-            raise ValueError("Input data must be either 1D or 2D array")
+                raise ValueError("Input data must be either 1D or 2D array")
+        
+        return self._cache
 
     def help(self):
         return print(self.run.__doc__)
+
+    def on_parameter_change(self, *args) -> None:
+        """Callback function for when parameters change."""
+        self._cache = None
+        # for callback in self.subscribers:
+        #     callback()
 
     @property
     def plot_desc(self) -> SubPlot:

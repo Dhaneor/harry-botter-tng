@@ -25,6 +25,8 @@ from tqdm import tqdm
 from . import strategy_backtest as bt
 from . import strategy_builder as sb
 from .strategy import signal_generator as sg
+from .models.market_data import MarketData
+from .leverage import LeverageCalculator
 from .backtest.statistics import calculate_statistics
 logger = logging.getLogger('main.optimizer')
 logger.setLevel(logging.INFO)
@@ -36,7 +38,7 @@ multiprocessing.set_start_method('spawn', force=True)
 
 INITIAL_CAPITAL = 10_000  # initial capital for backtesting
 RISK_FREE_RATE = 0.04  # risk-free rate for calculating Sharpe Ratio
-CHUNK_SIZE = 50  # size of chunks for processing data
+CHUNK_SIZE = 100 # size of chunks for processing data
 
 PERIODS_PER_YEAR = {
     '1m': 365 * 24 * 60,
@@ -78,25 +80,30 @@ def estimate_exc_time(
     backtest_fn: Callable, strategy: sb.IStrategy, data: dict[np.ndarray]
 ) -> float:
 
+    md = MarketData.from_dictionary(strategy.symbol, data)
+    leverage_calculator = LeverageCalculator(md)
+
     # Run the backtest function once to warm up the JIT compiler
     backtest_fn(
         data=data,
         strategy=strategy,
+        leverage_calculator=leverage_calculator,
         initial_capital=INITIAL_CAPITAL
     )
 
     # Run the backtest 50 times to get an average execution time
     execution_time, runs = 0.0, 100
+    start_time = time.time()
     for _ in range(runs):
-        start_time = time.time()
         _ = backtest_fn(
             data=data,
             strategy=strategy,
+            leverage_calculator=leverage_calculator,
             initial_capital=INITIAL_CAPITAL
         )
-        execution_time += time.time() - start_time
+    execution_time = time.time() - start_time
 
-    return 0.5 * execution_time / runs  # 0.27 estimated speedup parallelization
+    return 0.5 * execution_time / runs  # estimated speedup parallelization
 
 
 def vector_generator(
@@ -441,6 +448,10 @@ def worker(
         maximum drawdown criterion.
     """
     strategy = sb.build_strategy(strategy_definition)
+
+    md = MarketData.from_dictionary(strategy.symbol, data)
+    leverage_calculator = LeverageCalculator(md, risk_level, max_leverage)
+
     cleanup_threshold = 100 * 1024 * 1024  # 10 MB, adjust as needed
     ohlcv_keys = ['open time', 'open', 'high', 'low', 'close', 'volume']
     results = []
@@ -452,22 +463,12 @@ def worker(
 
         bt_result = backtest_fn(
             strategy=strategy,
+            leverage_calculator=leverage_calculator,
             data=data_new,
-            risk_level=risk_level,
             initial_capital=initial_capital,
-            max_leverage=max_leverage
         )
 
         equity = bt_result.get('b.value')
-
-        # print(data_new.keys())
-
-        # print(f'Portfolio value: {equtiy[-10:]}')
-
-        # last = equity[-1]
-        # seen.add(last)
-
-        # print(strategy.signal_generator.parameters, seen)
 
         results.append(
             (
