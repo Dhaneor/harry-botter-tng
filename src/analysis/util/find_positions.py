@@ -156,6 +156,10 @@ def find_positions_nb(open_, high, low, close, signal, position,
         position[i] = 0
         sl_trig[i] = 0
 
+        if active_position == 0 and signal[i - 1] == 0:
+            continue
+
+        # ........................... LONG POSITION ...................................
         # continue LONG position
         if active_position == 1:
             position[i] = 1
@@ -182,6 +186,7 @@ def find_positions_nb(open_, high, low, close, signal, position,
                 sell[i] = 1
                 sell_at[i] = sl_current[i]
 
+        # ............................ SHORT POSITION .................................
         # continue SHORT position
         if active_position == -1:
             position[i] = -1
