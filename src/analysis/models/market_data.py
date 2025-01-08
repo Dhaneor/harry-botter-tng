@@ -386,6 +386,22 @@ class MarketData:
         return arr_2d  # shape (rows, cols)
 
     # .................................................................................
+    @classmethod
+    def from_dictionary(self, symbol, data: dict):
+        """Builds a new MarketData object from an OHLCV dictionary."""
+        mds = MarketDataStore(
+            open_= data['open'].reshape(-1, 1).astype(np.float32),
+            high=data['high'].reshape(-1, 1).astype(np.float32),
+            low=data['low'].reshape(-1, 1).astype(np.float32),
+            close=data['close'].reshape(-1, 1).astype(np.float32),
+            volume=data['volume'].reshape(-1, 1).astype(np.float32),
+            timestamp=data['open time'].reshape(-1, 1).astype(np.int64)
+        )
+        symbols = [symbol]
+
+        return MarketData(mds, symbols)
+
+    # .................................................................................
     def _build_symbol_df(self, symbol):
         """
         Return a DataFrame with columns = all fields, rows = time,

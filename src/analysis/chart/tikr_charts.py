@@ -644,6 +644,7 @@ class TikrChart(Chart):
 
 class BacktestChart(Chart):
     def __init__(self, df, style: str, title=None):
+        logger.error(df.index.name)
         super().__init__(df, style, title)
 
         self.layout = Layout(

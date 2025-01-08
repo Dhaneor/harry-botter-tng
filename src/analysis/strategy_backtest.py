@@ -14,7 +14,8 @@ from numba import jit, int8
 from analysis.util import proj_types as tp
 from analysis.strategy_builder import IStrategy
 from analysis.util.find_positions import find_positions_with_dict, merge_signals
-from analysis.leverage import calculate_leverage
+from analysis.leverage import LeverageCalculator
+from analysis.models.market_data import MarketData
 
 logger = logging.getLogger('main.backtest')
 logger.setLevel('DEBUG')
@@ -195,6 +196,9 @@ def run(
     max_leverage: float = 1
 ):
 
+    md = MarketData.from_dictionary(strategy.symbol, data)
+    leverage_calculator = LeverageCalculator(md, risk_level, max_leverage)
+
     # add signals
     if isinstance(strategy, IStrategy):
         strategy.speak(data)
@@ -205,7 +209,7 @@ def run(
 
     # add leverage
     if risk_level:
-        data["leverage"] = calculate_leverage(data, max_leverage, risk_level)
+        data["leverage"] = leverage_calculator.leverage().reshape(-1,)
     else:
         data['leverage'] = np.full_like(data['close'], max_leverage, dtype=np.float64)
 
@@ -314,4 +318,3 @@ def show_overview(
 
     print('=' * 200)
     print(df.loc[start_index:end_index, include_columns])
-    # print(df.columns)

@@ -5,10 +5,10 @@ Created on Oct 06 10:03:20 2021
 
 @author dhaneor
 """
-import sys
-import os
-import time
 import logging
+import sys
+import time
+
 import numpy as np
 import pandas as pd
 
@@ -30,61 +30,61 @@ from analysis.backtest import result_stats as rs
 from analysis.models import position
 from util import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger('main')
 
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = "1000 days ago UTC"
+start = "4 years ago UTC"
 end = 'now UTC'
 
 strategy = s_test_er
-risk_level, max_leverage = 8, 2
+risk_level, max_leverage = 0, 1
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='binance', mode='backtest')
 strategy = sb.build_strategy(strategy)
-
+strategy.symbol = symbol
 
 # ======================================================================================
-def get_data(length: int = 1000):
-    """
-    Reads a CSV file containing OHLCV (Open, High, Low, Close, Volume)
-    data for a cryptocurrency and performs data preprocessing.
+# def get_data(length: int = 1000):
+#     """
+#     Reads a CSV file containing OHLCV (Open, High, Low, Close, Volume)
+#     data for a cryptocurrency and performs data preprocessing.
 
-    Parameters
-        length
-            The number of data points to retrieve. Defaults to 1000.
+#     Parameters
+#         length
+#             The number of data points to retrieve. Defaults to 1000.
 
-    Returns:
-        dict
-            A dictionary containing the selected columns from the
-            preprocessed data as numpy arrays.
-    """
-    df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
-    df.drop(
-        ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
-    )
+#     Returns:
+#         dict
+#             A dictionary containing the selected columns from the
+#             preprocessed data as numpy arrays.
+#     """
+#     df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
+#     df.drop(
+#         ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
+#     )
 
-    df['human open time'] = pd.to_datetime(df['human open time'])
-    df.set_index(keys=['human open time'], inplace=True, drop=False)
+#     df['human open time'] = pd.to_datetime(df['human open time'])
+#     df.set_index(keys=['human open time'], inplace=True, drop=False)
 
-    if interval != "15min":
-        df = df.resample(interval)\
-            .agg(
-                {
-                    'open time': 'min', 'human open time': 'min',
-                    'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last',
-                    'volume': 'sum'
-                },
-                min_periods=1
-            )  # noqa: E123
+#     if interval != "15min":
+#         df = df.resample(interval)\
+#             .agg(
+#                 {
+#                     'open time': 'min', 'human open time': 'min',
+#                     'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last',
+#                     'volume': 'sum'
+#                 },
+#                 min_periods=1
+#             )  # noqa: E123
 
-    df.dropna(inplace=True)
+#     df.dropna(inplace=True)
 
-    start = len(df) - length  # randint(0, len(df) - length)
-    end = -1  # start + length
-    return {col: df[start:end][col].to_numpy() for col in df.columns}
+#     start = len(df) - length  # randint(0, len(df) - length)
+#     end = -1  # start + length
+#     return {col: df[start:end][col].to_numpy() for col in df.columns}
 
 
 def _get_ohlcv_from_db():
@@ -236,6 +236,7 @@ def run(data, show=False, plot=False):
 
     logger.info(strategy_stats)
     logger.info(hodl_stats)
+    logger.info(df.index.name)
 
     if plot:
         plot_title = f'{strategy.name} - {symbol} ({interval})'
@@ -254,10 +255,10 @@ def test_find_positions(data: dict):
 if __name__ == '__main__':
     logger.info("Starting backtest...")
     logger.info(strategy)
-    run(_get_ohlcv_from_db(), False, False)
+    run(_get_ohlcv_from_db(), True, True)
 
     # ..........................................................................
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
     runs = 10_000

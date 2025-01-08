@@ -232,7 +232,7 @@ class LeverageCalculator:
         self.interval = market_data.interval
         self.interval_in_ms = market_data.interval_in_ms
 
-        self.dmc = DiversificationMultiplier()
+        self.dmc = DiversificationMultiplier(market_data)
 
         self._cache = {}
 
@@ -273,11 +273,13 @@ class LeverageCalculator:
 
         if self._cache.get(risk_level, None) is None:
             if risk_level == 0:
-                ...
+                lv = np.full_like(
+                    self.market_dataclose, self.max_leverage, dtype=np.float16
+                    )
             elif 1 <= risk_level <= 10:
                 lv = self._conservative_sizing(self.RISK_LEVELS[risk_level])
             elif 11 <= risk_level <= 12:
-                lv = self._aggressive_sizing_sizing(self.RISK_LEVELS[risk_level])
+                lv = self._aggressive_sizing(self.RISK_LEVELS[risk_level])
             else:
                 raise ValueError(f"Invalid risk level: {risk_level}")
 
@@ -287,7 +289,14 @@ class LeverageCalculator:
 
             # necessary??? np.nan_to_num(leverage)
 
-            self._cache[risk_level] = np.minimum(lv, self.max_leverage)
+            # apply the diversification multiplier if there are multiple assets
+            if self.market_data.close.shape[1] > 1:
+                lv = np.multiply(lv, self.dmc.multiplier)
+
+            # Apply the maximum allowed leverage
+            lv = np.minimum(lv, self.max_leverage).astype(np.float16)
+
+            self._cache[risk_level] = lv
 
         return self._cache[risk_level]
 
@@ -304,28 +313,21 @@ class LeverageCalculator:
 
         Parameters
         ----------
-        close
-            the close prices
         target_risk_annual
             the target risk per year
-        smoothing
-            the smoothing period (less erratic results)
-        interval
-            the trading interval in milliseconds
 
         Returns
         -------
         np.ndarray
-            the maximum leverage
+            a 2D array of the recommened leverage for trading period
         """
-        print(type(self.market_data))
-        annualized_volatility = self.market_data.annual_vol
+        annualized_volatility = self.market_data.mds.annual_vol
 
         # Apply smoothing to volatility
         if self.smoothing > 1:
             annualized_volatility = bn.move_mean(annualized_volatility, self.smoothing)
 
-        return np.minimum(target_risk_annual / annualized_volatility, self.max_leverage)
+        return target_risk_annual / annualized_volatility
 
     def _aggressive_sizing(self, risk_limit_per_trade: float) -> np.ndarray:
         """Calculates the maximum leverage based on 'close' prices.
@@ -334,7 +336,7 @@ class LeverageCalculator:
         therefore also more risky. It uses the ATR for estimating
         short-term volatility as basis for the calculation.
 
-        This may be more appropriate for short timeframes, like the
+        This might be more appropriate for short timeframes, like the
         5m, 15m, or 30m timeframes.
 
         Parameters:
@@ -345,13 +347,11 @@ class LeverageCalculator:
         Returns
         -------
         np.ndarray
+            a 2D array of the recommened leverage for trading period
         """
-        leverage = risk_limit_per_trade / (
+        return risk_limit_per_trade / (
             self.market_data.mds.atr / self.market_data.close
         )
-
-        # Apply maximum leverage limit
-        return np.minimum(leverage, self.max_leverage)
 
     def _yield_single(self):  #  -> Generator[np.ndarray, ...]:
         for idx in range(len(self.market_data.open.shape[1])):
