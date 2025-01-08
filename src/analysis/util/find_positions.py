@@ -157,24 +157,26 @@ def find_positions_nb(open_, high, low, close, signal, position,
         sl_trig[i] = 0
 
         if active_position == 0 and signal[i - 1] == 0:
+            position[i] = 0
             continue
 
         # ........................... LONG POSITION ...................................
         # continue LONG position
-        if active_position == 1:
+
+        # open LONG position
+        if active_position != 1:
+            if signal[i - 1] > 0:
+                active_position = 1
+                position[i] = 1
+                buy[i] = 1
+                buy_at[i] = close[i - 1]
+                sl_current[i] = sl_long[i - 1]
+
+        # close LONG position
+        elif active_position == 1:
             position[i] = 1
             sl_current[i] = max(sl_current[i - 1], sl_long[i - 1])
 
-        # open LONG position
-        if active_position != 1 and signal[i - 1] > 0:
-            active_position = 1
-            position[i] = 1
-            buy[i] = 1
-            buy_at[i] = close[i - 1]
-            sl_current[i] = sl_long[i - 1]
-
-        # close LONG position
-        if active_position == 1:
             if signal[i] <= 0:
                 active_position = 0
                 sell[i] = 1
@@ -187,21 +189,20 @@ def find_positions_nb(open_, high, low, close, signal, position,
                 sell_at[i] = sl_current[i]
 
         # ............................ SHORT POSITION .................................
-        # continue SHORT position
+        # open SHORT position
+        if active_position != -1:
+            if signal[i - 1] < 0:
+                active_position = -1
+                position[i] = -1
+                sell[i] = 1
+                sell_at[i] = close[i - 1]
+                sl_current[i] = sl_short[i - 1]
+
+        # close SHORT position
         if active_position == -1:
             position[i] = -1
             sl_current[i] = min(sl_current[i - 1], sl_short[i - 1])
 
-        # open SHORT position
-        if active_position != -1 and signal[i - 1] < 0:
-            active_position = -1
-            position[i] = -1
-            sell[i] = 1
-            sell_at[i] = close[i - 1]
-            sl_current[i] = sl_short[i - 1]
-
-        # close SHORT position
-        if active_position == -1:
             if signal[i] >= 0:
                 active_position = 0
                 buy[i] = 1

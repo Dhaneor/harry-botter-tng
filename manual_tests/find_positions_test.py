@@ -268,7 +268,7 @@ if __name__ == '__main__':
     run(_get_ohlcv_from_db(), False, False)
 
     # ..........................................................................
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
     runs = 10_000
