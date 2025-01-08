@@ -62,5 +62,15 @@ def test_market_data():
     print(md.interval_in_ms)
     print(md.to_dictionary())
 
+
+def test_from_random():
+    md = MarketData.from_random(30, 3)
+
+    assert isinstance(md, MarketData)
+
+    print(md.dataframe.tail())
+    print(md.mds.annual_vol)
+
+
 if __name__ == '__main__':
-    test_market_data()
+    test_from_random()

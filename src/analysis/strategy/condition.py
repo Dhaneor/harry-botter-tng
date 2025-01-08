@@ -53,10 +53,10 @@ Created on Sat Aug 18 11:14:50 2023
 @author: dhaneor
 """
 
-import itertools
 import logging
 from enum import Enum, unique
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from itertools import chain
 from numba import jit
 from typing import Callable, NamedTuple, Iterable, Optional, TypeAlias
 import numpy as np
@@ -115,21 +115,6 @@ cmp_funcs = {
     COMPARISON.CROSSED_ABOVE: cmp.crossed_above,
     COMPARISON.CROSSED_BELOW: cmp.crossed_below,
 }
-
-# Within the Condition class each arm or branch (for opening/closing
-# long or short positions), is defined as a tuple with three elements:
-# 1) a string for the comparison, e.g. CROSSED_ABOVE
-# 2) another tuple that holds the names of the dictionary keys for the
-#   values that should be compared against each other
-# 3) the actual function object that is used to do the comparison,
-#   which will be on eof the functions from the cmp_funcs dictionary
-#   defined above.
-#
-# These values are used in the execute method of the Condition class.
-# They are set by the ConditionFactory - this explanation is just
-# provided for better understanding of the .execute() method and the
-# following TypeAlias:
-ConditionBranch: TypeAlias = tuple[str, tuple[str, str], Callable]
 
 
 @jit(nopython=True)
@@ -480,6 +465,30 @@ class ConditionResult:
 class Condition:
     """A condition, prepared for execution.
 
+    The conditions are defined in the SignalGeneratorDefinition, which
+    contains a dictionary of the following format:
+
+    :: code ::
+        conditions=dict(
+            open_long=[
+                ("aroon", COMPARISON.CROSSED_ABOVE, "aroon_trigger"),
+                ("efficiency_ratio", COMPARISON.IS_ABOVE, "er_trending"),
+            ],
+            close_long=[
+                ("aroon", COMPARISON.CROSSED_BELOW, "aroon_trigger"),
+                ("efficiency_ratio", COMPARISON.IS_BELOW, "er_trending"),
+            ],
+            open_short=None,
+            close_short=None,
+        )
+
+    The tuple in each list contains a the name of two operands, and a
+    comparison operator. The operands are defined in another dictionary,
+    and the operand names defined for the condition must correspond to
+    a key in the operands dictionary (where the value is a working
+    instance of an operand - an indicator, a fixed value, or a price 
+    series).
+
     Attributes:
     ----------
     open_long
@@ -491,7 +500,7 @@ class Condition:
         ...
     close_short
         ...
-    key_store: dict[int, str]
+    operands: dict[int, str]
 
     """
 
@@ -500,7 +509,8 @@ class Condition:
     close_long: tuple[str, COMPARISON, str] | None = None
     close_short: tuple[str, COMPARISON, str] | None = None
 
-    key_store: dict[int, str] = None
+    # key_store: dict[int, str] = None
+    operands: dict[str, op.Operand] = field(default_factory={})
 
     def __repr__(self) -> str:
         return (
@@ -514,30 +524,14 @@ class Condition:
             logger.error("No key store provided for condition.")
 
     @property
-    def operands(self) -> Iterable[op.Operand]:
-        """Return all operators used in the condition"""
-        return self.operand_a, self.operand_b, self.operand_c, self.operand_d
-
-    @property
     def indicators(self) -> tuple[op.ind.Indicator]:
         """Return all indicators used in the condition
 
         This is for use by the optimizer(s).
         """
         return tuple(
-            itertools.chain(
-                self.operand_a.indicators
-                if isinstance(self.operand_a, (op.OperandIndicator, op.OperandTrigger))
-                else tuple(),
-                self.operand_b.indicators
-                if isinstance(self.operand_b, (op.OperandIndicator, op.OperandTrigger))
-                else tuple(),
-                self.operand_c.indicators
-                if isinstance(self.operand_c, (op.OperandIndicator, op.OperandTrigger))
-                else tuple(),
-                self.operand_d.indicators
-                if isinstance(self.operand_d, (op.OperandIndicator, op.OperandTrigger))
-                else tuple(),
+            chain.from_iterable(
+                op.indicators for op in self.operands.values()
             )
         )
 
@@ -647,13 +641,15 @@ class Condition:
         result = None
 
         for condition in conditions:
-            left_key = self.key_store.get(condition[0])
-            right_key = self.key_store.get(condition[2])
+            left = self.operands.get(condition[0])
+            right = self.operands.get(condition[2])
             comp_fn = cmp_funcs.get(condition[1])
 
-            logger.debug("left key: %s, right key: %s", left_key, right_key)
+            logger.debug("left: %s, right: %s", left, right)
 
-            single_condition_result = comp_fn(data[left_key], data[right_key])
+            single_condition_result = comp_fn(
+                left.execute(), right.execute()
+            )
 
             if result is None:
                 result = single_condition_result

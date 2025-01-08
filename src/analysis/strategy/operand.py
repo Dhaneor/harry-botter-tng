@@ -3,16 +3,15 @@
 """
 Provides Operand classes and their factory function.
 
-NOTE:   Operands that are indicators can have the output from another
-        indicator as input. This is also the main reason level exists
-        in the SignalGenerator -> Condition -> Operand -> Indicator ->
-        Parameter chain. This allows for the construction of complex
-        and flexible trading strategies / conditions.
+NOTE:   
+Operands that are indicators can have the output from another indicator 
+as input. This is also the main reason level exists in the 
+SignalGenerator -> Condition -> Operand -> Indicator -> Parameter chain. 
+This allows for the construction of complex and flexible conditions by 
+defining nested indicators without having to write a new indicator class.
+
 
 classes:
-    PriceSeries
-        enums for different price series
-
     OperandType
         enums for different operand types
 
@@ -44,6 +43,8 @@ import numpy as np
 
 from ..indicators import indicator as ind
 from ..indicators import indicators_custom
+from ..indicators.indicator_parameter import Parameter
+from ..models.market_data import MarketData
 from ..util import proj_types as tp
 from ..chart.plot_definition import SubPlot, Line, Channel
 
@@ -138,9 +139,11 @@ class Operand(ABC):
     type_: OperandType
     interval : str = ""
     params: dict[str, Any] = field(default_factory=dict)
+
+    _market_data: MarketData = None   
     _parameter_space: Optional[Sequence[Number]] = None
-    shift: int = 0
-    key_store: dict[str, str] = field(default_factory=dict)
+
+    shift: Parameter = None
     indicators: list[ind.Indicator] = field(default_factory=list)
 
     id: int = field(default=0)
@@ -148,6 +151,8 @@ class Operand(ABC):
     inputs: tuple = field(default_factory=tuple)
     unique_name: str = ""
     _output: str = ""
+
+    _cache = {}
 
     def __repr__(self) -> str:
         name = f"{self.name.upper()}" if isinstance(self.name, str) else f"{self.name}"
@@ -175,6 +180,14 @@ class Operand(ABC):
 
     def __str__(self) -> str:
         return self.__repr__()
+
+    @property
+    def market_data(self) -> MarketData:
+        return self._market_data
+    
+    @market_data.setter
+    def market_data(self, market_data: MarketData) -> None:
+        self._market_data = market_data
 
     @property
     @abstractmethod
@@ -325,7 +338,6 @@ class OperandIndicator(Operand):
             space.update({indicator.name: indicator.parameter_space})
 
         self._parameter_space = space
-        self.key_store[self.id] = self.unique_name
 
     @property
     def display_name(self) -> str:

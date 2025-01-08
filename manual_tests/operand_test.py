@@ -19,6 +19,7 @@ from pstats import SortKey, Stats  # noqa: F401
 
 from analysis.strategy import operand as op
 from analysis.strategy.operand_factory import operand_factory
+from analysis.models.market_data import MarketData
 from analysis.chart.plot_definition import SubPlot
 from util import get_logger
 
@@ -27,8 +28,7 @@ logger = get_logger('main', level=logging.DEBUG)
 
 
 # ======================================================================================
-columns = ["open time", "open", "high", "low", "close", "volume"]
-data = {col: np.random.rand(1_000) for col in columns}
+market_data = MarketData.from_random(1000, 2)
 
 # ======================================================================================
 # define different operands for testing possible variants
@@ -159,15 +159,18 @@ def update_parameters_callback(*args):
 def test_operand_factory(single: str = None):
     def build_single(name):
         op_def = op_defs.get(name).get("def")
-        operand = operand_factory(op_def, key_store={})
+        operand = operand_factory(op_def, market_data)
 
         logger.debug("[TEST] %s" % operand)
         logger.debug('[TEST] ======================================================')
-        # assert isinstance(operand, op.Operand), \
-        #     (
-        #         "expected resutl for %s to be an instance of 'Operand', but got %s"
-        #         % (elem, type(operand))
-        #     )
+        assert isinstance(operand, op.Operand), \
+            (
+                "expected resutl for %s to be an instance of 'Operand', but got %s"
+                % (elem, type(operand))
+            )
+        assert operand.market_data is not None, "market data should not be None"
+        assert isinstance(operand.market_data, MarketData), \
+            "market data should be instance of MarketData"
         if operand:
             pprint(operand.__dict__)
 
@@ -299,13 +302,13 @@ def test_randomize():
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    # test_operand_factory('rsi_overbought')
+    test_operand_factory('sma')
     # test_with_price_series_input()
     # test_with_fixed_value_input()
     # test_nested_indicators()
     # test_update_parameters()
     # test_randomize()
-    # sys.exit()
+    sys.exit()
 
     # operand = operand_factory(op_defs.get('sma_of_rsi').get('def'), {})
     operand = operand_factory(

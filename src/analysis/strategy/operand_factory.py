@@ -17,6 +17,7 @@ from .operand import (
     )
 from ..indicators import indicator as ind
 from ..indicators import indicators_custom
+from analysis.models.market_data import MarketData
 
 logger = logging.getLogger("main.operand_factory")
 logger.setLevel(logging.DEBUG)
@@ -268,10 +269,11 @@ class OperandDefinition:
 class Factory:
     """Class to build operands from OperandDefinition instances."""
     def __init__(self):
-        self.all_indicators = None
-        self.id_keys = 0
+        self.all_indicators: list[ind.Indicator] = []
+        self.id_keys: int = 0
+        self.market_data: MarketData = None
 
-    def build_operand(self, definition: OperandDefinition, key_store: dict) -> Operand:
+    def build_operand(self, definition: OperandDefinition) -> Operand:
         self.all_indicators = []  # keep track of all indicators created
 
         match definition.type_:
@@ -285,10 +287,13 @@ class Factory:
                 raise ValueError(f"Invalid operand type: {definition.type_}")
 
         operand.id = self.id_keys
-        # operand.key_store = key_store
-        # operand.update_key_store()
-
         self.id_keys += 1
+
+        if not self.market_data:
+            logger.error("Market data not set")
+            raise ValueError("market data not set")
+
+        operand.market_data = self.market_data
 
         return operand
 
@@ -594,7 +599,10 @@ factory = Factory()
 
 
 # -------------------------------------------------------------------------------------
-def operand_factory(operand_definition: tuple | str, key_store: dict) -> Operand:
+def operand_factory(
+    operand_definition: tuple | str, 
+    market_data: MarketData
+) -> Operand:
     """Factory function to create an operand from a given definition.
 
     The 'definition' can have different formats, depending on the type
@@ -606,7 +614,10 @@ def operand_factory(operand_definition: tuple | str, key_store: dict) -> Operand
     Parameters
     ----------
     operand_definition : tuple | str
-        an operand description in the form of a tuple or a string
+        An operand description in the form of a tuple or a string
+
+    market_data : MarketData
+        A MarketData instance that provides the OHLCV data for the operand(s)
 
     Returns
     -------
@@ -614,15 +625,19 @@ def operand_factory(operand_definition: tuple | str, key_store: dict) -> Operand
         an Operand class, ready for use
     """
     logger.info("-------------- first: CREATING OPERAND DEFINITION -----------------")
-    logger.info("key store: %s", key_store)
     logger.debug("operand_definition: %s", operand_definition)
+    
     operand_def = OperandDefinition(operand_definition)
+    
     logger.info("%s" % operand_def)
     logger.debug(vars(operand_def))
 
     logger.info("--------------------- next: BUILDING OPERAND ----------------------")
+    
+    factory.market_data = market_data
+    
     try:
-        operand = factory.build_operand(operand_def, key_store)
+        operand = factory.build_operand(operand_def)
     except ValueError as e:
         logger.exception(e)
         operand = None

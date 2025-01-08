@@ -5,11 +5,13 @@ Created on Sun Jan 06 01:28:53 2024
 
 @author: dhaneor
 """
+import json
 import numpy as np
 import pandas as pd
 import math
 from numba import int64, float32
 from numba.experimental import jitclass
+from typing import Sequence
 
 
 spec = [
@@ -169,12 +171,12 @@ class MarketData:
     the same interval for all symbols.
     """
 
-    def __init__(self, market_data, symbols):
+    def __init__(self, market_data_store: MarketDataStore, symbols: Sequence[str]):
         """
         market_data : MarketData instance (the jitclass)
         symbols     : list of str, e.g. ["BTCUSDT", "ETHUSDT", ...]
         """
-        self.mds = market_data  # the jitclass instance
+        self.mds = market_data_store
         self.symbols = symbols
 
         # create a dictionary symbol -> column index
@@ -187,7 +189,7 @@ class MarketData:
             "log_ret", "atr", "ann_vol"
         ]
 
-        self._interval = None
+        self._interval: str = None
 
         timestamps = self.mds.timestamp[:, 0]
         self._interval_in_ms = int(
@@ -211,7 +213,7 @@ class MarketData:
         """
         return len(self.mds.close)
 
-    def __getitem__(self, key):
+    def __getitem__(self, key) -> pd.DataFrame:
         """
         Return a DataFrame by:
           - Symbol (if `key` is in self.symbols),
@@ -233,7 +235,7 @@ class MarketData:
         else:
             raise KeyError(f"'{key}' not found in symbols or fields.")
 
-    # .................................................................................
+    # .........................PROPERTIES FOR EASY DATA ACCESS .................................
     @property
     def dataframe(self):
         """Returns the data as a DataFrame.
@@ -355,6 +357,7 @@ class MarketData:
         """
         return self._interval_in_ms
 
+# ................................ METHODS TO RETRIEVE DATA ...........................
     def get_array(self, field, symbol=None):
         """Returns a Numpy array of the specified field for the given symbol.
 
@@ -404,9 +407,17 @@ class MarketData:
             'volume': self.mds.volume[:, 0].reshape(-1),
         }
 
-    # .................................................................................
+    def to_dataframe(self) -> pd.DataFrame:
+        """Returns the data as a dataframe."""
+        return self.dataframe
+
+    def to_json(self):
+        """Returns the data as a JSON string."""
+        return json.dumps(self.to_dictionary(), indent=4)
+
+    # .............. CLASS METHODS TO BUILD AN INSTANCE IN DIFFERENT WAYS .............
     @classmethod
-    def from_dictionary(self, symbol, data: dict):
+    def from_dictionary(cls, symbol, data: dict):
         """Builds a new MarketData object from an OHLCV dictionary."""
         mds = MarketDataStore(
             open_= data['open'].reshape(-1, 1).astype(np.float32),
@@ -435,6 +446,67 @@ class MarketData:
 
         return MarketData(mds, [symbol])
 
+    @classmethod
+    def from_random(cls, length: int, no_of_symbols: int):
+        import numpy as np
+        import pandas as pd
+        from datetime import datetime, timedelta
+
+        # Generate end timestamp (current date at 00:00:00)
+        end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+        start_date = end_date - timedelta(days=length)
+
+        # Generate timestamps
+        timestamps = pd.date_range(start=start_date, end=end_date, periods=length)
+        timestamps_ms = timestamps.astype(np.int64) // 10**6
+        timestamps_ms = timestamps_ms.to_numpy()
+
+        # Generate random symbols
+        symbols = [
+            ''.join(np.random.choice(list('ABCDEFGHIJKLMNOPQRSTUVWXYZ'), 3)) + 'USDT'
+            for _ in range(no_of_symbols)
+        ]
+
+        # Initialize arrays
+        open_prices = np.zeros((length, no_of_symbols), dtype=np.float32)
+        high_prices = np.zeros((length, no_of_symbols), dtype=np.float32)
+        low_prices = np.zeros((length, no_of_symbols), dtype=np.float32)
+        close_prices = np.zeros((length, no_of_symbols), dtype=np.float32)
+        volumes = np.zeros((length, no_of_symbols), dtype=np.float32)
+        timestamps = np.tile(timestamps_ms.reshape(-1, 1), (1, no_of_symbols))
+
+        for i in range(no_of_symbols):
+            # Generate initial price (between 1 and 1000)
+            initial_price = np.random.uniform(1, 1000)
+            
+            # Generate price changes using random walk
+            changes = np.random.normal(0, 0.02, length)  # 2% daily volatility
+            
+            # Calculate prices
+            prices = initial_price * np.exp(np.cumsum(changes))
+            
+            # Generate open, high, low, close
+            open_prices[:, i] = prices
+            close_prices[:, i] = prices * (1 + np.random.normal(0, 0.005, length))  # 0.5% variation
+            high_prices[:, i] = np.maximum(open_prices[:, i], close_prices[:, i]) * (1 + np.abs(np.random.normal(0, 0.005, length)))
+            low_prices[:, i] = np.minimum(open_prices[:, i], close_prices[:, i]) * (1 - np.abs(np.random.normal(0, 0.005, length)))
+            
+            # Generate volumes (between 1000 and 100000)
+            volumes[:, i] = np.random.uniform(1000, 100000, length)
+
+            timestamps[:, i] = timestamps_ms
+
+        # Create MarketDataStore
+        mds = MarketDataStore(
+            open_=open_prices,
+            high=high_prices,
+            low=low_prices,
+            close=close_prices,
+            volume=volumes,
+            timestamp=timestamps
+        )
+
+        return cls(mds, symbols)
 
     # .................................................................................
     def _build_symbol_df(self, symbol):

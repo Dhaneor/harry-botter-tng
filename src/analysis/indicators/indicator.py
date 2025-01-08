@@ -215,9 +215,7 @@ class FixedIndicator(IIndicator):
     indicators), because now these behave like normal indicators.
     """
 
-    def __init__(
-        self, name: str, value: np.flexible | bool, parameter: Parameter
-    ) -> None:
+    def __init__(self, name: str, parameter: Parameter) -> None:
         """Initializes the FixedIndicator class.
 
         Parameters
@@ -612,7 +610,7 @@ def fixed_indicator_factory(name, params):
         step=step
     )
 
-    ind = FixedIndicator(name, params[name], _parameter)
+    ind = FixedIndicator(name, _parameter)
 
     return ind
 
