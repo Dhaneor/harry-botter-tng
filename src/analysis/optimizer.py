@@ -27,7 +27,7 @@ from . import strategy_builder as sb
 from .strategy import signal_generator as sg
 from .models.market_data import MarketData
 from .leverage import LeverageCalculator
-from .backtest.statistics import calculate_statistics
+from .backtest.statistics import calculate_statistics_min
 logger = logging.getLogger('main.optimizer')
 logger.setLevel(logging.INFO)
 
@@ -459,12 +459,12 @@ def worker(
 
     for params in chunk:
         strategy.signal_generator.parameters = params
-        data_new = {k: v for k, v in data.items() if k in ohlcv_keys}
+        # data_new = {k: v for k, v in data.items() if k in ohlcv_keys}
 
         bt_result = backtest_fn(
             strategy=strategy,
             leverage_calculator=leverage_calculator,
-            data=data_new,
+            data=data,
             initial_capital=initial_capital,
         )
 
@@ -475,7 +475,7 @@ def worker(
                 params,
                 risk_level,
                 max_leverage,
-                equity[-1]  # calculate_statistics(equity, 0, periods_per_year)
+                calculate_statistics_min(equity)
             )
         )
 

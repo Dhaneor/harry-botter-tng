@@ -28,23 +28,16 @@ classes:
     OperandSeries
         class for all operands that represent a price series
 
-functions:
-    operand_factory
-        Factory function for creating operand instances from
-        formalized operand descriptions. This function is used by
-        the factory function for Condition classes.
-
 Created on Sat Aug 18 10:356:50 2023
 
 @author: dhaneor
 """
-import copy
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
-from enum import Enum, unique
+from enum import Enum
+from itertools import chain
 from numbers import Number
-from numba import njit
 from typing import Any, Callable, Optional, Sequence
 
 import numpy as np
@@ -55,7 +48,7 @@ from ..util import proj_types as tp
 from ..chart.plot_definition import SubPlot, Line, Channel
 
 logger = logging.getLogger("main.operand")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 # build a list of all available indicators, that can later be used
 # to do a fast check if requested indicators are available.
@@ -186,6 +179,11 @@ class Operand(ABC):
     @property
     @abstractmethod
     def display_name(self) -> str: ...
+
+    @property
+    def parameters_tuple(self) -> tuple[Any, ...]:
+        """Return the parameters for the operand as a tuple"""
+        return tuple(chain.from_iterable(i.parameters_tuple for i in self.indicators))
 
     @property
     @abstractmethod
@@ -335,15 +333,6 @@ class OperandIndicator(Operand):
         return " ".join((i.display_name for i in self.indicators))
 
     @property
-    def unique_name(self) -> str:
-        """Return the unique name for the operand"""
-        return self._unique_name
-
-    @unique_name.setter
-    def unique_name(self, value: str) -> None:
-        self._unique_name = value
-
-    @property
     def output_names(self) -> tuple:
         """Return the output names for the operand"""
         return self._output_names
@@ -423,7 +412,47 @@ class OperandIndicator(Operand):
             level="operand",
         )
 
+    @property
+    def unique_name(self) -> str:
+        """Return the unique name for the operand"""
+        return self._unique_name
+
+    @unique_name.setter
+    def unique_name(self, value: str) -> None:
+        self._unique_name = value
+
     # .................................................................................
+    # @log_execution_time(logger)
+    def run(self, data: tp.Data) -> str:
+        """Run the operand on the given data.
+
+        Parameters
+        ----------
+        data : tp.Data
+            OHLCV dictionary
+
+        Returns
+        -------
+        np.ndarray
+            resulting array from running the operand
+
+        Raises
+        ------
+        ValueError
+            if the run function is not defined for the operand
+        """
+        return self._run_indicator(data)
+
+    def as_dict(self):
+        """Return a dictionary representation of the operand.
+
+        Returns
+        -------
+        dict[str, Any]
+            a dictionary representation of the operand
+        """
+        return asdict(self)
+
     def update_parameters(self, params: dict[str, tp.Parameters]) -> None:
         """Update the parameters for the indicator(s).
 
@@ -477,37 +506,6 @@ class OperandIndicator(Operand):
 
         if post_init:
             self.__post_init__()
-
-    # @log_execution_time(logger)
-    def run(self, data: tp.Data) -> str:
-        """Run the operand on the given data.
-
-        Parameters
-        ----------
-        data : tp.Data
-            OHLCV dictionary
-
-        Returns
-        -------
-        np.ndarray
-            resulting array from running the operand
-
-        Raises
-        ------
-        ValueError
-            if the run function is not defined for the operand
-        """
-        return self._run_indicator(data)
-
-    def as_dict(self):
-        """Return a dictionary representation of the operand.
-
-        Returns
-        -------
-        dict[str, Any]
-            a dictionary representation of the operand
-        """
-        return asdict(self)
 
     def on_parameter_change(self) -> None:
         # logger.debug("Parameter change event for %s", self.unique_name)
@@ -1056,382 +1054,3 @@ class OperandSeries(Operand):
             a dictionary representation of the operand
         """
         return asdict(self)
-
-
-# --------------------------------------------------------------------------------------
-#                                    OPERAND FACTORY                                   #
-# --------------------------------------------------------------------------------------
-def operand_factory(op_def: OperandDefinitionT) -> Operand:
-    """Factory function to create an operand from a given definition.
-
-    The 'definition' can have different formats, depending on the type
-    of the operand:
-    - a tuple describing an indicator
-    - a string describing an indicator or a price series (e.g. 'close')
-    - a dict, describing a fixed value, e.g. {'overbought': 100}
-
-    Parameters
-    ----------
-    op_def : OperandDefinitionT
-        an operand description in the form of: tuple | str
-
-    Returns
-    -------
-    Operand
-        an Operand class, ready for use
-    """
-    all_indicators = []
-
-    @unique
-    class PriceSeries(Enum):
-        """Enums representing price inputs."""
-
-        OPEN = "open"
-        HIGH = "high"
-        LOW = "low"
-        CLOSE = "close"
-        VOLUME = "volume"
-
-        def __str__(self):
-            return self.value
-
-        def __repr__(self):
-            return self.value
-
-        def __contains__(self, item) -> bool:
-            return next((True for member in self if member.value == item), False)
-
-    VALID_PRICE_INPUTS = {member.value for member in PriceSeries}
-
-
-    def from_tuple_indicator(op_def, level=0) -> OperandIndicator:
-        """Build an Operand (indicator) instance from a tuple definition.
-
-        for indicators with more than one return value, the value
-        to be used for comparisons by the condition must be
-        specified by appending it with dot notation to the indicator
-        name, for instance 'macd.macdsignal'. Now we need to find the
-        right value for the 'output' attribute here.
-
-        Parameters
-        ----------
-        op_def : tuple
-            the tuple describing the operand/indicator, example:
-            ('rsi', 'close', {'timeperiod': 14})
-
-        level: int
-            recursion level (for logging purposes), defaults to 0
-
-        Returns
-        -------
-        OperandIndicator
-            an OperandIndicator instance
-
-        Raises
-        ------
-        ValueError
-            if the indicator name is not valid
-
-        ValueError
-            if the inputs are not valid
-
-        ValueError
-            if the output (names) cannot be determined from the indicator
-        """
-
-        splitted = op_def[0].split(".")
-        name = splitted.pop(0)
-
-        # get indicator class instance from factory
-        try:
-            i: ind.Indicator = copy.copy(
-                ind.factory(
-                    name.upper(),
-                    on_change=OperandIndicator.on_parameter_change
-                    )
-                )
-        except AttributeError as err:
-            logger.error("indicator not found: %s (%s)", op_def[0], err)
-            raise ValueError(f"invalid indicator: {op_def[0]}") from err
-
-        all_indicators.append(i)
-
-        logger.debug("indicator: %s", i)
-
-        # set the indicator parameters, only if the last element in the
-        # provided tuple is a dictionary
-        if kwargs := op_def[-1] if isinstance(op_def[-1], dict) else {}:
-            logger.debug("[%s] setting indicator parameters: %s", level, kwargs)
-            i.parameters = kwargs
-            inputs_pre = op_def[1:-1]
-        else:
-            inputs_pre = op_def[1:]
-
-        try:
-            inputs = eval_inputs(inputs_pre, i, level)
-        except ValueError as err:
-            logger.error("[%s] unable to evaluate inputs: %s", level, err)
-            raise
-
-        try:
-            output = (
-                next(filter(lambda x: x.endswith(splitted[0]), i.unique_output))
-                if splitted
-                else i.unique_output[0]
-            )
-        except StopIteration:
-            logger.error(
-                "unable to find output for %s in %s", splitted[0], i.unique_output
-            )
-            raise ValueError("unable to find output for %s in %s", i, i.unique_output)
-
-        return OperandIndicator(
-            name=i.name,
-            type_=OperandType.INDICATOR,
-            inputs=inputs,
-            indicator=i,
-            indicators=all_indicators,
-            output=output,
-        )
-
-    def from_tuple_fixed(op_def: tuple) -> OperandTrigger:
-        """Build an operand (trigger) from a tuple definition.
-
-        Parameters
-        ----------
-        op_def : tuple
-            the tuple describing the operand
-
-        Returns
-        -------
-        OperandTrigger
-            an OperandTrigger instance
-
-        Raises
-        ------
-        ValueError
-            if the tuple does not have at least 2 elements (name/value)
-
-        ValueError
-            if the value is not a bool, int or float
-        """
-
-        def _is_compatible_type(value, p_space_value) -> bool:
-            if isinstance(value, (int, float)):
-                return True if isinstance(p_space_value, (int, float)) else False
-            elif isinstance(value, bool):
-                return True if isinstance(p_space_value, bool) else False
-            else:
-                raise ValueError(
-                    f"invalid 'value' in definition: {value} (type{type(value)})"
-                )
-
-        def _check_parameter_space(params: dict, value: int | float | bool) -> None:
-            p_space_dict = params.get("parameter_space", {})
-
-            if not p_space_dict:
-                raise ValueError(f"no parameter space defined for {name}")
-
-            p_space_seq = p_space_dict.get(name, ())
-
-            # make sure that the type of the value is compatible with the
-            # type of the elements in the parameter space
-            for elem in p_space_seq:
-                if not _is_compatible_type(value, elem):
-                    raise ValueError(
-                        f"value {value} for {name} incompatible "
-                        f"with {elem} in parameter space"
-                    )
-
-            # make sure that the first element in the parameter space is
-            # smaller than the second one, exchange them if necessary
-            if p_space_seq[0] > p_space_seq[1]:
-                p_space_seq[0], p_space_seq[1] = p_space_seq[1], p_space_seq[0]
-
-            # make sure that the step size is positive
-            if p_space_dict.get("step_size", 1) <= 0:
-                raise ValueError(f"step size for {name} must be positive")
-
-            # make sure that the step size is smaller than the difference between
-            # the first and second elements in the parameter space. if not, set it
-            # to one tenth of the difference
-            if p_space_dict.get("step_size", 1) > (p_space_seq[1] - p_space_seq[0]):
-                p_space_dict["step_size"] = (p_space_seq[1] - p_space_seq[0]) / 10
-
-        # ............................................................................
-        if len(op_def) != 3:
-            raise ValueError(f"operand definition needs exactly 3 elements: {op_def}")
-
-        name, value, params = op_def[0], op_def[1], op_def[2]
-
-        # determine operand type
-        match value:
-            case bool():
-                op_type = OperandType.BOOL
-            case int():
-                op_type = OperandType.VALUE_INT
-            case float():
-                op_type = OperandType.VALUE_FLOAT
-            case _:
-                raise ValueError(
-                    f"no valid 'value' in definition: {value} (type{type(value)})"
-                )
-
-        # check (and if necessary build) the param dictionary
-        match params:
-            case dict():
-                _check_parameter_space(params, value)
-            case list() | tuple() | set():
-                params = {"parameter_space": {name: params}}
-                _check_parameter_space(params, value)
-            case _:
-                raise ValueError(f"invalid 'params' in definition: {params}")
-
-        # add the fixed value to the parameters to comply with the format that is
-        # expected by the indicator factory function
-        params[name] = value
-
-        # get indicator class instance from factory
-        i = ind.factory(indicator_name=name, params=params, source="fixed")
-
-        return OperandTrigger(
-            name=name, type_=op_type, inputs=("close",), indicator=i, indicators=(i,)
-        )
-
-    def from_str(op_def: str) -> Operand:
-        """Builds an Operand instance from  a string definition.
-
-        Parameters
-        ----------
-        op_def : str
-            the name of the indicator or price series
-
-        Returns
-        -------
-        Operand
-            an Operand instance
-
-        Raises
-        ------
-        ValueError
-            if the input name or type is not valid
-        """
-        if op_def in ALL_INDICATORS:
-            return from_tuple_indicator(tuple((op_def,)))
-
-        if op_def in VALID_PRICE_INPUTS:
-            op_def = op_def.lower()
-
-            return OperandSeries(
-                name=op_def,
-                type_=OperandType.SERIES,
-                inputs=(op_def,),
-                output=op_def,
-            )
-
-        raise ValueError(
-            f"Invalid input type or name requested: " f"{op_def} (type{type(op_def)})"
-        )
-
-    def eval_inputs(inputs_pre: Sequence, i: ind.Indicator, level: int) -> tuple:
-        """Evaluate the inputs for the indicator.
-
-        As each indicator can have inputs of different kind, including
-        other indicators, this function evaluates the inputs and - if
-        necessary - builds more operands for inputs that are indicators
-        or price series.
-
-        Parameters
-        ----------
-        inputs_pre : Sequence
-            the descriptions of the indicators as given by the client
-
-        i : ind.Indicator
-            the indicator to evaluate the inputs for
-
-        level : int
-            recursion level, for logging purposes
-
-        Returns
-        -------
-        tuple
-            a tuple of of one or more inputs for the indicator
-
-        Raises
-        ------
-        TypeError
-            if the inputs descriptions are not a string or a tuple
-        """
-        logger.debug(
-            "[%s] evaluating inputs (%s) for %s", level, inputs_pre, i.name
-            )
-
-        inputs_pre = inputs_pre or i.input
-        inputs: list[Any] = []
-
-        logger.debug("indicator inputs: %s", i.input)
-
-        for idx, input_ in enumerate(inputs_pre):
-            logger.debug(
-                "[%s][%s] evaluating input for %s: %s", idx, level, i.name, input_
-            )
-
-            match input_:
-                # input is another indicator, description given as tuple
-                case tuple():
-                    inputs.append(from_tuple_indicator(input_, level + 1))
-                # input_ indicator or price series, given as string
-                case str():
-                    inputs.append(from_str(input_))
-                # don't accept anything else
-                case _:
-                    raise TypeError(
-                        f"Invalid input type or name for {i.name} "
-                        f"requested: {input_} (type{input_})"
-                    )
-
-        # make sure the number of inputs matches the number of inputs
-        # required by the indicator
-        if (length_req := len(inputs)) > (length_max := len(i.input)):
-            logger.warning(
-                "%s inputs provided, but %s accepts only "
-                "%s! discarding some inputs ...",
-                length_req, i.name, length_max,
-            )
-            inputs = inputs[: len(i.input)]
-
-        elif length_req < len(i.input):
-            logger.warning(
-                "%s inputs provided, but %s requires "
-                "%s! filling up with default inputs...",
-                length_req, i.name, length_max,
-            )
-            inputs.extend(i.input)
-            inputs = inputs[: len(i.input)]
-
-        return tuple(inputs)
-
-    # ..........................................................................
-    match op_def:
-        # if the first string in the op_def is a TALIB indicator ..
-        case tuple() if op_def[0].split(".")[0].lower() in ALL_INDICATORS:
-            logger.debug("creating operand from tuple: %s", op_def)
-            return from_tuple_indicator(op_def)
-        # if the first string in the op_def is a custom indicator ..
-        case tuple() if op_def[0].lower() in CUSTOM_INDICATORS:
-            logger.debug("creating operand from tuple: %s", op_def)
-            return from_tuple_indicator(op_def)
-        # otherwise the string will be interpreted as the name of a
-        # fixed value trigger
-        case tuple():
-            logger.debug("creating operand from tuple: %s", op_def)
-            return from_tuple_fixed(op_def)
-        # if the op_def is a string, it will be interpreted as the name
-        # of a price series or an indicator with default parameters
-        case str():
-            logger.debug("creating operand from string: %s", op_def)
-            return from_str(op_def)
-        # try again!
-        case _:
-            logger.error("Unable to build operand from definition: %s", op_def)
-            raise ValueError(f"Invalid operand type: {type(op_def)}")

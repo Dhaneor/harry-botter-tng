@@ -216,7 +216,7 @@ class IIndicator(ABC):
         return tuple(p.name for p in self.parameters)
 
     @property
-    def parameters(self) -> tuple[Parameter]:
+    def parameters_tuple(self) -> tuple[Parameter]:
         """Returns a tuple of parameter values for the indicator.
 
         Returns
@@ -224,6 +224,10 @@ class IIndicator(ABC):
         tuple[Parameter]
             Parameters for the indicator.
         """
+        return tuple(p.value for p in self._parameters)
+
+    @property
+    def parameters(self):
         return self._parameters
 
     @parameters.setter

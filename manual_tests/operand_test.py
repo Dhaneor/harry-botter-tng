@@ -156,9 +156,9 @@ def update_parameters_callback(*args):
     logger.debug(f'notification about parameter update: {args}')
 
 
-def test_operand_factory():
-    for elem in op_defs:
-        op_def = op_defs.get(elem).get("def")
+def test_operand_factory(single: str = None):
+    def build_single(name):
+        op_def = op_defs.get(name).get("def")
         operand = operand_factory(op_def, key_store={})
 
         logger.debug("[TEST] %s" % operand)
@@ -171,7 +171,11 @@ def test_operand_factory():
         if operand:
             pprint(operand.__dict__)
 
-    return operand
+    if single:
+        build_single(single)
+    else:
+        for elem in op_defs:
+            build_single(elem)
 
 def test_with_price_series_input():
     op_def = ('sma', 'close', {'timeperiod': 20},)
@@ -295,7 +299,7 @@ def test_randomize():
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    # test_operand_factory()
+    # test_operand_factory('rsi_overbought')
     # test_with_price_series_input()
     # test_with_fixed_value_input()
     # test_nested_indicators()
@@ -303,8 +307,10 @@ if __name__ == "__main__":
     # test_randomize()
     # sys.exit()
 
-    operand = operand_factory(op_defs.get('sma_of_rsi').get('def'), {})
-    # operand = operand_factory("sma", {})
+    # operand = operand_factory(op_defs.get('sma_of_rsi').get('def'), {})
+    operand = operand_factory(
+        op_defs.get("rsi_overbought").get('def'), key_store={}
+        )
 
     if operand is None:
         logger.error("Operand creation failed")
@@ -313,14 +319,15 @@ if __name__ == "__main__":
     pprint(operand.__dict__)
 
     for _ in range(100):
-        logger.debug('=' * 120)
+        # logger.debug('=' * 120)
         operand.randomize()
         operand.run(data)
         # logger.debug(list(data.keys()))
     logger.debug('•' * 120)
     operand.run(data)
     logger.debug(list(data.keys()))
-
+    logger.info(operand.parameters_tuple)
+    logger.info(operand.parameters)
     # print(pd.DataFrame.from_dict(data).tail(10))
 
     # sys.exit()
@@ -348,8 +355,7 @@ if __name__ == "__main__":
 
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            _ = operand.randomize()
-            # op.update_parameters({op.unique_name: {'timeperiod': i}})
+            _ = operand.parameters_tuple
 
     (
         Stats(p)

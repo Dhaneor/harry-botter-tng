@@ -36,10 +36,10 @@ warnings.filterwarnings('error')
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = "3 years ago UTC"
+start = "6 years ago UTC"
 end = "now UTC"
 
-strategy = s_test_er
+strategy = s_kama_cross
 risk_levels = [0, 4, 5, 6, 7, 8, 9]
 max_leverage_levels = (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5)
 max_drawdown = 50
@@ -140,7 +140,7 @@ def test_optimize(data: dict | None = None):
         max_leverage_levels=max_leverage_levels
     )
 
-    return
+    # return
 
     # filter out results with:
     # a) drawdown greater than max_drawdown,

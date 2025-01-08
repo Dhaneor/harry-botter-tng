@@ -19,7 +19,7 @@ from ..indicators import indicator as ind
 from ..indicators import indicators_custom
 
 logger = logging.getLogger("main.operand_factory")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 ALL_INDICATORS = set(i.upper() for i in ind.talib.get_functions())
 CUSTOM_INDICATORS = tuple(name.upper() for name in indicators_custom.custom_indicators)

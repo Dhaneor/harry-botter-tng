@@ -149,8 +149,8 @@ class Parameter(Iterable):
 
         # logger.info(f"Set parameter {self.name} to {self._value}")
         # logger.debug(f"Calling subscribers for parameter {self.name}")
-        # for subscriber in self._subscribers:
-        #     subscriber(self.name)
+        for subscriber in self._subscribers:
+            subscriber(self.name)
 
     @property
     def space(self) -> Tuple[float | int | bool]:
