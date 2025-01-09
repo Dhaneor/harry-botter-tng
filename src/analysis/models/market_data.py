@@ -374,9 +374,9 @@ class MarketData:
         """
         arr_2d = None
         if field == "close":
-            arr_2d = self.md.close
+            arr_2d = self.mds.close
         elif field == "open":
-            arr_2d = self.md.open_
+            arr_2d = self.mds.open_
         # ...
         else:
             raise KeyError(f"Unknown field: {field}")

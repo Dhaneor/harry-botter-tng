@@ -149,24 +149,13 @@ class Parameter(Iterable):
 
         # logger.info(f"Set parameter {self.name} to {self._value}")
         # logger.debug(f"Calling subscribers for parameter {self.name}")
-        for subscriber in self._subscribers:
-            subscriber(self.name)
+        # for subscriber in self._subscribers:
+        #     subscriber(self.name)
 
     @property
     def space(self) -> Tuple[float | int | bool]:
         """Parameter space property. Setting not allowed after init."""
         return self.hard_min, self.hard_max, self.step
-
-    @space.setter
-    def space(self, space: Sequence[float | int | bool]) -> None:
-        """Sets the parameter space.
-
-        Raises
-        ------
-        PermissionError
-            if an attempt is made to change the parameter space.
-        """
-        raise PermissionError("Changing the parameter space is not allowed.")
 
     def increase(self, step: int | float | None = None) -> None:
         step = step or self.step

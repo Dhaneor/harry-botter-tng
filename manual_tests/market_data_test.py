@@ -70,6 +70,7 @@ def test_from_random():
 
     print(md.dataframe.tail())
     print(md.mds.annual_vol)
+    print(md.get_array('close'))
 
 
 if __name__ == '__main__':

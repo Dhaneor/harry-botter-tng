@@ -286,15 +286,17 @@ class Factory:
             case _:
                 raise ValueError(f"Invalid operand type: {definition.type_}")
 
-        operand.id = self.id_keys
-        self.id_keys += 1
-
         if not self.market_data:
             logger.error("Market data not set")
             raise ValueError("market data not set")
 
         operand.market_data = self.market_data
 
+        logger.error("ready building operand: %s", operand)
+
+        operand.id = self.id_keys
+        self.id_keys += 1
+        
         return operand
 
     def _build_indicator(self, definition: OperandDefinition, level=0) -> OperandIndicator:
@@ -328,29 +330,29 @@ class Factory:
         # when running the operands/indicators.
         # The extension (if applicable) is set during the building of the
         # OperandDefinition (see class above), so we  can extract it here.
-        if definition.extension:
-            logger.debug(f"[{level}] Setting indicator extension: {definition.extension}")
-            try:
-                output = (
-                    next(
-                        filter(
-                            lambda x: x.endswith(definition.extension), indicator.unique_output
-                        )
-                    )
-                )
-            except StopIteration:
-                logger.error(
-                    "unable to find output for %s in %s",
-                    definition.extension, indicator.unique_output
-                )
-                raise ValueError(
-                    "unable to find output for %s in %s",
-                    definition.name, indicator.unique_output
-                    )
-        else:
-            output = indicator.unique_output[0]
+        # if definition.extension:
+        #     logger.debug(f"[{level}] Setting indicator extension: {definition.extension}")
+        #     try:
+        #         output = (
+        #             next(
+        #                 filter(
+        #                     lambda x: x.endswith(definition.extension), indicator.unique_output
+        #                 )
+        #             )
+        #         )
+        #     except StopIteration:
+        #         logger.error(
+        #             "unable to find output for %s in %s",
+        #             definition.extension, indicator.unique_output
+        #         )
+        #         raise ValueError(
+        #             "unable to find output for %s in %s",
+        #             definition.name, indicator.unique_output
+        #             )
+        # else:
+        #     output = indicator.unique_output[0]
 
-        logger.debug(f"[{level}] Setting indicator output: {output}")
+        # logger.debug(f"[{level}] Setting indicator output: {output}")
         logger.debug("[%s ]all indicators: %s" % (level, self.all_indicators))
 
         return OperandIndicator(
@@ -360,7 +362,7 @@ class Factory:
             inputs=inputs,
             indicator=indicator,
             indicators=self.all_indicators[level:],
-            output=output,
+            # output=output,
         )
 
     def _eval_inputs(self, inputs_pre: Sequence, i: ind.Indicator, level: int) -> tuple:
@@ -473,6 +475,7 @@ class Factory:
                 type_=OperandType.SERIES,
                 inputs=(definition.name,),
                 output=definition.name,
+                market_data=self.market_data,
             )
 
         raise ValueError(

@@ -28,7 +28,7 @@ logger = get_logger('main', level=logging.DEBUG)
 
 
 # ======================================================================================
-market_data = MarketData.from_random(1000, 2)
+market_data = MarketData.from_random(100_000, 2)
 
 # ======================================================================================
 # define different operands for testing possible variants
@@ -227,6 +227,24 @@ def test_operand_run(operand: op.Operand, data: dict, show_result: bool = False)
         print(df_res.tail(10))
 
 
+def test_operand_run_trigger():
+    op_def = ("trigger", 100, [90, 110, 1])
+    operand = operand_factory(op_def, market_data)
+
+    for _ in range(10):
+        _ = operand.run()
+
+def test_operand_run_indicator():
+    op_def = ('sma', 'close', {'timeperiod': 20},)
+    operand = operand_factory(op_def, market_data)
+    for _ in range(5):
+        operand.run()
+
+    operand.randomize()
+    
+    for _ in range(5):
+        operand.run()
+
 def test_plot_desc():
     logger.setLevel(logging.INFO)
 
@@ -302,17 +320,19 @@ def test_randomize():
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    test_operand_factory('sma')
+    # test_operand_factory('close')
     # test_with_price_series_input()
     # test_with_fixed_value_input()
     # test_nested_indicators()
     # test_update_parameters()
     # test_randomize()
+    # test_operand_run_trigger()
+    test_operand_run_indicator()
     sys.exit()
 
     # operand = operand_factory(op_defs.get('sma_of_rsi').get('def'), {})
     operand = operand_factory(
-        op_defs.get("rsi_overbought").get('def'), key_store={}
+        op_defs.get("sma").get('def'), market_data
         )
 
     if operand is None:
@@ -321,16 +341,16 @@ if __name__ == "__main__":
 
     pprint(operand.__dict__)
 
-    for _ in range(100):
-        # logger.debug('=' * 120)
-        operand.randomize()
-        operand.run(data)
-        # logger.debug(list(data.keys()))
-    logger.debug('•' * 120)
-    operand.run(data)
-    logger.debug(list(data.keys()))
-    logger.info(operand.parameters_tuple)
-    logger.info(operand.parameters)
+    # for _ in range(100):
+    #     # logger.debug('=' * 120)
+    #     operand.randomize()
+    #     operand.run(data)
+    #     # logger.debug(list(data.keys()))
+    # logger.debug('•' * 120)
+    # operand.run(data)
+    # logger.debug(list(data.keys()))
+    # logger.info(operand.parameters_tuple)
+    # logger.info(operand.parameters)
     # print(pd.DataFrame.from_dict(data).tail(10))
 
     # sys.exit()
@@ -346,19 +366,21 @@ if __name__ == "__main__":
     # print("plot description:")
     # pprint(operand.plot_desc)
 
-    sys.exit()
+    # sys.exit()
 
     logger.setLevel(logging.ERROR)
     runs = 10_000
-    data = data
+    data = market_data
     st = time.time()
 
-    op_def = op_defs.get('sma').get('def')
-    operand = op.operand_factory(op_def)
+    op_def = op_defs.get('rsi_overbought').get('def')
+    operand = operand_factory(op_def, market_data)
+    pprint(operand.__dict__)
+    operand.run()
 
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            _ = operand.parameters_tuple
+            _ = operand.run()
 
     (
         Stats(p)
