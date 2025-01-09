@@ -46,7 +46,7 @@ from dataclasses import dataclass
 from functools import reduce
 from typing import Any, NamedTuple, Optional, Sequence, Callable
 
-from .util import proj_types as tp
+from util import proj_types as tp
 from .strategy import signal_generator as sg
 from .strategy import exit_order_strategies as es
 from .strategy.condition import ConditionResult, merge_signals_nb

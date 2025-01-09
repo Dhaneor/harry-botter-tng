@@ -25,6 +25,7 @@ Created on Thu Sep 22 13:00:23 2021
 __version__ = "0.1.0"
 
 from .accounting import Accounting
+from .dotdict import DotDict
 from .fibonacci import fibonacci, fibonacci_series
 from .health import Health
 from .log_execution_time import log_execution_time
@@ -44,6 +45,7 @@ from .timeops import (
 
 __all__ = [
     "Accounting",
+    "DotDict",
     "fibonacci",
     "fibonacci_series",
     "Health",

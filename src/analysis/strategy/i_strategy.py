@@ -19,7 +19,7 @@ from typing import Any, Callable, Optional, Sequence
 
 import numpy as np
 
-from ..util import proj_types as tp
+from ...util import proj_types as tp
 from .signal_generator import SignalGenerator
 from .exit_order_strategies import IStopLossStrategy, ITakeProfitStrategy
 

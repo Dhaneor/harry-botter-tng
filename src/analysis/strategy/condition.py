@@ -5,11 +5,6 @@ Provides a factory for single conditions.
 
 Clients can use it to build a Condition object from a ConditionDefinition,
 
-The factory function should be the only function from this module,
-that is called by the user/client. It must be given a ConditionDefinition,
-which is a formal description of the condition to be build.
-
-
 classes:
     Comparison (enum)
         Enums for all comparison operators.
@@ -17,36 +12,15 @@ classes:
     ConditionDefinition
         Formal description of a trigger condition.
 
+    ConditionResult
+        A class to store the result of a condition evaluation in a 
+        standardized way. Instances can be added, or compared with 
+        AND/OR.
+
     Condition
         Produces a signal for one satisfied conditon. A Condition
         has two comparands and one operand two produce signals with
         its run() function.
-
-    ConditionFactory
-        A factory for building Condition objects from ConditionDefinitions.
-
-functions:
-    factory(c_def: ConditionDefinition) -> Condition
-        simple wrapper so you don't have to instantiate the factory class
-
-Example:
-    >>> import condition as cnd
-    >>>
-    >>> # Create a ConditionDefinition
-    >>> c_def = cnd.ConditionDefinition(
-    >>>     left_operand=12,
-    >>>     comparison=Comparison.EQUAL,
-    >>>     right_operand=15
-    >>> )
-    >>>
-    >>> # Generate a Condition using the factory function
-    >>> condition = cnd.factory(c_def)
-    >>>
-    >>> # Trigger the condition and get the signal, data must be a
-    >>> # dictionary with the following the keys
-    >>> # "open", "close", "high", "low", "volume" and data as
-    >>> # Numpy arrays.
-    >>> result = condition.run(data)
 
 Created on Sat Aug 18 11:14:50 2023
 
@@ -58,25 +32,15 @@ from enum import Enum, unique
 from dataclasses import dataclass, field
 from itertools import chain
 from numba import jit
-from typing import Callable, NamedTuple, Iterable, Optional, TypeAlias
+from typing import Callable, NamedTuple, Optional, Sequence
 import numpy as np
 
-from ..util import proj_types as tp
+from util import proj_types as tp
 from ..util import comp_funcs as cmp
 from . import operand as op
 
 logger = logging.getLogger("main.condition")
 logger.setLevel(logging.ERROR)
-
-# data for testing the correct functioning of a Condition class
-TEST_DATA_SIZE = 500
-TEST_DATA = {
-    "open": np.random.random(TEST_DATA_SIZE),
-    "close": np.random.random(TEST_DATA_SIZE),
-    "high": np.random.random(TEST_DATA_SIZE),
-    "low": np.random.random(TEST_DATA_SIZE),
-    "volume": np.random.random(TEST_DATA_SIZE),
-}
 
 
 @unique
@@ -103,6 +67,11 @@ class COMPARISON(Enum):
 
     def __repr__(self):
         return self.name
+
+ConditionT =  dict[tuple[str, COMPARISON, str]]
+AndConditionsT = Sequence[ConditionT]
+OrConditionsT = Sequence[AndConditionsT]
+ConditionDefinitionT = dict[tuple[str, COMPARISON, str]]
 
 
 cmp_funcs = {
@@ -501,6 +470,7 @@ class Condition:
     close_short
         ...
     operands: dict[int, str]
+        A dictionary, mapping operand names to their working instances
 
     """
 
@@ -573,59 +543,6 @@ class Condition:
             close_short=self._execute_type("close_short", data),
         )
 
-    def is_working(self) -> bool:
-        """Checks if the condition is working with random data"""
-        logger.debug("Checking if %s is working", self)
-
-        test_res = self.execute(TEST_DATA)
-
-        output_matches_size_input = all(
-            arg
-            for arg in (
-                (
-                    tr.shape == TEST_DATA["close"].shape
-                    for tr in (
-                        test_res.open_long,
-                        test_res.open_short,
-                        test_res.close_short,
-                        test_res.close_long,
-                    )
-                )
-            )
-        )
-
-        return all(
-            arg
-            for arg in (
-                isinstance(test_res, ConditionResult),
-                output_matches_size_input,
-            )
-        )
-
-    def set_key_store(self, key_store: dict) -> None:
-        """Sets the key store for the condition.
-
-        Parameters
-        ----------
-        key_store : dict
-            a dictionary where the keys are the operand IDs, and the
-            values are the unique names of the operands,  which are
-            used in the 'data' dictionary for storing the data that
-            is produced by the operands.
-        """
-        if not isinstance(key_store, dict):
-            raise ValueError("key_store must be a dictionary")
-
-        for elem in ('operand_a', 'operand_b', 'operand_c', 'operand_d'):
-            if hasattr(self, elem):
-                operand = getattr(self, elem)
-            if operand is None:
-                continue
-            key_store[operand.id] = operand.unique_name
-            operand.key_store = key_store
-
-        self.key_store = key_store
-
     # ............................... helper methods ..................................
     def _execute_type(self, type_str: str, data: dict[str, np.ndarray]) -> np.ndarray:
         conditions = getattr(self, type_str)
@@ -650,3 +567,53 @@ class Condition:
                 result = np.logical_and(result, single_condition_result)
 
         return result
+
+
+class ConditionParser:
+    """Factory for parsing/transforming condition definitions."""
+
+    def __init__(self, operands: dict[str, op.Operand]) -> None:
+        self.operands = operands
+
+    def parse(self, conditions: ConditionDefinitionT) -> ConditionDefinitionT:
+        # The conditions definitions in the dictionary are either in the 
+        # form of list[tuple, ...] or in the form of list[list[tuple,...]].
+        # We need to convert the former to the latter.
+        for k, v in conditions.items():
+            if v is not None:
+                if not isinstance(v[0][0], list | tuple):
+                    conditions[k] = [v]
+
+        # ... now we can process them
+        for k,v in conditions.items():
+            if v is not None:
+                conditions[k] = self._parse_or_conditions(v)
+
+        return conditions
+
+    def _parse_or_conditions(self, or_conditions: OrConditionsT) -> OrConditionsT:
+        return [self._parse_and_conditions(elem) for elem in or_conditions] 
+
+    def _parse_and_conditions(self, and_conditions: AndConditionsT) -> AndConditionsT:
+        return [self._parse_condition(elem) for elem in and_conditions]
+
+    def _parse_condition(self, condition: ConditionT) -> ConditionT:
+        left, operator, right = condition
+
+        for operand_name in (left, right):
+            if operand_name not in self.operands:
+                raise ValueError(
+                    f"Operand '{operand_name}' not found in operands. "
+                    f"Available operands: {', '.join(list(self.operands.keys()))}"
+                    )
+   
+        if isinstance(operator, str):
+            if operator.upper() not in COMPARISON:
+                raise ValueError(operator)
+            operator = COMPARISON[operator]
+        elif not isinstance(operator, COMPARISON):
+            raise ValueError(f"Invalid operator: {operator}")
+        
+        return left, operator, right
+
+                

@@ -1,12 +1,25 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Oct 06 10:03:20 2021
+Provides a decorator for transforming Signalsfinition to 
+SignalGeneratorDefinition instances.
+
+SignalsDefinition = the previously used way to define signals.
+SignalGeneratorDefinition = the 'new' new way to define signals.
+
+This is just for convenience and to prevent having to rewrite
+existing strategies all at once.
+
+NOTE:
+This module was just used to develop the decorator. The code has been
+copied to the signal_generator.py module and is available there, no
+need for imports.
+
+Created on Jan 03 10:03:20 2025
 
 @author dhaneor
 """
 
-import yaml
 from collections import defaultdict
 from dataclasses import dataclass
 from functools import wraps
@@ -14,6 +27,7 @@ from pprint import pprint
 from typing import Callable, Any
 
 from analysis.strategy.condition import ConditionDefinition, COMPARISON
+from util import DotDict
 
 
 @dataclass
@@ -112,54 +126,6 @@ test_er = SignalsDefinition(
         ),
     ]
 )
-
-
-class DotDict(dict):
-    def __getattr__(self, item):
-        try:
-            value = self[item]
-            if isinstance(value, dict) and not isinstance(value, DotDict):
-                return DotDict(value)
-            return value
-        except KeyError:
-            raise AttributeError(f"'DotDict' object has no attribute '{item}'")
-
-    def __setattr__(self, key, value):
-        self[key] = value
-
-    def __setitem__(self, key, value):
-        if isinstance(value, dict) and not isinstance(value, DotDict):
-            value = DotDict(value)
-        super().__setitem__(key, value)
-
-    def __getitem__(self, key):
-        value = super().__getitem__(key)
-        if isinstance(value, dict) and not isinstance(value, DotDict):
-            value = DotDict(value)
-            super().__setitem__(key, value)
-        return value
-
-    def __repr__(self):
-        return self.to_yaml()
-
-    def __str__(self):
-        return self.to_yaml()
-
-    def to_yaml(self):
-        """Convert the DotDict to a YAML string, including nested values."""
-        return yaml.dump(
-            self.to_dict(), default_flow_style=False, sort_keys=False, indent=4
-        )
-
-    def to_dict(self):
-        """Recursively convert DotDict (and nested DotDicts) to standard dictionaries"""
-        result = {}
-        for key, value in self.items():
-            if isinstance(value, DotDict):  # Check if the value is a DotDict
-                result[key] = value.to_dict()  # Recursively convert nested DotDict
-            else:
-                result[key] = value if key != "info" else None
-        return result
 
 
 class SignalGeneratorDefinition(DotDict):

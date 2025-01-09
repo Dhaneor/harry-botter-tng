@@ -62,7 +62,7 @@ from pprint import pprint
 from typing import Callable, NamedTuple, Iterable, Optional, TypeAlias
 import numpy as np
 
-from ..util import proj_types as tp
+from ...util import proj_types as tp
 from ..util import comp_funcs as cmp
 from . import operand as op
 from .operand_factory import operand_factory

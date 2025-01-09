@@ -13,7 +13,7 @@ from sys import getsizeof
 
 from analysis.models.market_data import MarketData
 from analysis.statistics.correlation import Correlation
-from analysis.util import proj_types as tp  # noqa: F401, E402
+from util import proj_types as tp  # noqa: F401, E402
 
 logger = logging.getLogger("main.leverage")
 logger.setLevel(logging.DEBUG)

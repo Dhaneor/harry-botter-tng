@@ -5,110 +5,228 @@ Provides the signal generator class and its factory.
 
 Use the factory function to create instances of SignalGenerator!
 
-classes:
-    SignalsDefinition
-        A formalized descrption of signals (long/short/close) that may
-        contain one or more sequence(s) of ConditionDefinition objects
-        which describe all the conditions that must be True to produce a
-        signal.
 
-    SignalGenerator
-        This is the core of the Strategy class(es). It takes the
-        OHLCV data and generates the signals for opening and closing
-        long/short positions.
+Classes:
 
-functions:
-    factory(sig_def: SignalsDefinition | dict[str, ConditionDefinition]
-        function to create a SignalGenerator object from a
-        SignalsDefinition object or a dictionary of the form:
+SignalsDefinition (deprecated)
 
-    .. code-block:: python
-    {
-        "open_long": [ConditionDefinition, ...] | None,
-        "open_short": [ConditionDefinition,...] | None,
-        "close_long": [ConditionDefinition,...] | None,
-        "close_short": [ConditionDefinition,...] | None,
-        "reverse": bool
-    }
+A formalized description of signals (long/short/close) that may
+contain one or more sequence(s) of ConditionDefinition objects
+which describe all the conditions that must be True to produce
+a signal.
 
+SignalsGeneratorDefinition
 
-classes:
-    SignalsDefinition
-        formal description of signals (long/short/close)
+A formalized description of signals (long/short) that may contain one
+or more sequence(s) of conditions. 
 
-    SignalGenerator
-        the signal generator class
+SignalGenerator
+
+This is the core of the Strategy class(es). It takes the OHLCV data
+and generates the signals for opening and closing long/short positions.
+
 
 Functions:
-    factory
-        factory function for SignalGenerator
+
+signal_generator_factory(definition: SignalGeneratorDefinition) -> SignalGenerator:
+
+A function to create a SignalGenerator object from a
+SignalsDefinition object or a dictionary of the form:
 
 
+Usage:
+
+SignalGenerator instances are not created directly. Instead, use the
+factory function which builds them from a SignalGeneratorDefinition.
+
+Below is an example of how to use the SignalGeneratorDefinition:
+
+.. code-block:: python
+
+aroon_osc_new = SignalGeneratorDefinition(
+    name="AROON OSC (noise filtered)",
+    operands=dict(
+        aroonosc=("aroonosc", "high", "low", {"timeperiod": 4}),
+        aroon_trigger=("aroon_trigger", 1, [-5, 5, 1]),
+        er=("er", {"timeperiod": 37}),
+        er_trending=("er_trending", 0.21, [0.05, 0.55, 0.1]),
+    ),
+    conditions=dict(
+        open_long=[
+            ("aroon", COMPARISON.CROSSED_ABOVE, "aroon_trigger"),
+            ("efficiency_ratio", COMPARISON.IS_ABOVE, "er_trending"),
+        ],
+        close_long=[
+            ("aroon", COMPARISON.CROSSED_BELOW, "aroon_trigger"),
+            ("efficiency_ratio", COMPARISON.IS_BELOW, "er_trending"),
+        ],
+        open_short=None,
+        close_short=None,
+    ),
+)
+
+
+Decorators:
+
+transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
+
+Provides a decorator for transforming Signalsfinition to 
+SignalGeneratorDefinition instances.
+
+SignalsDefinition = the previously used way to define signals.
+SignalGeneratorDefinition = the 'new' new way to define signals.
+
+This is just for convenience and to prevent having to rewrite
+existing strategies all at once.
+    
+    
 Created on Sat Aug 18 11:14:50 2023
 
 @author: dhaneor
 """
+
+from collections import defaultdict
 from dataclasses import dataclass
-from typing import Optional, Sequence, Literal, Any
-from functools import reduce
+from typing import Sequence, Any, Callable
+from functools import reduce, wraps  # noqa: F401
 import itertools
 import logging
 import numpy as np
-import pandas as pd
 
-from ..util import proj_types as tp
-from .condition import Condition, ConditionDefinition, ConditionResult
+from .condition import ConditionParser, ConditionDefinitionT, ConditionResult
 from .operand import Operand
 from .operand_factory import operand_factory
-from .transform_condition_definition import transform_condition_definition
+# from .transform_signal_definition import transform_signal_definition
 from ..indicators.indicator import Indicator
 from ..indicators.indicator_parameter import Parameter
 
-from ..chart.plot_definition import SubPlot
-from ..chart.tikr_charts import SignalChart
+from ..chart.plot_definition import SubPlot  # noqa: F401
+from ..chart.tikr_charts import SignalChart  # noqa: F401
 
-from util import log_execution_time
+from util import proj_types as tp
+from util import log_execution_time, DotDict  # noqa: F401
 
 logger = logging.getLogger("main.signal_generator")
 logger.setLevel(logging.ERROR)
 
-PositionTypeT = Literal["open_long", "open_short", "close_long", "close_short"]
 
-ConditionDefinitionsT = Optional[
-    Sequence[ConditionDefinition] | ConditionDefinition
-]
+def transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
+    """
+    Provides a decorator for transforming Signalsfinition to 
+    SignalGeneratorDefinition instances.
+
+    SignalsDefinition = the previously used way to define signals.
+    SignalGeneratorDefinition = the 'new' new way to define signals.
+
+    This is just for convenience and to prevent having to rewrite
+    existing strategies all at once.
+    """
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        if args:  #  and isinstance(args[0], SignalsDefinition):
+            signals_def = args[0]
+
+            operands = {}
+            conditions = {
+                "open_long": [],
+                "close_long": [],
+                "open_short": [],
+                "close_short": [],
+            }
+            indicator_counters = defaultdict(int)
+            indicator_names = {}
+
+            def get_unique_operand_name(operand_value):
+                if isinstance(operand_value, tuple):
+                    indicator_name = operand_value[0]
+                    if indicator_name in ['open', 'high', 'low', 'close', 'volume']:
+                        return indicator_name
+
+                    # Check if we've already assigned a unique name to this exact indicator
+                    indicator_key = str(operand_value)
+                    if indicator_key in indicator_names:
+                        return indicator_names[indicator_key]
+
+                    indicator_counters[indicator_name] += 1
+                    unique_name = f"{indicator_name}_{indicator_counters[indicator_name]}"
+                    indicator_names[indicator_key] = unique_name
+                    return unique_name
+                return operand_value
+
+            for condition in signals_def.conditions:
+                for operand in ["a", "b", "c", "d"]:
+                    operand_attr = f"operand_{operand}"
+                    if hasattr(condition, operand_attr):
+                        operand_value = getattr(condition, operand_attr)
+                        if operand_value:
+                            unique_name = get_unique_operand_name(operand_value)
+                            operands[unique_name] = operand_value
+
+                for condition_type in ["open_long", "close_long", "open_short", "close_short"]:
+                    if hasattr(condition, condition_type):
+                        condition_value = getattr(condition, condition_type)
+                        if condition_value:
+                            transformed_condition = list(condition_value)
+                            for i, item in enumerate(transformed_condition):
+                                if item in ["a", "b", "c", "d"]:
+                                    operand_attr = f"operand_{item}"
+                                    if hasattr(condition, operand_attr):
+                                        operand_value = getattr(condition, operand_attr)
+                                        unique_name = get_unique_operand_name(operand_value)
+                                        transformed_condition[i] = unique_name
+                            conditions[condition_type].append(tuple(transformed_condition))
+
+            transformed_def = SignalGeneratorDefinition(
+                name=signals_def.name,
+                operands=operands,
+                conditions={k: v if v else None for k, v in conditions.items()},
+            )
+            args = (transformed_def,) + args[1:]
+
+        else:
+            print(f"Invalid input: {func.__name__} expects a SignalsDefinition")
+            print(f"Got: {args} (type: {type(args[0])})")
+
+        return func(*args, **kwargs)
+
+    return wrapper
 
 
 @dataclass
 class SignalsDefinition:
     """Definition for how to produce entry/exit signals.
 
+    NOTE:
+    Do not use anymore! This version is deprecated and will be removed in a 
+    future release. Use SignalGeneratorDefinition instead!
+
     Attributes:
     -----------
     name: str
         the name of the signal definition
-    open_long: ConditionDefinitionsT
+    open_long: Sequence[ConditionDefinition]
         A sequence of conditions that must all be True to open a long position.
         For convenience, intead of a sequence, a single ConditionDefinition
         can be passed. So, you can pass here:
         - Sequence[ConditionDefinition]
         - ConditionDefinition
-        - dict[PositionTypeT, ConditionDefinition]
+        - dict[str, ConditionDefinition]
 
-    open_short: ConditionDefinitionsT
+    open_short: Sequence[ConditionDefinition]
         a sequence of conditions that must all be True to open a short position
 
-    close_long: ConditionDefinitionsT
+    close_long: Sequence[ConditionDefinition]
         a sequence of conditions that must all be True to close a long position
 
-    close_short: ConditionDefinitionsT
+    close_short: Sequence[ConditionDefinition]
         a sequence of conditions that must all be True to close a short position
 
     reverse: bool
         just use reversed long condition for shorts, default: False
     """
     name: str = "unnamed"
-    conditions: ConditionDefinitionsT = None
+    conditions: Sequence[ConditionDefinitionT] = None
 
     def __repr__(self):
         out = [f"SignalsDefinition: {self.name}\n"]
@@ -118,12 +236,15 @@ class SignalsDefinition:
 
 
 @dataclass
-class SignalGeneratorDefinition:
+class SignalGeneratorDefinition(DotDict):
     """Class to hold the definition of a SignalGenerator."""
 
     name: str
-    conditions: dict[str, tuple | str]
-    operands: dict[str, tuple | str] | None = None
+    operands: dict[str, tuple | str] 
+    conditions: ConditionDefinitionT
+
+
+
 
 
 class SignalGenerator:
@@ -150,7 +271,7 @@ class SignalGenerator:
         self,
         name,
         operands: dict[str, Operand],
-        conditions: Sequence[Condition],
+        conditions: ConditionDefinitionT,
     ):
         """Initializes the signal generator.
 
@@ -248,19 +369,38 @@ class SignalGenerator:
         tp.Data
             OHLCV data dictionary
         """
-        # signals = reduce(
-        #     lambda x, y: x & y, (cond.execute(data) for cond in self.conditions)
-        # )
 
-        logger.debug("running operands...")
-        for operand in self.operands.values():
-            operand.run()
-        logger.debug("running conditions...")
+        signals = {}
 
-        signals = self.conditions.execute(data)
+        for action, or_conditions in self.conditions.items():
+            logger.debug(f"Running conditions for: {action}...")
+            
+            or_result = None
+            for and_conditions in or_conditions:
+                and_result = None
+                for condition in and_conditions:
+                    left_operand = self.operands[condition[0]]
+                    right_operand = self.operands[condition[2]]
+                    operator = condition[1]
 
-        logger.debug("finished executing conditions...")
+                    single_result = operator(
+                        left_operand.run(), 
+                        right_operand.run() 
+                    )
 
+                if and_result is not None:
+                    and_result = np.logical_And(and_result, single_result)
+                else:
+                    and_result = single_result
+
+            if or_result is not None:
+                or_result = np.logical_or(or_result, and_result)
+            else:
+                or_result = and_result
+        
+        signals[action] = or_result
+
+        # .............................................................................
         if not as_dict:
             return signals
 
@@ -346,7 +486,7 @@ class SignalGenerator:
 
 
 # ======================================================================================
-@transform_condition_definition
+@transform_signal_definition
 def signal_generator_factory(definition: SignalGeneratorDefinition) -> SignalGenerator:
     logger.debug("building SignalGenerator from definition:\n")
     """Build a SignalGenerator from a SignalGeneratorDefinition.
@@ -373,7 +513,10 @@ def signal_generator_factory(definition: SignalGeneratorDefinition) -> SignalGen
         logger.info(operand)
         operands[name] = operand
 
-    conditions = Condition(**definition.conditions, operands=operands)
-    # conditions.operands = operands
+    condition_parser = ConditionParser(operands)
 
-    return SignalGenerator(definition.name, operands, conditions)
+    return SignalGenerator(
+        definition.name, 
+        operands, 
+        condition_parser.parse(definition.conditions)
+        )

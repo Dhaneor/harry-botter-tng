@@ -45,7 +45,7 @@ from ..indicators import indicator as ind
 from ..indicators import indicators_custom
 from ..indicators.indicator_parameter import Parameter
 from ..models.market_data import MarketData
-from ..util import proj_types as tp
+from util import proj_types as tp
 from util import log_execution_time
 from ..chart.plot_definition import SubPlot, Line, Channel
 
