@@ -509,7 +509,6 @@ class Condition:
     close_long: tuple[str, COMPARISON, str] | None = None
     close_short: tuple[str, COMPARISON, str] | None = None
 
-    # key_store: dict[int, str] = None
     operands: dict[str, op.Operand] = field(default_factory={})
 
     def __repr__(self) -> str:
@@ -518,10 +517,6 @@ class Condition:
             f"  open_long: {self.open_long}\n  close_long: {self.close_long}\n"
             f"  open_short: {self.open_short}\n  close_short: {self.close_short}"
         )
-
-    def __post_init__(self):
-        if self.key_store is None:
-            logger.error("No key store provided for condition.")
 
     @property
     def indicators(self) -> tuple[op.ind.Indicator]:
@@ -647,9 +642,7 @@ class Condition:
 
             logger.debug("left: %s, right: %s", left, right)
 
-            single_condition_result = comp_fn(
-                left.execute(), right.execute()
-            )
+            single_condition_result = comp_fn(left.run(), right.run())
 
             if result is None:
                 result = single_condition_result

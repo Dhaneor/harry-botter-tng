@@ -286,14 +286,13 @@ class Factory:
             case _:
                 raise ValueError(f"Invalid operand type: {definition.type_}")
 
-        if not self.market_data:
-            logger.error("Market data not set")
-            raise ValueError("market data not set")
+        # if not self.market_data:
+        #     logger.error("Market data not set")
+        #     raise ValueError("market data not set")
 
-        operand.market_data = self.market_data
-
-        logger.error("ready building operand: %s", operand)
-
+        # set market data and id in a unified manner for all
+        # types of operands
+        # operand.market_data = self.market_data
         operand.id = self.id_keys
         self.id_keys += 1
         

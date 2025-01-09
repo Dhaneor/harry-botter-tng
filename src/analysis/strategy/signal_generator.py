@@ -151,7 +151,6 @@ class SignalGenerator:
         name,
         operands: dict[str, Operand],
         conditions: Sequence[Condition],
-        key_store: dict[str, str],
     ):
         """Initializes the signal generator.
 
@@ -162,7 +161,6 @@ class SignalGenerator:
         self.name: str = name
         self.operands = operands
         self.conditions = conditions
-        self.key_store = key_store
 
     def __repr__(self):
         op_str = "\n  ".join(f"{k}: {v}" for k, v in self.operands.items())
@@ -256,7 +254,7 @@ class SignalGenerator:
 
         logger.debug("running operands...")
         for operand in self.operands.values():
-            operand.run(data)
+            operand.run()
         logger.debug("running conditions...")
 
         signals = self.conditions.execute(data)
@@ -363,8 +361,6 @@ def signal_generator_factory(definition: SignalGeneratorDefinition) -> SignalGen
     SignalGenerator
         the signal generator
     """
-    key_store = {"test": "test"}
-    definition.conditions.update({"key_store": key_store})
 
     # logger.info(definition.conditions.keys())
     # logger.info(definition.to_dict().get('conditions'))
@@ -372,82 +368,12 @@ def signal_generator_factory(definition: SignalGeneratorDefinition) -> SignalGen
     operands = dict()
 
     for name, op_def in definition.operands.items():
-        operand = operand_factory(op_def, key_store)
-        operand.key_store = key_store
+        operand = operand_factory(op_def, None)
         operand.id = name
-        operand.update_key_store()
         logger.info(operand)
-        logger.info(key_store)
         operands[name] = operand
 
-    conditions = Condition(**definition.conditions)
-    conditions.key_store = key_store
+    conditions = Condition(**definition.conditions, operands=operands)
+    # conditions.operands = operands
 
-    return SignalGenerator(definition.name, operands, conditions, key_store)
-    # return builder.build_signal_generator(definition)
-
-
-# using the decorator to transform the 'old' form of defining the signals
-# into the new form and remain backwards compatible
-@transform_condition_definition
-def signal_generator_factory_old(
-    sig_def: SignalsDefinition | Sequence[ConditionDefinition]
-) -> SignalGenerator:
-    """Factory function for SignalGenerator.
-
-    Parameters
-    ----------
-    sig_def
-        the signal definition or just a sequence of ConditionDefinition(s)
-
-    Returns
-    -------
-    SignalGenerator
-        the signal generator
-    """
-    match sig_def:
-
-        case SignalsDefinition():
-            logger.debug("got a SignalsDefinition instance")
-            name = sig_def.name
-            condition_definitions = sig_def.conditions
-
-            # make sure we have a sequence, the elements will be validated
-            # later in the condition factory function
-            condition_definitions = (
-                tuple((condition_definitions,))
-                if isinstance(condition_definitions, ConditionDefinition)
-                else condition_definitions
-            )
-
-        case tuple() | list():
-            name = "Unnnamed SignalGenerator"
-            condition_definitions = sig_def
-
-        case _:
-            raise TypeError(
-                f"SignalsDefinition expected, got {type(sig_def)}: {sig_def}"
-            )
-
-    logger.debug("Creating signal generator for %s (%s)", sig_def, type(sig_def))
-    logger.debug(
-        "... Processing %s condition definition(s) ...", len(condition_definitions),
-    )
-
-    key_store = {}
-
-    sig_gen = SignalGenerator(
-        name,
-        tuple(
-            condition_factory(c, key_store=key_store)
-            for c in condition_definitions
-            )
-        )
-    sig_gen.name = name
-    sig_gen.condition_definitions = condition_definitions
-
-    for idx, condition in enumerate(sig_gen.conditions):
-        condition.id = idx
-        condition.columns = sig_gen.columns
-
-    return sig_gen
+    return SignalGenerator(definition.name, operands, conditions)

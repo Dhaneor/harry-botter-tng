@@ -78,7 +78,9 @@ def test_factory(sig_def) -> sg.SignalGenerator:
         logger.exception(exc)
         sys.exit()
 
-    logger.info("created signal generator: %s", sig_gen)
+    assert isinstance(sig_gen, sg.SignalGenerator)
+
+    logger.info("created signal generator:\n %s", sig_gen.__dict__)
     return sig_gen
 
 
@@ -364,7 +366,7 @@ def test_returns(sig_gen: sg.SignalGenerator, data, show=False):
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    # test_factory(sig_def)
+    test_factory(sig_def)
     # test_randomize()
     # test_execute(None, data, 1)
 
@@ -383,7 +385,7 @@ if __name__ == "__main__":
     # test_plot(sig_gen, data)
     # test_returns(sig_gen, data, True)
 
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
 

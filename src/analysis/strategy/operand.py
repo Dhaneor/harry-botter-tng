@@ -50,14 +50,14 @@ from util import log_execution_time
 from ..chart.plot_definition import SubPlot, Line, Channel
 
 logger = logging.getLogger("main.operand")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 # build a list of all available indicators, that can later be used
 # to do a fast check if requested indicators are available.
 ALL_INDICATORS = set(i.lower() for i in ind.talib.get_functions())
 CUSTOM_INDICATORS = tuple(name.lower() for name in indicators_custom.custom_indicators)
 
-OperandDefinitionT = tuple | str
+MAX_CACHE_SIZE = 100 * 1024 * 1024 # max cache size for operands
 
 
 # ======================================================================================
@@ -143,6 +143,7 @@ class Operand(ABC):
 
     _market_data: MarketData = None   
     _parameter_space: Optional[Sequence[Number]] = None
+    _unique_name: str = ""
 
     shift: Parameter = None
     indicators: list[ind.Indicator] = field(default_factory=list)
@@ -150,7 +151,7 @@ class Operand(ABC):
     id: int = field(default=0)
 
     inputs: tuple = field(default_factory=tuple)
-    unique_name: str = ""
+    # unique_name: str = ""
     _output: str = ""
 
     _cache = {}
@@ -183,16 +184,16 @@ class Operand(ABC):
         return self.__repr__()
 
     @property
+    @abstractmethod
+    def display_name(self) -> str: ...
+
+    @property
     def market_data(self) -> MarketData:
         return self._market_data
     
     @market_data.setter
     def market_data(self, market_data: MarketData) -> None:
         self._market_data = market_data
-
-    @property
-    @abstractmethod
-    def display_name(self) -> str: ...
 
     @property
     def parameters_tuple(self) -> tuple[Any, ...]:
@@ -223,6 +224,56 @@ class Operand(ABC):
         self.key_store[self.id] = self.unique_name
 
         logger.info("[%s]   updated key_store: %s" % (self.name, self.key_store))
+
+    @log_execution_time(logger)
+    def _update_cache(self, key, value) -> None:
+        """Update the cache with the current unique_name."""
+        
+        def get_total_size(obj):
+            size = sys.getsizeof(obj)
+            if isinstance(obj, dict):
+                return size + sum(get_total_size(v) for v in obj.values())
+            elif isinstance(obj, (list, tuple)):
+                return size + sum(get_total_size(i) for i in obj)
+            else:
+                return size
+
+        size_value = get_total_size(value)
+
+        if size_value > MAX_CACHE_SIZE:
+            logger.warning("[%s]   item too large to cache: %s" % (self.name, key))
+            return
+
+        cache_size = get_total_size(self._cache)
+
+        if cache_size + size_value > MAX_CACHE_SIZE:
+            # remove the least recently used item from the cache
+            # (which is the first item in the dictionary)
+            del self._cache[list(self._cache.keys())[0]]
+            logger.warning(
+                "[%s]   Cache size exceeded, removing least recently used item: %s"
+                % (self.name, list(self._cache.keys())[0])
+            )
+        
+        self._cache[key] = value
+
+        if logger.level <= logging.DEBUG:
+            cache_size = get_total_size(self._cache)
+
+            if cache_size < 1024:
+                cs_str = f"{cache_size} B"
+            elif cache_size < 1024 * 1024:
+                cs_str = f"{cache_size / 1024:.0f} kB"
+            else:
+                cs_str = f"{cache_size / (1024 * 1024):.1f} MB"
+
+            logger.debug(
+                "[%s]   updated cache. number of saved results: %s (cache size: %s)", 
+                self.name, len(list(self._cache.keys())), cs_str
+                )
+            
+            first_key = list(self._cache.keys())[0]
+            logger.debug(self._cache[first_key])
 
     def _update_names(self) -> str:
         """Update the output names and uniqe_name of the operand."""
@@ -296,13 +347,11 @@ class OperandIndicator(Operand):
     type_: OperandType
 
     indicator: ind.Indicator | None = field(default=None)
-    indicators: list[ind.Indicator] = field(default_factory=list)
 
     inputs: tuple = field(default_factory=tuple)
     extension: str | None = None
 
     parameters: dict = field(default_factory=dict)
-    _parameter_space: Optional[Sequence[Number]] = None
 
     _unique_name: str = ""
     _output_names: list = field(default_factory=list)
@@ -469,28 +518,41 @@ class OperandIndicator(Operand):
 
     @property
     def unique_name(self) -> str:
-        """Return the unique name for the operand"""
+        """Return the unique name for the operand
+        
+        The unique name is used to identify the operand and its data
+        in the data dictionary which is used for plotting, for instance.
+
+        This prevents potential conflicts when multiple operands use the
+        same indicator with different parameters.
+        """
         logger.debug("[%s]   updating unique_name" % self.name)
         logger.debug("[%s]   current unique_name: %s" % (self.name, self._unique_name))
         logger.debug("[%s]   indicators: %s" % (self.name, self.indicators))
         ind_unique = [ind.unique_name for ind in self.indicators]
         last = ind_unique.pop(-1)
 
-        # if we only have one indicator (default case), we use the
-        # unique_name of this indicator.
+        # if we only have one indicator (default case), the list we 
+        # created withwe the unique names of all indicators used by 
+        # this operand is empty, after removong the last element. We
+        # can use the removed element to create the unique_name of
+        # this indicator.
         if not ind_unique:
-            return last
+            self._unique_name = last
         # In case of multiple/nested indicators, we create a unique_name
-        # for this operand.
+        # for this operand, e.g.: 'sma_10_rsi_14_close'
         else:
             # remove the input names of the indicators from their unique_name
             splitted = [name.split("_")[:-1] for name in ind_unique]
 
             # join the remaining unique_names with '_' and add the last one
             # (which still has its input name attached to the end)
-            return (
+            self._unique_name = (
                 f"{('_').join(('_'.join(elem) for elem in splitted))}_{last}"
             )
+
+        logger.debug("[%s]   updated unique_name: %s" % (self.name, self._unique_name))
+        return self._unique_name
 
     # .................................................................................
     @log_execution_time(logger)
@@ -515,8 +577,9 @@ class OperandIndicator(Operand):
         if (parameters := self.parameters_tuple) in self._cache:
             return self._cache[parameters]
         
-        self._cache[parameters] = self._run_indicator({})
-        return self._cache
+        result = self._run_indicator({})
+        self._update_cache(parameters, result)
+        return result
 
     def as_dict(self):
         """Return a dictionary representation of the operand.
@@ -620,22 +683,13 @@ class OperandIndicator(Operand):
         ValueError
             if unable to get indicator instance
         """
-        # when using the same indicator in different conditions,
-        # there's no need to run it multiple times
-        if all(key in data for key in (self.output_names)):
-            # if self.output in data:
-            logger.debug(
-                "[%s] !!! SKIPPING %s --- %s already in data",
-                level, self.unique_name, self.output_names,
-            )
-            return self.output_names if level > 0 else self.output_names[0]
 
         indicator_ = indicator_ or self.indicator
 
         if indicator_ is None:
             raise ValueError(f"No indicator defined for {self.name}")
 
-        logger.debug("[%s] Running indicator: %s", level, indicator_.unique_name)
+        logger.info("[%s] Running indicator: %s", level, indicator_.unique_name)
 
         # get the required input(s) for the indicator from the data
         logger.debug("Getting inputs for indicator: %s", self.inputs)
@@ -653,21 +707,24 @@ class OperandIndicator(Operand):
         indicator_values = indicator_.run(*inputs)
         number_of_outputs = len(indicator_values)
 
-        # the indicator may return a single array, or a tuple of arrays
-        if number_of_outputs == 1:
-            logger.debug("[%s] %s adding %s to data", level, indicator_.name, self._output)
-            data[self._output] = indicator_values
+        if data:
+            # the indicator may return a single array, or a tuple of arrays
+            if number_of_outputs == 1:
+                logger.debug(
+                    "[%s] %s adding %s to data", level, indicator_.name, self.output
+                    )
+                data[self.output] = indicator_values
 
-        else:
-            data.update(
-                {
-                    key: indicator_values[idx]
-                    for idx, key in enumerate(self.output_names)
-                }
-            )
+            else:
+                data.update(
+                    {
+                        key: indicator_values[idx]
+                        for idx, key in enumerate(self.output_names)
+                    }
+                )
 
         # return name of relevant key that was added to the data dict
-        return self.output_names if level > 0 else self.output
+        return indicator_values  # self.output_names if level > 0 else self.output
 
     def _get_ind_inputs(
         self, req_in: str | tuple, 
@@ -754,76 +811,10 @@ class OperandIndicator(Operand):
 
     def _update_names(self) -> str:
         """Update the output names and uniqe_name of the operand."""
-        # _ = self.unique_name
-        # _ = self.output_names
-        def update_unique_name():
-            logger.debug("[%s]   updating unique_name" % self.name)
-            logger.debug("[%s]   current unique_name: %s" % (self.name, self._unique_name))
-            logger.debug("[%s]   indicators: %s" % (self.name, self.indicators))
-            ind_unique = [ind.unique_name for ind in self.indicators]
-            last = ind_unique.pop(-1)
-
-            # if we only have one indicator (default case), we use the
-            # unique_name of this indicator.
-            if not ind_unique:
-                self._unique_name = last
-            # In case of multiple/nested indicators, we create a unique_name
-            # for this operand.
-            else:
-                # remove the input names of the indicators from their unique_name
-                splitted = [name.split("_")[:-1] for name in ind_unique]
-
-                # join the remaining unique_names with '_' and add the last one
-                # (which still has its input name attached to the end)
-                self._unique_name = (
-                    f"{('_').join(('_'.join(elem) for elem in splitted))}_{last}"
-                )
-
-        def update_output():
-            if self.extension:
-                self._output = f"{self.unique_name}_{self.extension}"
-            else:
-                self._output = self.unique_name
-            logger.debug("[%s]   updated output: %s" % (self.name, self._output))
-
-        def update_output_names():
-
-            if len(self.indicators) == 1:
-                self._output_names = list(self.indicator.unique_output)
-                logger.debug(
-                    "   using original output name: %s"
-                    % list(self.indicator.unique_output)
-                    )
-
-            else:
-                for elem in self.inputs:
-                    if isinstance(elem, OperandIndicator):
-                        logger.debug("Updating %s with %s", self.name, elem)
-                        logger.debug("%s output names: %s", elem, elem._output_names)
-
-                        self._output_names = [self.unique_name]
-                        self._output_names.append(elem.unique_name)
-
-            self._output_names = list(set(self._output_names))
-            self._output_names.reverse()
-
-            logger.debug("[%s]\toutput names after update: %s", self.name, self._output_names)
-
-        raise NotImplementedError(
+        raise DeprecationWarning(
             "This method is depracated. Use the peroperties for: "
             "'unique_name', 'output', 'output_names' instead."
             )
-
-        # logger.debug(
-        #     "--------------------- [%s] - UPDATING NAMES ---------------------"
-        #     % self.name.upper()
-        #     )
-
-        # update_unique_name()
-        # update_output()
-        # update_output_names()
-
-        # logger.debug("[%s]\tUpdated operand: %s", self.name, self)
 
 
 @dataclass(kw_only=True)
@@ -866,16 +857,15 @@ class OperandTrigger(Operand):
         parameters.
     """
 
-    name: str
-    type_: OperandType
+    # name: str
+    # type_: OperandType
     indicator: ind.Indicator | None = field(default=None)
     run_func: Callable | None = field(default=None)
     inputs: tuple = field(default_factory=tuple)
-    _unique_name: str = ""
     output_names: tuple = field(default_factory=tuple)
     parameters: dict = field(default_factory=dict)
-    parameter_space: Optional[Sequence[Number]] = None
-    indicators: list[ind.Indicator] = field(default_factory=list)
+    # parameter_space: Optional[Sequence[Number]] = None
+    # indicators: list[ind.Indicator] = field(default_factory=list)
 
     def __repr__(self) -> str:
         return f"[{self.id}] {self.type_} {self.name}={self.indicator.parameters[0].value}"
@@ -891,7 +881,7 @@ class OperandTrigger(Operand):
 
         self.indicator.add_subscriber(self.on_parameter_change)
 
-        self.unique_name = self.indicator.unique_name
+        self._unique_name = self.indicator.unique_name
         self.output_names = tuple(self.indicator.unique_output)
         self.output = self.output_names[0]
 
@@ -907,10 +897,6 @@ class OperandTrigger(Operand):
         """Return the unique name for the operand"""
         # return f"{self.name}_{self.indicator.parameters[0].value}"
         return "%s_%s" % (self.name, self.indicator.parameters[0].value)
-
-    @unique_name.setter
-    def unique_name(self, value: str) -> None:
-        self._unique_name = value
 
     @property
     def plot_desc(self) -> dict[str, tp.Parameters]:
@@ -1021,7 +1007,7 @@ class OperandTrigger(Operand):
         super().on_parameter_change()
 
     def randomize(self) -> None:
-        logger.debug("Randomizing parameters for %s", self.unique_name)
+        logger.info("Randomizing parameters for %s", self.unique_name)
         self.indicator.randomize()
 
 
@@ -1075,7 +1061,6 @@ class OperandSeries(Operand):
         self.type_ = OperandType.SERIES
         self.output_names = (self.name,)
         self.output = self.output_names[0]
-        assert self.market_data is not None, f"{self} market_data is not set"
 
     @property
     def display_name(self) -> str:
@@ -1140,7 +1125,7 @@ class OperandSeries(Operand):
         return self.market_data.get_array(self.inputs[0])
 
     def randomize(self) -> None:
-        logger.debug("skipping non-randomizable operand: %s" % self.name)
+        logger.info("skipping non-randomizable operand: %s" % self.name)
 
     def as_dict(self):
         """Return a dictionary representation of the operand.
