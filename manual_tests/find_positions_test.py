@@ -18,7 +18,7 @@ from pstats import SortKey, Stats  # noqa: F401
 
 from staff.hermes import Hermes
 from analysis import strategy_builder as sb
-from analysis.models.market_data import MarketData, MarketDataStore
+from analysis.models.market_data import MarketData
 from analysis.leverage import LeverageCalculator
 from analysis.util import find_positions as fp
 from analysis import strategy_backtest as bt
@@ -107,6 +107,7 @@ def _get_ohlcv_from_db():
 def _run_backtest(data: dict) -> pd.DataFrame:
     md = MarketData.from_dictionary(strategy.symbol, data)
     leverage_calculator = LeverageCalculator(md, risk_level, max_leverage)
+    
 
     result = bt.run(
         strategy=strategy, 

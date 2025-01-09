@@ -50,7 +50,7 @@ from util import log_execution_time
 from ..chart.plot_definition import SubPlot, Line, Channel
 
 logger = logging.getLogger("main.operand")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
 # build a list of all available indicators, that can later be used
 # to do a fast check if requested indicators are available.
@@ -195,6 +195,10 @@ class Operand(ABC):
     def market_data(self, market_data: MarketData) -> None:
         self._market_data = market_data
 
+        for input_ in self.inputs:
+            if isinstance(input_, Operand):
+                input_.market_data = market_data
+
     @property
     def parameters_tuple(self) -> tuple[Any, ...]:
         """Return the parameters for the operand as a tuple"""
@@ -225,7 +229,7 @@ class Operand(ABC):
 
         logger.info("[%s]   updated key_store: %s" % (self.name, self.key_store))
 
-    @log_execution_time(logger)
+    # @log_execution_time(logger)
     def _update_cache(self, key, value) -> None:
         """Update the cache with the current unique_name."""
         
@@ -555,7 +559,7 @@ class OperandIndicator(Operand):
         return self._unique_name
 
     # .................................................................................
-    @log_execution_time(logger)
+    # @log_execution_time(logger)
     def run(self) -> str:
         """Run the operand on the given data.
 
@@ -970,7 +974,7 @@ class OperandTrigger(Operand):
         if post_init:
             self.__post_init__()
 
-    @log_execution_time(logger)
+    # @log_execution_time(logger)
     def run(self) -> str:
         """Run the operand on the given data.
 

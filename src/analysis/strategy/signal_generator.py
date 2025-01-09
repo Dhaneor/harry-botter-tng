@@ -93,16 +93,16 @@ import itertools
 import logging
 import numpy as np
 
-from .condition import ConditionParser, ConditionDefinitionT, ConditionResult
-from .operand import Operand
-from .operand_factory import operand_factory
-# from .transform_signal_definition import transform_signal_definition
-from ..indicators.indicator import Indicator
-from ..indicators.indicator_parameter import Parameter
-
 from ..chart.plot_definition import SubPlot  # noqa: F401
 from ..chart.tikr_charts import SignalChart  # noqa: F401
-
+from .condition import (
+    ConditionParser, ConditionDefinitionT, ConditionResult, cmp_funcs
+    )
+from analysis.models.market_data import MarketData
+from .operand import Operand
+from .operand_factory import operand_factory
+from ..indicators.indicator import Indicator
+from ..indicators.indicator_parameter import Parameter
 from util import proj_types as tp
 from util import log_execution_time, DotDict  # noqa: F401
 
@@ -238,13 +238,9 @@ class SignalsDefinition:
 @dataclass
 class SignalGeneratorDefinition(DotDict):
     """Class to hold the definition of a SignalGenerator."""
-
     name: str
     operands: dict[str, tuple | str] 
     conditions: ConditionDefinitionT
-
-
-
 
 
 class SignalGenerator:
@@ -282,6 +278,7 @@ class SignalGenerator:
         self.name: str = name
         self.operands = operands
         self.conditions = conditions
+        self._market_data: MarketData = None
 
     def __repr__(self):
         op_str = "\n  ".join(f"{k}: {v}" for k, v in self.operands.items())
@@ -310,6 +307,25 @@ class SignalGenerator:
                 ind for op in self.operands.values() for ind in op.indicators
             )
         )
+
+    @property
+    def market_data(self) -> MarketData:
+        """Get the market data used by the signal generator.
+
+        Returns
+        -------
+        MarketData
+            the market data used by the signal generator
+        """
+        return self._market_data
+    
+    @market_data.setter
+    def market_data(self, market_data: MarketData) -> None:
+        self._market_data = market_data
+        for operand in self.operands.values():
+            operand.market_data = market_data
+
+        logger.info(f"SignalGenerator {self.name} has been assigned market data")
 
     @property
     def parameters(self) -> tuple[Parameter]:
@@ -356,7 +372,7 @@ class SignalGenerator:
     #     return unique_plots
 
     # @log_execution_time(logger)
-    def execute(self, data: tp.Data, as_dict=True) -> ConditionResult:
+    def execute(self, market_data: MarketData | None= None) -> ConditionResult:
         """Execute the signal generator.
 
         Parameters
@@ -370,18 +386,28 @@ class SignalGenerator:
             OHLCV data dictionary
         """
 
+        if market_data is not None:
+            # Update market_data for all operands
+            for operand in self.operands.values():
+                operand.market_data = market_data
+
         signals = {}
 
         for action, or_conditions in self.conditions.items():
             logger.debug(f"Running conditions for: {action}...")
+
+            if or_conditions is None:
+                continue
             
             or_result = None
             for and_conditions in or_conditions:
+                
                 and_result = None
                 for condition in and_conditions:
+                
                     left_operand = self.operands[condition[0]]
                     right_operand = self.operands[condition[2]]
-                    operator = condition[1]
+                    operator = cmp_funcs[condition[1]]
 
                     single_result = operator(
                         left_operand.run(), 
@@ -389,7 +415,7 @@ class SignalGenerator:
                     )
 
                 if and_result is not None:
-                    and_result = np.logical_And(and_result, single_result)
+                    and_result = np.logical_and(and_result, single_result)
                 else:
                     and_result = single_result
 
@@ -401,15 +427,10 @@ class SignalGenerator:
         signals[action] = or_result
 
         # .............................................................................
-        if not as_dict:
-            return signals
+        return signals
 
-        data.update(signals)
-        logger.debug("finished converting to dictionary...")
-        return data
-
-    def speak(self, data: tp.Data, weight: tp.Weight = 1) -> tp.Data:
-        return self.execute(data, weight)
+    def speak(self, market_data: MarketData) -> tp.Data:
+        return self.execute(market_data)
 
     def randomize(self) -> None:
         for operand in self.operands.values():
@@ -488,7 +509,6 @@ class SignalGenerator:
 # ======================================================================================
 @transform_signal_definition
 def signal_generator_factory(definition: SignalGeneratorDefinition) -> SignalGenerator:
-    logger.debug("building SignalGenerator from definition:\n")
     """Build a SignalGenerator from a SignalGeneratorDefinition.
 
     Parameters
@@ -501,9 +521,6 @@ def signal_generator_factory(definition: SignalGeneratorDefinition) -> SignalGen
     SignalGenerator
         the signal generator
     """
-
-    # logger.info(definition.conditions.keys())
-    # logger.info(definition.to_dict().get('conditions'))
 
     operands = dict()
 

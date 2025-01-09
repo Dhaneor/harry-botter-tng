@@ -19,6 +19,7 @@ from scipy.stats import norm
 from cProfile import Profile
 from pstats import SortKey, Stats
 
+from analysis.models.market_data import MarketData
 from analysis.strategy import signal_generator as sg
 from analysis.strategy.definitions import (  # noqa: F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
@@ -33,32 +34,10 @@ logger = get_logger('main', level='DEBUG')
 
 # set interval and length of test data
 interval = "2h"
-length = 365*6
+length = 1_000
 
 sig_def = test_er  # linreg_roc_btc_1d
-
-# ======================================================================================
-# try:
-#     df = get_ohlcv(symbol="BTCUSDT", interval=interval, as_dataframe=True)
-#     # print(df.info())
-#     # print(df.describe())
-#     # print(df.isnull().values.any())
-#     # raise Exception("That's all we need for now. Exiting... 2 seconds")
-# except Exception as e:
-#     logger.error(f"Error fetching data: {e}")
-#     sys.exit()
-
-# data = {col: df[col].to_numpy() for col in df.columns}
-
-data = {
-    'open time': np.random.rand(length),
-    'open': np.random.rand(length),
-    'high': np.random.rand(length),
-    'low': np.random.rand(length),
-    'close': np.random.rand(length),
-    'volume': np.random.rand(length)
-}
-
+data = MarketData.from_random(length=length, no_of_symbols=1)
 
 # ======================================================================================
 def _get_test_data(length=1000):
@@ -180,13 +159,11 @@ def test_plot_desc(sig_gen):
     pprint(sig_gen.plot_desc)
 
 
-def test_execute(sig_gen: sg.SignalGenerator, data, weight, show=False, plot=False):
+def test_execute(sig_gen: sg.SignalGenerator = None, show=False, plot=False):
     sig_gen = sig_gen or sg.signal_generator_factory(sig_def)
+    signals = sig_gen.execute(data, as_dict=False)
 
-    data = sig_gen.execute(data, as_dict=False)
-    data = sig_gen.execute(data, as_dict=False)
-    logger.info("got data of type: %s", type(data).__name__)
-    logger.info(data.as_dict().keys())
+    logger.info("Generated signals: %s", signals)
 
     if show:
         df = pd.DataFrame.from_dict(data)
@@ -366,9 +343,9 @@ def test_returns(sig_gen: sg.SignalGenerator, data, show=False):
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    test_factory(sig_def)
+    # test_factory(sig_def)
     # test_randomize()
-    # test_execute(None, data, 1)
+    # test_execute(None, False, False)
 
     # test_set_parameters()
 
@@ -385,22 +362,20 @@ if __name__ == "__main__":
     # test_plot(sig_gen, data)
     # test_returns(sig_gen, data, True)
 
-    sys.exit()
+    # sys.exit()
 
     logger.setLevel(logging.ERROR)
 
     runs = 100_000
-    data = _get_test_data()
     sig_gen = test_factory(test_er)
-
-    sig_gen.execute(data)
-
-    data = _get_test_data()
+    sig_gen.market_data = data
+    sig_gen.execute()
 
     st = time.time()
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            _ = sig_gen.execute(data, as_dict=False)
+            sig_gen.execute()
+            # if i % 100 == 0:
             # sig_gen.randomize()
 
     (
@@ -412,6 +387,10 @@ if __name__ == "__main__":
 
     )
 
+    et = time.time() - st
+    ips = runs / et
+
     print(f'length data: {len(data["close"])} periods')
-    print(f"execution time: {((time.time() - st)*1_000_000/runs):.2f} microseconds")
-    print(f"iterations per second: {runs/(time.time() - st):.2f} iterations/second")
+    print(f"avg execution time: {(et * 1_000_000 / runs):.0f} microseconds")
+    print(f"iterations per second: {ips:,.0f}")
+    print(f"iterations per mintute: {ips * 60:,.0f}")

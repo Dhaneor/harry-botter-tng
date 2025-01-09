@@ -454,7 +454,7 @@ class MarketData:
 
         # Generate end timestamp (current date at 00:00:00)
         end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        start_date = end_date - timedelta(days=length)
+        start_date = end_date - timedelta(minutes=length)
 
         # Generate timestamps
         timestamps = pd.date_range(start=start_date, end=end_date, periods=length)

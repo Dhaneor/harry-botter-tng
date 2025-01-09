@@ -35,7 +35,7 @@ class EfficiencyRatio(IIndicator):
         self._method: int = 0  # calculation method (0=numpy, 1=numba)
         self._cache = None
 
-    def run(self, data: np.ndarray) -> np.ndarray:
+    def _apply_func(self, data: np.ndarray, **kwargs) -> np.ndarray:
         """
         Calculates the (Kaufman) Efficiency Ratio.
 
