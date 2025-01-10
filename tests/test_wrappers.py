@@ -87,9 +87,19 @@ def test_set_item_invalid_type():
         wrapper[{}] = 1  # Using a dictionary as an index should raise TypeError
 
 
-# .................. TESTS FOR Numpy Array realted methods/properties .................
+# .................. TESTS FOR Numpy Array related methods/properties .................
 def test_shape():
     assert wrapper.shape == data.shape
+
+def test_ndim():
+    assert wrapper.ndim == data.ndim
+
+# ........................... TESTS FOR statistical methods ...........................
+def test_mean():
+    assert np.isclose(wrapper.mean(), np.mean(data), atol=1e-5)
+
+def test_std():
+    assert np.isclose(wrapper.std(), np.std(data), atol=1e-5)
 
 
 if __name__ == "__main__":

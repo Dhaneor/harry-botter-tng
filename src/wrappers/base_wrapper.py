@@ -56,5 +56,12 @@ class BaseWrapper:
 
     def mean(self) -> float:
         return np.mean(self.data)
-
     
+    def std(self) -> float:
+        return np.std(self.data)
+
+
+class SignalsWrapper(BaseWrapper):
+
+    def __init__(self, data: np.ndarray, columns: Sequence[str]):
+        super().__init__(data, columns)
