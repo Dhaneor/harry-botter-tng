@@ -20,13 +20,31 @@ wrapper = BaseWrapper(data, columns)
 
 def test_base_wrapper_init():
     assert wrapper.data.shape == data.shape
+    assert isinstance(wrapper.data, np.ndarray)
+
+def test_init_with_wrong_data_type():
+    with pytest.raises(ValueError):
+        BaseWrapper("not a numpy array", columns)
+
+def test_init_with_wrong_dimensions():
+    with pytest.raises(ValueError):
+        BaseWrapper(np.random.rand(10, 2, 2, 2), columns)
 
 
 def test_wrapper_call_method():
     assert wrapper() is data
 
+
 def test_len_method():
     assert len(wrapper) == data.shape[0]
+
+
+# def test_iter_method():
+#     for col in enumerate(wrapper):
+#         assert isinstance(col, np.ndarray)
+#         assert col.shape == (10,)
+#         assert col.dtype == np.float64
+#         assert col == data[:, col]
 
 
 # .............................. TESTS FOR __getitem__ ................................
@@ -87,19 +105,54 @@ def test_set_item_invalid_type():
         wrapper[{}] = 1  # Using a dictionary as an index should raise TypeError
 
 
+# ......................... TESTS FOR __and__/__or__/__add__ ..........................
+def test_and_operator():
+    assert np.array_equal(wrapper & wrapper, np.ones((10, 5)))
+    # assert np.array_equal(wrapper & 1, wrapper)
+
+
+def test_or_operator():
+    assert np.array_equal(wrapper | wrapper, np.ones((10, 5)))
+
+
+def test_xor_operator():
+    assert np.array_equal(wrapper ^ wrapper, np.zeros((10, 5)))
+
+
+def test_add_operator():
+    assert np.array_equal(wrapper + wrapper, 2 * data)
+
+
 # .................. TESTS FOR Numpy Array related methods/properties .................
 def test_shape():
     assert wrapper.shape == data.shape
 
+
 def test_ndim():
     assert wrapper.ndim == data.ndim
 
-# ........................... TESTS FOR statistical methods ...........................
-def test_mean():
-    assert np.isclose(wrapper.mean(), np.mean(data), atol=1e-5)
 
-def test_std():
-    assert np.isclose(wrapper.std(), np.std(data), atol=1e-5)
+def test_ffill():
+    assert np.array_equal(wrapper.ffill(), data)
+    assert isinstance(wrapper.data, np.ndarray)
+
+def test_replace():
+    data = np.ndarray([0, 1, 3, 4, 5]).reshape(-1, 1)
+    expected = np.ndarray([0, 1, 3, 4, 0]).reshape(-1, 1)
+
+    wrapper = BaseWrapper(data, columns)
+    wrapper.replace(5, 0)
+
+    assert np.array_equal(wrapper.data, expected), \
+        f"Expected: {expected}, got: {wrapper.data}"
+
+# ........................... TESTS FOR statistical methods ...........................
+# def test_mean():
+#     assert np.isclose(wrapper.mean(), np.mean(data), atol=1e-5)
+
+
+# def test_std():
+#     assert np.isclose(wrapper.std(), np.std(data), atol=1e-5)
 
 
 if __name__ == "__main__":

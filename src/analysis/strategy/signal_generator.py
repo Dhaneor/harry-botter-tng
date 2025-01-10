@@ -243,7 +243,7 @@ class Signals(SignalsWrapper):
         """Initializes the signals.
 
         The signals should be a 2D numpy array with the columns
-        being the names of the operands.
+        being the names of the symbols/markets.
 
         Parameters:
         ----------
@@ -254,19 +254,6 @@ class Signals(SignalsWrapper):
         """
         super().__init__(signals, symbols)
 
-    def __and__(self, other: "Signals") -> "Signals":
-        """Returns the intersection of two signals."""
-        if self.symbols!= other.symbols:
-            raise ValueError("Symbols must match for intersection")
-
-        return self & other
-    
-    def __or__(self, other: "Signals") -> "Signals":
-        """Returns the union of two signals."""
-        if self.symbols!= other.symbols:
-            raise ValueError("Symbols must match for intersection")
-        
-        return self | other
 
 
 @dataclass
