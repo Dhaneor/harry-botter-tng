@@ -28,7 +28,7 @@ logger = get_logger('main', level=logging.DEBUG)
 
 
 # ======================================================================================
-market_data = MarketData.from_random(1_000, 1)
+market_data = MarketData.from_random(35, 1)
 
 # ======================================================================================
 # define different operands for testing possible variants
@@ -230,17 +230,21 @@ def test_operand_run(operand: op.Operand, data: dict, show_result: bool = False)
 def test_operand_run_trigger():
     op_def = ("trigger", 100, [90, 110, 1])
     operand = operand_factory(op_def, market_data)
+    operand.market_data = market_data
 
     for _ in range(10):
         _ = operand.run()
 
+    res = operand.run()
+
+    logger.info("%s returned a(n): %s" % (operand, type(res)))
+
 def test_operand_run_indicator():
-    op_def = ('sma', 'close', {'timeperiod': 20},)
+    op_def = ('er', 'close', {'timeperiod': 20},)
     operand = operand_factory(op_def, market_data)
-    for i in range(155):
-        operand.run()
-        if i % 2 == 0:
-            operand.randomize()
+    res = operand.run()
+
+    logger.info("%s returned a(n): %s" % (operand, type(res)))
 
 
 def test_plot_desc():

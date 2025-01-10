@@ -716,14 +716,16 @@ def factory(
     if (source == "talib") | (indicator_name in talib.get_functions()):
         ind_instance = _indicator_factory_talib(indicator_name)
 
-    elif (source == "custom") | (indicator_name in custom_indicators):
+    elif (source == "custom") | (indicator_name.upper() in custom_indicators):
         ind_instance = _custom_indicator_factory(indicator_name, params)
 
     elif source == "fixed":
         ind_instance = fixed_indicator_factory(indicator_name, params)
 
     else:
-        raise NotImplementedError(f"Indicator source {source} not supported.")
+        raise NotImplementedError(
+            f"Indicator {indicator_name} not found/supported."
+            f"Available sources: talib, custom")
 
     ind_instance.on_change = on_change
 

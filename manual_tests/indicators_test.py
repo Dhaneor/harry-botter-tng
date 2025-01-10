@@ -6,9 +6,7 @@ Created on Thu Feb 11 01:28:53 2021
 @author: dhaneor
 """
 import sys
-import os
 import time
-import pandas as pd
 from pprint import pprint
 import numpy as np
 from cProfile import Profile  # noqa: E402, F401
@@ -21,31 +19,6 @@ from util import get_logger
 
 logger = get_logger('main', level="DEBUG")
 
-# import sample data for BTCUSDT 15min
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-file_name = os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv")
-
-data = pd.read_csv(file_name, index_col=0, parse_dates=True)
-
-# clean the ohlcv data
-data.drop(["human open time", "quote asset volume", "close time"], axis=1, inplace=True)
-data["open time"] = pd.to_datetime(data["open time"], unit="ms")
-data.set_index(keys=["open time"], inplace=True)
-
-# data = data.resample('1d')\
-#     .agg(
-#             {
-#             'close': 'last', 'open': 'first',
-#             'high': 'max', 'low': 'min', 'volume': 'sum',
-#             },
-#             min_periods=1
-#     )
-
-data = data[-1000:]
-arr1 = np.array([data.close.tolist() for _ in range(50)]).T
-arr = data.close.to_numpy()
 
 array_len = 1000
 
@@ -151,9 +124,6 @@ defs = {
 
 
 # ==============================================================================
-def _notify_about_change(msg: str | None = None):
-    logger.info(">>>>> Parameter changed: %s", msg)
-
 
 def test_indicator_factory(
     name: str,
@@ -187,7 +157,6 @@ def test_set_indicator_parameters():
             indicator_name=cand,
             params=defs[cand]["params"],
             source=defs[cand]["src"],
-            on_change=_notify_about_change,
         )
 
         if params := defs[cand].get("params"):
@@ -383,13 +352,36 @@ def test_randomize(ind):
         logger.info(ind.parameters)
 
 
+def test_return_type():
+    ind = indicator.factory('ER', {}, None)
+
+    assert isinstance(ind, indicator.IIndicator)
+
+    data = np.random.rand(30, 1)
+
+    logger.debug(f"data dimensions: {data.ndim}")
+
+    res = ind.run(data)
+
+    logger.info(res)
+
+    # while isinstance(res, (np.ndarray, list, tuple)):
+    #     logger.debug(type(res))
+    #     res = res[0]
+
+    assert isinstance(res[0], np.ndarray), \
+        f"Expected np.ndarray, got {type(res)}"
+
+
+
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
     # test_indicator_factory("SMA", show=True)
-    test_set_indicator_parameters()
+    # test_set_indicator_parameters()
     # test_randomize(test_indicator_factory("BBANDS"))
+    test_return_type()
 
     sys.exit()
 

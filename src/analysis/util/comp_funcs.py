@@ -13,9 +13,13 @@ Created on Sun Dec 11 19:08:20 2022
 
 @author dhaneor
 """
+import logging
 import numpy as np
 from numpy import typing as npt
 from numba import njit
+
+logger = logging.getLogger(f"main.{__name__}")
+logger.setLevel(logging.ERROR)
 
 
 def is_above(arr: np.ndarray, x: np.float64 | np.int_) -> npt.NDArray[np.bool_]:
@@ -133,10 +137,15 @@ def crossed_above(arr1: np.ndarray, arr2: np.ndarray | float | int) -> np.ndarra
 
     if isinstance(arr2, (float, int)):
         result[1:] = np.logical_and(arr1[:-1] <= arr2, arr1[1:] > arr2)
-    elif isinstance(arr2, np.ndarray):
+    elif isinstance(arr2, (np.ndarray, list)):
         result[1:] = np.logical_and(arr1[:-1] <= arr2[:-1], arr1[1:] > arr2[1:])
     else:
-        raise ValueError("arr2 must be either a float/int or an array")
+        logger.error("type of arr1: %s", type(arr1))
+        logger.error("type of arr2: %s", type(arr2))
+        logger.error(arr2[-10:])
+        raise ValueError(
+            "arr2 must be either a float/int or an array"
+            )
 
     return result
 
@@ -176,7 +185,7 @@ def crossed_below(arr1: np.ndarray, arr2: np.ndarray | float | int) -> np.ndarra
 
     if isinstance(arr2, (float, int)):
         result[1:] = np.logical_and(arr1[:-1] >= arr2, arr1[1:] < arr2)
-    elif isinstance(arr2, np.ndarray):
+    elif isinstance(arr2, (np.ndarray, list)):
         result[1:] = np.logical_and(arr1[:-1] >= arr2[:-1], arr1[1:] < arr2[1:])
     else:
         raise ValueError("arr2 must be either a float or an array")

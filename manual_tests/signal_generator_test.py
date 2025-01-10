@@ -36,7 +36,7 @@ logger = get_logger('main', level='DEBUG')
 interval = "2h"
 length = 1_000
 
-sig_def = test_er  # linreg_roc_btc_1d
+sig_def = cci
 data = MarketData.from_random(length=length, no_of_symbols=1)
 
 # ======================================================================================
@@ -160,8 +160,9 @@ def test_plot_desc(sig_gen):
 
 
 def test_execute(sig_gen: sg.SignalGenerator = None, show=False, plot=False):
-    sig_gen = sig_gen or sg.signal_generator_factory(sig_def)
-    signals = sig_gen.execute(data, as_dict=False)
+    sig_gen = sig_gen or sg.signal_generator_factory(ema_cross)
+    sig_gen.market_data = MarketData.from_random(length=30, no_of_symbols=1)
+    signals = sig_gen.execute()
 
     logger.info("Generated signals: %s", signals)
 
@@ -345,7 +346,7 @@ def test_returns(sig_gen: sg.SignalGenerator, data, show=False):
 if __name__ == "__main__":
     # test_factory(sig_def)
     # test_randomize()
-    # test_execute(None, False, False)
+    test_execute(None, False, False)
 
     # test_set_parameters()
 
@@ -362,12 +363,12 @@ if __name__ == "__main__":
     # test_plot(sig_gen, data)
     # test_returns(sig_gen, data, True)
 
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
 
     runs = 100_000
-    sig_gen = test_factory(test_er)
+    sig_gen = test_factory(ema_cross)
     sig_gen.market_data = data
     sig_gen.execute()
 

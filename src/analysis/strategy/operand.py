@@ -141,6 +141,8 @@ class Operand(ABC):
     interval : str = ""
     params: dict[str, Any] = field(default_factory=dict)
 
+    parameter_instances = None
+
     _market_data: MarketData = None   
     _parameter_space: Optional[Sequence[Number]] = None
     _unique_name: str = ""
@@ -199,10 +201,14 @@ class Operand(ABC):
             if isinstance(input_, Operand):
                 input_.market_data = market_data
 
+        self._cache.clear()
+
     @property
     def parameters_tuple(self) -> tuple[Any, ...]:
         """Return the parameters for the operand as a tuple"""
-        return tuple(chain.from_iterable(i.parameters_tuple for i in self.indicators))
+        return tuple(p.value for p in self.parameter_instances)
+
+         # return tuple(chain.from_iterable(i.parameters_tuple for i in self.indicators))
 
     @property
     @abstractmethod
@@ -394,6 +400,10 @@ class OperandIndicator(Operand):
             space.update({indicator.name: indicator.parameter_space})
 
         self._parameter_space = space
+
+        self.parameter_instances = (
+            p for ind in self.indicators for p in ind.parameters
+        )
 
     @property
     def display_name(self) -> str:
@@ -727,8 +737,10 @@ class OperandIndicator(Operand):
                     }
                 )
 
+        return indicator_values if level > 0 else indicator_values[0]
+        
         # return name of relevant key that was added to the data dict
-        return indicator_values  # self.output_names if level > 0 else self.output
+        # return self.output_names if level > 0 else self.output
 
     def _get_ind_inputs(
         self, req_in: str | tuple, 
@@ -869,7 +881,7 @@ class OperandTrigger(Operand):
     output_names: tuple = field(default_factory=tuple)
     parameters: dict = field(default_factory=dict)
     # parameter_space: Optional[Sequence[Number]] = None
-    # indicators: list[ind.Indicator] = field(default_factory=list)
+    indicators: list[ind.Indicator] = field(default_factory=list)
 
     def __repr__(self) -> str:
         return f"[{self.id}] {self.type_} {self.name}={self.indicator.parameters[0].value}"
@@ -890,6 +902,8 @@ class OperandTrigger(Operand):
         self.output = self.output_names[0]
 
         self.parameter_space = self.indicator.parameter_space
+
+        self.parameter_instances = (p for p in self.indicator.parameters)
 
     @property
     def display_name(self) -> str:
@@ -1126,7 +1140,10 @@ class OperandSeries(Operand):
         np.ndarray
             resulting array from running the operand
         """
-        return self.market_data.get_array(self.inputs[0])
+        if not self._cache:
+            self._cache[self.name] = self.market_data.get_array(self.inputs[0])
+
+        return self._cache[self.name]
 
     def randomize(self) -> None:
         logger.info("skipping non-randomizable operand: %s" % self.name)

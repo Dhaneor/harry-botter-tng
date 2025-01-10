@@ -50,7 +50,7 @@ from util import proj_types as tp
 from .strategy import signal_generator as sg
 from .strategy import exit_order_strategies as es
 from .strategy.condition import ConditionResult, merge_signals_nb
-from .strategy.models.market_data import MarketData
+from analysis.models.market_data import MarketData
 from .indicators.iindicator import IIndicator
 from .indicators.indicator_parameter import Parameter
 

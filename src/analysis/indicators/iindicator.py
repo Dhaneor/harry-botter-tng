@@ -338,7 +338,7 @@ class IIndicator(ABC):
             
             # run indicator for two-dimensional array
             case 2:
-                # idicators can have one or more inputt and one
+                # indicators can have one or more inputs and one
                 # or more outputs. each case must be handled in
                 # a different way.
                 logger.debug("number of outputs: %s", len(self.output))
