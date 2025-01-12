@@ -5,17 +5,26 @@ Created on Dec 28 00:29:20 2024
 
 @author dhaneor
 """
-from .condition import  (
-    ConditionParser, ConditionDefinition, 
-    ConditionResult, ConditionDefinitionT
+
+from .condition import (
+    ConditionParser,
+    ConditionDefinition,
+    ConditionResult,
+    ConditionDefinitionT,
 )
 from .operand import (
-    Operand, OperandIndicator, OperandTrigger, OperandType,
+    Operand,
+    OperandIndicator,
+    OperandTrigger,
+    OperandType,
 )
 from .operand_factory import operand_factory
 from .signal_generator import (
-    SignalGenerator, SignalsDefinition, signal_generator_factory,
-    transform_signal_definition
+    SignalGenerator,
+    SignalGeneratorDefinition,
+    SignalsDefinition,
+    signal_generator_factory,
+    transform_signal_definition,
 )
 
 __version__ = "0.1.0"
@@ -36,4 +45,5 @@ __all__ = [
     "SignalGenerator",
     "signal_generator_factory",
     "SignalsDefinition",
+    "SignalGeneratorDefinition",
 ]

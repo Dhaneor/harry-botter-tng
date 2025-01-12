@@ -26,6 +26,7 @@ from .models.market_data import MarketData, MarketDataStore
 from .strategy import (
     SignalGenerator,
     SignalsDefinition,
+    SignalGeneratorDefinition,
     signal_generator_factory,
     transform_signal_definition,
 )
@@ -52,6 +53,7 @@ __all__ = [
     "MarketDataStore",
     "SignalGenerator",
     "SignalsDefinition",
+    "SignalGeneratorDefinition",
     "signal_generator_factory",
     "transform_signal_definition",
 ]

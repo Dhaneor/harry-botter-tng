@@ -343,10 +343,10 @@ class SignalGenerator:
         return (
             f"\nSignalGenerator: {self.name}\n"
             f"{self.conditions}\n[Operands]  \n  {op_str}\n"
-            f"[KEY STORE]\n  {self.key_store}"
         )
 
     # ................................. PROPERTIES .....................................
+    @property
     def indicators(self) -> tuple[Indicator]:
         """Get the indicator(s) used by the signal generator.
 
@@ -450,7 +450,8 @@ class SignalGenerator:
 
         return unique_plots
 
-    # ................................ PULBIC METHODS ..................................
+    # ................................ PUBLIC METHODS ..................................
+    # @log_execution_time(logger)
     def execute(
         self,
         market_data: MarketData | None = None,
@@ -481,13 +482,19 @@ class SignalGenerator:
         if market_data is not None:
             self.market_data = market_data
 
+        assert self.market_data is not None, "Market data is not set"
+
         if param_combinations is None:
             return self._execute_single()
         else:
             return self._execute_multi(param_combinations)
+        
+    def randomize(self) -> None:
+        for operand in self.operands.values():
+            operand.randomize()
 
-    # @log_execution_time(logger)
-    def _execute_single(self) -> dict[str, tp.Array_3D]:
+    # ................................. HELPER METHODS .................................
+    def _execute_single(self) -> dict[str, tp.Array_2D]:
         """Execute the signal generator.
 
         Parameters
@@ -547,36 +554,33 @@ class SignalGenerator:
                 else:
                     or_result = and_result
 
-            signals[action] = Signals(or_result, symbols=self.market_data.symbols)
+            signals[action] = or_result.reshape((-1, -1, 1))
 
-        # .............................................................................
         return signals
 
     def _execute_multi(
         self, 
-        market_data: MarketData, 
         param_combinations: Sequence[tp.ParameterValuesT]
-    ) -> tp.Array_3D:
+    ) -> dict[str, tp.Array_3D]:
+        results = {
+            "open_long": [],
+            "open_short": [],
+            "close_long": [],
+            "close_short": []
+        }
         
-        n_timestamps, n_assets = market_data().shape[:2]
-        n_combinations = len(param_combinations)
+        for params in param_combinations:
+            self.parameter_values = params
+            single_result = self._execute_single()
+            for key in results:
+                results[key].append(single_result[key].values)
         
-        signals = np.zeros((n_timestamps, n_assets, n_combinations), dtype=int)
+        # Convert lists of 2D arrays to 3D arrays
+        for key in results:
+            results[key] = np.stack(results[key], axis=-1)
+        
+        return results
 
-        for i, params in enumerate(param_combinations):
-            self._set_parameters(params)
-            signals[:,:,i] = self._execute_single(market_data)
-
-        return signals
-
-    def speak(self, market_data: MarketData) -> tp.Data:
-        return self.execute(market_data)
-
-    def randomize(self) -> None:
-        for operand in self.operands.values():
-            operand.randomize()
-
-    # ................................. HELPER METHODS .................................
     def is_working(self) -> bool:
         """Check if the signal generator is working.
 
@@ -648,7 +652,7 @@ class SignalGenerator:
 
 
 # ======================================================================================
-@transform_signal_definition
+# @transform_signal_definition
 def signal_generator_factory(definition: SignalGeneratorDefinition) -> SignalGenerator:
     """Build a SignalGenerator from a SignalGeneratorDefinition.
 
