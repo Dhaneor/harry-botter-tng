@@ -18,7 +18,7 @@ a signal.
 SignalsGeneratorDefinition
 
 A formalized description of signals (long/short) that may contain one
-or more sequence(s) of conditions. 
+or more sequence(s) of conditions.
 
 SignalGenerator
 
@@ -70,7 +70,7 @@ Decorators:
 
 transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
 
-Provides a decorator for transforming Signalsfinition to 
+Provides a decorator for transforming Signalsfinition to
 SignalGeneratorDefinition instances.
 
 SignalsDefinition = the previously used way to define signals.
@@ -78,8 +78,8 @@ SignalGeneratorDefinition = the 'new' new way to define signals.
 
 This is just for convenience and to prevent having to rewrite
 existing strategies all at once.
-    
-    
+
+
 Created on Sat Aug 18 11:14:50 2023
 
 @author: dhaneor
@@ -94,9 +94,9 @@ import logging
 import numpy as np
 
 from . import (
-    ConditionParser, ConditionDefinitionT, ConditionResult,
+    ConditionParser, ConditionDefinitionT,
     Operand, operand_factory, comp_funcs as cmp,
-    )
+)
 from analysis import MarketData, Indicator, Parameter, SubPlot, SignalChart  # noqa: F401
 from util import log_execution_time, DotDict, proj_types as tp  # noqa: F401
 from wrappers.base_wrapper import SignalsWrapper
@@ -108,7 +108,7 @@ logger.setLevel(logging.ERROR)
 
 def transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
     """
-    Provides a decorator for transforming Signalsfinition to 
+    Provides a decorator for transforming Signalsfinition to
     SignalGeneratorDefinition instances.
 
     SignalsDefinition = the previously used way to define signals.
@@ -136,7 +136,7 @@ def transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
             def get_unique_operand_name(operand_value):
                 if isinstance(operand_value, tuple):
                     indicator_name = operand_value[0]
-                    if indicator_name in ['open', 'high', 'low', 'close', 'volume']:
+                    if indicator_name in ["open", "high", "low", "close", "volume"]:
                         return indicator_name
 
                     # Check if we've already assigned a unique name to this exact indicator
@@ -145,7 +145,9 @@ def transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
                         return indicator_names[indicator_key]
 
                     indicator_counters[indicator_name] += 1
-                    unique_name = f"{indicator_name}_{indicator_counters[indicator_name]}"
+                    unique_name = (
+                        f"{indicator_name}_{indicator_counters[indicator_name]}"
+                    )
                     indicator_names[indicator_key] = unique_name
                     return unique_name
                 return operand_value
@@ -159,7 +161,12 @@ def transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
                             unique_name = get_unique_operand_name(operand_value)
                             operands[unique_name] = operand_value
 
-                for condition_type in ["open_long", "close_long", "open_short", "close_short"]:
+                for condition_type in [
+                    "open_long",
+                    "close_long",
+                    "open_short",
+                    "close_short",
+                ]:
                     if hasattr(condition, condition_type):
                         condition_value = getattr(condition, condition_type)
                         if condition_value:
@@ -169,9 +176,13 @@ def transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
                                     operand_attr = f"operand_{item}"
                                     if hasattr(condition, operand_attr):
                                         operand_value = getattr(condition, operand_attr)
-                                        unique_name = get_unique_operand_name(operand_value)
+                                        unique_name = get_unique_operand_name(
+                                            operand_value
+                                        )
                                         transformed_condition[i] = unique_name
-                            conditions[condition_type].append(tuple(transformed_condition))
+                            conditions[condition_type].append(
+                                tuple(transformed_condition)
+                            )
 
             transformed_def = SignalGeneratorDefinition(
                 name=signals_def.name,
@@ -194,7 +205,7 @@ class SignalsDefinition:
     """Definition for how to produce entry/exit signals.
 
     NOTE:
-    Do not use anymore! This version is deprecated and will be removed in a 
+    Do not use anymore! This version is deprecated and will be removed in a
     future release. Use SignalGeneratorDefinition instead!
 
     Attributes:
@@ -221,6 +232,7 @@ class SignalsDefinition:
     reverse: bool
         just use reversed long condition for shorts, default: False
     """
+
     name: str = "unnamed"
     conditions: Sequence[ConditionDefinitionT] = None
 
@@ -261,12 +273,12 @@ class Signals(SignalsWrapper):
             self.data = np.multiply(self.signals, weight)
 
 
-
 @dataclass
 class SignalGeneratorDefinition(DotDict):
     """Class to hold the definition of a SignalGenerator."""
+
     name: str
-    operands: dict[str, tuple | str] 
+    operands: dict[str, tuple | str]
     conditions: ConditionDefinitionT
 
 
@@ -334,7 +346,7 @@ class SignalGenerator:
             f"[KEY STORE]\n  {self.key_store}"
         )
 
-    @property
+    # ................................. PROPERTIES .....................................
     def indicators(self) -> tuple[Indicator]:
         """Get the indicator(s) used by the signal generator.
 
@@ -363,7 +375,7 @@ class SignalGenerator:
             the market data used by the signal generator
         """
         return self._market_data
-    
+
     @market_data.setter
     def market_data(self, market_data: MarketData) -> None:
         self._market_data = market_data
@@ -382,11 +394,13 @@ class SignalGenerator:
             the parameters (Parameter instances) used by the signal generator
         """
         if not self._parameters:
-            self._parameters = tuple(p for ind in self.indicators for p in ind.parameters)
+            self._parameters = tuple(
+                p for ind in self.indicators for p in ind.parameters
+            )
         return self._parameters
 
     @property
-    def parameter_values(self) -> tuple[int | float | bool,...]:
+    def parameter_values(self) -> tp.ParameterValuesT:
         """Get the current parameter values.
 
         Returns
@@ -397,47 +411,83 @@ class SignalGenerator:
         return tuple(p.value for p in self.parameters)
 
     @parameter_values.setter
-    def parameter_values(self, params: tuple[int | float | bool, ...]) -> None:
+    def parameter_values(self, params: tp.ParameterValuesT) -> None:
         """Set the parameter values.
-        
+
         Parameters
         ----------
         params : tuple[int | float | bool,...]
             A tuple of new parameter values
-        
+
         """
-        for p_current, p_new in zip(self.parameters, params):
+        for parameter, new in zip(self.parameters, params):
             try:
-                p_current.value = p_new
+                parameter.value = new
             except Exception as e:
                 logger.error(
-                    "Unable to set %s to %s: %s", p_current.name, p_new, str(e)
-                    )
+                    "Unable to set %s to %s: %s", parameter.name, new, str(e)
+                )
 
-    # @property
-    # def subplots(self) -> list[SubPlot]:
-    #     """Get the plot parameters for the signal generator.
+    @property
+    def subplots(self) -> list[SubPlot]:
+        """Get the plot parameters for the signal generator.
 
-    #     Returns
-    #     -------
-    #     list[SubPlot]
-    #         A list of unique SubPlot objects for all conditions.
-    #     """
-    #     # Collect all PlotDescription objects for all conditions
-    #     all_plots = [c.plot_desc for c in self.conditions]
+        Returns
+        -------
+        list[SubPlot]
+            A list of unique SubPlot objects for all conditions.
+        """
+        # Collect all PlotDescription objects for all conditions
+        all_plots = [c.plot_desc for c in self.conditions]
 
-    #     # Remove duplicates while preserving order
-    #     unique_plots = []
-    #     seen = set()
-    #     for plot in all_plots:
-    #         if plot.label not in seen:
-    #             seen.add(plot.label)
-    #             unique_plots.append(plot)
+        # Remove duplicates while preserving order
+        unique_plots = []
+        seen = set()
+        for plot in all_plots:
+            if plot.label not in seen:
+                seen.add(plot.label)
+                unique_plots.append(plot)
 
-    #     return unique_plots
+        return unique_plots
+
+    # ................................ PULBIC METHODS ..................................
+    def execute(
+        self,
+        market_data: MarketData | None = None,
+        param_combinations: tp.ParameterValuesT | None = None,
+    ) -> tuple[tp.Array_3D]:
+        """
+        Generate signals based on market data (multiple) parameter combinations.
+
+        Parameters:
+        -----------
+        market_data
+            The market data array (OHLCV), optional
+            if not provided, use the current market_data (atrribute/property).
+        param_combinations
+            parameter combinations to test. If not provided, use the 
+            current parameters set in the indicators.
+
+        Returns:
+        --------
+        tuple[tp.Array_3D, ...] 
+            A 3D array of generated signals.
+            If param_combinations is None, shape is (n_timestamps, n_assets, 1).
+            Otherwise, shape is (n_timestamps, n_assets, n_param_combinations).
+        """
+
+        # Update market_data for all operands if it is provided,
+        # otherwise use the current market_data
+        if market_data is not None:
+            self.market_data = market_data
+
+        if param_combinations is None:
+            return self._execute_single()
+        else:
+            return self._execute_multi(param_combinations)
 
     # @log_execution_time(logger)
-    def execute(self, market_data: MarketData | None= None) -> ConditionResult:
+    def _execute_single(self) -> dict[str, tp.Array_3D]:
         """Execute the signal generator.
 
         Parameters
@@ -451,26 +501,20 @@ class SignalGenerator:
             OHLCV data dictionary
         """
 
-        # Update market_data for all operands if it is provided,
-        # otherwise use the current market_data
-        if market_data is not None:
-            for operand in self.operands.values():
-                operand.market_data = market_data
-
         # run the conditions for each action (open/close - long/short)
         #
         # actions = ['open_long', 'open_short', 'close_long', 'close_short']
         # or_conditions = either must be true
         # and_conditions = all must be true
         #
-        # # conditions are nested lists (one for each action), where the 
-        # inner layer contains conditions that must all be true (AND). 
+        # # conditions are nested lists (one for each action), where the
+        # inner layer contains conditions that must all be true (AND).
         # the results from the sub-lists are combined using logical OR
         signals = {
-            'open_long': None,
-            'open_short': None,
-            'close_long': None,
-            'close_short': None,
+            "open_long": None,
+            "open_short": None,
+            "close_long": None,
+            "close_short": None,
         }
 
         for action, or_conditions in self.conditions.items():
@@ -478,20 +522,17 @@ class SignalGenerator:
 
             if or_conditions is None:
                 continue
-            
+
             or_result = None
             for and_conditions in or_conditions:
-                
                 and_result = None
                 for condition in and_conditions:
-                
                     left_operand = self.operands[condition[0]]
                     right_operand = self.operands[condition[2]]
                     operator = self.cmp_funcs[condition[1]]
 
                     single_result = operator(  # a 2D array
-                        left_operand.run(), 
-                        right_operand.run() 
+                        left_operand.run(), right_operand.run()
                     )
 
                     # combine the AND condition results into a single result
@@ -505,10 +546,27 @@ class SignalGenerator:
                     or_result = np.logical_or(or_result, and_result)
                 else:
                     or_result = and_result
-        
+
             signals[action] = Signals(or_result, symbols=self.market_data.symbols)
 
         # .............................................................................
+        return signals
+
+    def _execute_multi(
+        self, 
+        market_data: MarketData, 
+        param_combinations: Sequence[tp.ParameterValuesT]
+    ) -> tp.Array_3D:
+        
+        n_timestamps, n_assets = market_data().shape[:2]
+        n_combinations = len(param_combinations)
+        
+        signals = np.zeros((n_timestamps, n_assets, n_combinations), dtype=int)
+
+        for i, params in enumerate(param_combinations):
+            self._set_parameters(params)
+            signals[:,:,i] = self._execute_single(market_data)
+
         return signals
 
     def speak(self, market_data: MarketData) -> tp.Data:
@@ -518,23 +576,7 @@ class SignalGenerator:
         for operand in self.operands.values():
             operand.randomize()
 
-    # def plot(self, data: tp.Data) -> None:
-    #     self.make_plot(data).draw()
-
-    # def make_plot(self, data: tp.Data, style='night') -> SignalChart:
-    #     # run the signal generator and convert the result
-    #     # to a pandas DataFrame
-    #     df = pd.DataFrame.from_dict(self.execute(data))
-
-    #     # set open time to datetime format and set it as index
-    #     df['open time'] = pd.to_datetime(df['open time'], unit='ms')
-    #     df.set_index('open time', inplace=True)
-    #     df.index = df.index.strftime('%Y-%m-%d %X')
-
-    #     return SignalChart(
-    #         data=df, subplots=self.subplots, style=style, title=self.name
-    #         )
-
+    # ................................. HELPER METHODS .................................
     def is_working(self) -> bool:
         """Check if the signal generator is working.
 
@@ -578,14 +620,31 @@ class SignalGenerator:
         close_short = np.nan_to_num(data["close_short"])
 
         return np.where(
-            open_long > 0, 1, np.where(
-                open_short > 0, -1, np.where(
-                    close_long > 0, 0, np.where(
-                        close_short > 0, 0, np.nan
-                    )
-                )
-            )
+            open_long > 0,
+            1,
+            np.where(
+                open_short > 0,
+                -1,
+                np.where(close_long > 0, 0, np.where(close_short > 0, 0, np.nan)),
+            ),
         )
+
+    # def plot(self, data: tp.Data) -> None:
+    #     self.make_plot(data).draw()
+
+    # def make_plot(self, data: tp.Data, style='night') -> SignalChart:
+    #     # run the signal generator and convert the result
+    #     # to a pandas DataFrame
+    #     df = pd.DataFrame.from_dict(self.execute(data))
+
+    #     # set open time to datetime format and set it as index
+    #     df['open time'] = pd.to_datetime(df['open time'], unit='ms')
+    #     df.set_index('open time', inplace=True)
+    #     df.index = df.index.strftime('%Y-%m-%d %X')
+
+    #     return SignalChart(
+    #         data=df, subplots=self.subplots, style=style, title=self.name
+    #         )
 
 
 # ======================================================================================
@@ -615,7 +674,5 @@ def signal_generator_factory(definition: SignalGeneratorDefinition) -> SignalGen
     condition_parser = ConditionParser(operands)
 
     return SignalGenerator(
-        definition.name, 
-        operands, 
-        condition_parser.parse(definition.conditions)
-        )
+        definition.name, operands, condition_parser.parse(definition.conditions)
+    )

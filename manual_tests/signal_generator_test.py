@@ -10,20 +10,19 @@ import time
 import logging
 import pandas as pd
 import numpy as np
-from pprint import pprint  # noqa: F401
+from pprint import pprint
 
 # profiler imports
 from cProfile import Profile
 from pstats import SortKey, Stats
 
-from analysis.models.market_data import MarketData
+from analysis.models import MarketData, SignalChart
 from analysis.strategy import signal_generator as sg
 from analysis.strategy.definitions import (  # noqa: F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
     linreg_roc_btc_1d, linreg_roc_eth_1d, test_er, linreg, aroonosc,
     linreg_ma_cross
 )
-from analysis.chart.tikr_charts import SignalChart
 from helpers_ import get_ohlcv  # noqa: F401
 from util import get_logger
 

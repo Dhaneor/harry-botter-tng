@@ -40,7 +40,7 @@ from dataclasses import asdict, dataclass, field
 from numbers import Number
 from typing import Any, Callable, Optional, Sequence
 
-from .. import (
+from analysis import (
     Indicator,
     TALIB_INDICATORS,
     indicators_custom,

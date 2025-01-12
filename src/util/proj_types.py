@@ -22,6 +22,7 @@ Data = dict[str, npt.NDArray[Numeric]]
 Weight = float  # type for all strategy weight values
 Signals = dict[str, Tuple[np.ndarray, float]]
 Parameters = dict[str, Any]
+ParameterValuesT = tuple[int | float | bool, ...]
 PlotParametersT = dict[str, Any]
 OperandDefinitionT = tuple | Prices | dict[str, int | float | bool]
 
