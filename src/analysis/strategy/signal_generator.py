@@ -85,13 +85,14 @@ Created on Sat Aug 18 11:14:50 2023
 @author: dhaneor
 """
 
-from collections import defaultdict
-from dataclasses import dataclass
-from typing import Sequence, Any, Callable
 from functools import reduce, wraps  # noqa: F401
-import itertools
+# import itertools
 import logging
 import numpy as np
+from collections import defaultdict
+from dataclasses import dataclass
+from itertools import chain
+from typing import Sequence, Any, Callable
 
 from . import (
     ConditionParser, ConditionDefinitionT,
@@ -359,11 +360,7 @@ class SignalGenerator:
         tuple[Indicator]
             the indicator(s) used by the signal generator
         """
-        return tuple(
-            itertools.chain(
-                ind for op in self.operands.values() for ind in op.indicators
-            )
-        )
+        return tuple(chain(i for op in self.operands.values() for i in op.indicators))
 
     @property
     def market_data(self) -> MarketData:
@@ -405,7 +402,7 @@ class SignalGenerator:
 
         Returns
         -------
-        tuple[Any,...]
+        tp.ParameterValuesT
             the current parameter values
         """
         return tuple(p.value for p in self.parameters)
@@ -418,7 +415,6 @@ class SignalGenerator:
         ----------
         params : tuple[int | float | bool,...]
             A tuple of new parameter values
-
         """
         for parameter, new in zip(self.parameters, params):
             try:
@@ -458,7 +454,7 @@ class SignalGenerator:
         param_combinations: tp.ParameterValuesT | None = None,
     ) -> tuple[tp.Array_3D]:
         """
-        Generate signals based on market data (multiple) parameter combinations.
+        Generate signals based on market data and/or (multiple) parameter combinations.
 
         Parameters:
         -----------
@@ -494,7 +490,7 @@ class SignalGenerator:
             operand.randomize()
 
     # ................................. HELPER METHODS .................................
-    def _execute_single(self) -> dict[str, tp.Array_2D]:
+    def _execute_single(self) -> dict[str, tp.Array_3D]:
         """Execute the signal generator.
 
         Parameters
@@ -554,7 +550,9 @@ class SignalGenerator:
                 else:
                     or_result = and_result
 
-            signals[action] = or_result.reshape((-1, -1, 1))
+            signals[action] = or_result.reshape(
+                or_result.shape[0], or_result.shape[1], 1
+                )
 
         return signals
 
