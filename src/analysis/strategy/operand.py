@@ -44,6 +44,7 @@ from ..indicators import indicator as ind
 from ..indicators import indicators_custom
 from ..indicators.indicator_parameter import Parameter
 from ..models.market_data import MarketData
+from models.hb_enums import OperandType
 from util import proj_types as tp
 from util import log_execution_time  # noqa: F401
 from ..chart.plot_definition import SubPlot, Line, Channel
@@ -57,24 +58,6 @@ ALL_INDICATORS = set(i.lower() for i in ind.talib.get_functions())
 CUSTOM_INDICATORS = tuple(name.lower() for name in indicators_custom.custom_indicators)
 
 MAX_CACHE_SIZE = 100 * 1024 * 1024 # max cache size for operands
-
-
-# ======================================================================================
-class OperandType(Enum):
-    """Enums representing operator types."""
-
-    INDICATOR = "indicator"
-    SERIES = "series"
-    TRIGGER = "trigger"
-    VALUE_INT = "integer value"
-    VALUE_FLOAT = "float value"
-    BOOL = "boolean"
-
-    def __str__(self):
-        return self.name
-
-    def __repr__(self):
-        return self.name
 
 
 # ======================================================================================
@@ -209,8 +192,8 @@ class Operand(ABC):
 
          # return tuple(chain.from_iterable(i.parameters_tuple for i in self.indicators))
 
-    @abstractmethod
     @property
+    @abstractmethod
     def plot_desc(self) -> dict[str, tp.Parameters]: ...
 
     @abstractmethod

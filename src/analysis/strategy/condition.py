@@ -28,45 +28,21 @@ Created on Sat Aug 18 11:14:50 2023
 """
 
 import logging
-from enum import Enum, unique
 from dataclasses import dataclass, field
 from itertools import chain
 from numba import jit
 from typing import Callable, NamedTuple, Optional, Sequence
 import numpy as np
 
+
+from . import operand as op, comp_funcs as cmp
 from util import proj_types as tp
-from ..util import comp_funcs as cmp
-from . import operand as op
+from models.hb_enums import COMPARISON
 
 logger = logging.getLogger("main.condition")
 logger.setLevel(logging.ERROR)
 
 
-@unique
-class COMPARISON(Enum):
-    """Enums representing trigger conditions.
-    define enums for different ways to compare two values during
-    strategy execution. This makes sure that every strategy that
-    is built by the strategy_builder() has a clearly defined
-    comparison method, thereby reducing the possibility for errors
-    when running the bot and using the strategy.
-    """
-
-    IS_ABOVE = "is above"
-    IS_ABOVE_OR_EQUAL = "is above or equal"
-    IS_BELOW = "is below"
-    IS_BELOW_OR_EQUAL = "is below or equal"
-    IS_EQUAL = "is equal"
-    IS_NOT_EQUAL = "is not equal"
-    CROSSED_ABOVE = "crossed above"
-    CROSSED_BELOW = "crossed below"
-
-    def __str__(self):
-        return self.name
-
-    def __repr__(self):
-        return self.name
 
 ConditionT =  dict[tuple[str, COMPARISON, str]]
 AndConditionsT = Sequence[ConditionT]
@@ -426,145 +402,6 @@ class ConditionResult:
 
         # Add the filled arrays
         result = filled_arr1 + filled_arr2
-
-        return result
-
-
-@dataclass
-class Condition:
-    """A condition, prepared for execution.
-
-    The conditions are defined in the SignalGeneratorDefinition, which
-    contains a dictionary of the following format:
-
-    :: code ::
-        conditions=dict(
-            open_long=[
-                ("aroon", COMPARISON.CROSSED_ABOVE, "aroon_trigger"),
-                ("efficiency_ratio", COMPARISON.IS_ABOVE, "er_trending"),
-            ],
-            close_long=[
-                ("aroon", COMPARISON.CROSSED_BELOW, "aroon_trigger"),
-                ("efficiency_ratio", COMPARISON.IS_BELOW, "er_trending"),
-            ],
-            open_short=None,
-            close_short=None,
-        )
-
-    The tuple in each list contains a the name of two operands, and a
-    comparison operator. The operands are defined in another dictionary,
-    and the operand names defined for the condition must correspond to
-    a key in the operands dictionary (where the value is a working
-    instance of an operand - an indicator, a fixed value, or a price 
-    series).
-
-    Attributes:
-    ----------
-    open_long
-        a tuple with a comparison function, and two operands
-        that are the arguments for the comaprison function
-    open_short
-        ...
-    close_short
-        ...
-    close_short
-        ...
-    operands: dict[int, str]
-        A dictionary, mapping operand names to their working instances
-
-    """
-
-    open_long: tuple[str, COMPARISON, str] | None = None
-    open_short: tuple[str, COMPARISON, str] | None = None
-    close_long: tuple[str, COMPARISON, str] | None = None
-    close_short: tuple[str, COMPARISON, str] | None = None
-
-    operands: dict[str, op.Operand] = field(default_factory={})
-
-    def __repr__(self) -> str:
-        return (
-            f"[Conditions]\n"
-            f"  open_long: {self.open_long}\n  close_long: {self.close_long}\n"
-            f"  open_short: {self.open_short}\n  close_short: {self.close_short}"
-        )
-
-    @property
-    def indicators(self) -> tuple[op.ind.Indicator]:
-        """Return all indicators used in the condition
-
-        This is for use by the optimizer(s).
-        """
-        return tuple(
-            chain.from_iterable(
-                op.indicators for op in self.operands.values()
-            )
-        )
-
-    @property
-    def plot_desc(self) -> tp.PlotParametersT:
-        """Returns all necessary plot parameters for the condition.
-
-        Returns
-        -------
-        tp.PlotParams
-            plot parameters for the condition
-        """
-        return sum(
-            filter(
-                lambda x: x is not None,
-                (
-                    self.operand_a.plot_desc if self.operand_a else None,
-                    self.operand_b.plot_desc if self.operand_b else None,
-                    self.operand_c.plot_desc if self.operand_c else None,
-                    self.operand_d.plot_desc if self.operand_d else None,
-                ),
-            )
-        )
-
-    # ..................................................................................
-    def execute(self, data: tp.Data) -> dict:
-        """Execute the condition.
-
-        Parameters
-        ----------
-        data: tp.Data
-            the OHLCV data dictionary
-
-        Returns:
-        --------
-        ConditionResult
-            A condition result object with four attached arrays for each of:
-            open_long, open_short, close_long, close_short
-        """
-        return dict(
-            open_long=self._execute_type("open_long", data),
-            open_short=self._execute_type("open_short", data),
-            close_long=self._execute_type("close_long", data),
-            close_short=self._execute_type("close_short", data),
-        )
-
-    # ............................... helper methods ..................................
-    def _execute_type(self, type_str: str, data: dict[str, np.ndarray]) -> np.ndarray:
-        conditions = getattr(self, type_str)
-
-        if conditions is None:
-            return np.full(data["close"].shape, np.nan)
-
-        result = None
-
-        for condition in conditions:
-            left = self.operands.get(condition[0])
-            right = self.operands.get(condition[2])
-            comp_fn = cmp_funcs.get(condition[1])
-
-            logger.debug("left: %s, right: %s", left, right)
-
-            single_condition_result = comp_fn(left.run(), right.run())
-
-            if result is None:
-                result = single_condition_result
-            else:
-                result = np.logical_and(result, single_condition_result)
 
         return result
 

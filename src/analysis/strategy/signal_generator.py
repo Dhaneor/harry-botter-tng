@@ -93,19 +93,14 @@ import itertools
 import logging
 import numpy as np
 
-from ..chart.plot_definition import SubPlot  # noqa: F401
-from ..chart.tikr_charts import SignalChart  # noqa: F401
-from .condition import (
-    ConditionParser, ConditionDefinitionT, ConditionResult, cmp_funcs
+from . import (
+    ConditionParser, ConditionDefinitionT, ConditionResult,
+    Operand, operand_factory, comp_funcs as cmp,
     )
-from analysis.models.market_data import MarketData
-from .operand import Operand
-from .operand_factory import operand_factory
-from ..indicators.indicator import Indicator
-from ..indicators.indicator_parameter import Parameter
-from util import proj_types as tp
-from util import log_execution_time, DotDict  # noqa: F401
+from analysis import MarketData, Indicator, Parameter, SubPlot, SignalChart  # noqa: F401
+from util import log_execution_time, DotDict, proj_types as tp  # noqa: F401
 from wrappers.base_wrapper import SignalsWrapper
+from models.hb_enums import COMPARISON
 
 logger = logging.getLogger("main.signal_generator")
 logger.setLevel(logging.ERROR)
@@ -282,22 +277,38 @@ class SignalGenerator:
     ----------
     name
         the name of the signal generator
+    operands
+        Operand instances (indicators, etc.)
     conditions
-        a sequence of Condition objects
-    plot_desc
-        the plot description(s) for the signal generator
+        a sequence of Condition definitions
+
+    Properties:
+    ----------
+    indicators: tuple[Indicator]
+        All Indicator instances associated with the signal generator, read-only
+    market_data: MarketData
+        OHLCV data in the form of a MarketData instance
+    parameters: tuple[Parameter]
+        All Parameter instances associated with the signal generator, read-only
+    parameter_values: tuple[int | float, bool, ...]
+        read/set the values of all parameters of the signal generator
+
     """
 
-    dict_keys: tuple[str, ...] = (
-        "open_long",
-        "open_short",
-        "close_long",
-        "close_short",
-    )
+    cmp_funcs = {
+        COMPARISON.IS_ABOVE: cmp.is_above,
+        COMPARISON.IS_ABOVE_OR_EQUAL: cmp.is_above_or_equal,
+        COMPARISON.IS_BELOW: cmp.is_below,
+        COMPARISON.IS_BELOW_OR_EQUAL: cmp.is_below_or_equal,
+        COMPARISON.IS_EQUAL: cmp.is_equal,
+        COMPARISON.IS_NOT_EQUAL: cmp.is_not_equal,
+        COMPARISON.CROSSED_ABOVE: cmp.crossed_above,
+        COMPARISON.CROSSED_BELOW: cmp.crossed_below,
+    }
 
     def __init__(
         self,
-        name,
+        name: str,
         operands: dict[str, Operand],
         conditions: ConditionDefinitionT,
     ):
@@ -310,7 +321,9 @@ class SignalGenerator:
         self.name: str = name
         self.operands = operands
         self.conditions = conditions
+
         self._market_data: MarketData = None
+        self._parameters: tuple[Parameter] = None
 
     def __repr__(self):
         op_str = "\n  ".join(f"{k}: {v}" for k, v in self.operands.items())
@@ -366,19 +379,39 @@ class SignalGenerator:
         Returns
         -------
         tuple[Parameter]
-            the parameters used by the signal generator
+            the parameters (Parameter instances) used by the signal generator
         """
-        return tuple(p for ind in self.indicators for p in ind.parameters)
+        if not self._parameters:
+            self._parameters = tuple(p for ind in self.indicators for p in ind.parameters)
+        return self._parameters
 
-    @parameters.setter
-    def parameters(self, params: tuple[Any, ...]) -> None:
+    @property
+    def parameter_values(self) -> tuple[int | float | bool,...]:
+        """Get the current parameter values.
+
+        Returns
+        -------
+        tuple[Any,...]
+            the current parameter values
+        """
+        return tuple(p.value for p in self.parameters)
+
+    @parameter_values.setter
+    def parameter_values(self, params: tuple[int | float | bool, ...]) -> None:
+        """Set the parameter values.
+        
+        Parameters
+        ----------
+        params : tuple[int | float | bool,...]
+            A tuple of new parameter values
+        
+        """
         for p_current, p_new in zip(self.parameters, params):
             try:
                 p_current.value = p_new
             except Exception as e:
                 logger.error(
-                    "Unable to set parameter %s to %s: %s",
-                    p_current.name, p_new, str(e)
+                    "Unable to set %s to %s: %s", p_current.name, p_new, str(e)
                     )
 
     # @property
@@ -454,7 +487,7 @@ class SignalGenerator:
                 
                     left_operand = self.operands[condition[0]]
                     right_operand = self.operands[condition[2]]
-                    operator = cmp_funcs[condition[1]]
+                    operator = self.cmp_funcs[condition[1]]
 
                     single_result = operator(  # a 2D array
                         left_operand.run(), 
