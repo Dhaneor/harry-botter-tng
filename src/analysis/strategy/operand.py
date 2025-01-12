@@ -3,11 +3,11 @@
 """
 Provides Operand classes and their factory function.
 
-NOTE:   
-Operands that are indicators can have the output from another indicator 
-as input. This is also the main reason level exists in the 
-SignalGenerator -> Condition -> Operand -> Indicator -> Parameter chain. 
-This allows for the construction of complex and flexible conditions by 
+NOTE:
+Operands that are indicators can have the output from another indicator
+as input. This is also the main reason level exists in the
+SignalGenerator -> Condition -> Operand -> Indicator -> Parameter chain.
+This allows for the construction of complex and flexible conditions by
 defining nested indicators without having to write a new indicator class.
 
 
@@ -31,33 +31,37 @@ Created on Sat Aug 18 10:356:50 2023
 
 @author: dhaneor
 """
+
 import logging
 import numpy as np
 import sys
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field
-from enum import Enum
 from numbers import Number
 from typing import Any, Callable, Optional, Sequence
 
-from ..indicators import indicator as ind
-from ..indicators import indicators_custom
-from ..indicators.indicator_parameter import Parameter
-from ..models.market_data import MarketData
-from models.hb_enums import OperandType
-from util import proj_types as tp
-from util import log_execution_time  # noqa: F401
-from ..chart.plot_definition import SubPlot, Line, Channel
+from .. import (
+    Indicator,
+    TALIB_INDICATORS,
+    indicators_custom,
+    Parameter,
+    MarketData,
+    SubPlot,
+    Line,
+    Channel,
+)
+from models.enums import OperandType
+from util import log_execution_time, proj_types as tp  # noqa: F401
 
 logger = logging.getLogger("main.operand")
 logger.setLevel(logging.ERROR)
 
 # build a list of all available indicators, that can later be used
 # to do a fast check if requested indicators are available.
-ALL_INDICATORS = set(i.lower() for i in ind.talib.get_functions())
+ALL_INDICATORS = set(i.lower() for i in TALIB_INDICATORS)
 CUSTOM_INDICATORS = tuple(name.lower() for name in indicators_custom.custom_indicators)
 
-MAX_CACHE_SIZE = 100 * 1024 * 1024 # max cache size for operands
+MAX_CACHE_SIZE = 100 * 1024 * 1024  # max cache size for operands
 
 
 # ======================================================================================
@@ -120,17 +124,17 @@ class Operand(ABC):
 
     name: str
     type_: OperandType
-    interval : str = ""
+    interval: str = ""
     params: dict[str, Any] = field(default_factory=dict)
 
     parameter_instances = None
 
-    _market_data: MarketData = None   
+    _market_data: MarketData = None
     _parameter_space: Optional[Sequence[Number]] = None
     _unique_name: str = ""
 
     shift: Parameter = None
-    indicators: list[ind.Indicator] = field(default_factory=list)
+    indicators: list[Indicator] = field(default_factory=list)
 
     id: int = field(default=0)
 
@@ -174,7 +178,7 @@ class Operand(ABC):
     @property
     def market_data(self) -> MarketData:
         return self._market_data
-    
+
     @market_data.setter
     def market_data(self, market_data: MarketData) -> None:
         self._market_data = market_data
@@ -190,7 +194,7 @@ class Operand(ABC):
         """Return the parameters for the operand as a tuple"""
         return tuple(p.value for p in self.parameter_instances)
 
-         # return tuple(chain.from_iterable(i.parameters_tuple for i in self.indicators))
+        # return tuple(chain.from_iterable(i.parameters_tuple for i in self.indicators))
 
     @property
     @abstractmethod
@@ -203,13 +207,12 @@ class Operand(ABC):
     def as_dict(self) -> dict[str, Any]: ...
 
     @abstractmethod
-    def randomize(self) -> None:
-        ...
+    def randomize(self) -> None: ...
 
     # @log_execution_time(logger)
     def _update_cache(self, key, value) -> None:
         """Update the cache with the current unique_name."""
-        
+
         def get_total_size(obj):
             size = sys.getsizeof(obj)
             if isinstance(obj, dict):
@@ -235,7 +238,7 @@ class Operand(ABC):
                 "[%s]   Cache size exceeded, removing least recently used item: %s"
                 % (self.name, list(self._cache.keys())[0])
             )
-        
+
         self._cache[key] = value
 
         if logger.level <= logging.DEBUG:
@@ -249,10 +252,12 @@ class Operand(ABC):
                 cs_str = f"{cache_size / (1024 * 1024):.1f} MB"
 
             logger.debug(
-                "[%s]   updated cache. number of saved results: %s (cache size: %s)", 
-                self.name, len(list(self._cache.keys())), cs_str
-                )
-            
+                "[%s]   updated cache. number of saved results: %s (cache size: %s)",
+                self.name,
+                len(list(self._cache.keys())),
+                cs_str,
+            )
+
             first_key = list(self._cache.keys())[0]
             logger.debug(self._cache[first_key])
 
@@ -260,10 +265,11 @@ class Operand(ABC):
 @dataclass(kw_only=True)
 class OperandIndicator(Operand):
     """Operand that represents an indicator."""
+
     name: str
     type_: OperandType
 
-    indicator: ind.Indicator | None = field(default=None)
+    indicator: Indicator | None = field(default=None)
 
     inputs: tuple = field(default_factory=tuple)
     extension: str | None = None
@@ -296,7 +302,7 @@ class OperandIndicator(Operand):
                 "('macd.macdsignal', {'fastperiod': 3, 'slowperiod': 15}).\n"
                 f"Available extensions for {self.name.upper()}: "
                 f"{', '.join(self.indicator.output)}"
-                )
+            )
 
         self.parameters = {self.unique_name: i.parameters for i in self.indicators}
 
@@ -342,9 +348,8 @@ class OperandIndicator(Operand):
         if len(self.indicators) == 1:
             self._output_names = list(self.indicator.unique_output)
             logger.debug(
-                "   using original output name: %s"
-                % list(self.indicator.unique_output)
-                )
+                "   using original output name: %s" % list(self.indicator.unique_output)
+            )
 
         else:
             for elem in self.inputs:
@@ -358,12 +363,14 @@ class OperandIndicator(Operand):
         self._output_names = list(set(self._output_names))
         self._output_names.reverse()
 
-        logger.debug("[%s]\toutput names after update: %s", self.name, self._output_names)
+        logger.debug(
+            "[%s]\toutput names after update: %s", self.name, self._output_names
+        )
 
         return self._output_names
 
     @property
-    def parameter_space(self) -> dict[dict[str: Sequence[Number]]]:
+    def parameter_space(self) -> dict[dict[str : Sequence[Number]]]:
         """Return the parameter space for the operand"""
         return {i.name: i.parameter_space for i in self.indicators}
 
@@ -397,7 +404,8 @@ class OperandIndicator(Operand):
         # get the lines from the main indicator that do not
         # belong to a channel
         lines = tuple(
-            elem for elem in desc.elements
+            elem
+            for elem in desc.elements
             if isinstance(elem, Line) and not belongs_to_channel(elem)
         )
 
@@ -417,7 +425,8 @@ class OperandIndicator(Operand):
         # combine the lines that belong to a channel into a single
         # Channel element
         channel_lines = [
-            elem for elem in desc.elements
+            elem
+            for elem in desc.elements
             if isinstance(elem, Line) and belongs_to_channel(elem)
         ]
 
@@ -440,7 +449,7 @@ class OperandIndicator(Operand):
     @property
     def unique_name(self) -> str:
         """Return the unique name for the operand
-        
+
         The unique name is used to identify the operand and its data
         in the data dictionary which is used for plotting, for instance.
 
@@ -453,8 +462,8 @@ class OperandIndicator(Operand):
         ind_unique = [ind.unique_name for ind in self.indicators]
         last = ind_unique.pop(-1)
 
-        # if we only have one indicator (default case), the list we 
-        # created withwe the unique names of all indicators used by 
+        # if we only have one indicator (default case), the list we
+        # created withwe the unique names of all indicators used by
         # this operand is empty, after removong the last element. We
         # can use the removed element to create the unique_name of
         # this indicator.
@@ -497,7 +506,7 @@ class OperandIndicator(Operand):
         """
         if (parameters := self.parameters_tuple) in self._cache:
             return self._cache[parameters]
-        
+
         result = self._run_indicator({})
         self._update_cache(parameters, result)
         return result
@@ -580,7 +589,7 @@ class OperandIndicator(Operand):
     def _run_indicator(
         self,
         data: tp.Data | None,
-        indicator_: ind.Indicator | None = None,
+        indicator: Indicator | None = None,
         level: int = 0,
     ) -> str:
         """Runs the indicator.
@@ -589,7 +598,7 @@ class OperandIndicator(Operand):
         ----------
         data : tp.Data
             OHLCV dictionary
-        indicator_ : ind.Indicator | None, optional
+        indicator_ : Indicator | None, optional
             indicator instance, default: None
         level : int, optional
             recursion level for nested indicators, by default 0
@@ -605,7 +614,7 @@ class OperandIndicator(Operand):
             if unable to get indicator instance
         """
 
-        indicator_ = indicator_ or self.indicator
+        indicator_ = indicator or self.indicator
 
         if indicator_ is None:
             raise ValueError(f"No indicator defined for {self.name}")
@@ -616,13 +625,10 @@ class OperandIndicator(Operand):
         logger.debug("Getting inputs for indicator: %s", self.inputs)
 
         inputs = self._get_ind_inputs(
-            req_in=self.inputs,
-            data=data,
-            max_inputs=len(indicator_.input),
-            level=level
+            req_in=self.inputs, data=data, max_inputs=len(indicator_.input), level=level
         )
 
-        logger.debug("%s inputs for indicator: %s",  len(inputs), indicator_.name)
+        logger.debug("%s inputs for indicator: %s", len(inputs), indicator_.name)
         logger.debug("requested inputs: %s", self.inputs)
 
         indicator_values = indicator_.run(*inputs)
@@ -633,7 +639,7 @@ class OperandIndicator(Operand):
             if number_of_outputs == 1:
                 logger.debug(
                     "[%s] %s adding %s to data", level, indicator_.name, self.output
-                    )
+                )
                 data[self.output] = indicator_values
 
             else:
@@ -645,15 +651,12 @@ class OperandIndicator(Operand):
                 )
 
         return indicator_values if level > 0 else indicator_values[0]
-        
+
         # return name of relevant key that was added to the data dict
         # return self.output_names if level > 0 else self.output
 
     def _get_ind_inputs(
-        self, req_in: str | tuple, 
-        data: tp.Data, 
-        max_inputs: int, 
-        level: int
+        self, req_in: str | tuple, data: tp.Data, max_inputs: int, level: int
     ) -> tuple[Any, ...]:
         """Get the required inputs for an indicator.
 
@@ -711,7 +714,7 @@ class OperandIndicator(Operand):
                     ) from err
 
             # input is another indicator - for nested indicators, the input is
-            # another OperandIndicator instance. In thie case, we call the 
+            # another OperandIndicator instance. In thie case, we call the
             # _run_indicator() method recursively until we reach the level
             # where all inputs are one or more price/volume series
             elif isinstance(i, Operand) and (i.type_ == OperandType.INDICATOR):
@@ -737,7 +740,7 @@ class OperandIndicator(Operand):
         raise DeprecationWarning(
             "This method is depracated. Use the peroperties for: "
             "'unique_name', 'output', 'output_names' instead."
-            )
+        )
 
 
 @dataclass(kw_only=True)
@@ -782,16 +785,18 @@ class OperandTrigger(Operand):
 
     # name: str
     # type_: OperandType
-    indicator: ind.Indicator | None = field(default=None)
+    indicator: Indicator | None = field(default=None)
     run_func: Callable | None = field(default=None)
     inputs: tuple = field(default_factory=tuple)
     output_names: tuple = field(default_factory=tuple)
     parameters: dict = field(default_factory=dict)
     # parameter_space: Optional[Sequence[Number]] = None
-    indicators: list[ind.Indicator] = field(default_factory=list)
+    indicators: list[Indicator] = field(default_factory=list)
 
     def __repr__(self) -> str:
-        return f"[{self.id}] {self.type_} {self.name}={self.indicator.parameters[0].value}"
+        return (
+            f"[{self.id}] {self.type_} {self.name}={self.indicator.parameters[0].value}"
+        )
 
     def __post_init__(self) -> None:
         # make sure, inputs is a tuple or None
@@ -909,7 +914,7 @@ class OperandTrigger(Operand):
         str
             name of the key in data that was added by this operand
         """
-        
+
         try:
             # logger.debug("trying cache ... %s", self.name)
             return self._cache[self.unique_name]

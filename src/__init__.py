@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep 22 13:00:23 2021
+Created on Dec 28 00:29:20 2024
 
-@author_ dhaneor
+@author dhaneor
 """
-from . import enums
-
+from .models import enums
 
 __all__ = [
     "enums",

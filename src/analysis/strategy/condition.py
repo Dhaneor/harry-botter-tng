@@ -37,7 +37,7 @@ import numpy as np
 
 from . import operand as op, comp_funcs as cmp
 from util import proj_types as tp
-from models.hb_enums import COMPARISON
+from models.enums import COMPARISON
 
 logger = logging.getLogger("main.condition")
 logger.setLevel(logging.ERROR)

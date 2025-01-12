@@ -9,6 +9,8 @@ from .chart import (
     LayoutValidator,
     PlotDefinition,
     SubPlot,
+    Line,
+    Channel,
     styles,
     tikr_day_style,
     tikr_night_style,
@@ -17,7 +19,7 @@ from .chart import (
     BacktestChart,
     SignalChart,
 )
-from .indicators import Indicator, Parameter
+from .indicators import Indicator, Parameter, TALIB_INDICATORS, indicators_custom
 from .leverage import LeverageCalculator
 from .models.market_data import MarketData, MarketDataStore
 
@@ -25,6 +27,8 @@ __all__ = [
     "LayoutValidator",
     "PlotDefinition",
     "SubPlot",
+    "Line",
+    "Channel",
     "styles",
     "tikr_day_style",
     "tikr_night_style",
@@ -34,6 +38,8 @@ __all__ = [
     "SignalChart",
     "Indicator", 
     "Parameter",
+    "TALIB_INDICATORS",
+    "indicators_custom",
     "LeverageCalculator",
     "MarketData", "MarketDataStore",
     ]

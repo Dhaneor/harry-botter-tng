@@ -48,6 +48,8 @@ IndicatorSource = Literal["talib", "nb"]
 MA_TYPES = MA_Type.__dict__.get("_lookup", [])
 Combinations = Generator[Tuple[Any, ...], None, None]
 
+TALIB_INDICATORS = talib.get_functions()
+
 
 def get_parameter_space(param_name: str) -> dict:
     """

@@ -8,12 +8,9 @@ Created on Oct 06 10:03:20 2021
 import sys
 import time
 import logging
-import random
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from pprint import pprint  # noqa: F401
-from scipy.stats import norm
 
 # profiler imports
 from cProfile import Profile
