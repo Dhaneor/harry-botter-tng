@@ -14,32 +14,6 @@ from .numba_funcs import (
     apply_to_columns, ffill_na_numba, cumsum_na_numba
     )
 
-
-# .................................. Numba functions ..................................
-# @njit
-# def ffill_na_numba(arr):
-#     if arr.ndim == 2:
-#         for col in range(arr.shape[1]):
-#             last_valid = arr[0, col]
-#             for row in range(arr.shape[0]):
-#                 if np.isnan(arr[row, col]):
-#                     arr[row, col] = last_valid
-#                 else:
-#                     last_valid = arr[row, col]
-#     elif arr.ndim == 3:
-#         for i in range(arr.shape[0]):
-#             for col in range(arr.shape[2]):
-#                 last_valid = arr[i, 0, col]
-#                 for row in range(arr.shape[1]):
-#                     if np.isnan(arr[i, row, col]):
-#                         arr[i, row, col] = last_valid
-#                     else:
-#                         last_valid = arr[i, row, col]
-#     else:
-#         raise ValueError("Input array must be 2D or 3D")
-#     return arr
-
-
 # ................................. BaseWrapper Class .................................
 class BaseWrapper:
 
@@ -70,7 +44,21 @@ class BaseWrapper:
         self.data = data
         self.columns: list[str] = columns
 
+    # .................................................................................
     def __call__(self) -> object:
+        """
+        Make the BaseWrapper instance callable.
+
+        This method allows the BaseWrapper object to be called like 
+        a function.  When called, it returns the underlying data 
+        stored in the wrapper.
+
+        Returns:
+        --------
+        np.ndarray 
+            The underlying data stored in the BaseWrapper instance. 
+            This is typically a numpy array.
+        """
         return self.data
 
     def __len__(self):
@@ -146,6 +134,7 @@ class BaseWrapper:
         else:
             raise TypeError(f"Invalid operand type ({type(other)}) for addition")
 
+    # .................................................................................
     @property
     def shape(self) -> tuple:
         return self.data.shape

@@ -252,7 +252,18 @@ class Signals(SignalsWrapper):
         columns : Sequence[str]
             the names of the operands
         """
-        super().__init__(signals, symbols)
+        super().__init__(data=signals, columns=symbols)
+
+    def apply_weight(self, weight: int | float) -> None:
+        """Applies a weight to the signals.
+
+        Parameters:
+        ----------
+        weight : int | float
+            the weight to apply
+        """
+        if weight != 1:
+            self.data = np.multiply(self.signals, weight)
 
 
 
@@ -407,12 +418,27 @@ class SignalGenerator:
             OHLCV data dictionary
         """
 
+        # Update market_data for all operands if it is provided,
+        # otherwise use the current market_data
         if market_data is not None:
-            # Update market_data for all operands
             for operand in self.operands.values():
                 operand.market_data = market_data
 
-        signals = {}
+        # run the conditions for each action (open/close - long/short)
+        #
+        # actions = ['open_long', 'open_short', 'close_long', 'close_short']
+        # or_conditions = either must be true
+        # and_conditions = all must be true
+        #
+        # # conditions are nested lists (one for each action), where the 
+        # inner layer contains conditions that must all be true (AND). 
+        # the results from the sub-lists are combined using logical OR
+        signals = {
+            'open_long': None,
+            'open_short': None,
+            'close_long': None,
+            'close_short': None,
+        }
 
         for action, or_conditions in self.conditions.items():
             logger.debug(f"Running conditions for: {action}...")
@@ -430,22 +456,24 @@ class SignalGenerator:
                     right_operand = self.operands[condition[2]]
                     operator = cmp_funcs[condition[1]]
 
-                    single_result = operator(
+                    single_result = operator(  # a 2D array
                         left_operand.run(), 
                         right_operand.run() 
                     )
 
-                if and_result is not None:
-                    and_result = np.logical_and(and_result, single_result)
-                else:
-                    and_result = single_result
+                    # combine the AND condition results into a single result
+                    if and_result is not None:
+                        and_result = np.logical_and(and_result, single_result)
+                    else:
+                        and_result = single_result
 
-            if or_result is not None:
-                or_result = np.logical_or(or_result, and_result)
-            else:
-                or_result = and_result
+                # combine the OR condition results into a single result
+                if or_result is not None:
+                    or_result = np.logical_or(or_result, and_result)
+                else:
+                    or_result = and_result
         
-        signals[action] = or_result
+            signals[action] = Signals(or_result, symbols=self.market_data.symbols)
 
         # .............................................................................
         return signals

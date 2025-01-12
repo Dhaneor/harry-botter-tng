@@ -28,7 +28,7 @@ logger = get_logger('main', level=logging.DEBUG)
 
 
 # ======================================================================================
-market_data = MarketData.from_random(35, 1)
+market_data = MarketData.from_random(3000, 2)
 
 # ======================================================================================
 # define different operands for testing possible variants
@@ -244,7 +244,7 @@ def test_operand_run_indicator():
     operand = operand_factory(op_def, market_data)
     res = operand.run()
 
-    logger.info("%s returned a(n): %s" % (operand, type(res)))
+    logger.info("%s returned a(n): %s (%s)" % (operand, type(res), res.shape))
 
 
 def test_plot_desc():

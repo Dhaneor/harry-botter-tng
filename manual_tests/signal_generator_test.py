@@ -34,10 +34,10 @@ logger = get_logger('main', level='DEBUG')
 
 # set interval and length of test data
 interval = "2h"
-length = 1_000
+length = 2_000
 
-sig_def = cci
-data = MarketData.from_random(length=length, no_of_symbols=1)
+sig_def = ema_cross
+data = MarketData.from_random(length=length, no_of_symbols=2)
 
 # ======================================================================================
 def _get_test_data(length=1000):
@@ -161,7 +161,7 @@ def test_plot_desc(sig_gen):
 
 def test_execute(sig_gen: sg.SignalGenerator = None, show=False, plot=False):
     sig_gen = sig_gen or sg.signal_generator_factory(ema_cross)
-    sig_gen.market_data = MarketData.from_random(length=30, no_of_symbols=1)
+    sig_gen.market_data = data  # MarketData.from_random(length=30, no_of_symbols=1)
     signals = sig_gen.execute()
 
     logger.info("Generated signals: %s", signals)
@@ -346,7 +346,7 @@ def test_returns(sig_gen: sg.SignalGenerator, data, show=False):
 if __name__ == "__main__":
     # test_factory(sig_def)
     # test_randomize()
-    test_execute(None, False, False)
+    # test_execute(None, False, False)
 
     # test_set_parameters()
 
@@ -363,21 +363,21 @@ if __name__ == "__main__":
     # test_plot(sig_gen, data)
     # test_returns(sig_gen, data, True)
 
-    sys.exit()
+    # sys.exit()
 
     logger.setLevel(logging.ERROR)
 
-    runs = 100_000
+    runs = 1_000
     sig_gen = test_factory(ema_cross)
     sig_gen.market_data = data
     sig_gen.execute()
 
     st = time.time()
-    with Profile(timeunit=0.001) as p:
+    with Profile(timeunit=0.000_001) as p:
         for i in range(runs):
             sig_gen.execute()
-            # if i % 100 == 0:
-            # sig_gen.randomize()
+            if i % 100 == 0:
+                sig_gen.randomize() 
 
     (
         Stats(p)
@@ -390,8 +390,12 @@ if __name__ == "__main__":
 
     et = time.time() - st
     ips = runs / et
+    periods = len(data["close"]) * ips
 
-    print(f'length data: {len(data["close"])} periods')
-    print(f"avg execution time: {(et * 1_000_000 / runs):.0f} microseconds")
-    print(f"iterations per second: {ips:,.0f}")
-    print(f"iterations per mintute: {ips * 60:,.0f}")
+    print(f'data: {len(data["close"]):,} periods')
+    print(f"periods/s: {periods:,.0f}")
+    print(f"\navg exc time: {(et * 1_000_000 / runs):.0f} µs")
+
+    print(f"\n~iter/s (1 core): {ips:>10,.0f}")
+    print(f"~iter/s (8 core): {ips * 5:>10,.0f}")
+    print(f"~iter/m (8 core): {ips * 5 * 60:>10,.0f}")

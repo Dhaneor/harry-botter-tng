@@ -37,7 +37,7 @@ logger = get_logger('main')
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = "7 years ago UTC"
+start = "1000 days ago UTC"
 end = 'now UTC'
 
 strategy = s_test_er
@@ -45,8 +45,8 @@ risk_level, max_leverage = 0, 1
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='binance', mode='backtest')
-strategy = sb.build_strategy(strategy)
-strategy.symbol = symbol
+# strategy = sb.build_strategy(strategy)
+# strategy.symbol = symbol
 
 # ======================================================================================
 # def get_data(length: int = 1000):
@@ -102,6 +102,34 @@ def _get_ohlcv_from_db():
     else:
         error = res.get('error', 'no error provided in response')
         raise Exception(error)
+
+
+def generate_random_signals(length: int) -> dict:
+    """
+    Generate random trading signals without overlap.
+
+    Parameters:
+    length (int): The number of periods to generate signals for.
+
+    Returns:
+    dict: A dictionary containing arrays for 'open_long', 'open_short', 'close_long', and 'close_short' signals.
+    """
+    # Initialize an array of zeros
+    signals = np.zeros(length, dtype=np.int8)
+
+    # Randomly select indices for signals
+    signal_indices = np.random.choice(length, size=length//4, replace=False)
+
+    # Assign random signals (1, 2, 3, or 4) to the selected indices
+    signals[signal_indices] = np.random.randint(1, 5, size=len(signal_indices))
+
+    # Create the dictionary of signals
+    return {
+        'open_long': (signals == 1).astype(np.int8),
+        'open_short': (signals == 2).astype(np.int8),
+        'close_long': (signals == 3).astype(np.int8),
+        'close_short': (signals == 4).astype(np.int8)
+    }
 
 
 def _run_backtest(data: dict) -> pd.DataFrame:
@@ -255,6 +283,8 @@ def run(data, show=False, plot=False):
 
 
 def test_find_positions(data: dict):
+    data.update(generate_random_signals(length=1000))
+
     fp.find_positions_with_dict(data)
 
     assert "position" in data, "'position' not found in data dictionary"
@@ -264,29 +294,34 @@ def test_find_positions(data: dict):
 #                                       MAIN                                          #
 # =================================================================================== #
 if __name__ == '__main__':
-    logger.info("Starting backtest...")
-    logger.info(strategy)
-    run(_get_ohlcv_from_db(), False, False)
+    # logger.info("Starting backtest...")
+    # logger.info(strategy)
+    # run(_get_ohlcv_from_db(), False, False)
+
+    # test_find_positions(_get_ohlcv_from_db())
 
     # .................................................................................
     # sys.exit()
 
     logger.setLevel(logging.ERROR)
-    runs = 10_000
+    runs = 1_000_000
     data_pre = [_get_ohlcv_from_db() for _ in range(runs)]
 
     md = MarketData.from_dictionary(strategy.symbol, data_pre[0])
     leverage_calculator = LeverageCalculator(md, risk_level, max_leverage)
 
-    start = time.perf_counter()
+    data = _get_ohlcv_from_db()
+    signals = generate_random_signals(length=len(data["close"]))
+    data.update(signals)
 
-    for sub, _ in strategy.sub_strategies.values():
-        sub.signal_generator.randomize()
+    fp.find_positions_with_dict(data)
+
+    start = time.perf_counter()
 
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            strategy.randomize()
-            bt.run(strategy, leverage_calculator, data_pre[i], initial_capital)
+            # fp.merge_signals_nb_fixed(**signals)
+            fp.find_positions_with_dict(data)
 
     (
         Stats(p)
