@@ -357,9 +357,10 @@ def test_return_type():
 
     assert isinstance(ind, indicator.IIndicator)
 
-    data = np.random.rand(30, 1)
+    shape = 30, 2
+    data = np.random.rand(*shape)
 
-    logger.debug(f"data dimensions: {data.ndim}")
+    logger.debug(f"data dimensions: {data.ndim} shape: {data.shape}")
 
     res = ind.run(data)
 
@@ -371,6 +372,8 @@ def test_return_type():
 
     assert isinstance(res[0], np.ndarray), \
         f"Expected np.ndarray, got {type(res)}"
+    
+    assert res.shape == shape, f"Expected shape {shape}, got {res.shape}"
 
 
 

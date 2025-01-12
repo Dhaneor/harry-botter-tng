@@ -27,7 +27,7 @@ from typing import Sequence, Callable, Union, Generator, Mapping, Any
 from .indicator_parameter import Parameter
 
 logger = logging.getLogger(f"main.{__name__}")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 # define Types
 Params = dict[str, Union[str, float, int, bool]]
@@ -334,7 +334,7 @@ class IIndicator(ABC):
             
             # run indicator for one-dimensional array
             case 1:
-                result = self._apply_func(inputs, **self.parameters_dict)  
+                out = self._apply_func(inputs, **self.parameters_dict)  
             
             # run indicator for two-dimensional array
             case 2:
@@ -356,31 +356,29 @@ class IIndicator(ABC):
                         for elem in inputs   
                     ]
 
+                    logger.debug("-" *  120)
                     logger.debug(
                         "input array (%s) has dimension: %s", 
                         type(single_in[0]), single_in[0].shape
                         )
 
-                    result = self._apply_func(
-                        *single_in,
-                        **self.parameters_dict
-                    )
-
+                    result = self._apply_func(*single_in, **self.parameters_dict)
 
                     if isinstance(result, list | tuple):
                         logger.debug("we got multiple output arrays from the indicator")
                         for j, result_elem in enumerate(result):
                             out[j][:, i] = result_elem
-                        return out
                     else:
                         logger.debug("we got one output array from the indicator")
                         out[0][:, i] = result
-                        logger.debug(result)
-                        return out
+                    
+                    logger.error(">>>> result: %s", out)
             
             # raise a ValueError for all other cases/dimensionalities
             case _:
                 raise ValueError("Unsupported array dimensions: %s" % dimensions)
+
+        return out
 
     def add_subscriber(self, callback: Callable) -> None:
         self.subscribers.add(callback)

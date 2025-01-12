@@ -504,10 +504,13 @@ class OperandIndicator(Operand):
         ValueError
             if the run function is not defined for the operand
         """
+        return self._run_indicator({})
+        
         if (parameters := self.parameters_tuple) in self._cache:
             return self._cache[parameters]
 
         result = self._run_indicator({})
+        logger.debug("indicator values: %s", result)
         self._update_cache(parameters, result)
         return result
 

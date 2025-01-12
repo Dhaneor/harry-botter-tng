@@ -9,6 +9,7 @@ Created on Thu Sep 22 13:00:23 2021
 import numpy as np
 import pandas as pd
 import pytest
+import talib
 from pprint import pprint
 
 from analysis import (
@@ -97,7 +98,7 @@ def test_repr_method(basic_signal_generator):
     assert "sma" in repr_string
 
 
-# ............................... TEST EXECUTE METHOD .................................
+# ........................... TEST EXECUTE METHOD: 1 SYMBOL ............................
 @pytest.fixture
 def simple_signal_generator_with_data():
     # Define the signal generator using the factory
@@ -189,6 +190,205 @@ def test_execute_returns_correct_data(simple_signal_generator_with_data):
                 [1, 0, 0, 1, 1],
                 "Incorrect close_long signals: {signals}"
             )
+
+# ...................... TEST EXECUTE METHOD: MUTLIPLE SYMBOLs .........................
+@pytest.fixture
+def generate_test_data():
+    def _generate(num_symbols=1, periods=5):
+        dates = pd.date_range(start='2020-01-01', periods=periods)
+        
+        # Generate random data for the specified number of periods
+        data = np.random.randint(7, 14, size=(periods, 5)).astype(np.float32)
+        data[:, -1] = 1000  # Set volume to 1000 for all periods
+        
+        # Repeat the data for each symbol
+        data = np.tile(data, (num_symbols, 1, 1))
+        
+        mds = MarketDataStore(
+            timestamp=dates.astype(np.int64).values.reshape(-1, 1),
+            open_=data[:, :, 0].T,
+            high=data[:, :, 1].T,
+            low=data[:, :, 2].T,
+            close=data[:, :, 3].T,
+            volume=data[:, :, 4].T
+        )
+        
+        symbols = [f'SYMBOL{i+1}' for i in range(num_symbols)]
+        md = MarketData(mds, symbols)
+        
+        return md
+    
+    return _generate
+
+@pytest.fixture
+def calculate_expected_result():
+    def _calculate(market_data):
+        close_data = market_data.close
+        threshold = 10.0
+        
+        open_long = (close_data > threshold) 
+        close_long = (close_data < threshold) 
+
+        return {
+            'open_long': open_long[:, :, np.newaxis],
+            'close_long': close_long[:, :, np.newaxis],
+            'open_short': None,
+            'close_short': None
+        }
+    
+    return _calculate
+
+@pytest.fixture
+def simple_signal_generator():
+    def _create_sg(market_data):
+        def_ = SignalGeneratorDefinition(
+            name="Simple Test Strategy",
+            operands={"close": "close", "threshold": ("trigger", 10.0, [9, 11, 1])},
+            conditions={
+                "open_long": [("close", COMPARISON.IS_ABOVE, "threshold")],
+                "close_long": [("close", COMPARISON.IS_BELOW, "threshold")],
+            },
+        )
+        sg = signal_generator_factory(def_)
+        sg.market_data = market_data
+        return sg
+    
+    return _create_sg
+
+@pytest.mark.parametrize("num_symbols", [1, 2])
+def test_execute_returns_correct_data_ext(generate_test_data, calculate_expected_result, simple_signal_generator, num_symbols):
+    market_data = generate_test_data(num_symbols)
+    sg = simple_signal_generator(market_data)
+    result = sg.execute()
+    expected_result = calculate_expected_result(market_data)
+
+    print(num_symbols)
+    print(market_data.close)
+    print(result)
+    
+    for key in ('open_long', 'close_long', 'open_short', 'close_short'):
+        if expected_result[key] is None:
+            assert result[key] is None, f"{key} should be None"
+        else:
+            assert np.array_equal(result[key], expected_result[key]), \
+                f"Incorrect {key} signals. expected: {expected_result[key]}, actual: {result[key]} for {key}"
+        
+        if result[key] is not None:
+            assert result[key].shape == (5, num_symbols, 1), f"Incorrect shape for {key}"
+
+
+# ..................... TEST EXECUTE METHOD: COMPLEX CONDITION .........................
+@pytest.fixture
+def complex_signal_generator():
+    def _create_sg(market_data):
+        def_ = SignalGeneratorDefinition(
+            name="Complex Test Strategy",
+            operands={
+                "close": "close",
+                "sma": ("sma", {"timeperiod": 2}),
+                "threshold": ("trigger", 10.0, [9, 11, 1]),
+            },
+            conditions={
+                "open_long": [
+                    [
+                        ("close", COMPARISON.IS_ABOVE, "threshold"),
+                        ("close", COMPARISON.CROSSED_ABOVE, "sma"),
+                    ]
+                ],
+                "close_long": [
+                    [
+                        ("close", COMPARISON.IS_BELOW, "threshold"),
+                        ("close", COMPARISON.CROSSED_BELOW, "sma"),
+                    ]
+                ],
+            },
+        )
+        sg = signal_generator_factory(def_)
+        sg.market_data = market_data
+        return sg
+    
+    return _create_sg
+
+
+@pytest.fixture
+def calculate_complex_expected_result():
+    def _calculate(market_data):
+        close_data = market_data.close
+        threshold = 10.0
+        
+        # Calculate SMA for each symbol
+        sma = np.zeros_like(close_data)
+        for i in range(close_data.shape[1]):
+            sma[:, i] = talib.SMA(close_data[:, i].astype(np.float64), timeperiod=2)
+        
+        above_threshold = (close_data > threshold)
+        below_threshold = (close_data < threshold)
+        crossed_above_sma = (close_data > sma) & (np.roll(close_data, 1, axis=0) <= np.roll(sma, 1, axis=0))
+        crossed_below_sma = (close_data < sma) & (np.roll(close_data, 1, axis=0) >= np.roll(sma, 1, axis=0))
+        
+        open_long = above_threshold & crossed_above_sma
+        close_long = below_threshold & crossed_below_sma
+
+        # Set the first row to False as we can't determine crosses for it
+        open_long[0, :] = False
+        close_long[0, :] = False
+
+        return {
+            'open_long': open_long[:, :, np.newaxis],
+            'close_long': close_long[:, :, np.newaxis],
+            'open_short': None,
+            'close_short': None
+        }
+    
+    return _calculate
+
+
+@pytest.mark.parametrize("num_symbols", [1, 2])
+def test_execute_returns_correct_data_complex(generate_test_data, calculate_complex_expected_result, complex_signal_generator, num_symbols):
+    # Generate market data with 10 periods
+    market_data = generate_test_data(num_symbols, periods=10)
+    
+    # Create the signal generator with the generated market data
+    sg = complex_signal_generator(market_data)
+    
+    # Execute the signal generator
+    result = sg.execute()
+    
+    # Calculate the expected result using the same market data
+    expected_result = calculate_complex_expected_result(market_data)
+
+    for key in ('open_long', 'close_long', 'open_short', 'close_short'):
+        if result[key] is not None:
+            assert result[key].shape == (10, num_symbols, 1), f"Incorrect shape for {key}"
+
+        if expected_result[key] is None:
+            assert result[key] is None, f"{key} should be None"
+        else:
+            try:
+                np.testing.assert_array_equal(result[key], expected_result[key], 
+                    f"Incorrect {key} signals.")
+            except AssertionError:
+                print(f"\nMismatch in {key} signals:")
+                print(f"Market Data (Close):\n{market_data.close}")
+                print(f"\nExpected {key}:\n{expected_result[key].squeeze()}")
+                print(f"\nActual {key}:\n{result[key].squeeze()}")
+                print("\nDifferences:")
+                diff = result[key] != expected_result[key]
+                for i in range(diff.shape[0]):
+                    for j in range(diff.shape[1]):
+                        if diff[i, j]:
+                            print(f"Mismatch at index [{i}, {j}]: Expected {expected_result[key][i, j, 0]}, Got {result[key][i, j, 0]}")
+
+                # Additional debugging information
+                print("\nThreshold:", sg.operands['threshold'])
+                print("\nSMA values:")
+                for i in range(num_symbols):
+                    print(f"Symbol {i+1}: {talib.SMA(market_data.close[:, i].astype(np.float64), timeperiod=2)}")
+
+                # for operand in sg.operands.values():
+                #     print(f"\nOperand {operand} cache: {operand._cache}")
+
+                raise AssertionError("Test failed due to mismatches in signal generation.")
 
 
 if __name__ == "__main__":

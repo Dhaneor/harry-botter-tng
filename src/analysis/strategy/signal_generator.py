@@ -104,7 +104,7 @@ from wrappers.base_wrapper import SignalsWrapper
 from models.enums import COMPARISON
 
 logger = logging.getLogger("main.signal_generator")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 
 def transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
@@ -504,6 +504,8 @@ class SignalGenerator:
             OHLCV data dictionary
         """
 
+        logger.debug("running _execute_single...")
+
         # run the conditions for each action (open/close - long/short)
         #
         # actions = ['open_long', 'open_short', 'close_long', 'close_short']
@@ -553,6 +555,8 @@ class SignalGenerator:
             signals[action] = or_result.reshape(
                 or_result.shape[0], or_result.shape[1], 1
                 )
+
+            logger.debug(f"Finished conditions for: {action} - Shape: {signals[action].shape}")
 
         return signals
 

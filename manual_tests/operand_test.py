@@ -240,12 +240,29 @@ def test_operand_run_trigger():
     logger.info("%s returned a(n): %s" % (operand, type(res)))
 
 def test_operand_run_indicator():
+    logger.info("running test_operand_run_indicator() ...")
+
     op_def = ('er', 'close', {'timeperiod': 20},)
     operand = operand_factory(op_def, market_data)
     res = operand.run()
 
     logger.info("%s returned a(n): %s (%s)" % (operand, type(res), res.shape))
 
+    # Check if the arrays are not close
+    are_different = not np.allclose(res[:, 0], res[:, 1], rtol=1e-05, atol=1e-08)
+    
+    assert are_different, "The arrays are too similar. Expected different values for different symbols."
+
+    # Optionally, you can add more detailed checks:
+    if are_different:
+        # Check if at least some percentage of values are different
+        diff_percentage = np.mean(~np.isclose(res[:, 0], res[:, 1], rtol=1e-05, atol=1e-08)) * 100
+        logger.info(f"Percentage of different values: {diff_percentage:.2f}%")
+        
+        assert diff_percentage > 10, f"Only {diff_percentage:.2f}% of values are different. Expected more variation."
+
+    # You might also want to check if the shapes are correct
+    assert res.shape[1] == 2, f"Expected 2 columns (one for each symbol), but got {res.shape[1]}"
 
 def test_plot_desc():
     logger.setLevel(logging.INFO)
