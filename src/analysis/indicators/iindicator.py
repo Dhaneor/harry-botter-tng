@@ -27,7 +27,7 @@ from typing import Sequence, Callable, Union, Generator, Mapping, Any
 from .indicator_parameter import Parameter
 
 logger = logging.getLogger(f"main.{__name__}")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 # define Types
 Params = dict[str, Union[str, float, int, bool]]
@@ -140,7 +140,7 @@ class PlotDescription:
 
 
 class IIndicator(ABC):
-    """Abstract base class for all indicators."""
+    """Base class for all indicators."""
 
     def __init__(self) -> None:
         self._name = self.__class__.__name__.lower()
@@ -316,6 +316,7 @@ class IIndicator(ABC):
             "The plot_desc property is not implemented for %s", self.__class__.__name__
         )
 
+# .............................. Public methods .................................
     def run(self, *inputs: tuple[np.ndarray]) -> np.ndarray:  # type: ignore
 
         logger.debug("provided data is in format %s", type(inputs))
@@ -371,25 +372,14 @@ class IIndicator(ABC):
                     else:
                         logger.debug("we got one output array from the indicator")
                         out[0][:, i] = result
-                    
-                    logger.error(">>>> result: %s", out)
-            
+                                
             # raise a ValueError for all other cases/dimensionalities
             case _:
                 raise ValueError("Unsupported array dimensions: %s" % dimensions)
 
+        logger.error(">>>> result: %s", out)
+
         return out
-
-    def add_subscriber(self, callback: Callable) -> None:
-        self.subscribers.add(callback)
-
-    def on_parameter_change(self, *args) -> None:
-        """Callback function for when parameters change."""
-        logger.info("parameters changed for %s", self.name)
-        logger.debug("Calling subscribers: %s", self.subscribers)
-        for callback in self.subscribers:
-            logger.debug("Calling callback %s", callback)
-            callback()
 
     @abstractmethod
     def help(self):
@@ -435,8 +425,8 @@ class IIndicator(ABC):
         """
         if not parameters:
             yield ()
-        else:
-            first, *rest = parameters
-            for item in first:
-                for combination in self._generate_combinations(rest):
-                    yield (item,) + combination
+
+        first, *rest = parameters
+        for item in first:
+            for combination in self._generate_combinations(rest):
+                yield (item,) + combination
