@@ -104,101 +104,7 @@ from wrappers.base_wrapper import SignalsWrapper
 from models.enums import COMPARISON
 
 logger = logging.getLogger("main.signal_generator")
-logger.setLevel(logging.DEBUG)
-
-
-def transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
-    """
-    Provides a decorator for transforming Signalsfinition to
-    SignalGeneratorDefinition instances.
-
-    SignalsDefinition = the previously used way to define signals.
-    SignalGeneratorDefinition = the 'new' new way to define signals.
-
-    This is just for convenience and to prevent having to rewrite
-    existing strategies all at once.
-    """
-
-    @wraps(func)
-    def wrapper(*args: Any, **kwargs: Any) -> Any:
-        if args:  #  and isinstance(args[0], SignalsDefinition):
-            signals_def = args[0]
-
-            operands = {}
-            conditions = {
-                "open_long": [],
-                "close_long": [],
-                "open_short": [],
-                "close_short": [],
-            }
-            indicator_counters = defaultdict(int)
-            indicator_names = {}
-
-            def get_unique_operand_name(operand_value):
-                if isinstance(operand_value, tuple):
-                    indicator_name = operand_value[0]
-                    if indicator_name in ["open", "high", "low", "close", "volume"]:
-                        return indicator_name
-
-                    # Check if we've already assigned a unique name to this exact indicator
-                    indicator_key = str(operand_value)
-                    if indicator_key in indicator_names:
-                        return indicator_names[indicator_key]
-
-                    indicator_counters[indicator_name] += 1
-                    unique_name = (
-                        f"{indicator_name}_{indicator_counters[indicator_name]}"
-                    )
-                    indicator_names[indicator_key] = unique_name
-                    return unique_name
-                return operand_value
-
-            for condition in signals_def.conditions:
-                for operand in ["a", "b", "c", "d"]:
-                    operand_attr = f"operand_{operand}"
-                    if hasattr(condition, operand_attr):
-                        operand_value = getattr(condition, operand_attr)
-                        if operand_value:
-                            unique_name = get_unique_operand_name(operand_value)
-                            operands[unique_name] = operand_value
-
-                for condition_type in [
-                    "open_long",
-                    "close_long",
-                    "open_short",
-                    "close_short",
-                ]:
-                    if hasattr(condition, condition_type):
-                        condition_value = getattr(condition, condition_type)
-                        if condition_value:
-                            transformed_condition = list(condition_value)
-                            for i, item in enumerate(transformed_condition):
-                                if item in ["a", "b", "c", "d"]:
-                                    operand_attr = f"operand_{item}"
-                                    if hasattr(condition, operand_attr):
-                                        operand_value = getattr(condition, operand_attr)
-                                        unique_name = get_unique_operand_name(
-                                            operand_value
-                                        )
-                                        transformed_condition[i] = unique_name
-                            conditions[condition_type].append(
-                                tuple(transformed_condition)
-                            )
-
-            transformed_def = SignalGeneratorDefinition(
-                name=signals_def.name,
-                operands=operands,
-                conditions={k: v if v else None for k, v in conditions.items()},
-            )
-            args = (transformed_def,) + args[1:]
-
-        else:
-            print(f"Invalid input: {func.__name__} expects a SignalsDefinition")
-            print(f"Got: {args} (type: {type(args[0])})")
-
-        return func(*args, **kwargs)
-
-    return wrapper
+logger.setLevel(logging.ERROR)
 
 
 @dataclass
@@ -523,7 +429,6 @@ class SignalGenerator:
         }
 
         for action, or_conditions in self.conditions.items():
-            logger.debug(f"Running conditions for: {action}...")
 
             if or_conditions is None:
                 continue
@@ -556,8 +461,6 @@ class SignalGenerator:
                 or_result.shape[0], or_result.shape[1], 1
                 )
 
-            logger.debug(f"Finished conditions for: {action} - Shape: {signals[action].shape}")
-
         return signals
 
     def _execute_multi(
@@ -575,11 +478,17 @@ class SignalGenerator:
             self.parameter_values = params
             single_result = self._execute_single()
             for key in results:
-                results[key].append(single_result[key].values)
+                if single_result[key] is not None:
+                    # Append the last dimension of the 3D array
+                    results[key].append(single_result[key][:, :, 0])
         
-        # Convert lists of 2D arrays to 3D arrays
+        # Combine results for each key
         for key in results:
-            results[key] = np.stack(results[key], axis=-1)
+            if results[key]:
+                # Stack along the last axis (which will be the parameter combinations)
+                results[key] = np.stack(results[key], axis=-1)
+            else:
+                results[key] = None
         
         return results
 
@@ -653,8 +562,105 @@ class SignalGenerator:
     #         )
 
 
+def transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
+    """
+    Provides a decorator for transforming Signalsfinition to
+    SignalGeneratorDefinition instances.
+
+    SignalsDefinition = the previously used way to define signals.
+    SignalGeneratorDefinition = the 'new' new way to define signals.
+
+    This is just for convenience and to prevent having to rewrite
+    existing strategies all at once.
+    """
+
+    @wraps(func)
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        if args and isinstance(args[0], SignalGeneratorDefinition):
+            return func(*args, **kwargs)
+
+        if args and isinstance(args[0], SignalsDefinition):
+            signals_def = args[0]
+
+            operands = {}
+            conditions = {
+                "open_long": [],
+                "close_long": [],
+                "open_short": [],
+                "close_short": [],
+            }
+            indicator_counters = defaultdict(int)
+            indicator_names = {}
+
+            def get_unique_operand_name(operand_value):
+                if isinstance(operand_value, tuple):
+                    indicator_name = operand_value[0]
+                    if indicator_name in ["open", "high", "low", "close", "volume"]:
+                        return indicator_name
+
+                    # Check if we've already assigned a unique name to this exact indicator
+                    indicator_key = str(operand_value)
+                    if indicator_key in indicator_names:
+                        return indicator_names[indicator_key]
+
+                    indicator_counters[indicator_name] += 1
+                    unique_name = (
+                        f"{indicator_name}_{indicator_counters[indicator_name]}"
+                    )
+                    indicator_names[indicator_key] = unique_name
+                    return unique_name
+                return operand_value
+
+            for condition in signals_def.conditions:
+                for operand in ["a", "b", "c", "d"]:
+                    operand_attr = f"operand_{operand}"
+                    if hasattr(condition, operand_attr):
+                        operand_value = getattr(condition, operand_attr)
+                        if operand_value:
+                            unique_name = get_unique_operand_name(operand_value)
+                            operands[unique_name] = operand_value
+
+                for condition_type in [
+                    "open_long",
+                    "close_long",
+                    "open_short",
+                    "close_short",
+                ]:
+                    if hasattr(condition, condition_type):
+                        condition_value = getattr(condition, condition_type)
+                        if condition_value:
+                            transformed_condition = list(condition_value)
+                            for i, item in enumerate(transformed_condition):
+                                if item in ["a", "b", "c", "d"]:
+                                    operand_attr = f"operand_{item}"
+                                    if hasattr(condition, operand_attr):
+                                        operand_value = getattr(condition, operand_attr)
+                                        unique_name = get_unique_operand_name(
+                                            operand_value
+                                        )
+                                        transformed_condition[i] = unique_name
+                            conditions[condition_type].append(
+                                tuple(transformed_condition)
+                            )
+
+            transformed_def = SignalGeneratorDefinition(
+                name=signals_def.name,
+                operands=operands,
+                conditions={k: v if v else None for k, v in conditions.items()},
+            )
+            args = (transformed_def,) + args[1:]
+
+        else:
+            print(f"Invalid input: {func.__name__} expects a SignalsDefinition")
+            print(f"Got: {args} (type: {type(args[0])})")
+
+        return func(*args, **kwargs)
+
+    return wrapper
+
+
 # ======================================================================================
-# @transform_signal_definition
+@transform_signal_definition
 def signal_generator_factory(definition: SignalGeneratorDefinition) -> SignalGenerator:
     """Build a SignalGenerator from a SignalGeneratorDefinition.
 

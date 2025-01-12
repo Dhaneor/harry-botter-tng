@@ -40,7 +40,7 @@ from .indicator_parameter import Parameter
 from ..chart.plot_definition import Line, SubPlot
 
 logger = logging.getLogger("main.indicator")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 Params = dict[str, Union[str, float, int, bool]]
 IndicatorSource = Literal["talib", "nb"]
@@ -178,73 +178,6 @@ class Indicator(IIndicator):
             elements=elements,
             is_subplot=self.is_subplot,
         )
-
-    # def run(self, *inputs: tuple[np.ndarray]) -> np.ndarray:  # type: ignore
-
-    #     logger.debug("provided data is in format %s", type(inputs))
-    #     logger.debug("parameters: %s", self.parameters_dict)
-
-    #     rows, columns = inputs[0].shape
-    #     dimensions = inputs[0].ndim
-
-    #     if type(inputs[0]) in (np.ndarray, pd.Series, pd.DataFrame):
-    #         logger.debug("shape of data: %s", inputs[0].shape)
-
-    #     # Apply the indicator to the inputs. We need different ways
-    #     # of handling this, depending on the dimensions of the input 
-    #     # data.
-    #     match dimensions:
-            
-    #         # run indicator for one-dimensional array
-    #         case 1:
-    #             result = self._apply_func(inputs, **self.parameters_dict)  
-            
-    #         # run indicator for two-dimensional array
-    #         case 2:
-    #             # idicators can have one or more inputt and one
-    #             # or more outputs. each case must be handled in
-    #             # a different way.
-    #             logger.debug("number of outputs: %s", len(self.output))
-                
-    #             out = [
-    #                 np.full_like(inputs[0], fill_value=np.nan, dtype=np.float64)
-    #                 for _ in range(len(self.output))
-    #             ]
-
-    #             logger.debug("number of result arrays: %s", len(out))
-  
-    #             for i in range(columns):
-    #                 single_in = [
-    #                     elem[:, i].reshape((rows)).astype(np.float64) 
-    #                     for elem in inputs   
-    #                 ]
-
-    #                 logger.debug(
-    #                     "input array (%s) has dimension: %s", 
-    #                     type(single_in[0]), single_in[0].shape
-    #                     )
-
-    #                 result = self._apply_func(
-    #                     *single_in,
-    #                     **self.parameters_dict
-    #                 )
-
-
-    #                 if isinstance(result, list | tuple):
-    #                     logger.debug("we got multiple output arrays from the indicator")
-    #                     for j, result_elem in enumerate(result):
-    #                         out[j][:, i] = result_elem
-    #                     return out
-    #                 else:
-    #                     logger.debug("we got one output array from the indicator")
-    #                     out[0][:, i] = result
-    #                     logger.debug(result)
-    #                     return out
-            
-    #         # raise a ValueError for all other cases/dimensionalities
-    #         case _:
-    #             raise ValueError("Unsupported array dimensions: %s" % dimensions)
-
 
     def help(self):
         """Prints help information (docstring) for the class.

@@ -504,8 +504,6 @@ class OperandIndicator(Operand):
         ValueError
             if the run function is not defined for the operand
         """
-        return self._run_indicator({})
-        
         if (parameters := self.parameters_tuple) in self._cache:
             return self._cache[parameters]
 

@@ -16,7 +16,7 @@ from pprint import pprint
 from cProfile import Profile
 from pstats import SortKey, Stats
 
-from analysis.models import MarketData, SignalChart
+from analysis import MarketData, SignalChart
 from analysis.strategy import signal_generator as sg
 from analysis.strategy.definitions import (  # noqa: F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,

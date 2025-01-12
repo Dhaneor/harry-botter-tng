@@ -342,14 +342,14 @@ class IIndicator(ABC):
                 # indicators can have one or more inputs and one
                 # or more outputs. each case must be handled in
                 # a different way.
-                logger.debug("number of outputs: %s", len(self.output))
+                # logger.debug("number of outputs: %s", len(self.output))
                 
                 out = [
                     np.full_like(inputs[0], fill_value=np.nan, dtype=np.float64)
                     for _ in range(len(self.output))
                 ]
 
-                logger.debug("number of result arrays: %s", len(out))
+                # logger.debug("number of result arrays: %s", len(out))
   
                 for i in range(columns):
                     single_in = [
@@ -357,27 +357,23 @@ class IIndicator(ABC):
                         for elem in inputs   
                     ]
 
-                    logger.debug("-" *  120)
-                    logger.debug(
-                        "input array (%s) has dimension: %s", 
-                        type(single_in[0]), single_in[0].shape
-                        )
+                    # logger.debug("-" *  120)
+                    # logger.debug(
+                    #     "input array (%s) has dimension: %s", 
+                    #     type(single_in[0]), single_in[0].shape
+                    #     )
 
                     result = self._apply_func(*single_in, **self.parameters_dict)
 
                     if isinstance(result, list | tuple):
-                        logger.debug("we got multiple output arrays from the indicator")
                         for j, result_elem in enumerate(result):
                             out[j][:, i] = result_elem
                     else:
-                        logger.debug("we got one output array from the indicator")
                         out[0][:, i] = result
                                 
             # raise a ValueError for all other cases/dimensionalities
             case _:
                 raise ValueError("Unsupported array dimensions: %s" % dimensions)
-
-        logger.error(">>>> result: %s", out)
 
         return out
 
@@ -395,6 +391,17 @@ class IIndicator(ABC):
         logger.debug("Randomizing parameters: %s", self.parameters)
         for param in self.parameters:
             param.randomize()
+
+    def add_subscriber(self, callback: Callable) -> None:
+        self.subscribers.add(callback)
+
+    def on_parameter_change(self, *args) -> None:
+        """Callback function for when parameters change."""
+        logger.info("parameters changed for %s", self.name)
+        logger.debug("Calling subscribers: %s", self.subscribers)
+        for callback in self.subscribers:
+            logger.debug("Calling callback %s", callback)
+            callback()
 
     # .............................. Private methods .................................
     def _set_parameters_from_dict(self, params: dict) -> None:

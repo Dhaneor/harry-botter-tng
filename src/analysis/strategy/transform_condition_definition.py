@@ -158,8 +158,17 @@ aroon_osc_new = SignalGeneratorDefinition(
 def transform_condition_definition(func: Callable[..., Any]) -> Callable[..., Any]:
     @wraps(func)
     def wrapper(*args: Any, **kwargs: Any) -> Any:
+        if args and isinstance(args[0], DotDict):
+            return func(*args, **kwargs)
+
         if args:  #  and isinstance(args[0], SignalsDefinition):
             signals_def = args[0]
+
+            try:
+                if 'operands' in signals_def.operands:
+                    return func(*args, **kwargs)
+            except:
+                pass
 
             operands = {}
             conditions = {
