@@ -23,7 +23,6 @@ spec = [
     ("low", float32[:, :]),
     ("close", float32[:, :]),
     ("volume", float32[:, :]),
-    # We'll store log_returns / atr / annual_vol only if you want to keep them:
     ("log_returns", float32[:, :]),
     ("atr", float32[:, :]),
     ("annual_vol", float32[:, :]),
@@ -60,6 +59,18 @@ class MarketDataStore:
         self.compute_log_returns()
         self.compute_atr()
         self.compute_annual_vol()
+
+    def get_no_of_periods(self) -> int:
+        """
+        Return the number of periods in the data.
+        """
+        return self.timestamp.shape[0]
+
+    def get_no_of_symbols(self) -> int:
+        """
+        Return the number of symbols in the data.
+        """
+        return self.close.shape[1]
 
     def compute_log_returns(self):
         """

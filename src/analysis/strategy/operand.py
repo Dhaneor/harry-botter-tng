@@ -194,8 +194,6 @@ class Operand(ABC):
         """Return the parameters for the operand as a tuple"""
         return tuple(p.value for p in self.parameter_instances)
 
-        # return tuple(chain.from_iterable(i.parameters_tuple for i in self.indicators))
-
     @property
     @abstractmethod
     def plot_desc(self) -> dict[str, tp.Parameters]: ...
@@ -303,8 +301,6 @@ class OperandIndicator(Operand):
                 f"Available extensions for {self.name.upper()}: "
                 f"{', '.join(self.indicator.output)}"
             )
-
-        self.parameters = {self.unique_name: i.parameters for i in self.indicators}
 
         space = {}
 
@@ -508,7 +504,6 @@ class OperandIndicator(Operand):
             return self._cache[parameters]
 
         result = self._run_indicator({})
-        logger.debug("indicator values: %s", result)
         self._update_cache(parameters, result)
         return result
 
@@ -577,7 +572,6 @@ class OperandIndicator(Operand):
             self.__post_init__()
 
     def on_parameter_change(self) -> None:
-        # logger.debug("Parameter change event for %s", self.unique_name)
         self._update_names()
         self._cache = {}
 

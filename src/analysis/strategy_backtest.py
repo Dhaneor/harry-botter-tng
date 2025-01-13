@@ -16,7 +16,6 @@ from util import proj_types as tp
 from analysis.strategy_builder import IStrategy
 from analysis.util.find_positions import find_positions_with_dict, merge_signals
 from analysis.leverage import LeverageCalculator
-from analysis.models.market_data import MarketData
 
 logger = logging.getLogger("main.backtest")
 logger.setLevel("DEBUG")
