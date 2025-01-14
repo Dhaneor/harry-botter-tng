@@ -3,8 +3,6 @@
 """
 Provides the signal generator class and its factory.
 
-Use the factory function to create instances of SignalGenerator!
-
 
 Classes:
 
@@ -38,6 +36,8 @@ Usage:
 
 SignalGenerator instances are not created directly. Instead, use the
 factory function which builds them from a SignalGeneratorDefinition.
+By using this factory, it should be al,most impossible to have a
+mis-configured or non-functioning SignalGenerator.
 
 Below is an example of how to use the SignalGeneratorDefinition:
 
@@ -64,6 +64,19 @@ aroon_osc_new = SignalGeneratorDefinition(
         close_short=None,
     ),
 )
+
+NOTE:
+The elements of the array which is returned be the SignalGenertor.execute()
+method are structured arrays, defined by the following dtype:
+
+.. code-block:: python
+        
+np.dtype([
+    ('open_long', np.bool_),
+    ('close_long', np.bool_),
+    ('open_short', np.bool_),
+    ('close_short', np.bool_),
+])
 
 
 Decorators:
@@ -99,6 +112,7 @@ from . import (
     Operand, operand_factory, comp_funcs as cmp,
 )
 from analysis import MarketData, Indicator, Parameter, SubPlot, SignalChart  # noqa: F401
+from analysis.dtypes import SIGNALS_DTYPE
 from util import log_execution_time, DotDict, proj_types as tp  # noqa: F401
 from wrappers.base_wrapper import SignalsWrapper
 from models.enums import COMPARISON
@@ -298,6 +312,10 @@ class Signals(SignalsWrapper):
 class SignalGenerator:
     """A signal generator.
 
+    Always use the factory function to create instances of 
+    SignalGenerator! Refer to the documentation at the top of the 
+    module for more details.
+
     Attributes:
     ----------
     name
@@ -317,6 +335,17 @@ class SignalGenerator:
         All Parameter instances associated with the signal generator, read-only
     parameter_values: tuple[int | float, bool, ...]
         read/set the values of all parameters of the signal generator
+
+    Methods:
+    --------
+    execute(self, market_data: MarketData) -> Signals
+        Runs the signal generator on the given market data (or the market
+        data set at instantiation) and returns a Numpy array of signals.
+        For more information about the format of the returned signals, 
+        refer to the method docstring below.
+
+    randomize
+        Randomizes the (indicator) parameters of the signal generator.
 
     """
 
@@ -468,6 +497,17 @@ class SignalGenerator:
         """
         Generate signals based on market data and/or (multiple) parameter combinations.
 
+        The elements of the returned array are structured arrays defined by the 
+        following dtype:
+
+        .. code-block:: python
+        np.dtype([
+            ('open_long', np.bool_),
+            ('close_long', np.bool_),
+            ('open_short', np.bool_),
+            ('close_short', np.bool_),
+        ])
+
         Parameters:
         -----------
         market_data
@@ -492,17 +532,26 @@ class SignalGenerator:
 
         assert self.market_data is not None, "Market data is not set"
 
+        depth = 1 if param_combinations is None else len(param_combinations)
+        out = self._build_results_array(depth)
+
+        logger.error("shape of output array: %s", out.shape)
+
         if param_combinations is None:
-            return self._execute_single()
+            self._execute_single(out, 0)
         else:
-            return self._execute_multi(param_combinations)
+            for idx, params in enumerate(param_combinations):
+                self.parameter_values = params
+                self._execute_single(out, idx)
+
+        return out
         
     def randomize(self) -> None:
         for operand in self.operands.values():
             operand.randomize()
 
     # ................................. HELPER METHODS .................................
-    def _execute_single(self) -> dict[str, tp.Array_3D]:
+    def _execute_single(self, out: np.ndarray, zindex=0) -> dict[str, tp.Array_3D]:
         """Execute the signal generator.
 
         Parameters
@@ -527,13 +576,6 @@ class SignalGenerator:
         # # conditions are nested lists (one for each action), where the
         # inner layer contains conditions that must all be true (AND).
         # the results from the sub-lists are combined using logical OR
-        signals = {
-            "open_long": None,
-            "open_short": None,
-            "close_long": None,
-            "close_short": None,
-        }
-
         for action, or_conditions in self.conditions.items():
 
             if or_conditions is None:
@@ -563,40 +605,40 @@ class SignalGenerator:
                 else:
                     or_result = and_result
 
-            signals[action] = or_result.reshape(
-                or_result.shape[0], or_result.shape[1], 1
-                )
+            out[action][:, :, zindex] = or_result  # .reshape(
+                # or_result.shape[0], or_result.shape[1], 1
+                # )
 
-        return signals
+        return out
 
     def _execute_multi(
         self, 
+        out: np.ndarray,
         param_combinations: Sequence[tp.ParameterValuesT]
     ) -> dict[str, tp.Array_3D]:
-        results = {
-            "open_long": [],
-            "open_short": [],
-            "close_long": [],
-            "close_short": []
-        }
         
-        for params in param_combinations:
+        for idx, params in enumerate(param_combinations):
             self.parameter_values = params
-            single_result = self._execute_single()
-            for key in results:
-                if single_result[key] is not None:
-                    # Append the last dimension of the 3D array
-                    results[key].append(single_result[key][:, :, 0])
+            self._execute_single(out, idx)
+            # for key in out:
+            #     if single_result[key] is not None:
+            #         # Append the last dimension of the 3D array
+            #         out[key].append(single_result[key][:, :, 0])
         
-        # Combine results for each key
-        for key in results:
-            if results[key]:
-                # Stack along the last axis (which will be the parameter combinations)
-                results[key] = np.stack(results[key], axis=-1)
-            else:
-                results[key] = None
+        # # Combine results for each key
+        # for key in out:
+        #     if out[key]:
+        #         # Stack along the last axis (which will be the parameter combinations)
+        #         out[key] = np.stack(out[key], axis=-1)
+        #     else:
+        #         out[key] = None
         
-        return results
+        return out
+    
+    def _build_results_array(self, depth: int) -> np.ndarray:
+        periods = len(self.market_data)
+        assets = self.market_data.number_of_assets
+        return np.zeros((periods, assets, depth), dtype=SIGNALS_DTYPE)
 
     def is_working(self) -> bool:
         """Check if the signal generator is working.

@@ -382,6 +382,15 @@ class MarketData:
         """
         return self._interval_in_ms
 
+    @property
+    def number_of_assets(self) -> int:
+        """Return the number of assets in the MarketData.
+
+        Returns:
+            int: number of assets.
+        """
+        return len(self.symbols)
+
     # ................................ METHODS TO RETRIEVE DATA ...........................
     def get_array(self, field, symbol=None):
         """Returns a Numpy array of the specified field for the given symbol.

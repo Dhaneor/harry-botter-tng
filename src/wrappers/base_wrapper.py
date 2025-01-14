@@ -144,7 +144,7 @@ class BaseWrapper:
         return self.data.ndim
 
     # ..................................................................................
-    def replace(self, old: np.float_ | np.int_, new: np.float_ | np.int_) -> None:
+    def replace(self, old: np.float64 | np.int64, new: np.float64 | np.int64) -> None:
         try:
             bn.replace(self.data, old, new)
         except TypeError as e:

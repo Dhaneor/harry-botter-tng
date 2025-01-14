@@ -101,12 +101,15 @@ class Signals:
     
     def __radd__(self, other) -> 'Signals':
         return self.__add__(other)
-    
+
+    def __iter__(self):
+        return iter(self._store.data)
+
     def __len__(self) -> int:
         return self._store.data.shape[0]
     
-    def __iter__(self):
-        return iter(self._store.data)
+    def __sizeof__(self):
+        pass
 
     # ..................................................................................
     @property
