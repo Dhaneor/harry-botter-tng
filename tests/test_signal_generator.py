@@ -85,6 +85,7 @@ def test_market_data_setter(basic_signal_generator):
 #     assert all(hasattr(subplot, 'name') for subplot in subplots)
 
 
+
 def test_randomize_method(basic_signal_generator):
     original_value = basic_signal_generator.parameter_values[0]
     basic_signal_generator.randomize()

@@ -30,7 +30,7 @@ logger = get_logger('main', level='DEBUG')
 
 # set interval and length of test data
 interval = "2h"
-length = 2_000
+length = 1_000
 
 sig_def = breakout
 data = MarketData.from_random(length=length, no_of_symbols=2)
@@ -221,7 +221,7 @@ if __name__ == "__main__":
 
     logger.setLevel(logging.ERROR)
 
-    runs = 1_000_000
+    runs = 1_000
     sig_gen = test_factory(breakout)
     sig_gen.market_data = data
     sig_gen.execute()
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     with Profile(timeunit=0.000_001) as p:
         for i in range(runs):
             sig_gen.execute()
-            if i % 10 == 0:
+            if i % 1 == 0:
                 sig_gen.randomize() 
 
     (

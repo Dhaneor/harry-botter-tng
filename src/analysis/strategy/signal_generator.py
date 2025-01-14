@@ -106,6 +106,14 @@ from models.enums import COMPARISON
 logger = logging.getLogger("main.signal_generator")
 logger.setLevel(logging.ERROR)
 
+# define Numpy dtype for SignlaGenerator result array elements
+signals_array_element = np.dtype([
+    ('open_long', np.int8),
+    ('close_long', np.int8),
+    ('open_short', np.int8),
+    ('close_short', np.int8),
+])
+
 
 @dataclass
 class SignalsDefinition:

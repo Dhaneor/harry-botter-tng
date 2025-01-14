@@ -240,7 +240,7 @@ class SubStrategy(IStrategy):
     def __str__(self) -> str:
         return self.__repr__()
 
-    # --------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------
     @property
     def indicators(self) -> tuple[IIndicator, ...]:
         return self.signal_generator.indicators
@@ -253,15 +253,12 @@ class SubStrategy(IStrategy):
     def parameters(self, value: tuple[Any, ...]) -> None:
         self.signal_generator.paramaters = value
 
-    # --------------------------------------------------------------------------
+    # ----------------------------------------------------------------------------------
     def speak(self) -> tp.Data:
         if self.weight == 1:
             return self.signal_generator.execute()
         else:
-            return np.multiply(
-                self.signal_generator.execute(), 
-                self.weight
-                )
+            return np.multiply(self.signal_generator.execute(), self.weight)
     
     def randomize(self) -> None:
         """Randomizes the parameters of the strategy.
