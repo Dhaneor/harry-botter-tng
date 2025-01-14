@@ -9,150 +9,132 @@ Created on Sun Dec 11 19:08:20 2022
 """
 
 import numpy as np
-from numba import int8
+import numpy.typing as npt
+from numba import njit, float32
 from numba.experimental import jitclass
-from typing import List
+from typing import Optional
+
+
+@njit
+def combine_signals(
+    open_long: np.ndarray,
+    close_long: np.ndarray,
+    open_short: np.ndarray,
+    close_short: np.ndarray,
+):
+    n_periods, n_assets, n_strats = open_long.shape
+    positions_out = np.zeros((n_periods, n_assets, n_strats), dtype=np.float32)
+
+    for t in range(n_periods):
+        for a in range(n_assets):
+            for s in range(n_strats):
+                if t == 0:
+                    if open_long[t, a, s] == 1:
+                        positions_out[t, a, s] = 1
+                    elif open_short[t, a, s] == 1:
+                        positions_out[t, a, s] = -1
+                else:
+                    positions_out[t, a, s] = positions_out[t - 1, a, s]
+
+                    if positions_out[t, a, s] == 1:
+                        if close_long[t, a, s] == 1 or open_short[t, a, s] == 1:
+                            positions_out[t, a, s] = 0
+                    elif positions_out[t, a, s] == -1:
+                        if close_short[t, a, s] == 1 or open_long[t, a, s] == 1:
+                            positions_out[t, a, s] = 0
+
+                    if positions_out[t, a, s] == 0:
+                        if open_long[t, a, s] == 1:
+                            positions_out[t, a, s] = 1
+                        elif open_short[t, a, s] == 1:
+                            positions_out[t, a, s] = -1
+
+    return positions_out
 
 
 spec = [
-    ("open_long", int8[:, :, :]),  # (n_periods, n_assets, n_strategies)
-    ("close_long", int8[:, :, :]),  # (n_periods, n_assets, n_strategies)
-    ("open_short", int8[:, :, :]),  # (n_periods, n_assets, n_strategies)
-    ("close_short", int8[:, :, :]),  # (n_periods, n_assets, n_strategies)
-    ("data", int8[:, :, :])  # (n_periods, n_assets, n_strategies)
+    ("data", float32[:, :, :]),
 ]
+
 
 @jitclass(spec)
 class SignalStore:
-    symbols: List[str]
 
+    def __init__(self, data: npt.ArrayLike):
+        self.data = data
+
+    def __add__(self, other):
+        if isinstance(other, SignalStore):
+            return SignalStore(np.add(self.data, other.data))
+        elif isinstance(other, (float, int)):
+            return SignalStore(np.add(self.data, np.float32(other)))
+        else:
+            raise TypeError(f"Unsupported operand type for +: '{type(other)}'")
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+
+class Signals:
     def __init__(
-            self, 
-            symbols: List[str], 
-            open_long: np.ndarray,
-            close_long: np.ndarray, 
-            open_short: np.ndarray, 
-            close_short: np.ndarray
-    ):
-        self.symbols = symbols
-        self.data = self.combine_signals(open_long, close_long, open_short, close_short)
-
-    def combine_signals(
         self,
+        symbols: list[str],
         open_long: np.ndarray,
         close_long: np.ndarray,
         open_short: np.ndarray,
         close_short: np.ndarray,
     ):
-        n_periods, n_assets, n_strats = open_long.shape
-        positions_out = np.zeros((n_periods, n_assets, n_strats), dtype=np.int8)
+        self.symbols = symbols
+        self._store = SignalStore(open_long, close_long, open_short, close_short)
 
-        for t in range(n_periods):
-            for a in range(n_assets):
-                for s in range(n_strats):
-                    if t == 0:
-                        if open_long[t, a, s] == 1:
-                            positions_out[t, a, s] = 1
-                        elif open_short[t, a, s] == 1:
-                            positions_out[t, a, s] = -1
-                    else:
-                        positions_out[t, a, s] = positions_out[t-1, a, s]
+    def __add__(self, other) -> 'Signals':
+        if isinstance(other, Signals):
+            if self.symbols != other.symbols:
+                raise ValueError("Symbols must match for addition")
+            new_store = self._store + other._store
+        elif isinstance(other, (float, int)):
+            new_store = self._store + other
+        else:
+            raise TypeError(f"Unsupported operand type for +: '{type(other)}'")
 
-                        if positions_out[t, a, s] == 1:
-                            if close_long[t, a, s] == 1 or open_short[t, a, s] == 1:
-                                positions_out[t, a, s] = 0
-                        elif positions_out[t, a, s] == -1:
-                            if close_short[t, a, s] == 1 or open_long[t, a, s] == 1:
-                                positions_out[t, a, s] = 0
-                        
-                        if positions_out[t, a, s] == 0:
-                            if open_long[t, a, s] == 1:
-                                positions_out[t, a, s] = 1
-                            elif open_short[t, a, s] == 1:
-                                positions_out[t, a, s] = -1
+        return Signals(symbols=self.symbols, store=new_store)
+    
+    def __radd__(self, other) -> 'Signals':
+        return self.__add__(other)
+    
+    def __len__(self) -> int:
+        return self._store.data.shape[0]
+    
+    def __iter__(self):
+        return iter(self._store.data)
 
-        return positions_out
+    # ..................................................................................
+    @property
+    def data(self):
+        return self._store.data
 
-    def _combine_signals_loop_old(
-            self, 
-            open_long: np.ndarray, 
-            close_long: np.ndarray, 
-            open_short: np.ndarray, 
-            close_short: np.ndarray
+    # ..................................................................................
+    @classmethod
+    def from_separate(
+        cls,
+        symbols: list[str],
+        open_long: Optional[np.ndarray] = None,
+        close_long: Optional[np.ndarray] = None,
+        open_short: Optional[np.ndarray] = None,
+        close_short: Optional[np.ndarray] = None,
     ):
-        """
-        Combine four trading signal arrays into a single positions array with values in {-1, 0, 1},
-        including logic to switch directly from long to short (or short to long) on the same time step.
+        shape = (
+            (len(symbols), len(symbols[0]))
+            if any([open_long, close_long, open_short, close_short])
+            else (0, 0)
+        )
 
-        Parameters
-        ----------
-        open_long  : np.ndarray, shape (n_periods, n_assets, n_strats), {0,1}
-        close_long : np.ndarray, shape (n_periods, n_assets, n_strats), {0,1}
-        open_short : np.ndarray, shape (n_periods, n_assets, n_strats), {0,1}
-        close_short: np.ndarray, shape (n_periods, n_assets, n_strats), {0,1}
+        open_long = np.zeros(shape) if open_long is None else open_long
+        close_long = np.zeros(shape) if close_long is None else close_long
+        open_short = np.zeros(shape) if open_short is None else open_short
+        close_short = np.zeros(shape) if close_short is None else close_short
 
-        Returns
-        -------
-        positions_out : np.ndarray, shape (n_periods, n_assets, n_strats), in {-1,0,1}
-                        -1 => short
-                        0 => flat
-                        1 => long
-        """
-        n_periods, n_assets, n_strats = open_long.shape
-
-        # Output array
-        positions_out = np.zeros((n_periods, n_assets, n_strats), dtype=np.int8)
-
-        # -----------------------------
-        # Initialize positions at t = 0
-        # -----------------------------
-        for a in range(n_assets):
-            for s in range(n_strats):
-                if open_long[0, a, s] == 1:
-                    positions_out[0, a, s] = 1
-                elif open_short[0, a, s] == 1:
-                    positions_out[0, a, s] = -1
-                else:
-                    positions_out[0, a, s] = 0
-
-        # -------------------------------------------------------------------
-        # For each subsequent time step, copy the previous positions in bulk,
-        # then loop over (asset, strategy) to apply logic for close/switch/open
-        # -------------------------------------------------------------------
-        for t in range(1, n_periods):
-            # Copy over the previous step's positions in one slice operation
-            positions_out[t] = positions_out[t - 1]
-
-            for a in range(n_assets):
-                for s in range(n_strats):
-                    pos = positions_out[
-                        t, a, s
-                    ]  # current position state (carried forward)
-
-                    # 1) Check if we need to close OR switch out of an existing position
-                    # ----------------------------------------------------------------
-                    if pos == 1:
-                        # If we're long, close if close_long=1 or open_short=1 (switch request)
-                        if close_long[t, a, s] == 1 or open_short[t, a, s] == 1:
-                            pos = 0  # close the long
-                    elif pos == -1:
-                        # If we're short, close if close_short=1 or open_long=1 (switch request)
-                        if close_short[t, a, s] == 1 or open_long[t, a, s] == 1:
-                            pos = 0  # close the short
-
-                    # 2) If we're flat now, check if we should open a new position
-                    # -------------------------------------------------------------
-                    if pos == 0:
-                        if open_long[t, a, s] == 1:
-                            pos = 1
-                        elif open_short[t, a, s] == 1:
-                            pos = -1
-
-                    positions_out[t, a, s] = pos
-
-        return positions_out
-
-
-if __name__ == "__main__":
-    signal_store = SignalStore(["AAPL", "GOOGL", "MSFT"])
-    print(signal_store.symbols)  # Output: ['AAPL', 'GOOGL', 'MSFT']
+        combined_signals = combine_signals(
+            open_long, close_long, open_short, close_short
+        )
+        return cls(symbols, combined_signals)

@@ -7,7 +7,7 @@ Created on Fri Jan 10 15:53:23 2025
 """
 
 import numpy as np
-from numba import njit, float64, boolean
+from numba import njit
 
 
 @njit
@@ -36,13 +36,13 @@ def ffill_column(col: np.ndarray):
 
 
 @njit
-def ffill_na_numba(arr: np.ndarray):
-    return apply_to_columns(arr, ffill_column)
+def cumsum_column(col: np.ndarray):
+    return np.cumsum(col)
 
 
 @njit
-def cumsum_column(col: np.ndarray):
-    return np.cumsum(col)
+def ffill_na_numba(arr: np.ndarray):
+    return apply_to_columns(arr, ffill_column)
 
 
 @njit

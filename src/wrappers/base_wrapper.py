@@ -14,7 +14,7 @@ from .numba_funcs import (
     apply_to_columns, ffill_na_numba, cumsum_na_numba
     )
 
-# ................................. BaseWrapper Class .................................
+# ................................. BaseWrapper Class ..................................
 class BaseWrapper:
 
     def __init__(self, data: np.ndarray, columns: Sequence[str]):
@@ -44,7 +44,7 @@ class BaseWrapper:
         self.data = data
         self.columns: list[str] = columns
 
-    # .................................................................................
+    # ..................................................................................
     def __call__(self) -> object:
         """
         Make the BaseWrapper instance callable.
@@ -134,7 +134,7 @@ class BaseWrapper:
         else:
             raise TypeError(f"Invalid operand type ({type(other)}) for addition")
 
-    # .................................................................................
+    # ..................................................................................
     @property
     def shape(self) -> tuple:
         return self.data.shape
@@ -143,6 +143,7 @@ class BaseWrapper:
     def ndim(self) -> int:
         return self.data.ndim
 
+    # ..................................................................................
     def replace(self, old: np.float_ | np.int_, new: np.float_ | np.int_) -> None:
         try:
             bn.replace(self.data, old, new)
@@ -163,6 +164,9 @@ class BaseWrapper:
     
     def std(self) -> float:
         return bn.nanstd(self.data, axis=0)
+
+
+
 
 
 class SignalsWrapper(BaseWrapper):
