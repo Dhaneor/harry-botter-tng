@@ -144,7 +144,9 @@ if __name__ == "__main__":
     # =================================================================================
     runs = 1000
 
-    # lc = lv.LeverageCalculator(md)
+    lc = lv.LeverageCalculator(md)
+    
+    sys.exit()
     dmc = lv.DiversificationMultiplier(data=data)
     print(dmc.multiplier[-11:])
     # sys.exit()

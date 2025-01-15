@@ -349,7 +349,7 @@ class SignalGenerator:
 
     """
 
-    cmp_funcs = {
+    cmp_funcs = {  # functions to use for comparing values of operand
         COMPARISON.IS_ABOVE: cmp.is_above,
         COMPARISON.IS_ABOVE_OR_EQUAL: cmp.is_above_or_equal,
         COMPARISON.IS_BELOW: cmp.is_below,
@@ -530,13 +530,17 @@ class SignalGenerator:
         if market_data is not None:
             self.market_data = market_data
 
-        assert self.market_data is not None, "Market data is not set"
+        if not isinstance(self.market_data, MarketData):
+            raise TypeError(
+                "market_data is not a MarketData instance "
+                f"but:{type(self.market_data).__name__}"
+                )
 
+        # prepare the output array
         depth = 1 if param_combinations is None else len(param_combinations)
-        out = self._build_results_array(depth)
+        out = self._build_results_array(depth=depth)
 
-        logger.error("shape of output array: %s", out.shape)
-
+        # execute for one or multiple parameter combinations
         if param_combinations is None:
             self._execute_single(out, 0)
         else:

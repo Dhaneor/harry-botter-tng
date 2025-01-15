@@ -299,6 +299,13 @@ def test_execute_returns_correct_data_ext(
             ), f"Incorrect shape for {key}"
 
 
+def test_execute_with_wrong_market_data_type(simple_signal_generator):
+    market_data = "Not a MarketData instance"
+    sg = simple_signal_generator(market_data)
+    with pytest.raises(TypeError):
+        sg.execute()
+
+
 # ..................... TEST EXECUTE METHOD: COMPLEX CONDITION .........................
 @pytest.fixture
 def complex_signal_generator():
@@ -443,50 +450,65 @@ def test_execute_returns_correct_data_complex(
 
 
 # ................ TEST EXECUTE METHOD: MULTIPLE PARAMETER COMBINATIONS ................
-# @pytest.mark.parametrize("num_symbols", [1, 2])
-# def test_execute_multiple_parameter_combinations(
-#     generate_test_data,
-#     calculate_complex_expected_result,
-#     complex_signal_generator,
-#     num_symbols,
-# ):
-#     # Generate market data with 10 periods
-#     market_data = generate_test_data(num_symbols, periods=10)
+@pytest.mark.parametrize("num_symbols", [1, 2])
+def test_execute_multiple_parameter_combinations(
+    generate_test_data,
+    calculate_complex_expected_result,
+    complex_signal_generator,
+    num_symbols,
+):
+    passes, fails = 0, 0
 
-#     # Define parameter combinations
-#     param_combinations = [
-#         (9.0, 2),  # (threshold, timeperiod)
-#         (10.0, 2),
-#         (11.0, 2),
-#         (10.0, 3),
-#     ]
+    for j in range(100):
+        periods = 10  # Number of periods to generate market data for
 
-#     # Create the signal generator with the generated market data
-#     sg = complex_signal_generator(market_data)
+        # Generate market data with 10 periods
+        market_data = generate_test_data(num_symbols, periods=periods)
 
-#     # Execute the signal generator with multiple parameter combinations
-#     result = sg.execute(param_combinations=param_combinations)
+        # Define parameter combinations
+        param_combinations = [
+            (9.0, 2),  # (threshold, timeperiod)
+            (10.0, 2),
+            (11.0, 2),
+            (10.0, 3),
+        ]
 
-#     # Check the shape of the result
-#     assert result.shape == (10, num_symbols, len(param_combinations))
+        # Create the signal generator with the generated market data
+        sg = complex_signal_generator(market_data)
+
+        # Execute the signal generator with multiple parameter combinations
+        result = sg.execute(param_combinations=param_combinations)
+
+        # Check the shape of the result
+        assert result.shape == (periods, num_symbols, len(param_combinations))
 
 
-#     # Calculate and compare expected results for each parameter combination
-#     for i, (threshold, timeperiod) in enumerate(param_combinations):
-#         expected_result = calculate_complex_expected_result(market_data, threshold, timeperiod)
+        # Calculate and compare expected results for each parameter combination
+        for i, (threshold, timeperiod) in enumerate(param_combinations):
+            expected_result = calculate_complex_expected_result(
+                market_data, threshold, timeperiod
+                )
 
-#         for key in ("open_long", "close_long", "open_short", "close_short"):
-#             try:
-#                 np.testing.assert_array_equal(
-#                     result[key][:, :, i],
-#                     expected_result[key],
-#                     err_msg=f"Mismatch in {key} for parameters: threshold={threshold}, timeperiod={timeperiod}"
-#                 )
-#             except Exception as e:
-#                 print(f"\nMismatch in {key} signals:")
-#                 print(f"error: {e}")
-#                 print(f"expected shape: {expected_result[key].shape}")
-#                 print(f"actual shape: {result[key][:, :, i].shape}")
+            for key in ("open_long", "close_long", "open_short", "close_short"):
+                try:
+                    np.testing.assert_array_equal(
+                        result[key][:, :, i],
+                        expected_result[key],
+                        err_msg=(
+                            f"Mismatch in {key} for parameters: threshold={threshold}, "
+                            f"timeperiod={timeperiod}"
+                        )
+                    )
+                except Exception as e:
+                    print(f"\nMismatch in {key} signals:")
+                    print(f"error: {e}")
+                    print(f"expected shape: {expected_result[key].shape}")
+                    print(f"actual shape: {result[key][:, :, i].shape}")
+                    fails += 1
+                else:
+                    passes += 1
+                finally:
+                    print(f"passes: {passes} // fails: {fails}")
 
 
 

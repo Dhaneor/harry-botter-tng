@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Thu Sep 22 13:00:23 2021
+Created on Thu Sep 22 13:00:23 2024
 
 @author_ dhaneor
 """
+# from .backtest import BackTest
 
 from .chart import (
     LayoutValidator,
@@ -30,8 +31,10 @@ from .strategy import (
     signal_generator_factory,
     transform_signal_definition,
 )
+from .dtypes import SIGNALS_DTYPE
 
 __all__ = [
+    # "BackTest",
     "LayoutValidator",
     "PlotDefinition",
     "SubPlot",
@@ -56,4 +59,5 @@ __all__ = [
     "SignalGeneratorDefinition",
     "signal_generator_factory",
     "transform_signal_definition",
+    "SIGNALS_DTYPE",
 ]

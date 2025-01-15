@@ -73,6 +73,14 @@ class SignalStore:
 
     def __radd__(self, other):
         return self.__add__(other)
+    
+    # @property
+    # def open_long(self) -> np.ndarray:
+    #     return self.data["open_long"]
+    
+    # @property
+    # def close_long(self) -> np.ndarray:
+    #     return self.data["close_long"]
 
 
 class Signals:

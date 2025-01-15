@@ -159,7 +159,7 @@ class DiversificationMultiplier:
         result = np.array(
             [self.DM_MATRIX[corr][closest_no_of_assets] for corr in closest_corrs],
             dtype=np.float16,
-        )
+        ).reshape(-1, 1)
         return result
 
 
@@ -232,7 +232,7 @@ class LeverageCalculator:
         self.interval = market_data.interval
         self.interval_in_ms = market_data.interval_in_ms
 
-        self.dmc = DiversificationMultiplier(market_data)
+        self.dmc = DiversificationMultiplier(market_data.mds.close)
 
         self._cache = {}
 
@@ -294,7 +294,8 @@ class LeverageCalculator:
                 lv = np.multiply(lv, self.dmc.multiplier)
 
             # Apply the maximum allowed leverage
-            lv = np.minimum(lv, self.max_leverage).astype(np.float16)
+            lv = np.minimum(lv, self.max_leverage) 
+            lv = np.asarray(lv, dtype=np.float32) # .astype(np.float32)
 
             self._cache[risk_level] = lv
 
