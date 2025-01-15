@@ -15,7 +15,7 @@ SIGNALS_DTYPE = np.dtype([
 ])
 
 
-PORTFOLIO_DTYPE = np.dtype([
+POSITION_DTYPE = np.dtype([
     ('position', np.int8),  # position of the instrument (0=none, 1=long,  -1=short)
     ('qty', np.float64),  # quantity of the instrument (can be negative for shorts)
     ('entry_price', np.float32),  # entry price for the position
@@ -27,4 +27,11 @@ PORTFOLIO_DTYPE = np.dtype([
     ('slippage', np.float64),  # slippage for the trade (in quote asset)
     ('asset_weight', np.float32),  # weight for the asset in the portfolio
     ('strategy_weight', np.float32),  # weight of the strategy in the portfolio
+])
+
+
+PORTFOLIO_DTYPE = np.dtype([
+    ('quote_balance', np.float64),  # Balance of the quote asset
+    ('equity', np.float64),  # Total equity (position value + quote balance)
+    ('leverage', np.float64),  # Current leverage
 ])
