@@ -24,6 +24,16 @@ from models.enums import COMPARISON
 
 # ==================================== FIXTURES =======================================
 @pytest.fixture
+def config():
+    return Config(
+        initial_capital=10_000,
+        rebalance_position=True,
+        increase_allowed=True,
+        decrease_allowed=True,
+    )
+
+
+@pytest.fixture
 def market_data():
     def _market_data(
         number_of_periods: int, number_of_assets: int, data_type: str = "random"
@@ -122,23 +132,34 @@ def test_fixtures(market_data, leverage_array, signals_array):
     # We need to create a simple SignalGeneratorDefinition for this test
     signal_gen_def = SignalGeneratorDefinition(
         name="TestSignalGenerator",
-        operands = {"sma": ("sma"), "close": "close"},
+        operands={"sma": ("sma"), "close": "close"},
         conditions={
             "open_long": [("close", COMPARISON.IS_ABOVE, "sma")],
-            "open_short": [("close", COMPARISON.IS_BELOW, "sma")]
+            "open_short": [("close", COMPARISON.IS_BELOW, "sma")],
         },
     )
     signals = signals_array(md, signal_gen_def)
     assert isinstance(signals, np.ndarray)
     assert signals.shape == (100, 2, 1)
-    for field in ('open_long', 'open_short', 'close_long', 'close_short'):
+    for field in ("open_long", "open_short", "close_long", "close_short"):
         f = signals[field]
         assert np.all((f == 1) | (f == 0))  # Assuming signals are -1, 0, or 1
 
     print("All fixtures are working as expected.")
 
 
-def test_backtest_init(market_data, leverage_array, signals_array):
+def test_backtest_config(config):
+    config_ = config
+    assert isinstance(config_, Config), "Config instance creation failed."
+    assert config_.initial_capital == 10_000.0, "Initial capital mismatch."
+    assert config_.rebalance_position == True, "Rebalance position mismatch."  # noqa: E712
+    assert config_.increase_allowed == True, "Increase allowed mismatch."  # noqa: E712
+    assert config_.decrease_allowed == True, "Decrease allowed mismatch."  # noqa: E712
+
+    print("BacktestConfig fixture is working as expected.")
+
+
+def test_backtest_init(config, market_data, leverage_array, signals_array):
     md = market_data(number_of_periods=100, number_of_assets=2, data_type="fixed")
     leverage = leverage_array(md)
     signal_gen_def = SignalGeneratorDefinition(
@@ -146,37 +167,68 @@ def test_backtest_init(market_data, leverage_array, signals_array):
         operands={"sma": ("sma"), "close": "close"},
         conditions={
             "open_long": [("close", COMPARISON.IS_ABOVE, "sma")],
-            "open_short": [("close", COMPARISON.IS_BELOW, "sma")]
+            "open_short": [("close", COMPARISON.IS_BELOW, "sma")],
         },
     )
     signals = signals_array(md, signal_gen_def)
-    config = Config(True, True, True)
+    config_ = config
 
     try:
-        bt = BackTest(md.mds, leverage, signals, config)
+        bt = BackTest(md.mds, leverage, signals, config_)
     except Exception as e:
         print(f"Error in BackTest init: {str(e)}")
-        print(leverage[25:, :])
-        print(type(leverage[-1, 0]))
         raise
     else:
         assert isinstance(bt, BackTest), "BackTest instance creation failed."
 
         # Compare `leverage` arrays correctly
-        np.testing.assert_array_equal(bt.leverage, leverage, err_msg="Leverage mismatch ...")
+        np.testing.assert_array_equal(
+            bt.leverage, leverage, err_msg="Leverage mismatch ..."
+        )
 
         # Compare `signals` arrays correctly
-        np.testing.assert_array_equal(bt.signals, signals, err_msg="Signals mismatch ...")
+        np.testing.assert_array_equal(
+            bt.signals, signals, err_msg="Signals mismatch ..."
+        )
 
         # Compare `market_data` attributes individually
         # Replace 'open', 'close', etc., with actual attribute names of MarketDataStore
-        for attr in ['open_', 'close', 'high', 'low', 'volume']:
+        for attr in ["open_", "close", "high", "low", "volume"]:
             bt_attr = getattr(bt.market_data, attr, None)
             md_attr = getattr(md.mds, attr, None)  # Adjust if `md` structure differs
-            
-            assert bt_attr is not None, f"Attribute '{attr}' missing in BackTest.market_data"
+
+            assert (
+                bt_attr is not None
+            ), f"Attribute '{attr}' missing in BackTest.market_data"
             assert md_attr is not None, f"Attribute '{attr}' missing in md.mds"
-            np.testing.assert_array_equal(bt_attr, md_attr, err_msg=f"MarketData '{attr}' mismatch...")
+            np.testing.assert_array_equal(
+                bt_attr, md_attr, err_msg=f"MarketData '{attr}' mismatch..."
+            )
         # assert bt.config == config
         # assert bt.rebalance_fn is None
         # assert bt.stop_order_fn is None
+
+
+def test_backtest_run(market_data, leverage_array, signals_array, config):
+    md = market_data(number_of_periods=300, number_of_assets=2, data_type="fixed")
+    leverage = leverage_array(md)
+    signal_gen_def = SignalGeneratorDefinition(
+        name="TestSignalGenerator",
+        operands={"sma": ("sma"), "close": "close"},
+        conditions={
+            "open_long": [("close", COMPARISON.IS_ABOVE, "sma")],
+            "open_short": [("close", COMPARISON.IS_BELOW, "sma")],
+        },
+    )
+    signals = signals_array(md, signal_gen_def)
+
+    bt = BackTest(md.mds, leverage, signals, config)
+    
+    try:
+        portfolios = bt.run()
+    except Exception as e:
+        print(f"Error in BackTest run: {str(e)}")
+        raise
+
+    # assert isinstance(portfolios, np.ndarray), "Portfolios array creation failed."
+    # assert portfolios.shape == signals.shape, "Portfolios array shape mismatch."

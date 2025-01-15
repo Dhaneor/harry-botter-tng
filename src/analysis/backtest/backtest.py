@@ -7,44 +7,76 @@ Created on Jan 13 02:00:23 20235
 
 import numpy as np
 
-from numba import float64, float32, boolean
+from numba import float64, boolean
 from numba.experimental import jitclass
 from numba import types
 from numba import from_dtype
 from typing import Callable
 
 from analysis import MarketDataStore
-from analysis.dtypes import SIGNALS_DTYPE
+from analysis.dtypes import SIGNALS_DTYPE, PORTFOLIO_DTYPE
 
+WARMUP_PERIODS = 200
 
 # Define the configuration class specification
 config_spec = [
-    ("rebalance_position",boolean),
+    ("initial_capital", float64),
+    ("rebalance_position", boolean),
     ("increase_allowed", boolean),
     ("decrease_allowed", boolean),
+    ("minimum_change", float64),
+    ("fee_rate", float64),
+    ("slippage_rate", float64),
 ]
+
 
 @jitclass(config_spec)
 class Config:
-    def __init__(self, rebalance_position, increase_allowed, decrease_allowed):
+    def __init__(
+        self, 
+        initial_capital, 
+        rebalance_position = True, 
+        increase_allowed = True, 
+        decrease_allowed = True,
+        minimum_change = 0.1,
+        fee_rate = 0.001,
+        slippage_rate = 0.001, 
+    ):
+        self.initial_capital = initial_capital
         self.rebalance_position = rebalance_position
         self.increase_allowed = increase_allowed
         self.decrease_allowed = decrease_allowed
+        self.minimum_change = minimum_change
+        self.fee_rate = fee_rate
+        self.slippage_rate = slippage_rate
 
 
+# ================================ BackTest class definition ===========================
+# Define the LeverageArray2D specification
+LeverageArray2D = types.Array(types.float32, 2, "C")
+# Define the SignalRecord specification
+#
+# The signals array is a 3D array with dimensions (time, instruments, signals),
+# and it has a custom dtype (structured array) for the signal records. Numpy
+# requires to define this in the following way:
+# • convert the dtype into a Numba Record type (with a special helper function)
+# • define the array with the Record type and the dimensions
 SignalRecord = from_dtype(SIGNALS_DTYPE)
-SignalArray3D = types.Array(SignalRecord, 3, 'C')
-LeverageArray2D = types.Array(types.float32, 2, 'C')
+SignalArray3D = types.Array(SignalRecord, 3, "C")
+# Define the PortfolioRecord specification (same procedure as for the signals)
+PortfolioRecord = from_dtype(PORTFOLIO_DTYPE)
+PortfolioArray = types.Array(PortfolioRecord, 3, "C")
+EquityRecord = from_dtype(np.float64)
+EquityArray = types.Array(EquityRecord, 2, "C")
 
 spec = [
     ("market_data", MarketDataStore.class_type.instance_type),
     ("leverage", LeverageArray2D),
-    ("signals",  SignalArray3D),
+    ("signals", SignalArray3D),
     ("config", Config.class_type.instance_type),
-    # ("rebalance_fn", optional(types.FunctionType)),
-    # ("stop_order_fn", optional(types.FunctionType)),
-    ("portfolios", float64[:, :, :]),
-]
+    ("portfolios", PortfolioArray),
+    ("equity", EquityArray),
+] 
 
 
 @jitclass(spec)
@@ -54,60 +86,268 @@ class BackTest:
         market_data: MarketDataStore,
         leverage: np.ndarray,
         signals: np.ndarray,
-        config: Config
-        # rebalance_fn: Callable = None,
-        # stop_order_fn: Callable = None,
+        config: Config,
     ):
+        # assert market_data.shape[0] == leverage.shape[0] == signals.shape[0],\
+        #       "Market data/leverage/signals arrays must have the same length."
+        
+        # assert market_data.shape[0] > WARMUP_PERIODS, \
+        #     f"Market data must have at least {WARMUP_PERIODS + 1} periods."
+
         self.market_data = market_data
         self.leverage = leverage
         self.signals = signals
         self.config = config
-        # self.rebalance_fn = rebalance_fn
-        # self.stop_order_fn = stop_order_fn
 
-        # self.portfolios = self._initialize_portfolios()
+        self.portfolios = self._initialize_portfolios()
+        
+        # initialize equity array
+        self.equity = np.zeros(
+            shape=(signals.shape[0], signals.shape[2]), 
+            dtype=np.float64
+            )  
 
-    # def _initialize_portfolios(self):
-    #     # Initialize the portfolios array with the structured dtype
-    #     portfolio_dtype = np.dtype([
-    #         ('position', np.int8),
-    #         ('balance_base', np.float64),
-    #         ('balance_quote', np.float64),
-    #         ('equity', np.float64),
-    #         ('drawdown', np.float64),
-    #         ('max_drawdown', np.float64),
-    #     ])
-    #     return np.zeros(self.signals.shape, dtype=portfolio_dtype)
+    def _initialize_portfolios(self) -> np.ndarray:
+        """Initialize the portfolios array with the structured dtype.
 
-    # def run(self):
-    #     periods, symbols, param_combinations = self.signals.shape
-    #     for p in range(1, periods):
-    #         for s in range(symbols):
-    #             for c in range(param_combinations):
-    #                 self._process_time_step(p, s, c)
+        Will return a 3D array with dimensions (time, instruments, strategies)
+        and a custom dtype for the portfolio records. The cutstom dtype is
+        defined in a separate file to allow access for other modules.
+        
+        .. code-block:: python
+        PORTFOLIO_DTYPE = np.dtype([
+            ('position', np.int8),  # 0 = none, 1 = long,  -1 = short
+            ('qty', np.float64),  # quantity (can be negative for shorts)
+            ('entry_price', np.float64),  # entry price for the position
+            ('duration', np.int32),  # duration (trading periods)
+            ('equity', np.float64),  # current equity/value of the position
+            ('change_qty', np.float64),  # change (= buy/sell qty)
+            ('change_price', np.float64),  # buy/sell price (open price / stop price)
+            ('asset_weight', np.float32),  # weight for the asset in the portfolio
+            ('strat_weight', np.float32),  # weight of the strategy in the portfolio
+        ])
+        """
+        return np.zeros(self.signals.shape, dtype=PORTFOLIO_DTYPE)
 
-    #         if self.rebalance_fn and p % self.config['rebalance_period'] == 0:
-    #             self._rebalance(p)
+    def run(self):
+        periods, markets, strategies = self.signals.shape
 
-    # def _process_time_step(self, p, s, c):
-    #     # Process one time step for a specific symbol and parameter combination
-    #     portfolio = self.portfolios[p, s, c]
-    #     signal = self.signals[p-1, s, c]
+        for p in range(WARMUP_PERIODS, periods):
+            self.portfolios[p] = self.portfolios[p - 1]  # copy previous portfolio
+            
+            for m in range(markets):
+                for s in range(strategies):
+                    self._process_single(p, m, s)
+        return self.portfolios
+    
+    def _test(self, p: int, m: int, s: int):
+        pass
 
-    #     # Your logic for processing signals and updating portfolio goes here
-    #     # ...
+    def _process_single(self, p: int, m: int, s: int):
 
-    #     if self.stop_order_fn:
-    #         self.stop_order_fn(portfolio, self.market_data, p, s)
+        portfolio = self.portfolios[p, m, s]
+        position = portfolio["position"]    
+        signal = self.signals[p-1, m, s]
+        open_long = signal["open_long"] == 1
+        close_long = signal["close_long"] == 1
+        open_short = signal["open_short"] == 1
+        close_short = signal["close_short"] == 1
 
-    # def _rebalance(self, p):
-    #     if self.rebalance_fn:
-    #         self.rebalance_fn(self.portfolios[p], self.market_data[p])
+        self.portfolios[p, m, s]["change_qty"] = 0
+        self.portfolios[p, m, s]["change_price"] = np.nan
+
+        if position == 1:
+            if close_long or open_short:
+                price = self.market_data.close[p, m]
+                self._close_long_position(p, m, s, price)
+            else:
+                self._update_long_position(p, m, s)
+
+        if position == -1:
+            if close_short or open_long:
+                price = self.market_data.close[p, m]
+                self._close_long_position(p, m, s, price)
+            else:
+                self._update_short_position(p, m, s)
+
+        if position == 0:
+            if open_long:
+                self._open_long_position(p, m, s)
+            elif open_short:
+                self._open_short_position(p, m, s)
+        
+        self.portfolios[p, m, s]["equity"] = \
+            self.market_data.close[p, m] * self.portfolios[p, m, s]["qty"]
+        self.equity[p, s] = self.portfolios[p, m, s]["equity"]
+
+    def _open_long_position(self, p, m, s):
+        exposure_quote = self._get_target_exposure(p, m, s)
+        price = self.market_data.open_[p, m]
+        # calculate the fee & slippage
+        fee , slippage = self._calculate_fee_and_slippage(exposure_quote, price)
+        
+        # calculate the change in quantity (buy/sell)
+        base_qty = (exposure_quote - fee - slippage) / price
+
+        self.portfolios[p, m, s]["position"] = 1
+        self.portfolios[p, m, s]["qty"] += base_qty
+        self.portfolios[p, m, s]["entry_price"] = price
+        self.portfolios[p, m, s]["duration"] += 1
+        self.portfolios[p, m, s]["change_qty"] = base_qty
+        self.portfolios[p, m, s]["change_price"] = price        
+        self.portfolios[p, m, s]["fee"] = fee
+        self.portfolios[p, m, s]["slippage"] = slippage
+
+        return
+    
+    def _update_long_position(self, p, m, s):
+        # assign required values to local variables for convenience
+        portfolio = self.portfolios[p, m, s]
+        
+        # determine buy/sell price (open price / stop price)
+        # this is the open price for now (unitl stop orders are implemented)
+        price = self.market_data.open_[p, m]
+
+        # calculate the change in exposure
+        current_exposure = portfolio["equity"]
+        target_exposure = self._get_target_exposure(p, m, s)
+        change_exposure = target_exposure - current_exposure
+
+        change_pct = abs(change_exposure / current_exposure) if current_exposure > 0 else 1
+
+        if change_pct < self.config.minimum_change:
+            return
+
+        if change_exposure > 0 and not self.config.increase_allowed:
+            return
+
+        if change_exposure < 0 and self.config.decrease_allowed:
+            return
+        
+        # calculate the fee & slippage
+        fee , slippage = self._calculate_fee_and_slippage(change_exposure, price)
+
+        # calculate the change in quantity (buy/sell)
+        change_qty = (change_exposure - fee - slippage) / price
+
+        self.portfolios[p, m, s]["qty"] += change_qty
+        self.portfolios[p, m, s]["duration"] += 1
+        self.portfolios[p, m, s]["change_qty"] += change_qty
+        self.portfolios[p, m, s]["change_price"] = price
+        self.portfolios[p, m, s]["fee"] = fee
+        self.portfolios[p, m, s]["slippage"] = slippage
+
+    def _close_long_position(self, p, m, s, price):
+        portfolio = self.portfolios[p, m, s]
+        
+        close_exposure = portfolio["qty"] * price
+        fee, slippage = self._calculate_fee_and_slippage(close_exposure, price)
+
+        self.equity[p, m] += close_exposure - fee - slippage
+        
+        # Update portfolio
+        self.portfolios[p, m, s]["qty"] = 0
+        self.portfolios[p, m, s]["position"] = 0
+        self.portfolios[p, m, s]["duration"] = 0
+        self.portfolios[p, m, s]["change_qty"] -= portfolio["qty"]
+        self.portfolios[p, m, s]["change_price"] = price
+        self.portfolios[p, m, s]["fee"] += fee
+        self.portfolios[p, m, s]["slippage"] += slippage
+        self.portfolios[p, m, s]["equity"] = 0
+
+    def _open_short_position(self, p, m, s):
+        exposure_quote = self._get_target_exposure(p, m, s)
+        price = self.market_data.open_[p, m]
+        # calculate the fee & slippage
+        fee , slippage = self._calculate_fee_and_slippage(exposure_quote, price)
+        
+        # calculate the change in quantity (buy/sell)
+        base_qty = (exposure_quote - fee - slippage) / price
+
+        self.portfolios[p, m, s]["position"] = -1
+        self.portfolios[p, m, s]["qty"] = -base_qty
+        self.portfolios[p, m, s]["entry_price"] = price
+        self.portfolios[p, m, s]["duration"] += 1
+        self.portfolios[p, m, s]["change_qty"] = -base_qty
+        self.portfolios[p, m, s]["change_price"] = price        
+        self.portfolios[p, m, s]["fee"] = fee
+        self.portfolios[p, m, s]["slippage"] = slippage
+
+        return
+
+    def _update_short_position(self, p, m, s):
+        # assign required values to local variables for convenience
+        portfolio = self.portfolios[p, m, s]
+        
+        # determine buy/sell price (open price / stop price)
+        # this is the open price for now (unitl stop orders are implemented)
+        price = self.market_data.open_[p, m]
+
+        # calculate the change in exposure
+        current_exposure = portfolio["equity"]
+        target_exposure = self._get_target_exposure(p, m, s)
+        change_exposure = target_exposure - current_exposure
+
+        change_pct = abs(change_exposure / current_exposure) if current_exposure > 0 else 1
+
+        if change_pct < self.config.minimum_change:
+            return
+
+        if change_exposure > 0 and not self.config.increase_allowed:
+            return
+
+        if change_exposure < 0 and self.config.decrease_allowed:
+            return
+        
+        # calculate the fee & slippage
+        fee , slippage = self._calculate_fee_and_slippage(change_exposure, price)
+
+        # calculate the change in quantity (buy/sell)
+        change_qty = -1 * (change_exposure - fee - slippage) / price
+
+        self.portfolios[p, m, s]["qty"] += change_qty
+        self.portfolios[p, m, s]["duration"] += 1
+        self.portfolios[p, m, s]["change_qty"] = change_qty
+        self.portfolios[p, m, s]["change_price"] = price
+        self.portfolios[p, m, s]["fee"] = fee
+        self.portfolios[p, m, s]["slippage"] = slippage
+    
+    def _close_short_position(self, p, m, s, price):
+        portfolio = self.portfolios[p, m, s]
+        
+        close_exposure = portfolio["qty"] * price
+        fee, slippage = self._calculate_fee_and_slippage(close_exposure, price)
+        
+        # Update portfolio
+        self.portfolios[p, m, s]["qty"] = 0
+        self.portfolios[p, m, s]["position"] = 0
+        self.portfolios[p, m, s]["duration"] = 0
+        self.portfolios[p, m, s]["change_qty"] = -portfolio["qty"]
+        self.portfolios[p, m, s]["change_price"] = price
+        self.portfolios[p, m, s]["fee"] += fee
+        self.portfolios[p, m, s]["slippage"] += slippage
+        self.portfolios[p, m, s]["equity"] = 0
+
+    def _get_target_exposure(self, p, m, s):
+        asset_weight = self.portfolios[p, m, s]["asset_weight"]
+        strategy_weight = self.portfolios[p, m, s]["strategy_weight"]
+        exposure_quote = self.equity[p, s] \
+            * asset_weight \
+            * strategy_weight \
+            * self.leverage[p, m]
+        return exposure_quote
+    
+    def _calculate_fee_and_slippage(self, change_quote, price):
+        # calculate fee & slippage
+        fee = self.config.fee_rate * change_quote
+        slippage = self.config.slippage_rate * change_quote
+        return fee, slippage
 
 
+# ======================================================================================
 def _process_one_parameter_combination(
     open_prices: np.ndarray,
-    close_prices: np.ndarray,
+    closeprices: np.ndarray,
     leverage: np.ndarray,  # 2D - shape (periods, symbols)
     signals: np.ndarray,  # 2D - shape (periods, symbols)
     portfolio: np.ndarray,  # 2D - shape (periods, symbols)
@@ -119,9 +359,9 @@ def _process_one_parameter_combination(
     for p in range(1, periods):
         for s in range(symbols):
             long_entry = signals[p - 1, s]["open_long"]
-            long_exit = signals[p - 1, s]["close_long"]
+            long_exit = signals[p - 1, s]["closelong"]
             short_entry = signals[p - 1, s]["open_short"]
-            short_exit = signals[p - 1, s]["close_short"]
+            short_exit = signals[p - 1, s]["closeshort"]
             active_position = portfolio["position"]
 
             if active_position != 1 and long_entry:
@@ -159,7 +399,7 @@ def run_backtest_nb(
     for c in range(param_combinations):
         _process_one_parameter_combination(
             open_prices=market_data.open_,
-            close_prices=market_data.close_,
+            closeprices=market_data.close,
             leverage=leverage,
             signals=signals[:, :, c],
             portfolio=portfolios[:, :, c],
