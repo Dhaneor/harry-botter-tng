@@ -52,6 +52,36 @@ def combine_signals(
     return positions_out
 
 
+def split_signals(cls, combined: np.ndarray):
+    """Function to split signals from one- to four-digit_representation.
+
+    This helps to reverse the result from the combine_signals() 
+    function (see above) which produces a single array with 
+    singe-digit representataion of signals.
+    """
+    open_long = np.zeros_like(combined, dtype=np.float64)
+    close_long = np.zeros_like(combined, dtype=np.float64)
+    open_short = np.zeros_like(combined, dtype=np.float64)
+    close_short = np.zeros_like(combined, dtype=np.float64)
+
+    position = 0
+
+    for i in range(combined.shape[0]):
+        if combined[i] > 0:
+            open_long[i] = combined[i]
+            position = 1
+        elif combined[i] < 0:
+            open_short[i] = abs(combined[i])
+            position = -1
+        else:
+            if position == 1:
+                close_long[i] = 1
+            elif position == -1:
+                close_short[i] = 1
+            position = 0
+
+
+# ================================= SignalStore JIT Class ==============================
 spec = [
     ("data", float32[:, :, :]),
 ]

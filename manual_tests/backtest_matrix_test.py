@@ -20,8 +20,8 @@ logger = get_logger('main', level="DEBUG")
 
 
 periods = 1000
-assets = 1
-strategies = 100
+assets = 10
+strategies = 200
 
 
 market_data = MarketData.from_random(length=periods, no_of_symbols=assets)
@@ -44,7 +44,7 @@ if __name__ == "__main__":
 
     logger.setLevel("ERROR")
 
-    runs = 1000
+    runs = 1_000
 
     st = time.time()
     with Profile(timeunit=0.000_001) as p:
@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     print(f'data: {periods} periods x {assets} assets x {strategies} strategies')
     print(f"periods/s: {periods:,.0f}")
-    print(f"\navg exc time: {(et * 1_000_000 / runs):.0f} µs")
+    print(f"\navg exc time: {(et * 1_000_000 / runs / strategies):.0f} µs")
 
     print(f"\n~iter/s (1 core): {ips:>10,.0f}")
     print(f"~iter/s (8 core): {ips * 5:>10,.0f}")

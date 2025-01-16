@@ -15,6 +15,7 @@ import pytest
 from numba.typed import List as NumbaList
 
 from analysis.models.signals import SignalStore, combine_signals
+from analysis import SIGNALS_DTYPE
 
 
 @pytest.fixture
@@ -30,7 +31,9 @@ def generate_test_data():
 
         def create_array(pattern):
             cycle = itertools.cycle(pattern)
-            return np.array([next(cycle) for _ in range(periods)]).reshape(periods, 1, 1).astype(np.float32)
+            return np.array(
+                [next(cycle) for _ in range(periods)]
+            ).reshape(periods, 1, 1).astype(np.float32)
 
         arrays = {key: create_array(pattern) for key, pattern in base_patterns.items()}
 
@@ -61,6 +64,10 @@ def test_combine_signals(generate_test_data):
         print(f"AssertionError: {e}")
         print(pd.DataFrame(combined.reshape(-1, combined.shape[-1])))
         pytest.fail("Arrays are not equal")
+
+
+def test_split_sginals(generate_test_data):
+    ...
 
 
 def test_signal_store_instantiation(generate_test_data):

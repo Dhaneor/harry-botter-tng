@@ -9,7 +9,7 @@ Created on January 14 01:22:23 2025
 import pytest
 import numpy as np
 
-from analysis.backtest.backtest import BackTest, Config, run_backtest
+from analysis.backtest.backtest import BackTestCore, Config, run_backtest
 from analysis import (
     MarketData,
     MarketDataStore,
@@ -179,12 +179,12 @@ def test_backtest_init(config, market_data, leverage_array, signals_array):
     config_ = config
 
     try:
-        bt = BackTest(md.mds, leverage, signals, config_)
+        bt = BackTestCore(md.mds, leverage, signals, config_)
     except Exception as e:
-        print(f"Error in BackTest init: {str(e)}")
+        print(f"Error in BackTestCore init: {str(e)}")
         raise
     else:
-        assert isinstance(bt, BackTest), "BackTest instance creation failed."
+        assert isinstance(bt, BackTestCore), "BackTestCore instance creation failed."
 
         # Compare `leverage` arrays correctly
         np.testing.assert_array_equal(
@@ -203,7 +203,7 @@ def test_backtest_init(config, market_data, leverage_array, signals_array):
 
             assert (
                 bt_attr is not None
-            ), f"Attribute '{attr}' missing in BackTest.market_data"
+            ), f"Attribute '{attr}' missing in BackTestCore.market_data"
             assert md_attr is not None, f"Attribute '{attr}' missing in md.mds"
             np.testing.assert_array_equal(
                 bt_attr, md_attr, err_msg=f"MarketData '{attr}' mismatch..."
@@ -237,12 +237,12 @@ def test_backtest_run(market_data, leverage_array, signals_array, config):
         "shape of signals array: %s (%s backtests)", signals.shape, assets * strategies
         )
 
-    bt = BackTest(md.mds, leverage, signals, config)
+    bt = BackTestCore(md.mds, leverage, signals, config)
     
     try:
         result = bt.run()
     except Exception as e:
-        print(f"Error in BackTest run: {str(e)}")
+        print(f"Error in BackTestCore run: {str(e)}")
         raise
 
     assert isinstance(result, np.ndarray), "Positions array creation failed."
@@ -272,7 +272,7 @@ def test_run_backtest_fn(market_data, leverage_array, signals_array, config):
     try:
         result = run_backtest(md.mds, leverage, signals, config)
     except Exception as e:
-        print(f"Error in BackTest run: {str(e)}")
+        print(f"Error in BackTestCore run: {str(e)}")
         raise
 
     assert isinstance(result, np.ndarray), "Positions array creation failed."

@@ -87,7 +87,7 @@ spec = [
 
 # ================================== BackTest class ====================================
 @jitclass(spec)
-class BackTest:
+class BackTestCore:
     def __init__(
         self,
         market_data: MarketDataStore,
@@ -263,7 +263,6 @@ class BackTest:
             * self.positions[p, m, s]["strategy_weight"]\
             * self.leverage[p, m]
 
-
     def _calculate_change_exposure(self, p, m, s, price) -> Tuple[float, float]:
         current_exposure = self.positions[p - 1, m, s]["qty"] * price
         target_exposure = self._calculate_target_exposure(p, m, s)
@@ -293,6 +292,6 @@ def run_backtest(
         "shape of signals array: %s (%s backtests)", signals.shape, assets * strategies
     )
 
-    bt = BackTest(market_data, leverage, signals, config)
+    bt = BackTestCore(market_data, leverage, signals, config)
 
     return bt.run()
