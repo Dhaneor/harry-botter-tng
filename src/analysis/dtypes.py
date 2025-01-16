@@ -32,6 +32,7 @@ POSITION_DTYPE = np.dtype([
 
 PORTFOLIO_DTYPE = np.dtype([
     ('quote_balance', np.float64),  # Balance of the quote asset
-    ('equity', np.float64),  # Total equity (position value + quote balance)
+    ('equity', np.float64),  # sum of position values
+    ('total_value', np.float64),  # equity + quote balance
     ('leverage', np.float64),  # Current leverage
 ])

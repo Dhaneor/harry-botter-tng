@@ -56,30 +56,35 @@ class Config:
 LeverageArray2D = types.Array(types.float32, 2, "C")
 # Define the SignalRecord specification
 #
-# The signals array is a 3D array with dimensions (time, instruments, signals),
-# and it has a custom dtype (structured array) for the signal records. Numpy
-# requires to define this in the following way:
-# • convert the dtype into a Numba Record type (with a special helper function)
-# • define the array with the Record type and the dimensions
+# NOTE: The signals array is a 3D array with dimensions (time, 
+#       instruments, signals), and it has a custom dtype (structured 
+#       array) for the signal records. Numba requires to define this 
+#       in the following way:
+#       • convert the dtype into a Numba Record type (with a special 
+#         helper function)
+#       • define the array with the Record type and the dimensions
 SignalRecord = from_dtype(SIGNALS_DTYPE)
 SignalArray3D = types.Array(SignalRecord, 3, "C")
-# Define the PortfolioRecord specification (same procedure as for the signals)
+
+# ... the PositionRecord specification (same procedure as for the signals)
 PositionRecord = from_dtype(POSITION_DTYPE)
-PositionArray = types.Array(PositionRecord, 3, "C")
-PortfolioRecord = from_dtype(np.float64)
-PortfolioArray = types.Array(PortfolioRecord, 2, "C")
+PositionArray3D = types.Array(PositionRecord, 3, "C")
+# ... and the PortfolioRecord specification
+PortfolioRecord = from_dtype(PORTFOLIO_DTYPE)
+PortfolioArray2D = types.Array(PortfolioRecord, 2, "C")
 
 spec = [
     ("market_data", MarketDataStore.class_type.instance_type),
     ("leverage", LeverageArray2D),
     ("signals", SignalArray3D),
     ("config", Config.class_type.instance_type),
-    ("portfolios", PositionArray),
-    ("Portfolio", PortfolioArray),
+    ("positions", PositionArray3D),
+    ("portfolio", PortfolioArray2D),
 ] 
 
 
-# @jitclass(spec)
+# ================================ BackTest class definition ===========================
+@jitclass(spec)
 class BackTest:
     def __init__(
         self,
@@ -99,7 +104,7 @@ class BackTest:
         self.signals = signals
         self.config = config
 
-        self.positions = self._initialize_portfolios()
+        self.positions = np.zeros(self.signals.shape, dtype=POSITION_DTYPE)
         
         # initialize Portfolio array
         self.portfolio = np.zeros(
@@ -107,27 +112,27 @@ class BackTest:
             dtype=PORTFOLIO_DTYPE
             )  
 
-    def _initialize_portfolios(self) -> np.ndarray:
-        """Initialize the portfolios array with the structured dtype.
+    # def _initialize_positions(self) -> np.ndarray:
+    #     """Initialize the portfolios array with the structured dtype.
 
-        Will return a 3D array with dimensions (time, instruments, strategies)
-        and a custom dtype for the portfolio records. The cutstom dtype is
-        defined in a separate file to allow access for other modules.
+    #     Will return a 3D array with dimensions (time, instruments, strategies)
+    #     and a custom dtype for the portfolio records. The cutstom dtype is
+    #     defined in a separate file to allow access for other modules.
         
-        .. code-block:: python
-        POSITION_DTYPE = np.dtype([
-            ('position', np.int8),  # 0 = none, 1 = long,  -1 = short
-            ('qty', np.float64),  # quantity (can be negative for shorts)
-            ('entry_price', np.float64),  # entry price for the position
-            ('duration', np.int32),  # duration (trading periods)
-            ('equity', np.float64),  # current equity/value of the position
-            ('change_qty', np.float64),  # change (= buy/sell qty)
-            ('change_price', np.float64),  # buy/sell price (open price / stop price)
-            ('asset_weight', np.float32),  # weight for the asset in the portfolio
-            ('strat_weight', np.float32),  # weight of the strategy in the portfolio
-        ])
-        """
-        return np.zeros(self.signals.shape, dtype=POSITION_DTYPE)
+    #     .. code-block:: python
+    #     POSITION_DTYPE = np.dtype([
+    #         ('position', np.int8),  # 0 = none, 1 = long,  -1 = short
+    #         ('qty', np.float64),  # quantity (can be negative for shorts)
+    #         ('entry_price', np.float64),  # entry price for the position
+    #         ('duration', np.int32),  # duration (trading periods)
+    #         ('equity', np.float64),  # current equity/value of the position
+    #         ('change_qty', np.float64),  # change (= buy/sell qty)
+    #         ('change_price', np.float64),  # buy/sell price (open price / stop price)
+    #         ('asset_weight', np.float32),  # weight for the asset in the portfolio
+    #         ('strat_weight', np.float32),  # weight of the strategy in the portfolio
+    #     ])
+    #     """
+    #     return np.zeros(self.signals.shape, dtype=POSITION_DTYPE)
 
     def run(self):
         periods, markets, strategies = self.signals.shape
@@ -135,13 +140,24 @@ class BackTest:
         for p in range(WARMUP_PERIODS, periods):
             self.positions[p] = self.positions[p - 1]  # copy previous portfolio
             
-            for m in range(markets):
-                for s in range(strategies):
+            for s in range(strategies):
+                for m in range(markets):
                     self._process_single(p, m, s)
+                self._update_portfolio_equity(p, s)
+        
         return self.positions
     
-    def _test(self, p: int, m: int, s: int):
-        pass
+    def _update_portfolio_equity(self, p: int, s: int):
+        # Sum the equity values for all markets for the current period and strategy
+        asset_value= np.sum(self.positions[p, :, s]['equity'])
+        quote_balance = self.portfolio[p, s]['quote_balance']
+        
+        total_value = asset_value + quote_balance
+        leverage = abs(asset_value) / total_value if total_value > 0 else 0
+         
+        self.portfolio[p, s]['leverage'] = leverage    
+        self.portfolio[p, s]['equity'] = asset_value
+        self.portfolio[p, s]['total_value'] = total_value
 
     def _process_single(self, p: int, m: int, s: int):
 

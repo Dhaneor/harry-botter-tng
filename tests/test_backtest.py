@@ -225,7 +225,7 @@ def test_backtest_run(market_data, leverage_array, signals_array, config):
     bt = BackTest(md.mds, leverage, signals, config)
     
     try:
-        portfolis = bt.run()
+        result = bt.run()
     except Exception as e:
         print(f"Error in BackTest run: {str(e)}")
         raise
