@@ -8,10 +8,8 @@ Created on January 14 01:22:23 2025
 
 import pytest
 import numpy as np
-from numba import types
-from numba.typed import Dict
 
-from analysis.backtest.backtest import BackTest, Config
+from analysis.backtest.backtest import BackTest, Config, run_backtest
 from analysis import (
     MarketData,
     MarketDataStore,
@@ -20,6 +18,9 @@ from analysis import (
     SignalGeneratorDefinition,
 )
 from models.enums import COMPARISON
+from util.logger_setup import get_logger
+
+logger = get_logger('main', level="DEBUG")
 
 
 # ==================================== FIXTURES =======================================
@@ -99,6 +100,7 @@ def signals_array():
     def _signals_array(
         market_data_store: MarketDataStore,
         signal_generator_def: SignalGeneratorDefinition,
+        number_of_strategies: int = 1
     ):
         # Create a SignalGenerator instance
         signal_generator = signal_generator_factory(signal_generator_def)
@@ -107,7 +109,10 @@ def signals_array():
         signal_generator.market_data = market_data_store
 
         # Run the signal generator to produce signals
-        signals = signal_generator.execute()
+        base_signals = signal_generator.execute()
+
+        # Extend the signals to the specified number of strategies
+        signals = np.repeat(base_signals, number_of_strategies, axis=2)
 
         return signals
 
@@ -160,7 +165,7 @@ def test_backtest_config(config):
 
 
 def test_backtest_init(config, market_data, leverage_array, signals_array):
-    md = market_data(number_of_periods=100, number_of_assets=2, data_type="fixed")
+    md = market_data(number_of_periods=300, number_of_assets=2, data_type="fixed")
     leverage = leverage_array(md)
     signal_gen_def = SignalGeneratorDefinition(
         name="TestSignalGenerator",
@@ -192,7 +197,6 @@ def test_backtest_init(config, market_data, leverage_array, signals_array):
         )
 
         # Compare `market_data` attributes individually
-        # Replace 'open', 'close', etc., with actual attribute names of MarketDataStore
         for attr in ["open_", "close", "high", "low", "volume"]:
             bt_attr = getattr(bt.market_data, attr, None)
             md_attr = getattr(md.mds, attr, None)  # Adjust if `md` structure differs
@@ -210,8 +214,15 @@ def test_backtest_init(config, market_data, leverage_array, signals_array):
 
 
 def test_backtest_run(market_data, leverage_array, signals_array, config):
-    md = market_data(number_of_periods=300, number_of_assets=2, data_type="fixed")
+    periods = 1_000
+    assets = 1
+    strategies = 1_000
+
+    md = market_data(
+        number_of_periods=periods, number_of_assets=assets, data_type="fixed"
+        )
     leverage = leverage_array(md)
+    
     signal_gen_def = SignalGeneratorDefinition(
         name="TestSignalGenerator",
         operands={"sma": ("sma"), "close": "close"},
@@ -220,7 +231,11 @@ def test_backtest_run(market_data, leverage_array, signals_array, config):
             "open_short": [("close", COMPARISON.IS_BELOW, "sma")],
         },
     )
-    signals = signals_array(md, signal_gen_def)
+    signals = signals_array(md, signal_gen_def, strategies)
+
+    logger.info(
+        "shape of signals array: %s (%s backtests)", signals.shape, assets * strategies
+        )
 
     bt = BackTest(md.mds, leverage, signals, config)
     
@@ -230,5 +245,35 @@ def test_backtest_run(market_data, leverage_array, signals_array, config):
         print(f"Error in BackTest run: {str(e)}")
         raise
 
-    # assert isinstance(portfolios, np.ndarray), "Portfolios array creation failed."
-    # assert portfolios.shape == signals.shape, "Portfolios array shape mismatch."
+    assert isinstance(result, np.ndarray), "Positions array creation failed."
+    assert result.shape == signals.shape, "Portfolios array shape mismatch."
+
+
+def test_run_backtest_fn(market_data, leverage_array, signals_array, config):
+    periods = 1_000
+    assets = 10
+    strategies = 10_000
+
+    md = market_data(
+        number_of_periods=periods, number_of_assets=assets, data_type="fixed"
+        )
+    leverage = leverage_array(md)
+    
+    signal_gen_def = SignalGeneratorDefinition(
+        name="TestSignalGenerator",
+        operands={"sma": ("sma"), "close": "close"},
+        conditions={
+            "open_long": [("close", COMPARISON.IS_ABOVE, "sma")],
+            "open_short": [("close", COMPARISON.IS_BELOW, "sma")],
+        },
+    )
+    signals = signals_array(md, signal_gen_def, strategies)
+    
+    try:
+        result = run_backtest(md.mds, leverage, signals, config)
+    except Exception as e:
+        print(f"Error in BackTest run: {str(e)}")
+        raise
+
+    assert isinstance(result, np.ndarray), "Positions array creation failed."
+    assert result.shape == signals.shape, "Portfolios array shape mismatch."

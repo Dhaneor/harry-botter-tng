@@ -31,6 +31,8 @@ def correlation_matrix(data: np.ndarray) -> np.ndarray:
     np.fill_diagonal(correlations, np.nan)
     return correlations
 
+# Calculate the correlation matrix for the initial data
+# to trigger the Numba JIT compiler.
 correlation_matrix(init_data)
 
 
