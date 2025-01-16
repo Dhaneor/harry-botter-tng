@@ -7,12 +7,14 @@ Created on Sun Dec 11 19:08:20 2022
 
 @author dhaneor
 """
-
+import logging
 import numpy as np
 import numpy.typing as npt
 from numba import njit, float32
 from numba.experimental import jitclass
 from typing import Optional
+
+logger = logging.getLogger("main.signals")
 
 
 @njit
@@ -52,33 +54,42 @@ def combine_signals(
     return positions_out
 
 
-def split_signals(cls, combined: np.ndarray):
+def split_signals(combined: np.ndarray):
     """Function to split signals from one- to four-digit_representation.
 
     This helps to reverse the result from the combine_signals() 
     function (see above) which produces a single array with 
     singe-digit representataion of signals.
     """
-    open_long = np.zeros_like(combined, dtype=np.float64)
-    close_long = np.zeros_like(combined, dtype=np.float64)
-    open_short = np.zeros_like(combined, dtype=np.float64)
-    close_short = np.zeros_like(combined, dtype=np.float64)
+    open_long = np.zeros_like(combined, dtype=np.bool_)
+    close_long = np.zeros_like(combined, dtype=np.bool_)
+    open_short = np.zeros_like(combined, dtype=np.bool_)
+    close_short = np.zeros_like(combined, dtype=np.bool_)
 
-    position = 0
+    periods, symbols, strategies = combined.shape
 
-    for i in range(combined.shape[0]):
-        if combined[i] > 0:
-            open_long[i] = combined[i]
-            position = 1
-        elif combined[i] < 0:
-            open_short[i] = abs(combined[i])
-            position = -1
-        else:
-            if position == 1:
-                close_long[i] = 1
-            elif position == -1:
-                close_short[i] = 1
+    for k in range(strategies):
+        for j in range(symbols):
             position = 0
+            for i in range(periods):
+                logger.info(f"[{i}] Signal: {combined[i, j, k]}, saved position: {position}")
+                if combined[i, j, k] > 0:
+                    if position != 1:
+                        open_long[i, j, k] = True
+                        position = 1
+                elif combined[i, j, k] < 0:
+                    if position != -1:
+                        open_short[i, j, k] = True
+                        position = -1
+                else:
+                    if position == 1:
+                        close_long[i, j, k] = True
+                    elif position == -1:
+                        close_short[i, j, k] = True
+                    position = 0
+                logger.info(f"[{i}] {open_long[i, j, k]} {close_long[i, j, k]} {open_short[i, j, k]} {close_short[i, j, k]}")
+
+    return open_long, close_long, open_short, close_short
 
 
 # ================================= SignalStore JIT Class ==============================

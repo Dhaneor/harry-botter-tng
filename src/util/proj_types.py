@@ -30,3 +30,5 @@ Array_1D = npt.NDArray[Numeric]
 Array_2D = npt.NDArray[Numeric]
 Array_3D = npt.NDArray[Numeric]
 ArrayLikeT = TypeVar("ArrayLikeT", Array_1D, Array_2D, Array_3D)
+
+SignalsArrayT = npt.NDArray[Numeric]

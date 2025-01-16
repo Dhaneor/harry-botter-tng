@@ -11,7 +11,8 @@ SIGNALS_DTYPE = np.dtype([
     ('open_long', np.bool_),
     ('close_long', np.bool_),
     ('open_short', np.bool_),
-    ('close_short', np.bool_)
+    ('close_short', np.bool_),
+    ('combined', np.float16),  # one column representation of all signals
 ])
 
 

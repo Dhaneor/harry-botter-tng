@@ -14,49 +14,50 @@ import pytest
 
 from numba.typed import List as NumbaList
 
-from analysis.models.signals import SignalStore, combine_signals
+from analysis.models.signals import SignalStore, combine_signals, split_signals
 from analysis import SIGNALS_DTYPE
+from util import get_logger
+
+logger = get_logger("main")
 
 
 @pytest.fixture
 def generate_test_data():
-    def _generate(periods=8, num_symbols=1, num_strategies=1):
+    def _generate(periods=8, num_symbols=1, num_strategies=1) -> np.ndarray:
         base_patterns = {
-            "ol": (1, 0, 0, 0, 1, 0, 0, 0),
-            "cl": (0, 1, 0, 0, 0, 0, 0, 0),
-            "os": (0, 0, 1, 0, 0, 0, 1, 0),
-            "cs": (0, 0, 0, 1, 0, 0, 0, 0),
-            "exp": (1, 0, -1, 0, 1, 1, -1, -1),
+            "open_long":   (1, 0,  0, 0, 1, 0,  0,  0),
+            "close_long":  (0, 1,  0, 0, 0, 0,  0,  0),
+            "open_short":  (0, 0,  1, 0, 0, 0,  1,  0),
+            "close_short": (0, 0,  0, 1, 0, 0,  0,  0),
+            "combined":    (1, 0, -1, 0, 1, 1, -1, -1),
         }
 
         def create_array(pattern):
             cycle = itertools.cycle(pattern)
-            return np.array(
-                [next(cycle) for _ in range(periods)]
-            ).reshape(periods, 1, 1).astype(np.float32)
+            return np.array([next(cycle) for _ in range(periods)]).reshape(periods, 1, 1).astype(np.float32)
+        
+        out = np.empty((periods, num_symbols, num_strategies), dtype=SIGNALS_DTYPE)
+        
+        for key in base_patterns.keys():
+            out[key] = create_array(base_patterns[key])
 
-        arrays = {key: create_array(pattern) for key, pattern in base_patterns.items()}
-
-        # Tile arrays for multiple symbols and strategies
-        for key in arrays:
-            arrays[key] = np.tile(arrays[key], (1, num_symbols, num_strategies))
-
-        return arrays
+        return np.tile(out, (1, num_symbols, num_strategies))
 
     return _generate
 
 
 # --------------------------------------------------------------------------------------
 def test_combine_signals(generate_test_data):
-    td = generate_test_data(periods=1000, num_symbols=1, num_strategies=1)
+    td = generate_test_data(periods=10, num_symbols=1, num_strategies=1)
+
+    expected_result = np.array(td["combined"])
 
     combined = combine_signals(
-        open_long=td["ol"],
-        close_long=td["cl"],
-        open_short=td["os"],
-        close_short=td["cs"]
+        open_long=td["open_long"],
+        close_long=td["close_long"],
+        open_short=td["open_short"],
+        close_short=td["close_short"]
     )
-    expected_result = td["exp"]
 
     try:
         np.testing.assert_array_equal(combined, expected_result)
@@ -67,22 +68,50 @@ def test_combine_signals(generate_test_data):
 
 
 def test_split_sginals(generate_test_data):
-    ...
+    td = generate_test_data(periods=10, num_symbols=1, num_strategies=1)
+
+    combined = td["combined"]
+    result = split_signals(combined)
+
+    result = dict(zip(("open_long", "close_long", "open_short", "close_short"), result))
+            
+    for i in range(td.shape[0]):
+        for j in range(td.shape[1]):
+            for k in range(td.shape[2]):
+                ol = td["open_long"][i, j, k]
+                cl = td["close_long"][i, j, k]
+                os = td["open_short"][i, j, k]
+                cs = td["close_short"][i, j, k]
+
+                aol = result["open_long"][i, j, k]
+                acl = result["close_long"][i, j, k]
+                aos = result["open_short"][i, j, k]
+                acs = result["close_short"][i, j, k]
+                
+                try:
+                    assert ol == aol and cl == acl and os == aos and cs == acs, \
+                        f"Mismatch at index [{i}, {j}, {k}]"
+                except AssertionError as e:
+                    print(f"Assertion Error: {e}")
+                    # print(f"{ol} {cl} {os} {cs} -> {aol} {acl} {aos} {acs}")
+                    print()
+                    pytest.fail("Arrays are not equal")
+
 
 
 def test_signal_store_instantiation(generate_test_data):
     td = generate_test_data(periods=1000, num_symbols=1, num_strategies=1)
 
     combined = combine_signals(
-        open_long=td["ol"],
-        close_long=td["cl"],
-        open_short=td["os"],
-        close_short=td["cs"]
+        open_long=td["open_long"],
+        close_long=td["close_long"],
+        open_short=td["open_short"],
+        close_short=td["close_short"]
     )
 
     signal_store = SignalStore(data=combined)
 
-    expected_result = td["exp"]
+    expected_result = td["combined"]
 
     assert isinstance(signal_store, SignalStore)
     assert isinstance(signal_store.data, np.ndarray)
@@ -94,10 +123,10 @@ def test_signal_store_add(generate_test_data):
     td = generate_test_data(periods=1000, num_symbols=1, num_strategies=1)
 
     combined = combine_signals(
-        open_long=td["ol"],
-        close_long=td["cl"],
-        open_short=td["os"],
-        close_short=td["cs"]
+        open_long=td["open_long"],
+        close_long=td["close_long"],
+        open_short=td["open_short"],
+        close_short=td["close_short"]
     )
 
     left = SignalStore(data=combined)
@@ -116,10 +145,10 @@ def test_signal_store_add_float(generate_test_data):
     td = generate_test_data(periods=1000, num_symbols=1, num_strategies=1)
 
     combined = combine_signals(
-        open_long=td["ol"],
-        close_long=td["cl"],
-        open_short=td["os"],
-        close_short=td["cs"]
+        open_long=td["open_long"],
+        close_long=td["close_long"],
+        open_short=td["open_short"],
+        close_short=td["close_short"]
     )
 
     left = SignalStore(data=combined)
@@ -138,10 +167,10 @@ def test_signal_store_add_int(generate_test_data):
     td = generate_test_data(periods=1000, num_symbols=1, num_strategies=1)
 
     combined = combine_signals(
-        open_long=td["ol"],
-        close_long=td["cl"],
-        open_short=td["os"],
-        close_short=td["cs"]
+        open_long=td["open_long"],
+        close_long=td["close_long"],
+        open_short=td["open_short"],
+        close_short=td["close_short"]
     )
 
     left = SignalStore(data=combined)
