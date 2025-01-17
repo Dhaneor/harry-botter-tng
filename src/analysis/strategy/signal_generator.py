@@ -114,7 +114,7 @@ from . import (
 from analysis import MarketData, Indicator, Parameter, SubPlot, SignalChart  # noqa: F401
 from analysis.dtypes import SIGNALS_DTYPE
 from util import log_execution_time, DotDict, proj_types as tp  # noqa: F401
-from wrappers.base_wrapper import SignalsWrapper
+from misc.base_wrapper import SignalsWrapper
 from models.enums import COMPARISON
 
 logger = logging.getLogger("main.signal_generator")

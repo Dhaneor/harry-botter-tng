@@ -11,7 +11,7 @@ import time
 from cProfile import Profile
 from pstats import SortKey, Stats
 
-from analysis.backtest.backtest import BackTest, Config
+from analysis.backtest.backtest import BackTestCore, Config
 from analysis import MarketData, LeverageCalculator, signal_generator_factory
 from util.logger_setup import get_logger
 from analysis.strategy.definitions import ema_cross
@@ -39,12 +39,12 @@ signals = np.repeat(base_signals, strategies, axis=2)
 config = Config(10_000)
 
 if __name__ == "__main__":
-    bt = BackTest(market_data.mds, leverage, signals, config)
+    bt = BackTestCore(market_data.mds, leverage, signals, config)
     bt.run()
 
     logger.setLevel("ERROR")
 
-    runs = 1_000
+    runs = 100
 
     st = time.time()
     with Profile(timeunit=0.000_001) as p:
@@ -68,7 +68,7 @@ if __name__ == "__main__":
 
 
     print(f'data: {periods} periods x {assets} assets x {strategies} strategies')
-    print(f"periods/s: {periods:,.0f}")
+    print(f"periods/s: {periods / et:,.0f}")
     print(f"\navg exc time: {(et * 1_000_000 / runs / strategies):.0f} µs")
 
     print(f"\n~iter/s (1 core): {ips:>10,.0f}")

@@ -95,13 +95,6 @@ class BackTestCore:
         signals: np.ndarray,
         config: Config,
     ):
-        # assert market_data.shape[0] == leverage.shape[0] == signals.shape[0],\
-        #       "Market data/leverage/signals arrays must have the same length."
-        
-        # if not market_data.shape[0] > WARMUP_PERIODS:
-        #     raise ValueError(
-        #         f"Market data must have at least {WARMUP_PERIODS + 1} periods."
-        #     )
 
         self.market_data = market_data
         self.leverage = leverage

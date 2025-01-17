@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Provides test functions for the BaseWrapper class (pytest).
+Provides test functions for the BaseWrapper2D class (pytest).
 
 Created on Jan 09 00:44:23 2025
 
@@ -11,11 +11,11 @@ Created on Jan 09 00:44:23 2025
 import numpy as np
 import pytest
 
-from wrappers.base_wrapper import BaseWrapper
+from misc.base_wrapper import BaseWrapper2D
 
 data = np.random.rand(10, 5)
 columns = ["col1", "col2", "col3", "col4", "col5"]
-wrapper = BaseWrapper(data, columns)
+wrapper = BaseWrapper2D(data, columns)
 
 
 def test_base_wrapper_init():
@@ -24,11 +24,11 @@ def test_base_wrapper_init():
 
 def test_init_with_wrong_data_type():
     with pytest.raises(ValueError):
-        BaseWrapper("not a numpy array", columns)
+        BaseWrapper2D("not a numpy array", columns)
 
 def test_init_with_wrong_dimensions():
     with pytest.raises(ValueError):
-        BaseWrapper(np.random.rand(10, 2, 2, 2), columns)
+        BaseWrapper2D(np.random.rand(10, 2, 2, 2), columns)
 
 
 def test_wrapper_call_method():
@@ -67,7 +67,7 @@ def test_get_item_by_slice():
 
 # .............................. TESTS FOR __setitem__ ................................
 def test_set_item_by_string():
-    wrapper = BaseWrapper(data.copy(), columns)
+    wrapper = BaseWrapper2D(data.copy(), columns)
     new_values = np.random.rand(10)
 
     wrapper["col1"] = new_values
@@ -76,7 +76,7 @@ def test_set_item_by_string():
 
 
 def test_set_item_by_slice():
-    wrapper = BaseWrapper(data.copy(), columns)
+    wrapper = BaseWrapper2D(data.copy(), columns)
     new_values = np.random.rand(5, 5)
 
     wrapper[::2] = new_values
@@ -85,7 +85,7 @@ def test_set_item_by_slice():
 
 
 def test_set_item_2d():
-    wrapper = BaseWrapper(data.copy(), columns)
+    wrapper = BaseWrapper2D(data.copy(), columns)
     new_values = np.random.rand(3, 2)
 
     wrapper[1:4, 2:4] = new_values
@@ -94,13 +94,13 @@ def test_set_item_2d():
 
 
 def test_set_item_invalid_column():
-    wrapper = BaseWrapper(data.copy(), columns)
+    wrapper = BaseWrapper2D(data.copy(), columns)
     with pytest.raises(KeyError):
         wrapper["non_existent_column"] = np.random.rand(10)
 
 
 def test_set_item_invalid_type():
-    wrapper = BaseWrapper(data.copy(), columns)
+    wrapper = BaseWrapper2D(data.copy(), columns)
     with pytest.raises(TypeError):
         wrapper[{}] = 1  # Using a dictionary as an index should raise TypeError
 
@@ -140,7 +140,7 @@ def test_replace():
     data = np.ndarray([0, 1, 3, 4, 5]).reshape(-1, 1)
     expected = np.ndarray([0, 1, 3, 4, 0]).reshape(-1, 1)
 
-    wrapper = BaseWrapper(data, columns)
+    wrapper = BaseWrapper2D(data, columns)
     wrapper.replace(5, 0)
 
     assert np.array_equal(wrapper.data, expected), \
