@@ -7,18 +7,18 @@ Created on Fri Jan 10 15:53:23 2025
 """
 
 import numpy as np
-from numba import njit
+from numba import njit, prange
 
 
-@njit
+@njit(parallel=True)
 def apply_to_columns(arr: np.ndarray, func):
     if arr.ndim == 2:
         for col in range(arr.shape[1]):
             arr[:, col] = func(arr[:, col])
     elif arr.ndim == 3:
-        for i in range(arr.shape[0]):
-            for col in range(arr.shape[2]):
-                arr[i, :, col] = func(arr[i, :, col])
+        for layer in prange(arr.shape[2]):
+            for col in range(arr.shape[1]):
+                arr[:, col, layer] = func(arr[:, col, layer])
     else:
         raise ValueError("Input array must be 2D or 3D")
     return arr

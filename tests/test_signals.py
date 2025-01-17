@@ -12,8 +12,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from analysis.models.signals import (
-    Signals, SignalStore, combine_signals, split_signals  # noqa: F401
+from analysis.models.signals import (  # noqa: F401
+    Signals, SignalStore, 
+    combine_signals, combine_signals_np, 
+    split_signals
 )
 from analysis import SIGNALS_DTYPE
 from util import get_logger
@@ -68,10 +70,31 @@ def test_combine_signals(generate_test_data):
         pytest.fail("Unexpected error")
 
 
+def test_combine_signals_np(generate_test_data):
+    td = generate_test_data(periods=10, num_symbols=1, num_strategies=1)
+
+    expected = np.array(td["combined"].copy())  # Convert to float32 for testing)
+    actual = combine_signals_np(td)
+
+    assert expected.shape == actual.shape, "Shape mismatch"
+
+    try:
+        np.testing.assert_array_equal(actual, expected)
+    except AssertionError as e:
+        print(f"AssertionError: {e}")
+        print(pd.DataFrame(actual.reshape(-1, actual.shape[-1])))
+        pytest.fail("Arrays are not equal")
+    except Exception as e:
+        print(f"Error: {e}")
+        print(np.info(actual))
+        print(np.info(expected))
+        pytest.fail("Unexpected error")
+
+
 def test_split_sginals(generate_test_data):
     td = generate_test_data(periods=10, num_symbols=1, num_strategies=1)
 
-    result = split_signals(td)
+    result = split_signals(td["combined"])
             
     for i in range(td.shape[0]):
         for j in range(td.shape[1]):
@@ -95,6 +118,7 @@ def test_split_sginals(generate_test_data):
                     pytest.fail("Arrays are not equal")
 
 
+# ------------------------- TESTS FOR SignalStore class --------------------------------
 def test_signal_store_instantiation(generate_test_data):
     td = generate_test_data(periods=1000, num_symbols=1, num_strategies=1)
     data = combine_signals(td)
@@ -154,3 +178,6 @@ def test_signal_store_add_int(generate_test_data):
     assert isinstance(result.data, np.ndarray)
     assert result.data.shape == expected.shape
     # np.testing.assert_allclose(result.data, expected, rtol=1e-5, atol=1e-8)
+
+
+# --------------------------- TESTS FOR Signals class ----------------------------------

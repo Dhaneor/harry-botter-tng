@@ -35,6 +35,9 @@ class BaseWrapper:
     def __iter__(self):
         return iter(self.data)
 
+    def __sizeof__(self):
+        return object.__sizeof__(self) + self.data.nbytes
+
     def __getitem__(self, item):
         if isinstance(item, str):
             try:

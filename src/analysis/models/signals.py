@@ -7,6 +7,7 @@ Created on Sun Dec 11 19:08:20 2022
 
 @author dhaneor
 """
+import itertools
 import logging
 import numpy as np
 import numpy.typing as npt
@@ -15,6 +16,7 @@ from numba.experimental import jitclass
 
 from analysis.dtypes import SIGNALS_DTYPE
 from util.proj_types import SignalsArrayT
+from misc.numba_funcs import ffill_na_numba
 
 logger = logging.getLogger("main.signals")
 
@@ -23,12 +25,34 @@ SignalRecord = from_dtype(SIGNALS_DTYPE)
 SignalArray3D = types.Array(SignalRecord, 3, "C")
 
 
-# TODO: refactor the spliot_signals function to accept a §D array with 
+# TODO: refactor the split_signals function to accept a §D array with 
 #       np.flaot32 dtype (instead of SIGNALS_DTYPE).
 
 
+def generate_test_data(periods=8, num_symbols=1, num_strategies=1) -> np.ndarray:
+    base_patterns = {
+        "open_long":   (1, 0,  0, 0, 1, 0,  0,  0),
+        "close_long":  (0, 1,  0, 0, 0, 0,  0,  0),
+        "open_short":  (0, 0,  1, 0, 0, 0,  1,  0),
+        "close_short": (0, 0,  0, 1, 0, 0,  0,  0),
+        "combined":    (1, 0, -1, 0, 1, 1, -1, -1),
+    }
+
+    def create_array(pattern):
+        cycle = itertools.cycle(pattern)
+        return np.array([next(cycle) for _ in range(periods)]).reshape(periods, 1, 1).astype(np.float32)
+    
+    out = np.empty((periods, num_symbols, num_strategies), dtype=SIGNALS_DTYPE)
+    
+    for key in base_patterns.keys():
+        out[key] = create_array(base_patterns[key])
+
+    return np.tile(out, (1, num_symbols, num_strategies))
+
+
+# ............................ Functions to combine signals ............................
 @njit
-def combine_signals(signals: typeof(SignalArray3D)):  # type: ignore
+def combine_signals(signals: typeof(SignalArray3D)) -> np.ndarray:  # type: ignore
     """Combines signals from 3D array into a single combined signal.
 
     Expects a 3D array with the custom dtype for signal records.
@@ -83,7 +107,7 @@ def combine_signals(signals: typeof(SignalArray3D)):  # type: ignore
 
 
 @njit
-def combine_signals_3D(signals: typeof(SignalArray3D)):  # type: ignore
+def combine_signals_3D(signals: typeof(SignalArray3D)) -> SignalArray3D:  # type: ignore
     """Combines signals from 3D array into a single combined signal.
 
     Expects a 3D array with the custom dtype for signal records.
@@ -135,7 +159,51 @@ def combine_signals_3D(signals: typeof(SignalArray3D)):  # type: ignore
 
 
 @njit
-def split_signals(signals: typeof(SignalArray3D)):  # type: ignore
+def combine_signals_np(signals: typeof(SignalArray3D)) -> np.ndarray:  # type: ignore
+    """Combines signals from 3D array into a single combined signal.
+
+    NOTE: This function is only for testing purposes and is much 
+    slower than the combine_signals function above
+
+    Expects a 3D array with the custom dtype for signal records.
+    
+    The function returns a new 3D array with the combined signals,
+    which saves memory and is the format required by the SignalStore
+    class (see below).
+
+    Parameters
+    ----------
+    signals : np.ndarray (SIGNALS_DTYPE)
+    
+    Returns
+    -------
+    np.ndarray (np.float32)
+    """
+
+    return ffill_na_numba(
+        np.where(
+            signals["open_long"] > 0,
+            1.0,
+            np.where(
+                signals["open_short"] > 0,
+                -1.0,
+                np.where(
+                    signals["close_long"] > 0, 
+                    0.0, 
+                    np.where(
+                        signals["close_short"] > 0, 
+                        0, 
+                        np.nan
+                    )
+                ),
+            ),
+        )
+    )
+
+
+# ............................. Functions to split signals .............................
+@njit
+def split_signals(signals: np.ndarray) -> SignalArray3D:  # type: ignore
     """Function to split signals from one- to four-digit_representation.
 
     This helps to reverse the result from the combine_signals() 
@@ -160,34 +228,35 @@ def split_signals(signals: typeof(SignalArray3D)):  # type: ignore
     """
 
     periods, symbols, strategies = signals.shape
+    out = np.empty_like(signals, dtype=SIGNALS_DTYPE)
 
     for k in range(strategies):
         for j in range(symbols):
             position = 0
             for i in range(periods):
-                # must be st to o individually, as Numba does not support
+                # must be set to 0 individually, as Numba does not support
                 # setting all values of the same field at once
-                signals[i, j, k]["open_long"] = 0
-                signals[i, j, k]["close_long"] = 0
-                signals[i, j, k]["open_short"] = 0
-                signals[i, j, k]["close_short"] = 0
+                out[i, j, k]["open_long"] = 0
+                out[i, j, k]["close_long"] = 0
+                out[i, j, k]["open_short"] = 0
+                out[i, j, k]["close_short"] = 0
                 
-                if signals[i, j, k]["combined"] > 0:
+                if signals[i, j, k] > 0:
                     if position != 1:
-                        signals["open_long"][i, j, k] = True
+                        out[i, j, k]["open_long"] = True
                         position = 1
-                elif signals[i, j, k]["combined"] < 0:
+                elif signals[i, j, k] < 0:
                     if position != -1:
-                        signals["open_short"][i, j, k] = True
+                        out[i, j, k]["open_short"] = True
                         position = -1
                 else:
                     if position == 1:
-                        signals["close_long"][i, j, k] = True
+                        out[i, j, k]["close_long"] = True
                     elif position == -1:
-                        signals["close_short"][i, j, k] = True
+                        out[i, j, k]["close_short"] = True
                     position = 0
 
-    return signals
+    return out
 
 
 # ================================= SignalStore JIT Class ==============================

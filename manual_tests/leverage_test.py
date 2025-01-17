@@ -130,8 +130,8 @@ def test_rolling_correlation():
 #                                        MAIN                                         #
 # -------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    number_of_assets = 2
-    number_of_days = 2_000
+    number_of_assets = 20
+    number_of_days = 20_000
 
     data = generate_stock_prices(
         num_days=number_of_days, num_assets=number_of_assets, volatility=0.05
@@ -146,7 +146,7 @@ if __name__ == "__main__":
 
     lc = lv.LeverageCalculator(md)
     
-    sys.exit()
+    # sys.exit()
     dmc = lv.DiversificationMultiplier(data=data)
     print(dmc.multiplier[-11:])
     # sys.exit()
