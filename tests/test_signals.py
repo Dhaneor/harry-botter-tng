@@ -209,3 +209,20 @@ def test_signals_add(generate_test_data):
     assert isinstance(signals.data, np.ndarray)
     assert signals.data.shape == td.shape
     assert np.array_equal(signals.data, np.multiply(2, data))
+
+
+def test_signals_apply_weight(generate_test_data):
+    td = generate_test_data(periods=1000, num_symbols=1, num_strategies=1)
+    data = combine_signals(td)
+
+    symbols = [f"Symbol_{i}" for i in range(td.shape[1])]
+    layers = [f"Layer_{i}" for i in range(td.shape[2])]
+
+    before = Signals(symbols, layers, td)
+    weight = 0.5
+    signals = before.apply_weight(weight)
+
+    assert isinstance(signals, Signals)
+    assert isinstance(signals.data, np.ndarray)
+    assert signals.data.shape == td.shape
+    assert np.array_equal(signals.data, np.multiply(weight, data))

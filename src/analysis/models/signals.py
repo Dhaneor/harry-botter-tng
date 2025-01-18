@@ -27,31 +27,6 @@ SignalRecord = from_dtype(SIGNALS_DTYPE)
 SignalArray3D = types.Array(SignalRecord, 3, "C")
 
 
-def generate_test_data(periods=8, num_symbols=1, num_strategies=1) -> np.ndarray:
-    base_patterns = {
-        "open_long": (1, 0, 0, 0, 1, 0, 0, 0),
-        "close_long": (0, 1, 0, 0, 0, 0, 0, 0),
-        "open_short": (0, 0, 1, 0, 0, 0, 1, 0),
-        "close_short": (0, 0, 0, 1, 0, 0, 0, 0),
-        "combined": (1, 0, -1, 0, 1, 1, -1, -1),
-    }
-
-    def create_array(pattern):
-        cycle = itertools.cycle(pattern)
-        return (
-            np.array([next(cycle) for _ in range(periods)])
-            .reshape(periods, 1, 1)
-            .astype(np.float32)
-        )
-
-    out = np.empty((periods, 1, 1), dtype=SIGNALS_DTYPE)
-
-    for key in base_patterns.keys():
-        out[key] = create_array(base_patterns[key])
-
-    return np.tile(out, (1, num_symbols, num_strategies))
-
-
 # ............................ Functions to combine signals ............................
 @njit
 def combine_signals(signals: typeof(SignalArray3D)) -> np.ndarray:  # type: ignore
@@ -317,7 +292,7 @@ class Signals(BaseWrapper3D):
         self, 
         symbols: list[str], 
         layers: list[str], 
-        signals: SignalsArrayT
+        signals: np.ndarray | SignalsArrayT
     ) -> None:
 
         dtype = np.dtype(signals[0][0][0])
@@ -330,6 +305,7 @@ class Signals(BaseWrapper3D):
             raise TypeError(f"Unsupported Numpy dtype: '{np.dtype(signals)}'")
 
         super().__init__(self._store.data, symbols, layers)
+        
         self.symbols = self.columns
         self.strategies = self.layers
 
@@ -339,13 +315,13 @@ class Signals(BaseWrapper3D):
                 raise ValueError("Symbols must match for addition")
             if self.layers != other.layers:
                 raise ValueError("Strategies must match for addition")
-            new_store = self._store + other._store
+            new = self._store.data + other._store.data
         elif isinstance(other, (float, int)):
-            new_store = self._store + other
+            new = self._store + other
         else:
             raise TypeError(f"Unsupported operand type for +: '{type(other)}'")
 
-        return Signals(symbols=self.symbols, layers=self.layers, signals=new_store.data)
+        return Signals(symbols=self.symbols, layers=self.layers, signals=new)
 
     def __radd__(self, other) -> "Signals":
         return self.__add__(other)
@@ -354,3 +330,54 @@ class Signals(BaseWrapper3D):
     @property
     def data(self):
         return self._store.data
+    
+    # ..................................................................................
+    def apply_weight(self, weight: float) -> "Signals":
+        return Signals(
+            symbols=self.symbols,
+            layers=self.layers,
+            signals=self._store.data * weight
+        )
+    
+    def normalize(self, lookback: int = 30) -> "Signals":
+        """Normalizes the signals by subtracting the rolling mean and dividing by the rolling standard deviation."""
+
+
+# ==================== Functions for convenient testing of Signals =====================
+def generate_test_data(periods=8, num_symbols=1, num_strategies=1) -> np.ndarray:
+    base_patterns = {
+        "open_long": (1, 0, 0, 0, 1, 0, 0, 0),
+        "close_long": (0, 1, 0, 0, 0, 0, 0, 0),
+        "open_short": (0, 0, 1, 0, 0, 0, 1, 0),
+        "close_short": (0, 0, 0, 1, 0, 0, 0, 0),
+        "combined": (1, 0, -1, 0, 1, 1, -1, -1),
+    }
+
+    def create_array(pattern):
+        cycle = itertools.cycle(pattern)
+        return (
+            np.array([next(cycle) for _ in range(periods)])
+            .reshape(periods, 1, 1)
+            .astype(np.float32)
+        )
+
+    out = np.empty((periods, 1, 1), dtype=SIGNALS_DTYPE)
+
+    for key in base_patterns.keys():
+        out[key] = create_array(base_patterns[key])
+
+    return np.tile(out, (1, num_symbols, num_strategies))
+
+
+def get_signals_instance():
+    """Returns an instance of the Signals class.
+
+    This function is intended to be used inside the BacktestCore class
+    to create a Signals instance. It is designed to be a factory function
+    that returns a Signals instance for testing purposes.  
+    """
+    td = generate_test_data(100, 10, 10)
+    symbols = [f"Symbol_{i}" for i in range(td.shape[1])]
+    layers = [f"Layer_{i}" for i in range(td.shape[2])]
+
+    return Signals(symbols=symbols, layers=layers, signals=td)   

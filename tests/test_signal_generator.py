@@ -18,6 +18,7 @@ from analysis import (
     signal_generator_factory,
     MarketData,
     MarketDataStore,
+    combine_signals
 )
 from analysis.dtypes import SIGNALS_DTYPE
 from models.enums import COMPARISON
@@ -75,9 +76,21 @@ def test_market_data_property(basic_signal_generator):
 
 
 def test_market_data_setter(basic_signal_generator):
-    mock_data = MarketData.from_random(length=30, no_of_symbols=1)
+    mock_data = MarketData.from_random(length=250, no_of_symbols=1)
     basic_signal_generator.market_data = mock_data
     assert basic_signal_generator.market_data is mock_data
+
+def test_market_data_Setter_wrong_data_type(basic_signal_generator):
+    market_data = "not a MarketData object"
+    with pytest.raises(TypeError):
+        basic_signal_generator.market_data = market_data
+
+
+def test_market_data_setter_not_enough_periods(basic_signal_generator):
+    mock_data = MarketData.from_random(length=200, no_of_symbols=1)
+
+    with pytest.raises(ValueError):
+        basic_signal_generator.market_data = mock_data
 
 
 # def test_subplots_property(basic_signal_generator):
@@ -115,7 +128,8 @@ def simple_signal_generator_with_data():
     sg = signal_generator_factory(def_)
 
     # Create a simple, predictable dataset
-    dates = pd.date_range(start="2020-01-01", periods=5)
+
+    n = 41  # Number of times to repeat the array
     data = np.array(
         [
             [8, 9, 7, 8, 1000],  # No signal
@@ -126,6 +140,10 @@ def simple_signal_generator_with_data():
         ],
         dtype=np.float32,
     )
+
+    data = np.tile(data, (n, 1))
+
+    dates = pd.date_range(start="2020-01-01", periods=5*n)
 
     # Create MarketDataStore instance
     mds = MarketDataStore(
@@ -142,22 +160,23 @@ def simple_signal_generator_with_data():
     md = MarketData(mds, symbols)
 
     # Set the market data for the signal generator
-    sg.market_data = md
+    try:
+        sg.market_data = md
+    except ValueError as ve:
+        print(ve)
+        print(len(md))
 
     return sg
 
 
 def test_execute_returns_correct_format(simple_signal_generator_with_data):
     sg = simple_signal_generator_with_data
+
+    
+    
     result = sg.execute()
 
-    assert isinstance(result, np.ndarray), "Result should be a dictionary"
-    # assert set(result.keys()) == {
-    #     "open_long",
-    #     "open_short",
-    #     "close_long",
-    #     "close_short",
-    # }, "Result should have keys 'open_long', 'open_short', 'close_long', 'close_short'"
+    assert isinstance(result, np.ndarray), "Result should be a Numpy array"
 
     for key in ("open_long", "close_long", "open_short", "close_short"):
         value = result[key]
@@ -178,7 +197,7 @@ def test_execute_returns_correct_data(simple_signal_generator_with_data):
     assert not np.all(result["open_short"]), "open_short should be only zeros"
     assert not np.all(result["close_short"]), "close_short should be only zeros"
     assert result.shape == (
-        5,
+        205,
         1,
         1,
     ), f"Incorrect shape of the result array: {result.shape}"
@@ -187,19 +206,19 @@ def test_execute_returns_correct_data(simple_signal_generator_with_data):
         if field == "open_long":
             signals = result[field][:, 0, 0]  # open_long signals
             np.testing.assert_array_equal(
-                signals, [0, 1, 1, 0, 0], "Incorrect open_long signals: {signals}"
+                signals[-5:], [0, 1, 1, 0, 0], "Incorrect open_long signals: {signals}"
             )
         if field == "close_long":
             signals = result[field][:, 0, 0]
             np.testing.assert_array_equal(
-                signals, [1, 0, 0, 1, 1], "Incorrect close_long signals: {signals}"
+                signals[-5:], [1, 0, 0, 1, 1], "Incorrect close_long signals: {signals}"
             )
 
 
 # ...................... TEST EXECUTE METHOD: MUTLIPLE SYMBOLs .........................
 @pytest.fixture
 def generate_test_data():
-    def _generate(num_symbols=1, periods=5):
+    def _generate(num_symbols=1, periods=205):
         dates = pd.date_range(start="2020-01-01", periods=periods)
 
         # Generate random data for the specified number of periods
@@ -274,7 +293,8 @@ def simple_signal_generator():
 def test_execute_returns_correct_data_ext(
     generate_test_data, calculate_expected_result, simple_signal_generator, num_symbols
 ):
-    market_data = generate_test_data(num_symbols)
+    periods = 205
+    market_data = generate_test_data(num_symbols, periods)
     sg = simple_signal_generator(market_data)
     result = sg.execute()
     expected_result = calculate_expected_result(market_data)
@@ -293,17 +313,34 @@ def test_execute_returns_correct_data_ext(
 
         if result[key] is not None:
             assert result[key].shape == (
-                5,
+                periods,
                 num_symbols,
                 1,
             ), f"Incorrect shape for {key}"
 
 
-def test_execute_with_wrong_market_data_type(simple_signal_generator):
-    market_data = "Not a MarketData instance"
+@pytest.mark.parametrize("num_symbols", [1, 2])
+def test_execute_with_compact_switch(
+    generate_test_data, calculate_expected_result, simple_signal_generator, num_symbols
+):
+    market_data = generate_test_data(num_symbols)
     sg = simple_signal_generator(market_data)
-    with pytest.raises(TypeError):
-        sg.execute()
+    result = sg.execute(compact=True)
+    expected_result = combine_signals(calculate_expected_result(market_data))
+
+    assert np.array_equal(expected_result, result), \
+        f"Incorrect signals, expected: {expected_result}, actual: {result}"
+
+
+def test_execute_with_wrong_market_data_type(simple_signal_generator):
+    # initialize with correct market data type
+    market_data = MarketData.from_random(201, 5)
+    sg = simple_signal_generator(market_data)
+    
+    # try to ecetute with wrong market data type
+    with pytest.raises(TypeError):  
+        market_data = "Not a MarketData instance"
+        sg.execute(market_data=market_data)
 
 
 # ..................... TEST EXECUTE METHOD: COMPLEX CONDITION .........................
@@ -389,8 +426,9 @@ def test_execute_returns_correct_data_complex(
     complex_signal_generator,
     num_symbols,
 ):
+    periods = 205
     # Generate market data with 10 periods
-    market_data = generate_test_data(num_symbols, periods=10)
+    market_data = generate_test_data(num_symbols, periods=periods)
 
     # Create the signal generator with the generated market data
     sg = complex_signal_generator(market_data)
@@ -407,7 +445,7 @@ def test_execute_returns_correct_data_complex(
     for key in ("open_long", "close_long", "open_short", "close_short"):
         if result[key] is not None:
             assert result[key].shape == (
-                10,
+                periods,
                 num_symbols,
                 1,
             ), f"Incorrect shape for {key}"
@@ -460,7 +498,7 @@ def test_execute_multiple_parameter_combinations(
     passes, fails = 0, 0
 
     for j in range(100):
-        periods = 10  # Number of periods to generate market data for
+        periods = 205  # Number of periods to generate market data for
 
         # Generate market data with 10 periods
         market_data = generate_test_data(num_symbols, periods=periods)
