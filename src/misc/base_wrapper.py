@@ -23,20 +23,20 @@ class BaseWrapper:
         if data.ndim not in [2, 3]:
             raise ValueError(f"Input data must be 2D or 3D. Received: {data.ndim}D.")
 
-        self.data = data
+        self._data = data
         self.columns = list(columns)
 
     def __call__(self) -> np.ndarray:
-        return self.data
+        return self._data
 
     def __len__(self):
-        return self.data.shape[0]
+        return self._data.shape[0]
 
     def __iter__(self):
-        return iter(self.data)
+        return iter(self._data)
 
     def __sizeof__(self):
-        return object.__sizeof__(self) + self.data.nbytes
+        return object.__sizeof__(self) + self._data.nbytes
 
     def __getitem__(self, item):
         if isinstance(item, str):
@@ -44,11 +44,11 @@ class BaseWrapper:
                 col_index = self.columns.index(item)
             except ValueError:
                 raise KeyError(f"Column '{item}' not found in {self.columns}.")
-            return self.data[:, col_index]
+            return self._data[:, col_index]
         elif isinstance(item, (slice, int, np.integer)):
-            return self.data[item]
+            return self._data[item]
         elif isinstance(item, tuple):
-            return self.data[item]
+            return self._data[item]
         else:
             raise TypeError(f"Invalid index type ({type(item)}) for {item}")
 
@@ -58,22 +58,22 @@ class BaseWrapper:
                 col_index = self.columns.index(key)
             except ValueError:
                 raise KeyError(f"Column '{key}' not found in {self.columns}.")
-            self.data[..., col_index] = value
+            self._data[..., col_index] = value
 
         elif isinstance(key, (slice, int, np.integer)):
-            self.data[key] = value
+            self._data[key] = value
 
         elif isinstance(key, tuple):
-            self.data[key] = value
+            self._data[key] = value
 
         else:
             raise TypeError(f"Invalid index type ({type(key)}) for {key}")
 
     def _binary_op(self, other, op):
         if isinstance(other, (int, float)):
-            return self.__class__(op(self.data, other), self.columns)
+            return self.__class__(op(self._data, other), self.columns)
         elif isinstance(other, self.__class__):
-            return self.__class__(op(self.data, other.data), self.columns)
+            return self.__class__(op(self._data, other._data), self.columns)
         else:
             raise TypeError(f"Invalid operand type ({type(other)}) for operation")
 
@@ -91,48 +91,48 @@ class BaseWrapper:
 
     @property
     def shape(self) -> tuple:
-        return self.data.shape
+        return self._data.shape
 
     @property
     def ndim(self) -> int:
-        return self.data.ndim
+        return self._data.ndim
 
     def replace(
         self, old: Union[np.float64, np.int64], new: Union[np.float64, np.int64]
     ) -> None:
-        self.data[self.data == old] = new
+        self._data[self._data == old] = new
 
     def mean(self, axis=0):
-        return np.nanmean(self.data, axis=axis)
+        return np.nanmean(self._data, axis=axis)
 
     def std(self, axis=0):
-        return np.nanstd(self.data, axis=axis)
+        return np.nanstd(self._data, axis=axis)
 
 
 class BaseWrapper2D(BaseWrapper):
     def __init__(self, data: np.ndarray, columns: Sequence[str]):
         super().__init__(data, columns)
-        if self.data.ndim != 2:
+        if self._data.ndim != 2:
             raise ValueError("Input data must be 2D for BaseWrapper2D.")
 
     def ffill(self):
-        self.data = ffill_na_numba(self.data)
+        self._data = ffill_na_numba(self._data)
         return self
 
     def cumsum(self):
-        self.data = cumsum_na_numba(self.data)
+        self._data = cumsum_na_numba(self._data)
         return self
 
 
 class BaseWrapper3D(BaseWrapper):
     def __init__(self, data: np.ndarray, columns: Sequence[str], layers: Sequence[str]):
         super().__init__(data, columns)
-        if self.data.ndim != 3:
+        if self._data.ndim != 3:
             raise ValueError("Input data must be 3D for BaseWrapper3D.")
         self.layers = list(layers)
-        if len(self.layers) != self.data.shape[2]:
+        if len(self.layers) != self._data.shape[2]:
             raise ValueError(
-                f"Number of layers ({len(self.layers)}) must match the third dimension of data ({self.data.shape[2]})."
+                f"Number of layers ({len(self.layers)}) must match the third dimension of data ({self._data.shape[2]})."
             )
 
     def __getitem__(self, item):
@@ -142,14 +142,14 @@ class BaseWrapper3D(BaseWrapper):
             except ValueError:
                 try:
                     layer_index = self.layers.index(item)
-                    return self.data[:, :, layer_index]
+                    return self._data[:, :, layer_index]
                 except ValueError:
                     raise KeyError(f"'{item}' not found in columns or layers.")
-            return self.data[:, col_index, :]
+            return self._data[:, col_index, :]
         elif isinstance(item, (slice, int, np.integer)):
-            return self.data[item]
+            return self._data[item]
         elif isinstance(item, tuple):
-            return self.data[item]
+            return self._data[item]
         else:
             raise TypeError(f"Invalid index type ({type(item)}) for {item}")
 
@@ -158,42 +158,42 @@ class BaseWrapper3D(BaseWrapper):
             try:
                 col_index = self.columns.index(key)
                 if value.ndim == 2 and value.shape == (
-                    self.data.shape[0],
-                    self.data.shape[2],
+                    self._data.shape[0],
+                    self._data.shape[2],
                 ):
-                    self.data[:, col_index, :] = value
+                    self._data[:, col_index, :] = value
                 else:
                     raise DimensionMismatchError(
                         f"Invalid value shape for column assignment. Expected shape "
-                        f"{(self.data.shape[0], self.data.shape[2])}, got {value.shape}."
+                        f"{(self._data.shape[0], self._data.shape[2])}, got {value.shape}."
                     )
             except ValueError:
                 try:
                     layer_index = self.layers.index(key)
                     if value.ndim == 2 and value.shape == (
-                        self.data.shape[0],
-                        self.data.shape[1],
+                        self._data.shape[0],
+                        self._data.shape[1],
                     ):
-                        self.data[:, :, layer_index] = value
+                        self._data[:, :, layer_index] = value
                     else:
                         raise DimensionMismatchError(
                             f"Invalid value shape for layer assignment. Expected shape "
-                            f"{(self.data.shape[0], self.data.shape[1])}, got {value.shape}."
+                            f"{(self._data.shape[0], self._data.shape[1])}, got {value.shape}."
                         )
                 except ValueError:
                     raise KeyError(f"'{key}' not found in columns or layers.")
         elif isinstance(key, (slice, int, np.integer)):
-            self.data[key] = value
+            self._data[key] = value
         elif isinstance(key, tuple):
-            self.data[key] = value
+            self._data[key] = value
         else:
             raise TypeError(f"Invalid index type ({type(key)}) for {key}")
 
     def _binary_op(self, other, op):
         if isinstance(other, (int, float)):
-            return self.__class__(op(self.data, other), self.columns, self.layers)
+            return self.__class__(op(self._data, other), self.columns, self.layers)
         elif isinstance(other, self.__class__):
-            return self.__class__(op(self.data, other.data), self.columns, self.layers)
+            return self.__class__(op(self._data, other._data), self.columns, self.layers)
         else:
             raise TypeError(f"Invalid operand type ({type(other)}) for operation")
 

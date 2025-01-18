@@ -28,8 +28,7 @@ Created on Sat Aug 18 11:14:50 2023
 """
 
 import logging
-from dataclasses import dataclass, field
-from itertools import chain
+from dataclasses import dataclass
 from numba import jit
 from typing import Callable, NamedTuple, Optional, Sequence
 import numpy as np

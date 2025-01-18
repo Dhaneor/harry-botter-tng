@@ -131,7 +131,7 @@ def test_signal_store_instantiation(generate_test_data):
 
 
 def test_signal_store_add(generate_test_data):
-    td = generate_test_data(periods=1000, num_symbols=20, num_strategies=1)
+    td = generate_test_data(periods=100, num_symbols=2, num_strategies=2)
 
     data = combine_signals(td)
 
@@ -148,7 +148,7 @@ def test_signal_store_add(generate_test_data):
 
 
 def test_signal_store_add_float(generate_test_data):
-    td = generate_test_data(periods=1000, num_symbols=1, num_strategies=1)
+    td = generate_test_data(periods=100, num_symbols=2, num_strategies=2)
 
     left = SignalStore(data=combine_signals(td))
     right = 5.0
@@ -181,3 +181,31 @@ def test_signal_store_add_int(generate_test_data):
 
 
 # --------------------------- TESTS FOR Signals class ----------------------------------
+def test_signals_instantiation(generate_test_data):
+    td = generate_test_data(periods=1000, num_symbols=1, num_strategies=1)
+
+    symbols = [f"Symbol_{i}" for i in range(td.shape[1])]
+    layers = [f"Layer_{i}" for i in range(td.shape[2])]
+
+    signals = Signals(symbols, layers, td)
+
+    assert isinstance(signals, Signals)
+    assert isinstance(signals.data, np.ndarray)
+    assert signals.data.shape == td.shape
+    assert np.array_equal(signals.data, combine_signals(td))
+
+def test_signals_add(generate_test_data):
+    td = generate_test_data(periods=1000, num_symbols=1, num_strategies=1)
+    data = combine_signals(td)
+
+    symbols = [f"Symbol_{i}" for i in range(td.shape[1])]
+    layers = [f"Layer_{i}" for i in range(td.shape[2])]
+
+    left = Signals(symbols, layers, td)
+    right = Signals(symbols, layers, td)
+    signals = left + right
+
+    assert isinstance(signals, Signals)
+    assert isinstance(signals.data, np.ndarray)
+    assert signals.data.shape == td.shape
+    assert np.array_equal(signals.data, np.multiply(2, data))

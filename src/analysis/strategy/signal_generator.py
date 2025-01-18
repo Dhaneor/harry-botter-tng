@@ -654,48 +654,6 @@ class SignalGenerator:
         """
         raise NotImplementedError()
 
-    def combine_signals(data):
-        """
-        Combine different trading signals into a single array of position indicators.
-
-        This function takes a dictionary of trading signals and combines them into a
-        single numpy array. The array uses the following convention:
-        1 for long positions, -1 for short positions, 0 for closing positions,
-        and NaN for no signal.
-
-        Parameters
-        ----------
-        data : dict
-            A dictionary containing the following keys:
-            - 'open_long': Array of signals to open long positions
-            - 'open_short': Array of signals to open short positions
-            - 'close_long': Array of signals to close long positions
-            - 'close_short': Array of signals to close short positions
-
-        Returns
-        -------
-        numpy.ndarray
-            An array of the same length as the input signals, where:
-            - 1 indicates opening a long position
-            - -1 indicates opening a short position
-            - 0 indicates closing a position (either long or short)
-            - NaN indicates no signal
-        """
-        open_long = np.nan_to_num(data["open_long"])
-        open_short = np.nan_to_num(data["open_short"])
-        close_long = np.nan_to_num(data["close_long"])
-        close_short = np.nan_to_num(data["close_short"])
-
-        return np.where(
-            open_long > 0,
-            1,
-            np.where(
-                open_short > 0,
-                -1,
-                np.where(close_long > 0, 0, np.where(close_short > 0, 0, np.nan)),
-            ),
-        )
-
     # def plot(self, data: tp.Data) -> None:
     #     self.make_plot(data).draw()
 

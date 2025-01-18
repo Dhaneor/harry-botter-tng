@@ -11,9 +11,12 @@ Created on Jan 16 00:44:23 2025
 class PlottingMixin:
     def plot(self, **kwargs):
         if not hasattr(self, 'plot_definition'):
-            raise AttributeError(f"{self.__class__.__name__} must have a plot_definition attribute")
+            raise AttributeError(
+                f"{self.__class__.__name__} must have a plot_definition attribute"
+                )
         
         plot_def = self.plot_definition
+        
         if not isinstance(plot_def, PlotDefinition):
             raise TypeError("plot_definition must be an instance of PlotDefinition")
         

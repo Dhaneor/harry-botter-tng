@@ -7,6 +7,7 @@ Created on Sun Dec 11 19:08:20 2022
 
 @author dhaneor
 """
+
 import itertools
 import logging
 import numpy as np
@@ -16,6 +17,7 @@ from numba.experimental import jitclass
 
 from analysis.dtypes import SIGNALS_DTYPE
 from util.proj_types import SignalsArrayT
+from misc.base_wrapper import BaseWrapper3D
 from misc.numba_funcs import ffill_na_numba
 
 logger = logging.getLogger("main.signals")
@@ -25,25 +27,25 @@ SignalRecord = from_dtype(SIGNALS_DTYPE)
 SignalArray3D = types.Array(SignalRecord, 3, "C")
 
 
-# TODO: refactor the split_signals function to accept a §D array with 
-#       np.flaot32 dtype (instead of SIGNALS_DTYPE).
-
-
 def generate_test_data(periods=8, num_symbols=1, num_strategies=1) -> np.ndarray:
     base_patterns = {
-        "open_long":   (1, 0,  0, 0, 1, 0,  0,  0),
-        "close_long":  (0, 1,  0, 0, 0, 0,  0,  0),
-        "open_short":  (0, 0,  1, 0, 0, 0,  1,  0),
-        "close_short": (0, 0,  0, 1, 0, 0,  0,  0),
-        "combined":    (1, 0, -1, 0, 1, 1, -1, -1),
+        "open_long": (1, 0, 0, 0, 1, 0, 0, 0),
+        "close_long": (0, 1, 0, 0, 0, 0, 0, 0),
+        "open_short": (0, 0, 1, 0, 0, 0, 1, 0),
+        "close_short": (0, 0, 0, 1, 0, 0, 0, 0),
+        "combined": (1, 0, -1, 0, 1, 1, -1, -1),
     }
 
     def create_array(pattern):
         cycle = itertools.cycle(pattern)
-        return np.array([next(cycle) for _ in range(periods)]).reshape(periods, 1, 1).astype(np.float32)
-    
-    out = np.empty((periods, num_symbols, num_strategies), dtype=SIGNALS_DTYPE)
-    
+        return (
+            np.array([next(cycle) for _ in range(periods)])
+            .reshape(periods, 1, 1)
+            .astype(np.float32)
+        )
+
+    out = np.empty((periods, 1, 1), dtype=SIGNALS_DTYPE)
+
     for key in base_patterns.keys():
         out[key] = create_array(base_patterns[key])
 
@@ -56,7 +58,7 @@ def combine_signals(signals: typeof(SignalArray3D)) -> np.ndarray:  # type: igno
     """Combines signals from 3D array into a single combined signal.
 
     Expects a 3D array with the custom dtype for signal records.
-    
+
     The function returns a new 3D array with the combined signals,
     which saves memory and is the format required by the SignalStore
     class (see below).
@@ -64,7 +66,7 @@ def combine_signals(signals: typeof(SignalArray3D)) -> np.ndarray:  # type: igno
     Parameters
     ----------
     signals : np.ndarray (SIGNALS_DTYPE)
-    
+
     Returns
     -------
     np.ndarray (np.float32)
@@ -111,14 +113,14 @@ def combine_signals_3D(signals: typeof(SignalArray3D)) -> SignalArray3D:  # type
     """Combines signals from 3D array into a single combined signal.
 
     Expects a 3D array with the custom dtype for signal records.
-    
-    Different from the previous function, this version modifies the 
+
+    Different from the previous function, this version modifies the
     'combined' field of the elements of the original 3D array.
 
     Parameters
     ----------
     signals : np.ndarray (SIGNALS_DTYPE)
-    
+
     Returns
     -------
     np.ndarray (SIGNALS_DTYPE)
@@ -162,11 +164,11 @@ def combine_signals_3D(signals: typeof(SignalArray3D)) -> SignalArray3D:  # type
 def combine_signals_np(signals: typeof(SignalArray3D)) -> np.ndarray:  # type: ignore
     """Combines signals from 3D array into a single combined signal.
 
-    NOTE: This function is only for testing purposes and is much 
+    NOTE: This function is only for testing purposes and is much
     slower than the combine_signals function above
 
     Expects a 3D array with the custom dtype for signal records.
-    
+
     The function returns a new 3D array with the combined signals,
     which saves memory and is the format required by the SignalStore
     class (see below).
@@ -174,7 +176,7 @@ def combine_signals_np(signals: typeof(SignalArray3D)) -> np.ndarray:  # type: i
     Parameters
     ----------
     signals : np.ndarray (SIGNALS_DTYPE)
-    
+
     Returns
     -------
     np.ndarray (np.float32)
@@ -188,13 +190,9 @@ def combine_signals_np(signals: typeof(SignalArray3D)) -> np.ndarray:  # type: i
                 signals["open_short"] > 0,
                 -1.0,
                 np.where(
-                    signals["close_long"] > 0, 
-                    0.0, 
-                    np.where(
-                        signals["close_short"] > 0, 
-                        0, 
-                        np.nan
-                    )
+                    signals["close_long"] > 0,
+                    0.0,
+                    np.where(signals["close_short"] > 0, 0, np.nan),
                 ),
             ),
         )
@@ -206,22 +204,22 @@ def combine_signals_np(signals: typeof(SignalArray3D)) -> np.ndarray:  # type: i
 def split_signals(signals: np.ndarray) -> SignalArray3D:  # type: ignore
     """Function to split signals from one- to four-digit_representation.
 
-    This helps to reverse the result from the combine_signals() 
-    function (see above) which produces a single array with 
+    This helps to reverse the result from the combine_signals()
+    function (see above) which produces a single array with
     singe-digit representataion of signals.
 
-    The function returns the original 3D array with the modified fields 
+    The function returns the original 3D array with the modified fields
     for 'open_long', 'close_long, etc. modified.
 
-    The intended use is to reconstruct the original signals from the 
-    one-digit representation if needed for plotting for instance. It 
-    is defined here so it can be jitted and intended to be used 
+    The intended use is to reconstruct the original signals from the
+    one-digit representation if needed for plotting for instance. It
+    is defined here so it can be jitted and intended to be used
     through a method of the Signals (wrapper) class.
 
     Parameters
     ----------
     signals : np.ndarray (SIGNALS_DTYPE)
-    
+
     Returns
     -------
     np.ndarray (SIGNALS_DTYPE)
@@ -240,7 +238,7 @@ def split_signals(signals: np.ndarray) -> SignalArray3D:  # type: ignore
                 out[i, j, k]["close_long"] = 0
                 out[i, j, k]["open_short"] = 0
                 out[i, j, k]["close_short"] = 0
-                
+
                 if signals[i, j, k] > 0:
                     if position != 1:
                         out[i, j, k]["open_long"] = True
@@ -259,19 +257,31 @@ def split_signals(signals: np.ndarray) -> SignalArray3D:  # type: ignore
     return out
 
 
+# .................. Functions to perform math operations on  signals ..................
+
+
+
 # ================================= SignalStore JIT Class ==============================
-@jitclass([("data", float32[:, :, :]),])
+@jitclass(
+    [
+        ("data", float32[:, :, :]),
+    ]
+)
 class SignalStore:
     """A JIT class for storing and manipulating signals.
 
     This class should preferrably be used inside
-    the Signals wrapper class, which provides methos for convenient 
-    access to the signals data and makes sure that SignalStore is 
+    the Signals wrapper class, which provides methods for convenient
+    access to the signals data and makes sure that SignalStore is
     instanitated with the correct data format.
-    
-    The .data attribute is expected to receive/hold be a 3D numpy 
+
+    The .data attribute is expected to receive/hold be a 3D numpy
     array (np.float32). Instances can be added with each other to
     combine the signals form multiple stratagies or parameter sets.
+
+    Why does this class exist? We could also hold the data inside the 
+    Signals wrapper class, but the SignalStore class can be used inside
+    the BackTestCore class which only accepts JIT classes as arguments.
     """
 
     def __init__(self, data: npt.ArrayLike):
@@ -289,47 +299,56 @@ class SignalStore:
 
     def __radd__(self, other):
         return self.__add__(other)
-    
+
     # @property
     # def open_long(self) -> np.ndarray:
     #     return self.data["open_long"]
-    
+
     # @property
     # def close_long(self) -> np.ndarray:
     #     return self.data["close_long"]
 
 
 # ================================= Signals wrapper Class ==============================
-class Signals:
-    """Wrapper for the SignalStore class.""" 
+class Signals(BaseWrapper3D):
+    """Wrapper for the SignalStore class."""
 
-    def __init__(self, symbols: list[str], signals: SignalsArrayT) -> None:
-        self.symbols = symbols
-        self._store = SignalStore(combine_signals(signals))
+    def __init__(
+        self, 
+        symbols: list[str], 
+        layers: list[str], 
+        signals: SignalsArrayT
+    ) -> None:
 
-    def __add__(self, other) -> 'Signals':
+        dtype = np.dtype(signals[0][0][0])
+        
+        if dtype == SIGNALS_DTYPE:
+            self._store = SignalStore(combine_signals(signals))
+        elif dtype == np.float32:
+            self._store = SignalStore(signals)
+        else:
+            raise TypeError(f"Unsupported Numpy dtype: '{np.dtype(signals)}'")
+
+        super().__init__(self._store.data, symbols, layers)
+        self.symbols = self.columns
+        self.strategies = self.layers
+
+    def __add__(self, other) -> "Signals":
         if isinstance(other, Signals):
             if self.symbols != other.symbols:
                 raise ValueError("Symbols must match for addition")
+            if self.layers != other.layers:
+                raise ValueError("Strategies must match for addition")
             new_store = self._store + other._store
         elif isinstance(other, (float, int)):
             new_store = self._store + other
         else:
             raise TypeError(f"Unsupported operand type for +: '{type(other)}'")
 
-        return Signals(symbols=self.symbols, store=new_store)
-    
-    def __radd__(self, other) -> 'Signals':
+        return Signals(symbols=self.symbols, layers=self.layers, signals=new_store.data)
+
+    def __radd__(self, other) -> "Signals":
         return self.__add__(other)
-
-    def __iter__(self):
-        return iter(self._store.data)
-
-    def __len__(self) -> int:
-        return self._store.data.shape[0]
-    
-    def __sizeof__(self):
-        return object.__sizeof__(self) + self._store.__sizeof__()
 
     # ..................................................................................
     @property

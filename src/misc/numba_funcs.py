@@ -24,6 +24,31 @@ def apply_to_columns(arr: np.ndarray, func):
     return arr
 
 
+@njit(parallel=True)
+def apply_to_columns_general(arr: np.ndarray, func):
+    # Determine the number of dimensions
+    ndim = arr.ndim
+    if ndim < 1:
+        raise ValueError("Input array must have at least 1 dimension")
+    
+    # Calculate the total number of columns across all other dimensions
+    num_cols = 1
+    for dim in range(1, ndim):
+        num_cols *= arr.shape[dim]
+    
+    # Reshape the array to 2D: (axis=0, all other axes flattened)
+    shape_0 = arr.shape[0]
+    shape_other = num_cols
+    arr_reshaped = arr.reshape(shape_0, shape_other)
+    
+    # Apply the function to each column in parallel
+    for col in prange(shape_other):
+        column = arr_reshaped[:, col]
+        arr_reshaped[:, col] = func(column)
+    
+    return arr
+
+
 @njit
 def ffill_column(col: np.ndarray):
     last_valid = col[0]

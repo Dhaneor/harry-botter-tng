@@ -274,11 +274,11 @@ class BackTestCore:
 
 # ======================================================================================
 def run_backtest(
-        market_data: MarketDataStore, 
-        leverage: np.ndarray, 
-        signals: np.ndarray, 
-        config: Config
-    ) -> np.ndarray:
+    market_data: MarketDataStore, 
+    leverage: np.ndarray, 
+    signals: np.ndarray, 
+    config: Config
+) -> np.ndarray:
 
     periods, assets, strategies = signals.shape    
     logger.info(

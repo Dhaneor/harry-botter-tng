@@ -19,8 +19,8 @@ wrapper = BaseWrapper2D(data, columns)
 
 
 def test_base_wrapper_init():
-    assert wrapper.data.shape == data.shape
-    assert isinstance(wrapper.data, np.ndarray)
+    assert wrapper._data.shape == data.shape
+    assert isinstance(wrapper._data, np.ndarray)
 
 def test_init_with_wrong_data_type():
     with pytest.raises(ValueError):
@@ -72,7 +72,7 @@ def test_set_item_by_string():
 
     wrapper["col1"] = new_values
     assert np.array_equal(wrapper["col1"], new_values)
-    assert np.array_equal(wrapper.data[:, 0], new_values)
+    assert np.array_equal(wrapper._data[:, 0], new_values)
 
 
 def test_set_item_by_slice():
@@ -81,7 +81,7 @@ def test_set_item_by_slice():
 
     wrapper[::2] = new_values
     assert np.array_equal(wrapper[::2], new_values)
-    assert np.array_equal(wrapper.data[::2], new_values)
+    assert np.array_equal(wrapper._data[::2], new_values)
 
 
 def test_set_item_2d():
@@ -90,7 +90,7 @@ def test_set_item_2d():
 
     wrapper[1:4, 2:4] = new_values
     assert np.array_equal(wrapper[1:4, 2:4], new_values)
-    assert np.array_equal(wrapper.data[1:4, 2:4], new_values)
+    assert np.array_equal(wrapper._data[1:4, 2:4], new_values)
 
 
 def test_set_item_invalid_column():
@@ -134,7 +134,7 @@ def test_ndim():
 
 def test_ffill():
     assert np.array_equal(wrapper.ffill(), data)
-    assert isinstance(wrapper.data, np.ndarray)
+    assert isinstance(wrapper._data, np.ndarray)
 
 def test_replace():
     data = np.ndarray([0, 1, 3, 4, 5]).reshape(-1, 1)
@@ -143,8 +143,8 @@ def test_replace():
     wrapper = BaseWrapper2D(data, columns)
     wrapper.replace(5, 0)
 
-    assert np.array_equal(wrapper.data, expected), \
-        f"Expected: {expected}, got: {wrapper.data}"
+    assert np.array_equal(wrapper._data, expected), \
+        f"Expected: {expected}, got: {wrapper._data}"
 
 # ........................... TESTS FOR statistical methods ...........................
 # def test_mean():

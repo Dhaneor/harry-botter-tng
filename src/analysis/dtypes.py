@@ -7,6 +7,17 @@ Created on Sun Jan 06 01:28:53 2024
 """
 import numpy as np
 
+
+OHCLV_DTYPE = np.dtype([
+    ('timestamp', np.int64),  # timestamp of the OHLCV data
+    ('open', np.float32),  # price at the open
+    ('high', np.float32),  # price at the highest
+    ('low', np.float32),  # price at the lowest
+    ('close', np.float32),  # price at the close
+    ('volume', np.float64),  # volume of the trade
+])
+
+
 SIGNALS_DTYPE = np.dtype([
     ('open_long', np.bool_),
     ('close_long', np.bool_),
