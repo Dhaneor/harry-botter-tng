@@ -30,6 +30,7 @@ class EfficiencyRatio(IIndicator):
         self.output_flags = {}
 
         self._parameters = timeperiod,
+        self._plot_desc = dict(real=["Line"])
 
         self._is_subplot = True
         self._method: int = 0  # calculation method (0=numpy, 1=numba)

@@ -32,6 +32,7 @@ Created on Sat Aug 18 10:356:50 2023
 @author: dhaneor
 """
 
+import itertools
 import logging
 import numpy as np
 import sys
@@ -45,16 +46,20 @@ from analysis import (
     TALIB_INDICATORS,
     indicators_custom,
     Parameter,
-    MarketData,
+    MarketData
+)
+from analysis.chart import(
     SubPlot,
     Line,
     Channel,
+    Candlestick
 )
+from misc.mixins import PlottingMixin
 from models.enums import OperandType
 from util import log_execution_time, proj_types as tp  # noqa: F401
 
 logger = logging.getLogger("main.operand")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 # build a list of all available indicators, that can later be used
 # to do a fast check if requested indicators are available.
@@ -66,7 +71,7 @@ MAX_CACHE_SIZE = 100 * 1024 * 1024  # max cache size for operands
 
 # ======================================================================================
 @dataclass
-class Operand(ABC):
+class Operand:
     """A single operand of a condition.
 
     A single operand can represent either:
@@ -197,6 +202,15 @@ class Operand(ABC):
             return ()
 
     @property
+    def ohlcv_subplot(self) -> SubPlot:
+        return SubPlot(
+            label="OHLCV",
+            elements=[Candlestick()],
+            level="operand",
+            is_subplot=False,
+        )
+
+    @property
     @abstractmethod
     def plot_data(self) -> dict[str, np.ndarray]: ...
 
@@ -267,7 +281,7 @@ class Operand(ABC):
 
 
 @dataclass(kw_only=True)
-class OperandIndicator(Operand):
+class OperandIndicator(Operand, PlottingMixin):
     """Operand that represents an indicator."""
 
     name: str
@@ -449,12 +463,44 @@ class OperandIndicator(Operand):
         )
 
     @property
+    def plot_data(self) -> dict[str, np.ndarray]:
+        data = self.market_data.to_dictionary()
+        data.update(self.indicator.plot_data)
+
+        for k,v in data.items():
+            data[k] = np.array(v, dtype=np.float64)[200:]
+
+        return data
+        
+    @property
     def subplots(self) -> SubPlot:
-        return SubPlot(
-            label=" of ".join((i.plot_desc.label for i in self.indicators)),
-            is_subplot=self.indicator.is_subplot,
-            elements=self.indicator.subplots[0].elements,
-            level="operand",
+        # subs = itertools.chain(*(i.subplots for i in self.indicators))
+        subs = self.indicator.subplots
+
+        logger.info(f"Operand {self.name} subplots: {subs}")
+
+        # for sp in subs:
+        #     sp.label = f"{self.unique_name} ({sp.label})"
+        #     logger.debug(f"Operand {self.name} updated subplot label: {sp.label}")
+
+        # logger.debug(f"Operand {self.name} combined subplots: {subs}")
+
+        # # combine the subplots that belong to a channel into a single
+        # # Channel element
+        # channel_subs = [
+        #     elem
+        #     for elem in subs
+        #     if isinstance(elem, SubPlot) and elem.label.startswith("Channel")
+        # ]
+
+        return  (
+            self.ohlcv_subplot,
+            SubPlot(
+                label=" of ".join((sp.label.upper() for sp in subs)),
+                is_subplot=self.indicator.is_subplot,
+                elements=self.indicator.subplots[0].elements,
+                level="operand",
+            ),
         )
 
     @property
@@ -1008,16 +1054,19 @@ class OperandSeries(Operand):
         return self.name
 
     @property
-    def plot_desc(self) -> SubPlot | None:
-        """Return the plot description for the operand.
+    def plot_data(self) -> dict[np.ndarray]:
+        return self.market_data.to_dictionary()
 
-        Returns
-        -------
-        dict[str, tp.Parameters]
-            plot parameters for the operand
-        """
-        # return SubPlot(label=self.name, is_subplot=False, level="operand")
-        return None
+    @property
+    def subplots(self) -> Sequence[SubPlot]:
+        return [
+            SubPlot(
+                label="OHLCV",
+                is_subplot=False,
+                elements=Candlestick(),
+                level="operand",
+            )
+        ]
 
     # ..................................................................................
     def update_parameters(self, params: dict[str, tp.Parameters]) -> None:

@@ -24,7 +24,7 @@ from numbers import Number
 from typing import Sequence, Callable, Union, Generator, Mapping, Any
 
 from .indicator_parameter import Parameter
-from analysis.chart.plot_definition import Layout, SubPlot
+from analysis.chart.plot_definition import SubPlot
 from misc.mixins import PlottingMixin
 
 logger = logging.getLogger(f"main.{__name__}")
@@ -143,12 +143,6 @@ Combinations = Generator[tuple[Any, ...], None, None]
 class IIndicator(PlottingMixin):
     """Base class for all indicators."""
 
-    plot_layout = Layout(
-        layout = dict(),
-        row_heights = [],
-        col_widths = [1],
-    )
-
     def __init__(self) -> None:
         self._name = self.__class__.__name__.lower()
         self.input: Sequence[str] = []
@@ -180,13 +174,13 @@ class IIndicator(PlottingMixin):
         
         # find all parameters of this indicator that have a lookback 
         # period
-        param_names = (
-            "period", "timeperiod", "lookback", "fastperiod", "slowperiod",
-            "signalperiod"
-            )
-        # find the maximum lookback period
-        periods = [p.value for p in self._parameters if p.name in param_names]
-        lbp = max(periods) if periods else 0
+        # param_names = (
+        #     "period", "timeperiod", "lookback", "fastperiod", "slowperiod",
+        #     "signalperiod"
+        #     )
+        # # find the maximum lookback period
+        # periods = [p.value for p in self._parameters if p.name in param_names]
+        # lbp = max(periods) if periods else 0
 
         data = self._cache        
         data = [data] if isinstance(data, np.ndarray) else data
@@ -194,16 +188,13 @@ class IIndicator(PlottingMixin):
         data_dict = {}
         for idx in range(len(data)):
             try:
-                data_dict[self.unique_output[idx]] = np.nan_to_num(data[idx][lbp:])
+                data_dict[self.unique_output[idx]] = data[idx]
             except Exception as e:
                 logger.error(f"Error processing data for {self.unique_name}: {e}")
                 logger.error(f"Data: {data}")
                 raise
 
-        df = pd.DataFrame.from_dict(data_dict)
-        print(df.tail(25))
-
-        return df
+        return data_dict
 
     @property
     def name(self) -> str:

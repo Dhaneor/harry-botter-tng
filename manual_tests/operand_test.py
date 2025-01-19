@@ -28,7 +28,7 @@ logger = get_logger('main', level=logging.DEBUG)
 
 
 # ======================================================================================
-market_data = MarketData.from_random(3000, 2)
+market_data = MarketData.from_random(500, 1)
 
 # ======================================================================================
 # define different operands for testing possible variants
@@ -45,7 +45,7 @@ op_defs = {
     },
 
     "kama": {
-        "def": ('kama', {'timeperiod': 20}),
+        "def": ('kama', {'timeperiod': 10}),
         "params": {"timeperiod": 30},
         # "plot_desc": SubPlot(
         #     label='Kaufman Adaptive Moving Average (20)',
@@ -242,7 +242,7 @@ def test_operand_run_trigger():
 def test_operand_run_indicator():
     logger.info("running test_operand_run_indicator() ...")
 
-    op_def = ('er', 'close', {'timeperiod': 20},)
+    op_def = ('sma', 'close', {'timeperiod': 20},)
     operand = operand_factory(op_def, market_data)
     res = operand.run()
 
@@ -346,12 +346,12 @@ if __name__ == "__main__":
     # test_update_parameters()
     # test_randomize()
     # test_operand_run_trigger()
-    test_operand_run_indicator()
-    sys.exit()
+    # test_operand_run_indicator()
+    # sys.exit()
 
     # operand = operand_factory(op_defs.get('sma_of_rsi').get('def'), {})
     operand = operand_factory(
-        op_defs.get("sma").get('def'), market_data
+        op_defs.get("kama").get('def'), market_data
         )
 
     if operand is None:
@@ -359,6 +359,10 @@ if __name__ == "__main__":
         sys.exit(1)
 
     pprint(operand.__dict__)
+
+    operand.market_data = market_data
+    operand.run()
+    operand.plot()
 
     # for _ in range(100):
     #     # logger.debug('=' * 120)
@@ -372,7 +376,7 @@ if __name__ == "__main__":
     # logger.info(operand.parameters)
     # print(pd.DataFrame.from_dict(data).tail(10))
 
-    # sys.exit()
+    sys.exit()
 
     # print('-~•~-' * 40)
     # print("indicator:")

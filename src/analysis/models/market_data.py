@@ -485,22 +485,22 @@ class MarketData:
         import numpy as np
         import pandas as pd
         from datetime import datetime, timedelta
-
+    
         # Generate end timestamp (current date at 00:00:00)
         end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
         start_date = end_date - timedelta(minutes=length)
-
+    
         # Generate timestamps
         timestamps = pd.date_range(start=start_date, end=end_date, periods=length)
         timestamps_ms = timestamps.astype(np.int64) // 10**6
         timestamps_ms = timestamps_ms.to_numpy()
-
+    
         # Generate random symbols
         symbols = [
             "".join(np.random.choice(list("ABCDEFGHIJKLMNOPQRSTUVWXYZ"), 3)) + "USDT"
             for _ in range(no_of_symbols)
         ]
-
+    
         # Initialize arrays
         open_prices = np.zeros((length, no_of_symbols), dtype=np.float32)
         high_prices = np.zeros((length, no_of_symbols), dtype=np.float32)
@@ -508,34 +508,38 @@ class MarketData:
         close_prices = np.zeros((length, no_of_symbols), dtype=np.float32)
         volumes = np.zeros((length, no_of_symbols), dtype=np.float32)
         timestamps = np.tile(timestamps_ms.reshape(-1, 1), (1, no_of_symbols))
-
+    
         for i in range(no_of_symbols):
             # Generate initial price (between 1 and 1000)
             initial_price = np.random.uniform(1, 1000)
-
+    
             # Generate price changes using random walk
             changes = np.random.normal(0, 0.02, length)  # 2% daily volatility
-
+    
             # Calculate prices
             prices = initial_price * np.exp(np.cumsum(changes))
-
+    
             # Generate open, high, low, close
-            open_prices[:, i] = prices
-            close_prices[:, i] = prices * (
-                1 + np.random.normal(0, 0.005, length)
-            )  # 0.5% variation
-            high_prices[:, i] = np.maximum(open_prices[:, i], close_prices[:, i]) * (
-                1 + np.abs(np.random.normal(0, 0.005, length))
-            )
-            low_prices[:, i] = np.minimum(open_prices[:, i], close_prices[:, i]) * (
-                1 - np.abs(np.random.normal(0, 0.005, length))
-            )
-
+            close_prices[:, i] = prices
+            open_prices[0, i] = initial_price  # First open price
+            open_prices[1:, i] = close_prices[:-1, i]  # Subsequent open prices
+    
+            # Generate intraday price movements
+            intraday_high = np.random.uniform(0, 0.01, length)  # Up to 1% higher
+            intraday_low = np.random.uniform(0, 0.01, length)   # Up to 1% lower
+    
+            high_prices[:, i] = np.maximum(open_prices[:, i], close_prices[:, i]) * (1 + intraday_high)
+            low_prices[:, i] = np.minimum(open_prices[:, i], close_prices[:, i]) * (1 - intraday_low)
+    
+            # Ensure high is always highest and low is always lowest
+            high_prices[:, i] = np.maximum(high_prices[:, i], np.maximum(open_prices[:, i], close_prices[:, i]))
+            low_prices[:, i] = np.minimum(low_prices[:, i], np.minimum(open_prices[:, i], close_prices[:, i]))
+    
             # Generate volumes (between 1000 and 100000)
             volumes[:, i] = np.random.uniform(1000, 100000, length)
-
+    
             timestamps[:, i] = timestamps_ms
-
+    
         # Create MarketDataStore
         mds = MarketDataStore(
             open_=open_prices,
@@ -545,7 +549,7 @@ class MarketData:
             volume=volumes,
             timestamp=timestamps,
         )
-
+    
         return cls(mds, symbols)
 
     # .................................................................................

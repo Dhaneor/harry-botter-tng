@@ -12,10 +12,11 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from plot_definition import PlotDefinition, Candlestick
+from .plot_definition import PlotDefinition, Candlestick
 from .plotly_styles import TikrStyle
 
 logger = logging.getLogger(f"main.{__name__}")
+logger.setLevel(logging.ERROR)
 
 
 

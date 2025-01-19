@@ -38,7 +38,7 @@ else:
     from .layout_validator import validate_layout
 
     logger = logging.getLogger(f"main.{__name__}")
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.ERROR)
 
 
 VALIDATION_LEVEL = "basic"
@@ -692,6 +692,8 @@ class Histogram(ChartElement):
     shape: str = "spline"
     fillmethod: str | None = None
     fillcolor: Color | None = None
+    border_color: Color | None = None
+    opacity: float = 0.5
 
     is_trigger: bool = False
 
@@ -707,6 +709,9 @@ class Histogram(ChartElement):
         self.font = style.font_family if not self.font else self.font
         self.font_size = style.tick_font_size if not self.font_size else self.font_size
 
+        self.color = style.colors.volume
+        self.border_color = style.colors.volume.set_alpha(self.color.a / 2)
+
     def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
 
         logger.debug(f"Adding histogram '{self.label}' to plot.")
@@ -716,7 +721,10 @@ class Histogram(ChartElement):
             x=data.index,
             y=data[self.column or self.label],
             name=self.label or self.column,
-            marker_color=self.color.rgba,
+                marker={
+                    "color": self.color.rgba,
+                    "line": {"color": self.border_color.rgba, "width": self.width},
+                },
             opacity=self.opacity,
             showlegend=True if self.label is not None else False,
             legendgroup=self.legendgroup,
