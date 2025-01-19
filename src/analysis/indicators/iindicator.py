@@ -18,13 +18,13 @@ Created on Wed Nov 06 17:35:50 2024
 import logging
 import numpy as np
 import pandas as pd
-import sys
-from abc import ABC, abstractmethod
+
+from abc import abstractmethod
 from numbers import Number
 from typing import Sequence, Callable, Union, Generator, Mapping, Any
 
 from .indicator_parameter import Parameter
-from analysis.chart.plot_definition import Layout, SubPlot, Line, Channel
+from analysis.chart.plot_definition import Layout, SubPlot
 from misc.mixins import PlottingMixin
 
 logger = logging.getLogger(f"main.{__name__}")

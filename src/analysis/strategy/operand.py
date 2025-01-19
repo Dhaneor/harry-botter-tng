@@ -139,7 +139,6 @@ class Operand(ABC):
     id: int = field(default=0)
 
     inputs: tuple = field(default_factory=tuple)
-    # unique_name: str = ""
     _output: str = ""
 
     _cache = {}
@@ -192,11 +191,18 @@ class Operand(ABC):
     @property
     def parameters_tuple(self) -> tuple[Any, ...]:
         """Return the parameters for the operand as a tuple"""
-        return tuple(p.value for p in self.parameter_instances)
+        if self.parameter_instances is not None:
+            return tuple(p.value for p in self.parameter_instances)
+        else:
+            return ()
 
     @property
     @abstractmethod
-    def plot_desc(self) -> dict[str, tp.Parameters]: ...
+    def plot_data(self) -> dict[str, np.ndarray]: ...
+
+    @property
+    @abstractmethod
+    def subplots(self) -> Sequence[SubPlot]: ...
 
     @abstractmethod
     def run(self, data: tp.Data) -> str: ...
@@ -439,6 +445,15 @@ class OperandIndicator(Operand):
             label=" of ".join((i.plot_desc.label for i in self.indicators)),
             is_subplot=any(arg.is_subplot for arg in self.indicators),
             elements=tuple((channel, *lines)) if channel else lines,
+            level="operand",
+        )
+
+    @property
+    def subplots(self) -> SubPlot:
+        return SubPlot(
+            label=" of ".join((i.plot_desc.label for i in self.indicators)),
+            is_subplot=self.indicator.is_subplot,
+            elements=self.indicator.subplots[0].elements,
             level="operand",
         )
 
