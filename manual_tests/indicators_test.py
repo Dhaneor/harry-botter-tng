@@ -14,10 +14,12 @@ import pstats  # noqa: E402, F401
 import logging
 
 import analysis.indicators.indicator as indicator  # noqa: E402
-from analysis.chart.plot_definition import SubPlot  # noqa: E402, F401
+from analysis.chart.plot_definition import (  # noqa: E402, F401
+    SubPlot, Line, Channel, Histogram
+)
 from util import get_logger
 
-logger = get_logger('main', level="DEBUG")
+logger = get_logger("main", level="DEBUG")
 
 
 array_len = 1000
@@ -27,19 +29,30 @@ a1 = np.random.rand(array_len) * 1.05
 a2 = np.random.rand(array_len) * 0.95
 
 # ==============================================================================
+# define some indicators and their SubPlots (plot descriptions) with
+# examples that have/test for: 
+# • one or multiple outputs
+# • line elements
+# • channel elements
+# • histogram elements
+
 defs = {
-    'SMA': {
-        'src': 'talib',
-        'params': {'timeperiod': 100},
-        # "plot_desc": SubPlot(
-        #     label='sma_100',
-        #     is_subplot=False,
-        #     elements=[('sma_100', 'Line')],
-        #     triggers=[],
-        #     channel=[],
-        #     hist=[],
-        #     level='indicator'
-        # )
+    "SMA": {
+        "src": "talib",
+        "params": {"timeperiod": 100},
+        "subplots": SubPlot(
+            label="Simple Moving Average (100)",
+            is_subplot=False,
+            elements=[
+                Line(
+                    label="SMA (100)", 
+                    column="sma_100_close",
+                    legend="SMA (100)",
+                    legendgroup="SMA",
+                    )
+            ],
+            level="indicator"
+        )
     },
     "STOCH": {
         "src": "talib",
@@ -50,27 +63,63 @@ defs = {
             "slowk_matype": 0,
             "slowd_matype": 0,
         },
+        "subplots": SubPlot(
+            label="Stochastic (14,10,0,10,0)",
+            is_subplot=True,
+            elements=[
+                Line(
+                    label="SLOWK", 
+                    column="stoch_14_10_0_10_0_high_low_close_slowk",
+                    legend="SLOWK",
+                    legendgroup="STOCH"
+                ),
+                Line(
+                    label="SLOWD", 
+                    column="stoch_14_10_0_10_0_high_low_close_slowd",
+                    legend="SLOWD",
+                    legendgroup="STOCH",
+                ),
+            ],
+            level="indicator"
+        )
     },
     "BBANDS": {
         "src": "talib",
         "params": {
             "timeperiod": 20,
-            "nbdevup": 2,
-            "nbdevdn": 2,
+            "nbdevup": 2.5,
+            "nbdevdn": 2.5,
             "matype": 0,
         },
-        # "plot_desc": SubPlot(
-        #     label='bbands_20_2.0_2.0_0',
-        #     is_subplot=False,
-        #     elements=[('bbands_20_2.0_2.0_0_middleband', 'Line')],
-        #     triggers=[],
-        #     channel=[
-        #         'bbands_20_2.0_2.0_0_upperband',
-        #         'bbands_20_2.0_2.0_0_lowerband'
-        #     ],
-        #     hist=[],
-        #     level='indicator'
-        # )
+        "subplots": SubPlot(
+            label="Bollinger Bands (20,2.5,2.5,0)",
+            is_subplot=False,
+            elements=[
+                Line(
+                    label="MIDDLEBAND", 
+                    column="bbands_20_2.5_2.5_0_close_middleband",
+                    legend="MIDDLEBAND",
+                    legendgroup="BBANDS"
+                ),
+                Channel(
+                    label="BBANDS",
+                    upper=Line
+                    (
+                        label="UPPERBAND", 
+                        column="bbands_20_2.5_2.5_0_close_upperband",
+                        legend="UPPERBAND",
+                        legendgroup="BBANDS"
+                    ),
+                    lower=Line(
+                        label="LOWERBAND", 
+                        column="bbands_20_2.5_2.5_0_close_lowerband",
+                        legend="LOWERBAND",
+                        legendgroup="BBANDS"
+                    )
+                )
+            ],
+            level="indicator",
+        )
     },
     "MACD": {
         "src": "talib",
@@ -79,47 +128,60 @@ defs = {
             "slowperiod": 26,
             "signalperiod": 9
         },
-        # "plot_desc": SubPlot(
-        #     label='macd_12_26_9',
-        #     is_subplot=True,
-        #     elements=[
-        #         ('macd_12_26_9_macd', 'Line'),
-        #         ('macd_12_26_9_macdsignal', 'Dashed Line')
-        #     ],
-        #     triggers=[],
-        #     channel=[],
-        #     hist=['macd_12_26_9_macdhist'],
-        #     level='indicator'
-        # )
+        "subplots": SubPlot(
+            label="Moving Average Convergence/Divergence (12,26,9)",
+            is_subplot=True,
+            elements=[
+                Line(
+                    label="MACD", 
+                    column="macd_12_26_9_close_macd",
+                    legend="MACD",
+                    legendgroup="MACD"
+                ),
+                Line(
+                    label="MACDSIGNAL", 
+                    column="macd_12_26_9_close_macdsignal",
+                    legend="MACDSIGNAL",
+                    legendgroup="MACD"
+                ),
+                Histogram(
+                    label="MACDHIST", 
+                    column="macd_12_26_9_close_macdhist",
+                    legend="MACDHIST",
+                    legendgroup="MACD"
+                )
+            ],
+            level="indicator"
+        )
     },
-    "RSI_OVERBOUGHT": {
-        "src": "fixed",
-        "params": {'value': 70},
-        'parameter_space': {'trigger': [70, 100]},
-        # "plot_desc": SubPlot(
-        #     label='rsi_overbought_70',
-        #     is_subplot=True,
-        #     elements=[],
-        #     triggers=[('rsi_overbought_70', 'Line')],
-        #     channel=[],
-        #     hist=[],
-        #     level='indicator'
-        # )
-    },
-    "RSI_OVERSOLD": {
-        "src": "fixed",
-        "params": {'value': 30},
-        'parameter_space': {'trigger': [0, 30]},
-        # "plot_desc": SubPlot(
-        #     label='rsi_oversold_30',
-        #     is_subplot=True,
-        #     elements=[],
-        #     triggers=[('rsi_oversold_30', 'Line')],
-        #     channel=[],
-        #     hist=[],
-        #     level='indicator'
-        # )
-    },
+#     "RSI_OVERBOUGHT": {
+#         "src": "fixed",
+#         "params": {"value": 70},
+#         "parameter_space": {"trigger": [70, 100]},
+#         # "subplots": SubPlot(
+#         #     label="rsi_overbought_70",
+#         #     is_subplot=True,
+#         #     elements=[],
+#         #     triggers=[("rsi_overbought_70", "Line")],
+#         #     channel=[],
+#         #     hist=[],
+#         #     level="indicator"
+#         # )
+#     },
+#     "RSI_OVERSOLD": {
+#         "src": "fixed",
+#         "params": {"value": 30},
+#         "parameter_space": {"trigger": [0, 30]},
+#         # "subplots": SubPlot(
+#         #     label="rsi_oversold_30",
+#         #     is_subplot=True,
+#         #     elements=[],
+#         #     triggers=[("rsi_oversold_30", "Line")],
+#         #     channel=[],
+#         #     hist=[],
+#         #     level="indicator"
+#         # )
+#     },
 }
 
 
@@ -136,8 +198,8 @@ def test_indicator_factory(
 
     if show:
         print(ind)
-        ind.help()
-        print('-------------------------')
+        # ind.help()
+        print("-------------------------")
         print("name:", ind.name)
         print("input:", ind.input)
         print("params:", ind.parameters)
@@ -208,22 +270,69 @@ def test_unique_name(ind):
     return name
 
 
-def test_plot_desc():
-    logger.setLevel(logging.INFO)
-
+def test_subplots():
     for cand in defs:
+        logger.info("=" * 200)
         i = indicator.factory(cand, defs[cand]["params"], defs[cand]["src"])
-        logger.info(i.plot_desc)
 
-        try:
-            assert i.plot_desc == defs[cand]["plot_desc"]
-        except AssertionError as e:
-            logger.error(f"plot description mismatch for {cand} --> %s", e)
-            logger.error("expected:\t%s", defs[cand]["plot_desc"])
-            logger.error("got:     \t%s", i.plot_desc)
-            return
+        result = i.subplots
+        exp = defs[cand]["subplots"].__dict__
+        res = result[0].__dict__
+        
+        for k in exp.keys():
+            
+            try:
+                assert res[k] == exp[k]
+            except AssertionError as e:
+                logger.error(f"[{k}] ===== EXPECTED {exp[k]}")
+                logger.error(f"[{k}] ===== GOT: {res[k]}")
+                logger.error("~" * 200)
 
-    logger.info("verify plot descriptions: OK")
+                if k == "elements":
+                    exp_elems = exp[k]
+                    res_elems = res[k]
+
+                    for i in range(len(exp_elems)):
+                        try:
+                            assert exp_elems[i] == res_elems[i]
+                        except AssertionError:
+                            for k, v in exp_elems[i].__dict__.items():
+                                res_v = res_elems[i].__dict__[k]
+
+                                if not v == res_v:
+                                    logger.info("%s: %s ----- %s",  k, v, res_v)
+
+                return
+        else:
+            logger.info(i.subplots)
+    else:
+        logger.info("verify plot descriptions: OK")
+
+
+def test_plot(indicator: indicator.Indicator):
+    """Tests the plot method of the Indicator class"""
+    inputs = len(indicator.input)
+
+    print(indicator)
+
+    match inputs:
+        case 1:
+            indicator.run(np.random.rand(100).reshape(-1, 1) * 10_000)
+        case 2:
+            indicator.run(
+                np.random.rand(100).reshape(-1, 1) * 10_000, 
+                np.random.rand(100).reshape(-1, 1) * 10_000
+            )
+
+    try:
+        indicator.plot()
+    except AttributeError as e:
+        logger.error(e)
+        logger.error(dir(indicator))
+    except Exception as e:
+        logger.error(f"Error plotting indicator: {indicator.__class__.__name__}")
+        logger.error(f"{str(e)}", exc_info=True)
+
 
 
 # tests for the Parameter class
@@ -353,7 +462,7 @@ def test_randomize(ind):
 
 
 def test_return_type():
-    ind = indicator.factory('ER', {}, None)
+    ind = indicator.factory("ER", {}, None)
 
     assert isinstance(ind, indicator.IIndicator)
 
@@ -373,7 +482,7 @@ def test_return_type():
     assert isinstance(res[0], np.ndarray), \
         f"Expected np.ndarray, got {type(res)}"
     
-    assert res.shape == shape, f"Expected shape {shape}, got {res.shape}"
+    assert res[0].shape == shape, f"Expected shape {shape}, got {res.shape}"
 
 
 
@@ -381,16 +490,13 @@ def test_return_type():
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    # test_indicator_factory("SMA", show=True)
+    # test_indicator_factory("STOCH", show=True)
     # test_set_indicator_parameters()
     # test_randomize(test_indicator_factory("BBANDS"))
-    test_return_type()
-
-    sys.exit()
-
+    # test_return_type()
     # test_parameter_space()
     # test_parameter_iter()
-    # test_plot_desc()
+    # test_subplots()
     # sys.exit()
 
     # arr, res = test_is_above()
@@ -400,34 +506,35 @@ if __name__ == "__main__":
     # )
 
     # ind = test_indicator_factory(
-    #     'LINEARREG', params={'timeperiod': 20}, show=False
+    #     "LINEARREG", params={"timeperiod": 20}, show=False
     #     )
 
     # ind = test_indicator_factory(
-    #     'ER', params={"timeperiod": 30}, show=False
+    #     "ER", params={"timeperiod": 30}, show=False
     #     )
 
-    ind = test_indicator_factory("SMA", {"timeperiod": 37}, show=False)
+    ind = test_indicator_factory("AROONOSC", show=False)
+    test_plot(ind)
 
-    # ind = test_indicator_factory('STOCH', show=False)
+    # ind = test_indicator_factory("STOCH", show=False)
 
     # ind = test_indicator_factory(
-    #     'rsi_oversold',
-    #     {'value': 70, 'parameter_space': {'trigger': [30, 70]}},
-    #     'fixed',
+    #     "rsi_oversold",
+    #     {"value": 70, "parameter_space": {"trigger": [30, 70]}},
+    #     "fixed",
     #     show=False
     # )
 
-    # ind.parameters = {'value': 80, 'parameter_space': [40, 70]}
+    # ind.parameters = {"value": 80, "parameter_space": [40, 70]}
 
     # print(ind.help())
-    # pprint(ind.plot_desc)
-    pprint(ind.__dict__)
-    print("unqiue_output: ", ind.unique_output)
-    print("unique_name: ", ind.unique_name)
-    # print(ind.plot_desc)
+    # pprint(ind.subplots)
+    # pprint(ind.__dict__)
+    # print("unqiue_output: ", ind.unique_output)
+    # print("unique_name: ", ind.unique_name)
+    # print(ind.subplots)
 
-    test_run_with_mutiple_parameters(ind)
+    # test_run_with_mutiple_parameters(ind)
 
     sys.exit(0)
 
@@ -437,10 +544,10 @@ if __name__ == "__main__":
 
     # for _ in range(runs):
     #     ind = test_indicator_factory(
-    #         'BBANDS', {'timeperiod': 80, 'nbdevup': 1.5},
+    #         "BBANDS", {"timeperiod": 80, "nbdevup": 1.5},
     #         show=False
     #     )
-    #     ind.parameter_space = {'value': [40, 70]}
+    #     ind.parameter_space = {"value": [40, 70]}
 
     with Profile() as p:
         for _ in range(runs):

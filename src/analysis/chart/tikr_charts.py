@@ -142,7 +142,8 @@ class ChartArtist:
         style = self.style
 
         # set some basic style parameters and make the y axis logarithmic
-        fig.update_layout(yaxis_type="log", hovermode="x")
+        if isinstance(p_def.subplots[0], Candlestick):
+            fig.update_layout(yaxis_type="log", hovermode="x")
 
         # set background colors
         fig.update_layout(

@@ -113,7 +113,7 @@ from . import (
 )
 from analysis import (  # noqa: F401
     MarketData, Indicator, Parameter,
-    combine_signals, SignalStore,
+    combine_signals, SignalStore, 
     SubPlot, SignalChart
 ) 
 from analysis.dtypes import SIGNALS_DTYPE
@@ -305,13 +305,13 @@ class SignalGenerator:
 
     Methods:
     --------
-    execute(self, market_data: MarketData) -> Signals
+    execute(...) -> Signals
         Runs the signal generator on the given market data (or the market
         data set at instantiation) and returns a Numpy array of signals.
         For more information about the format of the returned signals, 
         refer to the method docstring below.
 
-    randomize
+    randomize() -> None
         Randomizes the (indicator) parameters of the signal generator.
 
     """
@@ -517,7 +517,7 @@ class SignalGenerator:
 
         self.market_data = market_data or self.market_data
         out = self._build_results_array(depth=len(param_combinations or [1]))
-        
+
         if param_combinations is None:
             # this is the default case, execute for the current parameters
             self._execute_single(out, 0)
@@ -596,6 +596,9 @@ class SignalGenerator:
         periods = len(self.market_data)
         assets = self.market_data.number_of_assets
         return np.zeros((periods, assets, depth), dtype=SIGNALS_DTYPE)
+
+    def _build_subplot(self, condition_index: int) -> SubPlot:
+        ...
 
     def is_working(self) -> bool:
         """Check if the signal generator is working.

@@ -20,7 +20,6 @@ Created on Sat Aug 05 22:39:50 2023
 import inspect
 import logging
 import numpy as np
-import pandas as pd
 import talib
 
 from collections import OrderedDict
@@ -37,10 +36,11 @@ from talib import MA_Type, abstract
 from .iindicator import IIndicator
 from .indicators_custom import custom_indicators
 from .indicator_parameter import Parameter
-from ..chart.plot_definition import Line, SubPlot
+from ..chart.plot_definition import Line, Channel, Histogram, SubPlot
+
 
 logger = logging.getLogger("main.indicator")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 Params = dict[str, Union[str, float, int, bool]]
 IndicatorSource = Literal["talib", "nb"]
@@ -151,34 +151,117 @@ class Indicator(IIndicator):
         return f"{self.__class__.__name__} - {self.parameters}"
 
     @property
-    def plot_desc(self) -> SubPlot:
+    def subplots(self) -> tuple[SubPlot]:
+        """Return the subplots for the indicator."""
+        param_ext = ",".join(str(p.value) for p in self.parameters)
+        subplot_label = f"{self.display_name} ({param_ext})"  # ({self.parameters[0].value})"
+        channel_elements = {"upper": None, "lower": None}
         elements = []
+
+        logger.debug(self._plot_desc)
+
         idx = 0
-
-        logger.debug(self.__dict__)
-
         for k, v in self._plot_desc.items():
-            v = v[0]
+            v = v[0]  # it's always a list with one element
+            elem = None
 
-            logger.info(f"Adding {k} to plot description: {v}")
+            logger.info(f"processing: '{k}' ...")
 
-            line = Line(
-                label=f"{self.unique_name.upper()} {k if k != 'real' else ''}",
-                column=self.unique_output[idx],
-                end_marker=False
-                )
-            elements.append(line)
+            # talib specifies the plotting descriptions (output_flags)
+            # in an OrderedDict, where the key is:
+            # • 'real' for indicators with one output
+            # • the name of the output for indicators with multiple outputs
+            if k == "real":
+                label = self.name.upper() + f" ({param_ext})"
+                legend = label
+                legendgroup = self.name.upper()
+            else:
+                label = k.upper()
+                legend = label
+                legendgroup = self.name.upper()
 
-            logger.debug(f"Line added: {line}")
-
+            # the values in the output_flags dictioanry describe the 
+            # type of line (or histogram for instance) to be plotted 
+            # for each output
+            match v:
+                case "Line":
+                    elem = Line(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case "Dashed Line":
+                    elem = Line(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case "Histogram":
+                    elem = Histogram(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case "Values represent an upper limit":
+                    logger.debug(
+                        "[CHANNEL ELEMENTS] Adding upper limit: %s" % legend
+                        )
+                    channel_elements["upper"] = Line(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case "Values represent a lower limit":
+                    logger.debug(
+                        "[CHANNEL ELEMENTS] Adding lower limit: %s" % legend
+                        )
+                    channel_elements["lower"] = Line(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case _:
+                    raise NotImplementedError(
+                        f"Unsupported output_flag: {v}"
+                    )
+                
+            if elem:                
+                elements.append(elem)
+                logger.debug(f"added element: {elem}")
+            
             idx += 1
 
-        return SubPlot(
-            label=f"{self.display_name} ({self.parameters[0].value})",
-            elements=elements,
-            is_subplot=self.is_subplot,
-        )
+        # if channel elements are present, prepare a Channel
+        # class and add it to the elements of the subplot
+        if any(channel_elements.values()):
+            if not all(channel_elements.values()):
+                raise ValueError(
+                    "Either upper or lower limit lines are missing. "
+                    f"channel elements: {channel_elements}"
+                )
 
+            logger.debug(f"Adding channel elements: {channel_elements}")
+            elem = Channel(
+                label=self.name.upper(),
+                upper=channel_elements["upper"],
+                lower=channel_elements["lower"],
+            )
+            elements.append(elem)
+            logger.debug(f"added element: {elem}")
+
+        return SubPlot(
+            label=subplot_label,
+            elements=elements,
+            level="indicator",
+            is_subplot=self.is_subplot,
+        ),
+        
+    
     def help(self):
         """Prints help information (docstring) for the class.
 
@@ -337,12 +420,12 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     talib_func = getattr(talib, func_name)
     info = abstract.Function(func_name).info
 
-    # instesd of telling the indicators which inputs they should
+    # instead of telling the indicators which inputs they should
     # use, every time we run them, these values are hard-coded here
     # (but cann be overridden at runtime)
     if isinstance(info["input_names"], OrderedDict):
         if "prices" in info["input_names"].keys():
-            input_names = set(info["input_names"]["prices"])
+            input_names = info["input_names"]["prices"]   # set(info["input_names"]["prices"])
         elif "price" in info["input_names"].keys():
             input_names = {info["input_names"]["price"]}
         else:

@@ -15,16 +15,17 @@ Created on Wed Nov 06 17:35:50 2024
 
 @author: dhaneor
 """
-import itertools
 import logging
 import numpy as np
 import pandas as pd
+import sys
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
 from numbers import Number
 from typing import Sequence, Callable, Union, Generator, Mapping, Any
 
 from .indicator_parameter import Parameter
+from analysis.chart.plot_definition import Layout, SubPlot, Line, Channel
+from misc.mixins import PlottingMixin
 
 logger = logging.getLogger(f"main.{__name__}")
 logger.setLevel(logging.ERROR)
@@ -34,113 +35,119 @@ Params = dict[str, Union[str, float, int, bool]]
 Combinations = Generator[tuple[Any, ...], None, None]
 
 
-@dataclass(frozen=True)
-class PlotDescription:
-    """Plot description for one indicator.
+# @dataclass(frozen=True)
+# class PlotDescription:
+#     """Plot description for one indicator.
 
-    This description is used to tell the chart plotting component how
-    to plot the indicator. Every indicator builds and returns this
-    automatically
+#     This description is used to tell the chart plotting component how
+#     to plot the indicator. Every indicator builds and returns this
+#     automatically
 
-    Attributes
-    ----------
-    label: str
-        the label for the indicator plot
+#     Attributes
+#     ----------
+#     label: str
+#         the label for the indicator plot
 
-    is_subplot: bool
-        does this indicator require a subplot or is it layered with
-        the OHLCV data in the main plot
+#     is_subplot: bool
+#         does this indicator require a subplot or is it layered with
+#         the OHLCV data in the main plot
 
-    lines: Sequence[tuple[str, str]]
-        name(s) of the indicator values that were returned with the
-        data dict, or are then a column name in the dataframe that
-        is sent to the chart plotting component
+#     lines: Sequence[tuple[str, str]]
+#         name(s) of the indicator values that were returned with the
+#         data dict, or are then a column name in the dataframe that
+#         is sent to the chart plotting component
 
-    triggers: Sequence[tuple[str, str]]
-        name(s) of the trigger values, these are separated from the
-        indicator values to enable a different reprentation when
-        plotting
+#     triggers: Sequence[tuple[str, str]]
+#         name(s) of the trigger values, these are separated from the
+#         indicator values to enable a different reprentation when
+#         plotting
 
-    channel: tuple[str, str]
-        some indicators require plotting a channel, this makes it
-        clear to the plotting component, which data series to plot
-        like this.
+#     channel: tuple[str, str]
+#         some indicators require plotting a channel, this makes it
+#         clear to the plotting component, which data series to plot
+#         like this.
 
-    level: str
-        the level that produced this description, just to make
-        debugging easier
-    """
+#     level: str
+#         the level that produced this description, just to make
+#         debugging easier
+#     """
 
-    label: str
-    is_subplot: bool
-    lines: Sequence[tuple[str, str]] = field(default_factory=list)
-    triggers: Sequence[tuple[str, str]] = field(default_factory=list)
-    channel: list[str] = field(default_factory=list)
-    hist: list[str] = field(default_factory=list)
-    level: str = field(default="indicator")
+#     label: str
+#     is_subplot: bool
+#     lines: Sequence[tuple[str, str]] = field(default_factory=list)
+#     triggers: Sequence[tuple[str, str]] = field(default_factory=list)
+#     channel: list[str] = field(default_factory=list)
+#     hist: list[str] = field(default_factory=list)
+#     level: str = field(default="indicator")
 
-    def __add__(self, other: "PlotDescription") -> "PlotDescription":
-        res_levels = {
-            0: "indicator",
-            1: "operand",
-            2: "condition",
-            3: "signal generator",
-        }
+#     def __add__(self, other: "PlotDescription") -> "PlotDescription":
+#         res_levels = {
+#             0: "indicator",
+#             1: "operand",
+#             2: "condition",
+#             3: "signal generator",
+#         }
 
-        # determine the 'level' of the new description after addition
-        level = max(
-            (
-                k
-                for k, v in res_levels.items()
-                for candidate in (self.level, other.level)
-                if v == candidate
-            )
-        )
+#         # determine the 'level' of the new description after addition
+#         level = max(
+#             (
+#                 k
+#                 for k, v in res_levels.items()
+#                 for candidate in (self.level, other.level)
+#                 if v == candidate
+#             )
+#         )
 
-        elements = itertools.chain(self.elements, other.elements)
+#         elements = itertools.chain(self.elements, other.elements)
 
-        # combine the lines
-        lines = list(set(elem for elem in elements if not elem.is_triger))
+#         # combine the lines
+#         lines = list(set(elem for elem in elements if not elem.is_triger))
 
-        # combine the triggers
-        triggers = list(set(elem for elem in elements if not elem.is_triger))
+#         # combine the triggers
+#         triggers = list(set(elem for elem in elements if not elem.is_triger))
 
-        if triggers:
-            trig_channel = [
-                elem[0]
-                for pair in itertools.pairwise(triggers)
-                if pair[0][0].split("_")[0] == pair[1][0].split("_")[0]
-                for elem in pair
-            ]
-        else:
-            trig_channel = []
+#         if triggers:
+#             trig_channel = [
+#                 elem[0]
+#                 for pair in itertools.pairwise(triggers)
+#                 if pair[0][0].split("_")[0] == pair[1][0].split("_")[0]
+#                 for elem in pair
+#             ]
+#         else:
+#             trig_channel = []
 
-        # combine the channels ... include the triggers, so we can
-        # plot a chnnel between 'overbought' and 'oversold' for example
-        channel = list(set(itertools.chain(self.channel, other.channel, trig_channel)))
+#         # combine the channels ... include the triggers, so we can
+#         # plot a chnnel between 'overbought' and 'oversold' for example
+#         channel = list(set(itertools.chain(self.channel, other.channel, trig_channel)))
 
-        # sometimes the addition can cause a line to be both a line
-        # and a trigger, so we need to remove it from the lines
-        lines = [line for line in lines if line not in triggers]
+#         # sometimes the addition can cause a line to be both a line
+#         # and a trigger, so we need to remove it from the lines
+#         lines = [line for line in lines if line not in triggers]
 
-        return PlotDescription(
-            label=self.label,
-            is_subplot=self.is_subplot & other.is_subplot,
-            lines=lines,
-            triggers=triggers,
-            channel=channel,
-            level=res_levels[min(level + 1, 3)],
-        )
+#         return PlotDescription(
+#             label=self.label,
+#             is_subplot=self.is_subplot & other.is_subplot,
+#             lines=lines,
+#             triggers=triggers,
+#             channel=channel,
+#             level=res_levels[min(level + 1, 3)],
+#         )
 
-    def __radd__(self, other: "PlotDescription") -> "PlotDescription":
-        if other == 0:
-            return self
-        else:
-            return self.__add__(other)
+#     def __radd__(self, other: "PlotDescription") -> "PlotDescription":
+#         if other == 0:
+#             return self
+#         else:
+#             return self.__add__(other)
 
 
-class IIndicator(ABC):
+class IIndicator(PlottingMixin):
     """Base class for all indicators."""
+
+    plot_layout = Layout(
+        layout = dict(),
+        row_heights = [],
+        col_widths = [1],
+    )
 
     def __init__(self) -> None:
         self._name = self.__class__.__name__.lower()
@@ -148,7 +155,8 @@ class IIndicator(ABC):
         self.output: Sequence[str] = []
         self.output_flags: dict
 
-        self._plot_desc: dict
+        self._is_subplot: bool | None = None
+        self._plot_desc: dict  # e.g = {"name": ["Line"]}
 
         self._apply_func: Callable
         self._parameters: tuple[Parameter, ...] = ()
@@ -156,10 +164,47 @@ class IIndicator(ABC):
         self.on_change: Callable = None
         self.subscribers: set = set()
 
+        self._cache = None
+
     def __repr__(self) -> str:
         return f"{self.name} - {self.parameters}"
 
     # ................................ PROPERTIES .....................................
+    @property
+    def plot_data(self) -> dict[str, np.ndarray]:
+        if self._cache is None:
+            raise ValueError(
+                f"No data available for {self.unique_name} - "
+                "Did you run the indicator before trying to access the data?"
+                )
+        
+        # find all parameters of this indicator that have a lookback 
+        # period
+        param_names = (
+            "period", "timeperiod", "lookback", "fastperiod", "slowperiod",
+            "signalperiod"
+            )
+        # find the maximum lookback period
+        periods = [p.value for p in self._parameters if p.name in param_names]
+        lbp = max(periods) if periods else 0
+
+        data = self._cache        
+        data = [data] if isinstance(data, np.ndarray) else data
+
+        data_dict = {}
+        for idx in range(len(data)):
+            try:
+                data_dict[self.unique_output[idx]] = np.nan_to_num(data[idx][lbp:])
+            except Exception as e:
+                logger.error(f"Error processing data for {self.unique_name}: {e}")
+                logger.error(f"Data: {data}")
+                raise
+
+        df = pd.DataFrame.from_dict(data_dict)
+        print(df.tail(25))
+
+        return df
+
     @property
     def name(self) -> str:
         """Returns the name of the indicator."""
@@ -307,10 +352,14 @@ class IIndicator(ABC):
         dict
             Dictionary of plot parameters for the indicator.
         """
+        if self._is_subplot is None:
+            raise AttributeError(
+                "The ._is_subplot attribute is not set for %s", self.name
+            )
         return self._is_subplot
 
     @property
-    def plot_desc(self) -> PlotDescription:
+    def subplots(self) -> SubPlot:
         """Returns a formal description of plot instructions."""
         raise NotImplementedError(
             "The plot_desc property is not implemented for %s", self.__class__.__name__
@@ -318,6 +367,9 @@ class IIndicator(ABC):
 
 # .............................. Public methods .................................
     def run(self, *inputs: tuple[np.ndarray]) -> np.ndarray:  # type: ignore
+
+        if self._cache:
+            return self._cache
 
         logger.debug("provided data is in format %s", type(inputs))
         logger.debug("parameters: %s", self.parameters_dict)
@@ -335,7 +387,8 @@ class IIndicator(ABC):
             
             # run indicator for one-dimensional array
             case 1:
-                out = self._apply_func(inputs, **self.parameters_dict)  
+                out = self._apply_func(inputs, **self.parameters_dict) 
+                self._cache = out  
             
             # run indicator for two-dimensional array
             case 2:
@@ -364,6 +417,7 @@ class IIndicator(ABC):
                     #     )
 
                     result = self._apply_func(*single_in, **self.parameters_dict)
+                    self._cache = result
 
                     if isinstance(result, list | tuple):
                         for j, result_elem in enumerate(result):

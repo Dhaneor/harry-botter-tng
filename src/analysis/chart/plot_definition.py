@@ -7,6 +7,7 @@ Created on Nov 21 12:08:20 2024
 """
 import itertools
 import logging
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 import sys
@@ -38,6 +39,7 @@ else:
     from .layout_validator import validate_layout
 
     logger = logging.getLogger(f"main.{__name__}")
+    logger.setLevel(logging.DEBUG)
 
 
 VALIDATION_LEVEL = "basic"
@@ -245,6 +247,13 @@ class ChartElement(ABC):
     opacity: float = 1
     zorder: int | None = 0
     secondary_y: bool = False
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(label={self.label}, column={self.column}, "
+            f"legendgroup={self.legendgroup}, legend={self.legend}, row={self.row}, "
+            f"col={self.col}"
+        )
 
     @abstractmethod
     def apply_style(self, style: TikrStyle) -> None: ...
@@ -474,6 +483,13 @@ class Line(ChartElement):
 
     is_trigger: bool = False
 
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(label={self.label}, column={self.column}, "
+            f"legendgroup={self.legendgroup}, legend={self.legend}, row={self.row}, "
+            f"col={self.col}, is_trigger={self.is_trigger})"
+        )
+
     def apply_style(self, style: TikrStyle) -> None:
         self.width = style.line_width if not self.width else self.width
         self.font = style.font_family if not self.font else self.font
@@ -576,7 +592,7 @@ class Channel:
     upper: Line | str | float | None = None
     lower: Line | str | float | None = None
 
-    color: Color = None
+    _color: Color = None
     fillmethod: str = "tonexty"
 
     _legendgroup: str = None
@@ -628,6 +644,16 @@ class Channel:
         self.upper.col = value
         self.lower.col = value
 
+    @property
+    def color(self) -> Color:
+        return self._color
+    
+    @color.setter
+    def color(self, value: Color):
+        self._color = value
+        self.upper.color = value
+        self.lower.color = value
+
     def apply_style(self, style: TikrStyle) -> None:
         self.upper.apply_style(style)
         self.lower.apply_style(style)
@@ -661,6 +687,82 @@ class Channel:
         )
 
         return fig
+
+
+class Histogram(ChartElement):
+    shape: str = "spline"
+    fillmethod: str | None = None
+    fillcolor: Color | None = None
+
+    is_trigger: bool = False
+
+    def __repr__(self) -> str:
+        return (
+            f"{self.__class__.__name__}(label={self.label}, column={self.column}, "
+            f"legendgroup={self.legendgroup}, legend={self.legend}, row={self.row}, "
+            f"col={self.col}, is_trigger={self.is_trigger})"
+        )
+
+    def apply_style(self, style: TikrStyle) -> None:
+        self.width = style.line_width if not self.width else self.width
+        self.font = style.font_family if not self.font else self.font
+        self.font_size = style.tick_font_size if not self.font_size else self.font_size
+
+    def add_trace(self, fig: go.Figure, data: pd.DataFrame) -> go.Figure:
+
+        logger.debug(f"Adding histogram '{self.label}' to plot.")
+        logger.debug(self)
+
+        trace = go.Bar(
+            x=data.index,
+            y=data[self.column or self.label],
+            name=self.label or self.column,
+            marker_color=self.color.rgba,
+            opacity=self.opacity,
+            showlegend=True if self.label is not None else False,
+            legendgroup=self.legendgroup,
+            zorder=self.zorder,
+        )
+        fig.add_trace(trace, row=self.row, col=self.col)
+
+        return fig
+
+    def _add_line_shadow(self, fig, data) -> go.Figure:
+        for factor in (5, 2.5, 1.5):
+            color = Color(
+                self.color.r / factor,
+                self.color.g / factor,
+                self.color.b / factor,
+                self.color.a / factor,
+            ).rgba  # replace with darker color
+
+            line = dict(
+                color=color,
+                width=self.width + factor,
+                shape=self.shape,
+                smoothing=1.3 if self.shape == "spline" else None,
+            )
+
+            shadow_trace = go.Scatter(
+                x=data.index,
+                y=data[self.column or self.label],
+                line=line,
+                opacity=self.opacity,
+                hoverinfo="skip",
+                showlegend=False,
+                zorder=round(self.zorder - factor),
+            )
+            fig.add_trace(shadow_trace, row=self.row, col=self.col)
+
+        return fig
+
+    def as_dict(self) -> dict:
+        return {
+            "color": self.color.rgba,
+            "width": self.width,
+            "shape": self.shape,
+        }
+
 
 
 # ========================== Classes for chart components ============================
@@ -1219,10 +1321,11 @@ class SubPlot:
             return self.__add__(other)
 
     def __post_init__(self):
-        # set the legendgroup for all elements in the subplot
+        # set the legendgroup for all elements in the subplot that 
+        # do not have a legendgroup yet
         try:
             for elem in self.elements:
-                elem.legendgroup = self.label
+                elem.legendgroup = elem.legendgroup or self.label
                 logger.debug(elem)
                 logger.debug("-" * 150)
         except Exception as e:
@@ -1287,7 +1390,10 @@ class Layout:
 
     @property
     def number_of_rows(self) -> int:
-        return max((cell.get("row", 1) for cell in self.layout.values()))
+        if self.layout:
+            return max((cell.get("row", 1) for cell in self.layout.values()))
+        else:
+            return 0
 
     @property
     def number_of_columns(self) -> int:
@@ -1407,6 +1513,10 @@ class Layout:
             print(f"{subplot}: {spec}")
 
         print("\n")
+        print(f"Number of rows: {self.number_of_rows}")
+        print(f"Number of columns: {self.number_of_columns}")
+        print(f"Row heights: {self.row_heights}")
+        print(f"Column widths: {self.col_widths}")
 
 
 @dataclass(frozen=True)
@@ -1426,7 +1536,7 @@ class PlotDefinition:
 
         return "\n".join(
             (
-                f"PlotDefinition name: {self.name}\n",
+                f"PlotDefinition name: {self.title}\n",
                 f"style={self.style}\n",
                 f"[{self.number_of_subplots}] subplots:\n{subplots}\n",
             )
