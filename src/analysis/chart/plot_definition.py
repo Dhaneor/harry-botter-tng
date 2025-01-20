@@ -478,7 +478,7 @@ class Line(ChartElement):
 
     shadow: bool = True
     glow: bool = False
-    end_marker: bool = True
+    end_marker: bool = False
 
     is_trigger: bool = False
 
@@ -580,6 +580,7 @@ class Line(ChartElement):
 
 class Trigger(Line):
     value: float
+    is_trigger = True
 
     def as_dict(self) -> dict:
         return super().as_dict()
@@ -592,6 +593,7 @@ class Channel:
     lower: Line | str | float | None = None
 
     _color: Color = None
+    _shadow: bool = True
     fillmethod: str = "tonexty"
 
     _legendgroup: str = None
@@ -603,6 +605,8 @@ class Channel:
 
     def __post_init__(self):
         self.lower.fillmethod = self.fillmethod
+        self.lower.zorder = -5
+        self.upper.zorder = -5
 
     @property
     def legendgroup(self) -> str:
@@ -649,9 +653,19 @@ class Channel:
     
     @color.setter
     def color(self, value: Color):
-        self._color = value
+        # self._color = value
         self.upper.color = value
         self.lower.color = value
+
+    @property
+    def shadow(self) -> bool:
+        return self._shadow
+    
+    @shadow.setter
+    def shadow(self, value: bool):
+        self._shadow = value
+        self.upper.shadow = value
+        self.lower.shadow = value
 
     def apply_style(self, style: TikrStyle) -> None:
         self.upper.apply_style(style)

@@ -5,8 +5,17 @@ Created on Jan 11 02:01:23 2025
 
 @author dhaneor
 """
+
 from .layout_validator import LayoutValidator
-from .plot_definition import PlotDefinition, SubPlot, Line, Channel, Signal, Candlestick
+from .plot_definition import (
+    PlotDefinition,
+    SubPlot,
+    Line,
+    Channel,
+    Signal,
+    Candlestick,
+    Trigger,
+)
 from .plotly_styles import styles, tikr_day_style, tikr_night_style, backtest_style
 from .tikr_charts import TikrChart, BacktestChart, SignalChart
 
@@ -21,6 +30,7 @@ __all__ = [
     "Channel",
     "Signal",
     "Candlestick",
+    "Trigger",    
     "styles",
     "tikr_day_style",
     "tikr_night_style",

@@ -9,9 +9,8 @@ Created on Jan 16 00:44:23 2025
 """
 import numpy as np
 import pandas as pd
-import sys
 
-from analysis.chart.plot_definition import Layout, SubPlot, PlotDefinition
+from analysis.chart.plot_definition import Layout, SubPlot, PlotDefinition, Line
 from analysis.chart.plotly_styles import backtest_style
 from analysis.chart.chart_artist import ChartArtist
 
@@ -43,12 +42,29 @@ class PlottingMixin:
         # combine all subplots into a single list
         subplots = [main, *subs] if main else subs
 
+        # TODO: This is a hacky solution ... improve later!
+        line_colors = [
+            self.artist.style.colors.strategy,
+            self.artist.style.colors.hodl,
+            self.artist.style.colors.capital,
+            self.artist.style.colors.candle_up,
+            self.artist.style.colors.candle_down,
+            self.artist.style.colors.buy,
+            self.artist.style.colors.sell,
+            self.artist.style.colors.volume,
+        ]
+        line_no = 0
         for subplot in subplots:
             for elem in subplot.elements:
-                elem.color = self.artist.style.colors.strategy
+                if isinstance(elem, Line):
+                    print(f"Coloring line {line_no} with {line_colors[line_no]}")
+                    elem.color = line_colors[line_no] 
+                    line_no += 1   
+                else:
+                    elem.color = self.artist.style.colors.strategy
 
         return PlotDefinition(
-            title=self.name or "Anonymous Chart",
+            title=self.display_name or "Anonymous Chart",
             subplots=subplots,
             layout=self.plot_layout,
             style=backtest_style,

@@ -103,6 +103,23 @@ op_defs = {
         # )
     },
 
+    "aroonosc": {
+        "def": ('aroonosc', {'timeperiod': 14}),
+        "params": {'timeperiod': 28},
+        # "plot_desc": SubPlot(
+        #     label='Moving Average Convergence/Divergence (9 26 9)',
+        #     is_subplot=True,
+        #     lines=[
+        #         ('macd_9_26_9_macd', 'Line'),
+        #         ('macd_9_26_9_macdsignal', 'Dashed Line')
+        #     ],
+        #     triggers=[],
+        #     channel=[],
+        #     hist=['macd_9_26_9_macdhist'],
+        #     level='operand'
+        # )
+    },
+
     'close': {
         "def": 'close',
         "params": None,
@@ -134,7 +151,7 @@ op_defs = {
     },
 
     'sma_of_rsi': {
-        "def": ("sma", ("rsi", {"timeperiod": 7}), {"timeperiod": 28},),
+        "def": ("sma", ("rsi", {"timeperiod": 7}), {"timeperiod": 10},),
         "params": {"timeperiod": 45},
         # "plot_desc": SubPlot(
         #     label='Simple Moving Average (28) of RSI (7)',
@@ -351,7 +368,7 @@ if __name__ == "__main__":
 
     # operand = operand_factory(op_defs.get('sma_of_rsi').get('def'), {})
     operand = operand_factory(
-        op_defs.get("kama").get('def'), market_data
+        op_defs.get("macd").get('def'), market_data
         )
 
     if operand is None:

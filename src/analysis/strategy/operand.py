@@ -51,6 +51,7 @@ from analysis import (
 from analysis.chart import(
     SubPlot,
     Line,
+    Trigger,
     Channel,
     Candlestick
 )
@@ -337,7 +338,7 @@ class OperandIndicator(Operand, PlottingMixin):
     @property
     def display_name(self) -> str:
         """Return the display name for the operand"""
-        return " ".join((i.display_name for i in self.indicators))
+        return " of ".join((i.display_name for i in self.indicators))
 
     @property
     def output(self) -> str:
@@ -477,28 +478,39 @@ class OperandIndicator(Operand, PlottingMixin):
         # subs = itertools.chain(*(i.subplots for i in self.indicators))
         subs = self.indicator.subplots
 
-        logger.info(f"Operand {self.name} subplots: {subs}")
+        logger.debug(f"Operand {self.name} subplots: {subs}")
+        logger.debug(f"Operand {self.name} indicators: {self.indicators}")
 
-        # for sp in subs:
-        #     sp.label = f"{self.unique_name} ({sp.label})"
-        #     logger.debug(f"Operand {self.name} updated subplot label: {sp.label}")
+        elements = self.indicator.subplots[0].elements
+        
+        # if this operadn uses a nested indicator, we need to add the
+        # the name of this or these nested indicators to the label of 
+        # and the legend name
+        if len(self.indicators) > 1:
+            for idx in range(1, len(self.indicators)):
+                ind = self.indicators[idx]
+                param_ext = ",".join(str(p.value) for p in ind.parameters)
+                ext = f" of {ind.name.upper()} ({param_ext})"
 
-        # logger.debug(f"Operand {self.name} combined subplots: {subs}")
+                for elem in elements:
+                    elem.label += ext
+                    elem.legend += ext
 
-        # # combine the subplots that belong to a channel into a single
-        # # Channel element
-        # channel_subs = [
-        #     elem
-        #     for elem in subs
-        #     if isinstance(elem, SubPlot) and elem.label.startswith("Channel")
-        # ]
+        # the same gows for the subplot label
+        subplot_label = " of ".join(
+                    (
+                        sp.label.upper() 
+                        for indicator in self.indicators 
+                        for sp in indicator.subplots
+                    )
+                ),
 
         return  (
             self.ohlcv_subplot,
             SubPlot(
-                label=" of ".join((sp.label.upper() for sp in subs)),
-                is_subplot=self.indicator.is_subplot,
-                elements=self.indicator.subplots[0].elements,
+                label=subplot_label,
+                is_subplot=any((ind.is_subplot for ind in self.indicators)),
+                elements=elements,
                 level="operand",
             ),
         )
@@ -764,10 +776,11 @@ class OperandIndicator(Operand, PlottingMixin):
                 try:
                     inputs.append(i.run())
                 except KeyError as err:
-                    logger.error("Price series %s not found in OHLCV data", i)
-                    raise ValueError(
-                        f"Price series {i.output_names[0]} not in OHLCV data: {err}"
-                    ) from err
+                    logger.error("Price series %s not found in OHLCV data: %s", i, err)
+                    raise
+                    # raise ValueError(
+                    #     f"Price series {i.output_names[0]} not in OHLCV data: {err}"
+                    # ) from err
 
             # input is another indicator - for nested indicators, the input is
             # another OperandIndicator instance. In thie case, we call the
@@ -879,13 +892,17 @@ class OperandTrigger(Operand):
         return self.indicator.display_name
 
     @property
+    def plot_data(self) -> dict[str, np.ndarray]:
+        return {self.unique_name: self.run()}
+
+    @property
     def unique_name(self) -> str:
         """Return the unique name for the operand"""
         # return f"{self.name}_{self.indicator.parameters[0].value}"
         return "%s_%s" % (self.name, self.indicator.parameters[0].value)
 
     @property
-    def plot_desc(self) -> dict[str, tp.Parameters]:
+    def subplots(self) -> tuple[SubPlot]:
         """Return the plot description for the operand.
 
         Takes the SubPlot as returned by all indicators for
@@ -898,11 +915,13 @@ class OperandTrigger(Operand):
         dict[str, tp.Parameters]
             plot parameters for the operand
         """
-        desc = self.indicator.plot_desc
+        elements = [
+            Trigger(value=self.indicator.parameters[0].value)
+        ]
         return SubPlot(
             label=self.display_name,
-            is_subplot=desc.is_subplot,
-            elements=desc.elements,
+            is_subplot=False,  # will possibly be set to True at the next level
+            elements=elements,
             level="operand",
         )
 
@@ -1111,7 +1130,8 @@ class OperandSeries(Operand):
         np.ndarray
             resulting array from running the operand
         """
-        if not self._cache:
+        if self._cache.get(self.name, None) is None:
+            logger.warning("No data available for %s", self.name)
             self._cache[self.name] = self.market_data.get_array(self.inputs[0])
 
         return self._cache[self.name]

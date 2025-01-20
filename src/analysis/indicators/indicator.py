@@ -172,13 +172,11 @@ class Indicator(IIndicator):
             # • 'real' for indicators with one output
             # • the name of the output for indicators with multiple outputs
             if k == "real":
-                label = self.name.upper() + f" ({param_ext})"
-                legend = label
-                legendgroup = self.name.upper()
+                label = legend = self.name.upper() + f" ({param_ext})"
             else:
-                label = k.upper()
-                legend = label
-                legendgroup = self.name.upper()
+                label = legend = k.upper()
+            
+            legendgroup = self.name.upper()
 
             # the values in the output_flags dictioanry describe the 
             # type of line (or histogram for instance) to be plotted 
@@ -190,6 +188,8 @@ class Indicator(IIndicator):
                         column=self.unique_output[idx],
                         legend=legend,
                         legendgroup=legendgroup,
+                        shadow=False,
+                        end_marker=False
                     )
                 case "Dashed Line":
                     elem = Line(
@@ -251,6 +251,7 @@ class Indicator(IIndicator):
                 upper=channel_elements["upper"],
                 lower=channel_elements["lower"],
             )
+            elem.shadow = False
             elements.append(elem)
             logger.debug(f"added element: {elem}")
 

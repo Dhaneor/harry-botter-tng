@@ -406,14 +406,22 @@ class MarketData:
         --------
         np.ndarray: 1D or 2D array of specified field for the given symbol.
         """
+        print(f">>>>>>>>>> Getting array for field '{field}'")
+        
         arr_2d = None
-        if field == "close":
-            arr_2d = self.mds.close
-        elif field == "open":
-            arr_2d = self.mds.open_
-        # ...
-        else:
-            raise KeyError(f"Unknown field: {field}")
+        match field:
+            case "close":
+                arr_2d = self.mds.close
+            case "open":
+                arr_2d = self.mds.open_
+            case "high":
+                arr_2d = self.mds.high
+            case "low":
+                arr_2d = self.mds.low
+            case "volume":
+                arr_2d = self.mds.volume
+            case _:
+                raise KeyError(f"Unknown field: {field}")
 
         if symbol is not None:
             col = self.symbol_to_col.get(symbol, -1)

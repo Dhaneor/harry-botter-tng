@@ -359,8 +359,8 @@ class IIndicator(PlottingMixin):
 # .............................. Public methods .................................
     def run(self, *inputs: tuple[np.ndarray]) -> np.ndarray:  # type: ignore
 
-        if self._cache:
-            return self._cache
+        # if self._cache is not None:
+        #     return self._cache
 
         logger.debug("provided data is in format %s", type(inputs))
         logger.debug("parameters: %s", self.parameters_dict)
