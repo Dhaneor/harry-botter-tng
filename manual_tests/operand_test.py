@@ -197,11 +197,23 @@ def test_operand_factory(single: str = None):
         for elem in op_defs:
             build_single(elem)
 
+
+def test_parameters_tuple():
+    operand = operand_factory(
+        op_defs.get("macd").get('def'), market_data
+        )
+    
+    logger.info("indicators: %s" % operand.indicators)
+    logger.info("parameters: %s" % list(operand.parameter_instances))
+    logger.info(operand.parameters_tuple)
+
+
 def test_with_price_series_input():
     op_def = ('sma', 'close', {'timeperiod': 20},)
     operand = operand_factory(op_def, key_store={})
 
     logger.info(operand)
+
 
 def test_with_fixed_value_input():
     op_def = ('trigger', 100, [90, 110, 1])
@@ -226,6 +238,7 @@ def test_nested_indicators():
         )
     if operand:
         pprint(operand.__dict__)
+
 
 def test_operand_run(operand: op.Operand, data: dict, show_result: bool = False):
     logger.debug(operand)
@@ -256,6 +269,7 @@ def test_operand_run_trigger():
 
     logger.info("%s returned a(n): %s" % (operand, type(res)))
 
+
 def test_operand_run_indicator():
     logger.info("running test_operand_run_indicator() ...")
 
@@ -280,6 +294,7 @@ def test_operand_run_indicator():
 
     # You might also want to check if the shapes are correct
     assert res.shape[1] == 2, f"Expected 2 columns (one for each symbol), but got {res.shape[1]}"
+
 
 def test_plot_desc():
     logger.setLevel(logging.INFO)
@@ -357,6 +372,7 @@ def test_randomize():
 # ============================================================================ #
 if __name__ == "__main__":
     # test_operand_factory('close')
+    test_parameters_tuple()
     # test_with_price_series_input()
     # test_with_fixed_value_input()exit
     # test_nested_indicators()
@@ -364,7 +380,7 @@ if __name__ == "__main__":
     # test_randomize()
     # test_operand_run_trigger()
     # test_operand_run_indicator()
-    # sys.exit()
+    sys.exit()
 
     # operand = operand_factory(op_defs.get('sma_of_rsi').get('def'), {})
     operand = operand_factory(

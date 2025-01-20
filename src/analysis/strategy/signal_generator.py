@@ -106,7 +106,8 @@ import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from itertools import chain
-from typing import Sequence, Any, Callable
+from typing import Sequence, Any, Callable, TypeVar, Generator
+from pprint import pprint
 
 from . import (
     ConditionParser, ConditionDefinitionT,
@@ -127,6 +128,8 @@ logger = logging.getLogger("main.signal_generator")
 logger.setLevel(logging.DEBUG)
 
 WARMUP_PERIODS = 200  # number of candles to use for warmup
+
+ConditionT = TypeVar("ConditionT", bound=tuple[str, COMPARISON, str])
 
 
 @dataclass
@@ -194,10 +197,10 @@ def transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
 
             operands = {}
             conditions = {
-                "open_long": [],
-                "close_long": [],
-                "open_short": [],
-                "close_short": [],
+                "open_long": [[]],
+                "close_long": [[]],
+                "open_short": [[]],
+                "close_short": [[]],
             }
             indicator_counters = defaultdict(int)
             indicator_names = {}
@@ -249,7 +252,7 @@ def transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
                                             operand_value
                                         )
                                         transformed_condition[i] = unique_name
-                            conditions[condition_type].append(
+                            conditions[condition_type][0].append(
                                 tuple(transformed_condition)
                             )
 
@@ -258,6 +261,7 @@ def transform_signal_definition(func: Callable[..., Any]) -> Callable[..., Any]:
                 operands=operands,
                 conditions={k: v if v else None for k, v in conditions.items()},
             )
+
             args = (transformed_def,) + args[1:]
 
         else:
@@ -277,9 +281,160 @@ class SignalGeneratorDefinition(DotDict):
     operands: dict[str, tuple | str]
     conditions: ConditionDefinitionT
 
+    def __post_init__(self) -> None:
+        # convet conditions to list of lists if they are not already
+        for k, conditions_list in self.conditions.items():
+            if isinstance(conditions_list[0], tuple):
+                self.conditions[k] = [conditions_list]
+
+
+class Conditions:
+    def __init__(self, condtions: dict[str, ConditionT]):
+        self.conditions = condtions
+
+    def __iter__(self) -> Generator[tuple[str, int, ConditionT], None, None]:
+        for action, conditions_list in self.conditions.items():
+            # logger.debug("conditions_list: %s" % conditions_list)
+            for idx, and_conditions in enumerate(conditions_list):
+                # logger.debug("[%s] and_conditions: %s" % (idx, and_conditions))
+                for condition in and_conditions:
+                    yield action, idx, condition
+
+
+class SubPlotBuilder:
+
+    def __init__(self, conditions: dict[str, ConditionT]) -> None:
+        self._conditions = Conditions(conditions)
+
+        self._subplots: list[SubPlot] = []
+
+        self._plot_data = dict()
+        self._condition_results: dict[tuple, np.ndarray] = dict()
+
+    def __repr__(self) -> str:
+        return "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n".join(
+            (sp for sp in self._subplots)
+        )
+
+    @property
+    def plot_data(self) -> dict[str, np.ndarray]:
+        for operand in self.operands.values():
+            operand.run()
+            self._plot_data.update(operand.plot_data)
+        return self._plot_data
+
+    @property
+    def subplots(self) -> tuple[SubPlot]:
+        # re-initialize subplots (necessary if this property is 
+        # called multiple times) with the - always required -
+        # OHLCV subplot.
+        self._subplots: list[SubPlot] = [
+            SubPlot(
+                label="OHLCV",
+                is_subplot=False,
+                elements=(Candlestick(),),
+                level="operand",
+            )
+        ]
+
+        # go through all the operands and determine which contiions
+        # use them. Because it shoudl be possible th have operands 
+        # defined which are not used but should be plotted for 
+        # analytical purposes, we will collect them in  a separate
+        # list
+        unused_operands = set(self.operands.keys())        
+        
+        for operand_name in self.operands.keys():
+            # find all conditions (by action) which use the operand
+            using_this_operand = set()
+            for action, idx, condition in self._conditions:
+                if condition[0] == operand_name:
+                    using_this_operand.add((action, idx, condition))
+                    unused_operands.discard(operand_name)
+                    unused_operands.discard(condition[2])
+            if using_this_operand:
+                self._process_operand(operand_name, using_this_operand)
+
+        for operand_name in unused_operands:
+            logger.debug(f"Adding unused operand: {operand_name}")
+            operand = self.operands[operand_name]
+            logger.debug("runninng operand: %s" % operand_name)
+            operand.run()
+            logger.debug("done")
+            self._plot_data.update(operand.plot_data)
+            self._subplots.append(operand.subplots[1])
+
+        for subplot in self._subplots:
+            print(subplot)
+            print("*" * 150)
+
+        return self._subplots
+
+    def _process_operand(self, key: str, conditions: set[str, int, ConditionT]):
+            logger.debug(f"Processing operand: {key} - used in conditions: {conditions}")
+            operand = self.operands[key]
+            subplot = operand.subplots[1]
+            elements = subplot.elements
+
+            # Each condition tuple will contain an index which dedcribes 
+            # the level of the condition wrt the OR conditions. The final
+            # plot should contain subplots that allow to distinguish
+            # between different OR conditions, even when that means to
+            # have two subplots for the same operand
+            or_levels = max((c[1] for c in conditions)) + 1
+            for idx in range(or_levels):
+                logger.debug("processing level [%s] of OR conditions" % idx)
+                # find all operands on the right side of the conditions 
+                # found in the previous step and combine the elements 
+                # from the SubPlots of both
+                for condition in conditions:
+                    add_operand_name = condition[2][2]
+                    add_operand = self.operands[add_operand_name]
+                    add_operand_subplots = add_operand.subplots
+                    add_subplot = add_operand_subplots[1] if len(add_operand_subplots) > 1 else add_operand.subplots[0]
+                    existing_elements = [elem.label for elem in subplot.elements]
+                    logger.debug(f"existing elements: {existing_elements}")
+                    for elem in add_subplot.elements:
+                        if elem.label not in existing_elements:
+                            logger.debug(f"adding element {elem.label} to elements")
+                            elements.append(elem)
+
+                # execute the conditions for this operand and add their 
+                # result as element to the SubPlot for this operand
+                
+                # add the subplot the subplots list
+                logger.debug("adding subplot to subplots list")
+                
+                self._subplots.append(
+                    SubPlot(
+                        label=f"[{idx}] {subplot.label}",
+                        is_subplot=subplot.is_subplot,
+                        level="signal generator",
+                        elements=elements
+                    )
+                )
+                logger.debug("subplots list: %s" % [sp.label for sp in self._subplots])
+
+    def _process_condition(self, condition: ConditionT, elements: list):
+        signals = self._exceute_condition(condition)
+
+    def _excetute_condition(self,  condition: ConditionT) -> np.ndarray:
+        left = self.operands[condition[0]]
+        right = self.operands[condition[2]]
+        func = self.comp_funcs.get(condition[1])
+        return func(left, right)
+
+
+    def _add_sub_plot(self, subplot: SubPlot) -> None:
+        existing_labels = [sp.label for sp in self._subplots]
+        if subplot.label in existing_labels:
+            logger.debug(f"Subplot label {subplot.label} already exists, skipping")
+            return
+        self._subplots.append(subplot)
+
 
 # ======================================================================================
-class SignalGenerator(PlottingMixin):
+class SignalGenerator(SubPlotBuilder, PlottingMixin):
     """A signal generator.
 
     Always use the factory function to create instances of 
@@ -342,6 +497,8 @@ class SignalGenerator(PlottingMixin):
         function of this module to create instances of SignalGenerator!
 
         """
+        SubPlotBuilder.__init__(self, conditions)
+        
         self.name: str = name
         self.operands = operands
         self.conditions = conditions
@@ -452,32 +609,33 @@ class SignalGenerator(PlottingMixin):
                     "Unable to set %s to %s: %s", parameter.name, new, str(e)
                 )
 
-    @property
-    def plot_data(self) -> dict[str, np.ndarray]:
-        plot_data = {}
-        for operand in self.operands.values():
-            plot_data.update(operand.plot_data)
-        return plot_data
+    # @property
+    # def plot_data(self) -> dict[str, np.ndarray]:
+    #     plot_data = {}
+    #     for operand in self.operands.values():
+    #         plot_data.update(operand.plot_data)
+    #     return plot_data
 
-    @property
-    def subplots(self) -> list[SubPlot]:
-        """Get the plot parameters for the signal generator.
+    # @property
+    # def subplots(self) -> list[SubPlot]:
+    #     """Get the plot parameters for the signal generator.
 
-        Returns
-        -------
-        list[SubPlot]
-            A list of unique SubPlot objects for all conditions.
-        """
+    #     Returns
+    #     -------
+    #     list[SubPlot]
+    #         A list of unique SubPlot objects for all conditions.
+    #     """
+    #     subplots = [
+    #         SubPlot(
+    #             label="OHLCV",
+    #             is_subplot=False,
+    #             elements=(Candlestick(),),
+    #             level="operand",
+    #         )
+    #     ]
+    #     subplots.extend(self.get_signal_generator_subplots())
+    #     return subplots
 
-        return self.get_signal_generator_subplots()
-        # collect all SubPlot obejcts from all operands and remove duplicates
-        # unique, seen = [], set()
-        # for plot in chain.from_iterable(o.subplots for o in self.operands.values()):
-        #     if plot.label not in seen:
-        #         seen.add(plot.label)
-        #         unique.append(plot)
-
-        # return unique
 
     # ................................ PUBLIC METHODS ..................................
     # @log_execution_time(logger)
@@ -621,6 +779,7 @@ class SignalGenerator(PlottingMixin):
         related_operands, result = {}, []
         all_operands = dict(self.operands)
         unprocessed = set(all_operands)
+        logger.debug(f"unprocessed: {unprocessed}")
 
         for operand in all_operands.keys():
             if operand not in unprocessed:
@@ -628,10 +787,12 @@ class SignalGenerator(PlottingMixin):
 
             related_operands[operand] = set((operand,))
             for condition_list in self.conditions.values():
+                logger.debug(f"condition_list={condition_list}")
                 for and_conditions in condition_list:
                     for condition in and_conditions:
                         if condition[0] == operand:
                             related_operands[operand].add(condition[2])
+                            logger.debug(unprocessed)
                             unprocessed.remove(condition[2])
 
             logger.debug(f"operand={operand}, subplots={related_operands[operand]}")
@@ -666,16 +827,6 @@ class SignalGenerator(PlottingMixin):
         for subplot in result:
             logger.debug(f"Subplot:\n {subplot}")
         
-        
-        result.insert(
-            0,             
-            SubPlot(
-                label="OHLCV",
-                is_subplot=False,
-                elements=(Candlestick(),),
-                level="operand",
-            )
-        )
         return result
 
 
@@ -693,7 +844,7 @@ class SignalGenerator(PlottingMixin):
     #     df.index = df.index.strftime('%Y-%m-%d %X')
 
     #     return SignalChart(
-    #         data=df, subplots=self.subplots, style=style, title=self.name
+    #         data=df, subplots=self._subplots, style=style, title=self.name
     #         )
 
 

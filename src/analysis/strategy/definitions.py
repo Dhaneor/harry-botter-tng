@@ -19,8 +19,9 @@ cci = sg.SignalGeneratorDefinition(
     name="CCI simple",
     operands=dict(
         cci=("cci")  ,# , {"timeperiod": 21}),
-        oversold=("oversold", -125, [-200, -70, 15]),
-        overbought=("overbought", 125, [70, 200, 15]),
+        oversold=("oversold", -150, [-200, -70, 15]),
+        overbought=("overbought", 150, [70, 200, 15]),
+        rsi=("rsi", {"timeperiod": 14}),
     ),
     conditions=dict(
         open_long=[

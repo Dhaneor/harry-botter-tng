@@ -35,7 +35,7 @@ Created on Sat Aug 18 10:356:50 2023
 import logging
 import numpy as np
 import sys
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from dataclasses import asdict, dataclass, field
 from numbers import Number
 from typing import Any, Callable, Optional, Sequence
@@ -147,7 +147,7 @@ class Operand:
     inputs: tuple = field(default_factory=tuple)
     _output: str = ""
 
-    _cache = {}
+    _cache: dict = field(default_factory=dict)
 
     def __repr__(self) -> str:
         name = f"{self.name.upper()}" if isinstance(self.name, str) else f"{self.name}"
@@ -200,6 +200,7 @@ class Operand:
         if self.parameter_instances is not None:
             return tuple(p.value for p in self.parameter_instances)
         else:
+            raise ValueError("Operand does not have parameters")
             return ()
 
     @property
@@ -278,7 +279,7 @@ class Operand:
             )
 
             first_key = list(self._cache.keys())[0]
-            logger.debug(self._cache[first_key])
+            # logger.debug(self._cache[first_key])
 
 
 @dataclass(kw_only=True)
@@ -331,9 +332,11 @@ class OperandIndicator(Operand, PlottingMixin):
 
         self._parameter_space = space
 
-        self.parameter_instances = (
+        self.parameter_instances = tuple((
             p for ind in self.indicators for p in ind.parameters
-        )
+        ))
+
+        logger.debug("[%s] parameter instances: %s" % (self.name, list(self.parameter_instances)))
 
     @property
     def display_name(self) -> str:
@@ -466,6 +469,7 @@ class OperandIndicator(Operand, PlottingMixin):
     @property
     def plot_data(self) -> dict[str, np.ndarray]:
         data = self.market_data.to_dictionary()
+        self.run()
         data.update(self.indicator.plot_data)
 
         for k,v in data.items():
@@ -496,7 +500,7 @@ class OperandIndicator(Operand, PlottingMixin):
                     elem.label += ext
                     elem.legend += ext
 
-        # the same gows for the subplot label
+        # the same goes for the subplot label
         subplot_label = " of ".join(
                     (
                         sp.label.upper() 
@@ -573,7 +577,11 @@ class OperandIndicator(Operand, PlottingMixin):
         ValueError
             if the run function is not defined for the operand
         """
+        logger.info("%s.run() called", self.name)
+        # return self._run_indicator({})
+
         if (parameters := self.parameters_tuple) in self._cache:
+            logger.info("returning cached result for %s", list(parameters))
             return self._cache[parameters]
 
         result = self._run_indicator({})
@@ -1139,7 +1147,6 @@ class OperandSeries(Operand):
             resulting array from running the operand
         """
         if self._cache.get(self.name, None) is None:
-            logger.warning("No data available for %s", self.name)
             self._cache[self.name] = self.market_data.get_array(self.inputs[0])
 
         return self._cache[self.name]

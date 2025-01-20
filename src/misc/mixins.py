@@ -54,11 +54,11 @@ class PlottingMixin:
             self.artist.style.colors.volume,
         ]
         
-        line_no = 0
+        
         for subplot in subplots:
+            line_no = 0
             for elem in subplot.elements:
                 if isinstance(elem, Line):
-                    print(f"Coloring line {line_no} with {line_colors[line_no]}")
                     elem.color = line_colors[line_no] 
                     line_no += 1   
                 else:

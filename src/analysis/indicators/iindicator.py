@@ -28,7 +28,7 @@ from analysis.chart.plot_definition import SubPlot
 from misc.mixins import PlottingMixin
 
 logger = logging.getLogger(f"main.{__name__}")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 # define Types
 Params = dict[str, Union[str, float, int, bool]]
@@ -172,16 +172,6 @@ class IIndicator(PlottingMixin):
                 "Did you run the indicator before trying to access the data?"
                 )
         
-        # find all parameters of this indicator that have a lookback 
-        # period
-        # param_names = (
-        #     "period", "timeperiod", "lookback", "fastperiod", "slowperiod",
-        #     "signalperiod"
-        #     )
-        # # find the maximum lookback period
-        # periods = [p.value for p in self._parameters if p.name in param_names]
-        # lbp = max(periods) if periods else 0
-
         data = self._cache        
         data = [data] if isinstance(data, np.ndarray) else data
 

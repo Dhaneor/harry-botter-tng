@@ -46,7 +46,7 @@ def _get_test_data(length=1000):
         'volume': np.random.rand(length)
     }
 
-def test_factory(sig_def) -> sg.SignalGenerator:
+def test_factory(sig_def, show: bool=True) -> sg.SignalGenerator:
     try:
         sig_gen = sg.signal_generator_factory(sig_def)
     except Exception as exc:
@@ -55,7 +55,8 @@ def test_factory(sig_def) -> sg.SignalGenerator:
 
     assert isinstance(sig_gen, sg.SignalGenerator)
 
-    logger.info("created signal generator:\n %s", sig_gen.__dict__)
+    if show:
+        logger.info("created signal generator:\n %s", sig_gen.__dict__)
     return sig_gen
 
 
@@ -214,7 +215,7 @@ if __name__ == "__main__":
     # test_get_all_parameters()
     # test_get_all_operands()
 
-    sig_gen = test_factory(cci)
+    sig_gen = test_factory(cci, False)
     sig_gen.market_data = data
     sig_gen.execute()
     # test_subplots(sig_gen)
