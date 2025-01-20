@@ -90,17 +90,19 @@ class EfficiencyRatio(IIndicator):
         #     callback()
 
     @property
-    def plot_desc(self) -> SubPlot:
-        return SubPlot(
-            label=self.unique_name,
-            is_subplot=self._is_subplot,
-            elements=(
-                Line(
-                    label=self.unique_name,
-                    column=self.unique_name,
-                    end_marker=False),
+    def subplots(self) -> SubPlot:
+        return (
+                SubPlot(
+                label=self.unique_name,
+                is_subplot=self._is_subplot,
+                elements=(
+                    Line(
+                        label=self.unique_name,
+                        column=self.unique_name,
+                        end_marker=False),
+                ),
+                level="indicator",
             ),
-            level="indicator",
         )
 
     @njit

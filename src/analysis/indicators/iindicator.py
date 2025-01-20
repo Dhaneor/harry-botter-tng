@@ -353,7 +353,7 @@ class IIndicator(PlottingMixin):
     def subplots(self) -> SubPlot:
         """Returns a formal description of plot instructions."""
         raise NotImplementedError(
-            "The plot_desc property is not implemented for %s", self.__class__.__name__
+            "The subplots property is not implemented for %s", self.__class__.__name__
         )
 
 # .............................. Public methods .................................

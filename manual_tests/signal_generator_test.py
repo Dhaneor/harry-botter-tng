@@ -30,10 +30,10 @@ logger = get_logger('main', level='DEBUG')
 
 # set interval and length of test data
 interval = "2h"
-length = 1_000
+length = 500
 
 sig_def = breakout
-data = MarketData.from_random(length=length, no_of_symbols=2)
+data = MarketData.from_random(length=length, no_of_symbols=1)
 
 # ======================================================================================
 def _get_test_data(length=1000):
@@ -151,10 +151,6 @@ def test_set_parameters():
     print(df)
 
 
-def test_plot_desc(sig_gen):
-    pprint(sig_gen.plot_desc)
-
-
 def test_execute(sig_gen: sg.SignalGenerator = None, show=False, plot=False):
     sig_gen = sig_gen or sg.signal_generator_factory(ema_cross)
     sig_gen.market_data = data  # MarketData.from_random(length=30, no_of_symbols=1)
@@ -190,8 +186,13 @@ def test_execute(sig_gen: sg.SignalGenerator = None, show=False, plot=False):
         chart.draw()
 
 
-def test_plot(sig_gen: sg.SignalGenerator, data):
-    sig_gen.plot(data)
+def test_subplots(sig_gen: sg.SignalGenerator):
+    for subplot in sig_gen.subplots:
+        logger.info(subplot)
+
+
+def test_plot(sig_gen: sg.SignalGenerator):
+    sig_gen.plot()
 
 
 # ============================================================================ #
@@ -213,11 +214,14 @@ if __name__ == "__main__":
     # test_get_all_parameters()
     # test_get_all_operands()
 
-    # test_plot_desc(sig_gen)
-    # test_plot(sig_gen, data)
+    sig_gen = test_factory(cci)
+    sig_gen.market_data = data
+    sig_gen.execute()
+    # test_subplots(sig_gen)
+    test_plot(sig_gen)
     # test_returns(sig_gen, data, True)
 
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
 

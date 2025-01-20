@@ -102,6 +102,7 @@ from functools import reduce, wraps  # noqa: F401
 # import itertools
 import logging
 import numpy as np
+import sys
 from collections import defaultdict
 from dataclasses import dataclass
 from itertools import chain
@@ -114,14 +115,16 @@ from . import (
 from analysis import (  # noqa: F401
     MarketData, Indicator, Parameter,
     combine_signals, SignalStore, 
-    SubPlot, SignalChart
+    SubPlot
 ) 
+from analysis.chart.plot_definition import Candlestick
 from analysis.dtypes import SIGNALS_DTYPE
+from misc.mixins import PlottingMixin
 from util import log_execution_time, DotDict, proj_types as tp  # noqa: F401
 from models.enums import COMPARISON
 
 logger = logging.getLogger("main.signal_generator")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 WARMUP_PERIODS = 200  # number of candles to use for warmup
 
@@ -276,7 +279,7 @@ class SignalGeneratorDefinition(DotDict):
 
 
 # ======================================================================================
-class SignalGenerator:
+class SignalGenerator(PlottingMixin):
     """A signal generator.
 
     Always use the factory function to create instances of 
@@ -342,6 +345,8 @@ class SignalGenerator:
         self.name: str = name
         self.operands = operands
         self.conditions = conditions
+
+        self.display_name = name
 
         self._indicators: tuple[Indicator] = None
         self._market_data: MarketData = None
@@ -448,6 +453,13 @@ class SignalGenerator:
                 )
 
     @property
+    def plot_data(self) -> dict[str, np.ndarray]:
+        plot_data = {}
+        for operand in self.operands.values():
+            plot_data.update(operand.plot_data)
+        return plot_data
+
+    @property
     def subplots(self) -> list[SubPlot]:
         """Get the plot parameters for the signal generator.
 
@@ -456,18 +468,16 @@ class SignalGenerator:
         list[SubPlot]
             A list of unique SubPlot objects for all conditions.
         """
-        # Collect all PlotDescription objects for all conditions
-        all_plots = [c.plot_desc for c in self.conditions]
 
-        # Remove duplicates while preserving order
-        unique_plots = []
-        seen = set()
-        for plot in all_plots:
-            if plot.label not in seen:
-                seen.add(plot.label)
-                unique_plots.append(plot)
+        return self.get_signal_generator_subplots()
+        # collect all SubPlot obejcts from all operands and remove duplicates
+        # unique, seen = [], set()
+        # for plot in chain.from_iterable(o.subplots for o in self.operands.values()):
+        #     if plot.label not in seen:
+        #         seen.add(plot.label)
+        #         unique.append(plot)
 
-        return unique_plots
+        # return unique
 
     # ................................ PUBLIC METHODS ..................................
     # @log_execution_time(logger)
@@ -535,6 +545,16 @@ class SignalGenerator:
         for operand in self.operands.values():
             operand.randomize()
 
+    def is_working(self) -> bool:
+        """Check if the signal generator is working.
+
+        Returns
+        -------
+        bool
+            True if the signal generator is working, False otherwise
+        """
+        raise NotImplementedError()
+    
     # ................................. HELPER METHODS .................................
     def _execute_single(self, out: np.ndarray, zindex=0) -> dict[str, tp.Array_3D]:
         """Execute the signal generator.
@@ -597,18 +617,67 @@ class SignalGenerator:
         assets = self.market_data.number_of_assets
         return np.zeros((periods, assets, depth), dtype=SIGNALS_DTYPE)
 
-    def _build_subplot(self, condition_index: int) -> SubPlot:
-        ...
+    def get_signal_generator_subplots(self):
+        related_operands, result = {}, []
+        all_operands = dict(self.operands)
+        unprocessed = set(all_operands)
 
-    def is_working(self) -> bool:
-        """Check if the signal generator is working.
+        for operand in all_operands.keys():
+            if operand not in unprocessed:
+                continue
 
-        Returns
-        -------
-        bool
-            True if the signal generator is working, False otherwise
-        """
-        raise NotImplementedError()
+            related_operands[operand] = set((operand,))
+            for condition_list in self.conditions.values():
+                for and_conditions in condition_list:
+                    for condition in and_conditions:
+                        if condition[0] == operand:
+                            related_operands[operand].add(condition[2])
+                            unprocessed.remove(condition[2])
+
+            logger.debug(f"operand={operand}, subplots={related_operands[operand]}")
+        logger.debug(f"subplots: {related_operands}")
+
+
+        for k, v in related_operands.items():
+            combined_subplot = sum(
+                chain.from_iterable(
+                    (self.operands[elem].subplots for elem in v)
+                )
+            )
+
+            filtered_elements = []
+
+            for elem in combined_subplot.elements:
+                if not isinstance(elem, Candlestick):
+                    filtered_elements.append(elem)
+
+            logger.debug("filtered elements: %s" % filtered_elements)
+
+            combined_subplot = SubPlot(
+                label=self.operands[k].display_name,
+                level="signal generator",
+                is_subplot=True,
+                secondary_y=False,
+                elements=filtered_elements,
+            )
+ 
+            result.append(combined_subplot)
+
+        for subplot in result:
+            logger.debug(f"Subplot:\n {subplot}")
+        
+        
+        result.insert(
+            0,             
+            SubPlot(
+                label="OHLCV",
+                is_subplot=False,
+                elements=(Candlestick(),),
+                level="operand",
+            )
+        )
+        return result
+
 
     # def plot(self, data: tp.Data) -> None:
     #     self.make_plot(data).draw()

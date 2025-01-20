@@ -205,7 +205,7 @@ def test_with_price_series_input():
 
 def test_with_fixed_value_input():
     op_def = ('trigger', 100, [90, 110, 1])
-    op_def_2 = ("trending", 0.01, [0.005, 0.055, 0.005])
+    # op_def_2 = ("trending", 0.01, [0.005, 0.055, 0.005])
     operand = operand_factory(op_def, key_store={})
 
     logger.info(operand)

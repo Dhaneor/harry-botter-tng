@@ -32,7 +32,6 @@ Created on Sat Aug 18 10:356:50 2023
 @author: dhaneor
 """
 
-import itertools
 import logging
 import numpy as np
 import sys
@@ -60,7 +59,7 @@ from models.enums import OperandType
 from util import log_execution_time, proj_types as tp  # noqa: F401
 
 logger = logging.getLogger("main.operand")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 # build a list of all available indicators, that can later be used
 # to do a fast check if requested indicators are available.
@@ -68,6 +67,7 @@ ALL_INDICATORS = set(i.lower() for i in TALIB_INDICATORS)
 CUSTOM_INDICATORS = tuple(name.lower() for name in indicators_custom.custom_indicators)
 
 MAX_CACHE_SIZE = 100 * 1024 * 1024  # max cache size for operands
+WARMUP_PERIODS = 200  # number of candles to use for warmup
 
 
 # ======================================================================================
@@ -469,7 +469,7 @@ class OperandIndicator(Operand, PlottingMixin):
         data.update(self.indicator.plot_data)
 
         for k,v in data.items():
-            data[k] = np.array(v, dtype=np.float64)[200:]
+            data[k] = np.array(v, dtype=np.float64)[WARMUP_PERIODS:]
 
         return data
         
@@ -893,7 +893,7 @@ class OperandTrigger(Operand):
 
     @property
     def plot_data(self) -> dict[str, np.ndarray]:
-        return {self.unique_name: self.run()}
+        return {self.unique_name: self.run()[WARMUP_PERIODS:,0]}
 
     @property
     def unique_name(self) -> str:
@@ -916,13 +916,21 @@ class OperandTrigger(Operand):
             plot parameters for the operand
         """
         elements = [
-            Trigger(value=self.indicator.parameters[0].value)
+            Trigger(
+                label=self.unique_name,
+                column=self.unique_name,
+                legend=self.unique_name,
+                legendgroup="Triggers",
+                shadow=False
+            )
         ]
-        return SubPlot(
-            label=self.display_name,
-            is_subplot=False,  # will possibly be set to True at the next level
-            elements=elements,
-            level="operand",
+        return (
+                SubPlot(
+                label=self.display_name,
+                is_subplot=True,  # will possibly be set to True at the next level
+                elements=elements,
+                level="operand",
+            ),
         )
 
     # ..........................................................................

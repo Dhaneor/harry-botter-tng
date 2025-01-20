@@ -15,15 +15,20 @@ timeperiod = randint(50, 60)
 trigger = 200
 
 # Commoditiy Channel Index simple
-cci = sg.SignalsDefinition(
-    name=f"CCI {timeperiod}",
-    conditions=cn.ConditionDefinition(
-        interval="1d",
-        operand_a=("cci", {"timeperiod": 21}),
-        operand_b=("cci_oversold", 0, [-200, -70, 15]),
-        operand_c=("cci_overbought", 100, [70, 200, 15]),
-        open_long=("a", cn.COMPARISON.IS_BELOW, "b"),
-        close_long=("a", cn.COMPARISON.IS_ABOVE, "c"),
+cci = sg.SignalGeneratorDefinition(
+    name="CCI simple",
+    operands=dict(
+        cci=("cci")  ,# , {"timeperiod": 21}),
+        oversold=("oversold", -125, [-200, -70, 15]),
+        overbought=("overbought", 125, [70, 200, 15]),
+    ),
+    conditions=dict(
+        open_long=[
+            ("cci", cn.COMPARISON.IS_BELOW, "oversold")
+        ],
+        close_long=[
+            ("cci", cn.COMPARISON.IS_ABOVE, "overbought")
+        ]
     ),
 )
 

@@ -53,6 +53,7 @@ class PlottingMixin:
             self.artist.style.colors.sell,
             self.artist.style.colors.volume,
         ]
+        
         line_no = 0
         for subplot in subplots:
             for elem in subplot.elements:
@@ -97,6 +98,9 @@ class PlottingMixin:
         #         )
 
         data = self.plot_data
+
+        for k,v in data.items():
+            print(f"shape of array for {k}: {v.shape}")
         
         if isinstance(data, dict):
             data = pd.DataFrame.from_dict(data)

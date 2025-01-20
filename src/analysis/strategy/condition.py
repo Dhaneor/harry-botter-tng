@@ -39,7 +39,7 @@ from util import proj_types as tp
 from models.enums import COMPARISON
 
 logger = logging.getLogger("main.condition")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 
 
@@ -412,6 +412,8 @@ class ConditionParser:
         self.operands = operands
 
     def parse(self, conditions: ConditionDefinitionT) -> ConditionDefinitionT:
+        logger.debug("Parsing conditions: %s", conditions)
+
         # The conditions definitions in the dictionary are either in the 
         # form of list[tuple, ...] or in the form of list[list[tuple,...]].
         # We need to convert the former to the latter.
@@ -435,6 +437,8 @@ class ConditionParser:
 
     def _parse_condition(self, condition: ConditionT) -> ConditionT:
         left, operator, right = condition
+
+        logger.debug("Parsing condition: %s", condition)
 
         for operand_name in (left, right):
             if operand_name not in self.operands:

@@ -40,7 +40,7 @@ from ..chart.plot_definition import Line, Channel, Histogram, SubPlot
 
 
 logger = logging.getLogger("main.indicator")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 Params = dict[str, Union[str, float, int, bool]]
 IndicatorSource = Literal["talib", "nb"]

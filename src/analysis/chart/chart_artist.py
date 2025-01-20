@@ -16,7 +16,7 @@ from .plot_definition import PlotDefinition, Candlestick
 from .plotly_styles import TikrStyle
 
 logger = logging.getLogger(f"main.{__name__}")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.INFO)
 
 
 

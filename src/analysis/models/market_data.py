@@ -406,7 +406,6 @@ class MarketData:
         --------
         np.ndarray: 1D or 2D array of specified field for the given symbol.
         """
-        print(f">>>>>>>>>> Getting array for field '{field}'")
         
         arr_2d = None
         match field:
