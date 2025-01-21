@@ -215,7 +215,7 @@ if __name__ == "__main__":
     # test_get_all_parameters()
     # test_get_all_operands()
 
-    sig_gen = test_factory(cci, False)
+    sig_gen = test_factory(linreg, False)
     sig_gen.market_data = data
     sig_gen.execute()
     # test_subplots(sig_gen)

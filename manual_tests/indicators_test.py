@@ -513,8 +513,10 @@ if __name__ == "__main__":
     #     "ER", params={"timeperiod": 30}, show=False
     #     )
 
-    ind = test_indicator_factory("AROONOSC", show=False)
-    test_plot(ind)
+    ind = test_indicator_factory("ER", show=False)
+    pprint(ind.__dict__)
+    ind.help()
+    # test_plot(ind)
 
     # ind = test_indicator_factory("STOCH", show=False)
 

@@ -118,7 +118,7 @@ from analysis import (  # noqa: F401
     combine_signals, SignalStore, 
     SubPlot
 ) 
-from analysis.chart.plot_definition import Candlestick
+from analysis.chart.plot_definition import Candlestick, Buy, Sell, Positions
 from analysis.dtypes import SIGNALS_DTYPE
 from misc.mixins import PlottingMixin
 from util import log_execution_time, DotDict, proj_types as tp  # noqa: F401
@@ -319,15 +319,18 @@ class SubPlotBuilder:
     @property
     def plot_data(self) -> dict[str, np.ndarray]:
         for operand in self.operands.values():
-            operand.run()
+            operand.run()  # just in case they were not run before
             self._plot_data.update(operand.plot_data)
         return self._plot_data
 
     @property
-    def subplots(self) -> tuple[SubPlot]:
-        # re-initialize subplots (necessary if this property is 
-        # called multiple times) with the - always required -
-        # OHLCV subplot.
+    def subplots(self) -> list[SubPlot]:
+        if self._subplots:
+            return self._subplots
+
+        if not self._plot_data:
+            self.plot_data  # call the property to fill the ._plot_data dict
+
         self._subplots: list[SubPlot] = [
             SubPlot(
                 label="OHLCV",
@@ -336,14 +339,10 @@ class SubPlotBuilder:
                 level="operand",
             )
         ]
+        self._add_positions_to_ohlcv_subplot(self._subplots[0])
 
-        # go through all the operands and determine which contiions
-        # use them. Because it shoudl be possible th have operands 
-        # defined which are not used but should be plotted for 
-        # analytical purposes, we will collect them in  a separate
-        # list
         unused_operands = set(self.operands.keys())        
-        
+        # go through all the operands and determine which conditions use them
         for operand_name in self.operands.keys():
             # find all conditions (by action) which use the operand
             using_this_operand = set()
@@ -355,26 +354,23 @@ class SubPlotBuilder:
             if using_this_operand:
                 self._process_operand(operand_name, using_this_operand)
 
-        for operand_name in unused_operands:
-            logger.debug(f"Adding unused operand: {operand_name}")
-            operand = self.operands[operand_name]
-            logger.debug("runninng operand: %s" % operand_name)
-            operand.run()
-            logger.debug("done")
-            self._plot_data.update(operand.plot_data)
-            self._subplots.append(operand.subplots[1])
-
-        for subplot in self._subplots:
-            print(subplot)
-            print("*" * 150)
-
+        self._process_unused_operands(unused_operands)
         return self._subplots
 
     def _process_operand(self, key: str, conditions: set[str, int, ConditionT]):
             logger.debug(f"Processing operand: {key} - used in conditions: {conditions}")
             operand = self.operands[key]
-            subplot = operand.subplots[1]
-            elements = subplot.elements
+
+            # in most cases, the operand will have two subplots: OHLCV
+            # and the indicator subplots ...
+            if len(operand.subplots) > 1:
+                subplot = operand.subplots[1]
+                elements = list(subplot.elements)
+            # ... but if the operand is price series, it will have only
+            # the OHLCV subplot, which also contains no elements
+            else:
+                subplot = operand.subplots[0]
+                elements = []
 
             # Each condition tuple will contain an index which dedcribes 
             # the level of the condition wrt the OR conditions. The final
@@ -382,6 +378,7 @@ class SubPlotBuilder:
             # between different OR conditions, even when that means to
             # have two subplots for the same operand
             or_levels = max((c[1] for c in conditions)) + 1
+            
             for idx in range(or_levels):
                 logger.debug("processing level [%s] of OR conditions" % idx)
                 # find all operands on the right side of the conditions 
@@ -391,16 +388,20 @@ class SubPlotBuilder:
                     add_operand_name = condition[2][2]
                     add_operand = self.operands[add_operand_name]
                     add_operand_subplots = add_operand.subplots
-                    add_subplot = add_operand_subplots[1] if len(add_operand_subplots) > 1 else add_operand.subplots[0]
-                    existing_elements = [elem.label for elem in subplot.elements]
+                    add_subplot = add_operand_subplots[1] \
+                        if len(add_operand_subplots) > 1 else add_operand.subplots[0]
+                    
+                    existing_elements = [elem.label for elem in elements]
                     logger.debug(f"existing elements: {existing_elements}")
+                    
                     for elem in add_subplot.elements:
                         if elem.label not in existing_elements:
                             logger.debug(f"adding element {elem.label} to elements")
                             elements.append(elem)
 
-                # execute the conditions for this operand and add their 
-                # result as element to the SubPlot for this operand
+                    # execute the conditions for this operand and add their 
+                    # result as element to the SubPlot for this operand
+                    self._process_condition(condition, elements, operand.unique_name)
                 
                 # add the subplot the subplots list
                 logger.debug("adding subplot to subplots list")
@@ -415,15 +416,67 @@ class SubPlotBuilder:
                 )
                 logger.debug("subplots list: %s" % [sp.label for sp in self._subplots])
 
-    def _process_condition(self, condition: ConditionT, elements: list):
-        signals = self._exceute_condition(condition)
+    def _process_condition(self, condition: ConditionT, elements: list, label: str) -> None:
+        logger.debug(f"processing condition: {condition}")
+        action, idx, condition = condition
+        signals = self._execute_condition(condition).astype(np.float32)
 
-    def _excetute_condition(self,  condition: ConditionT) -> np.ndarray:
-        left = self.operands[condition[0]]
-        right = self.operands[condition[2]]
-        func = self.comp_funcs.get(condition[1])
-        return func(left, right)
+        mask = signals != 0
+        try:
+            signals[mask] = self._plot_data[label][mask]
+            signals[~mask] = np.nan
+        except KeyError:
+            logger.error("KeyError: 'close' not found in plot_data")
+            logger.error("existing keys: %s" % list(self._plot_data.keys()))
+            logger.error("Exiting function due to error")
 
+        
+        # print(signals)
+        # sys.exit()
+
+        key = f"[{idx}].{label}.{action}"
+        self._plot_data[key] = signals
+
+        match action:
+            case "open_long":
+                elem = Buy(label="open long", column=key, legend=None)
+            case "close_long":
+                elem = Sell(label="close long", column=key, legend=None)
+            case "open_short":
+                elem = Sell(label="open short", column=key, legend=None)
+            case "close_short":
+                elem = Buy(label="close short", column=key, legend=None)
+            case _:
+                raise ValueError(f"Invalid action: {action}")
+            
+        elements.append(elem)
+
+    def _execute_condition(self,  condition: ConditionT) -> np.ndarray:
+
+        left = self.operands[condition[0]].run()
+        right = self.operands[condition[2]].run()
+        func = self.cmp_funcs.get(condition[1])
+        return func(left, right).reshape(-1,)[WARMUP_PERIODS:]
+    
+    def _add_positions_to_ohlcv_subplot(self, ohlcv_subplot: SubPlot) -> None:
+        logger.debug("Adding positions")
+        self._plot_data["position"] = self\
+            .execute(compact=True)\
+            .reshape(-1,)[WARMUP_PERIODS:]
+
+        elements = list(ohlcv_subplot.elements)
+        elements.insert(0, Positions())
+        ohlcv_subplot.elements = elements
+
+    def _process_unused_operands(self, unused_operands: set[str]) -> None:
+        for operand_name in unused_operands:
+            logger.debug(f"Adding unused operand: {operand_name}")
+            operand = self.operands[operand_name]
+            logger.debug("runninng operand: %s" % operand_name)
+            operand.run()
+            logger.debug("done")
+            self._plot_data.update(operand.plot_data)
+            self._subplots.append(operand.subplots[1])
 
     def _add_sub_plot(self, subplot: SubPlot) -> None:
         existing_labels = [sp.label for sp in self._subplots]

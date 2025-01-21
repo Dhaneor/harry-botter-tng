@@ -24,11 +24,11 @@ from numbers import Number
 from typing import Sequence, Callable, Union, Generator, Mapping, Any
 
 from .indicator_parameter import Parameter
-from analysis.chart.plot_definition import SubPlot
+from analysis.chart.plot_definition import SubPlot, Line, Channel, Histogram
 from misc.mixins import PlottingMixin
 
 logger = logging.getLogger(f"main.{__name__}")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 # define Types
 Params = dict[str, Union[str, float, int, bool]]
@@ -145,11 +145,12 @@ class IIndicator(PlottingMixin):
 
     def __init__(self) -> None:
         self._name = self.__class__.__name__.lower()
+        self.display_name = self._name.replace("_", " ").title()
         self.input: Sequence[str] = []
         self.output: Sequence[str] = []
         self.output_flags: dict
 
-        self._is_subplot: bool | None = None
+        self._is_subplot: bool | None = True
         self._plot_desc: dict  # e.g = {"name": ["Line"]}
 
         self._apply_func: Callable
@@ -191,9 +192,9 @@ class IIndicator(PlottingMixin):
         """Returns the name of the indicator."""
         return self._name
 
-    @property
-    def display_name(self) -> str:
-        return " ".join((str(x).capitalize() for x in self.unique_name.split("_")))
+    # @property
+    # def display_name(self) -> str:
+    #     return " ".join((str(x).capitalize() for x in self.unique_name.split("_")))
 
     @property
     def unique_name(self) -> str:
@@ -340,11 +341,116 @@ class IIndicator(PlottingMixin):
         return self._is_subplot
 
     @property
-    def subplots(self) -> SubPlot:
-        """Returns a formal description of plot instructions."""
-        raise NotImplementedError(
-            "The subplots property is not implemented for %s", self.__class__.__name__
-        )
+    def subplots(self) -> tuple[SubPlot]:
+        """Return the subplots for the indicator."""
+        param_ext = ",".join(str(p.value) for p in self.parameters)
+        subplot_label = f"{self.display_name} ({param_ext})"  # ({self.parameters[0].value})"
+        channel_elements = {"upper": None, "lower": None}
+        elements = []
+
+        logger.debug(self._plot_desc)
+
+        idx = 0
+        for k, v in self._plot_desc.items():
+            v = v[0]  # it's always a list with one element
+            elem = None
+
+            logger.info(f"processing: '{k}' ...")
+
+            # talib specifies the plotting descriptions (output_flags)
+            # in an OrderedDict, where the key is:
+            # • 'real' for indicators with one output
+            # • the name of the output for indicators with multiple outputs
+            if k == "real":
+                label = legend = self.name.upper() + f" ({param_ext})"
+            else:
+                label = legend = k.upper()
+            
+            legendgroup = self.name.upper()
+
+            # the values in the output_flags dictioanry describe the 
+            # type of line (or histogram for instance) to be plotted 
+            # for each output
+            match v:
+                case "Line":
+                    elem = Line(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                        shadow=False,
+                        end_marker=False
+                    )
+                case "Dashed Line":
+                    elem = Line(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case "Histogram":
+                    elem = Histogram(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case "Values represent an upper limit":
+                    logger.debug(
+                        "[CHANNEL ELEMENTS] Adding upper limit: %s" % legend
+                        )
+                    channel_elements["upper"] = Line(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case "Values represent a lower limit":
+                    logger.debug(
+                        "[CHANNEL ELEMENTS] Adding lower limit: %s" % legend
+                        )
+                    channel_elements["lower"] = Line(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case _:
+                    raise NotImplementedError(
+                        f"Unsupported output_flag: {v}"
+                    )
+                
+            if elem:                
+                elements.append(elem)
+                logger.debug(f"added element: {elem}")
+            
+            idx += 1
+
+        # if channel elements are present, prepare a Channel
+        # class and add it to the elements of the subplot
+        if any(channel_elements.values()):
+            if not all(channel_elements.values()):
+                raise ValueError(
+                    "Either upper or lower limit lines are missing. "
+                    f"channel elements: {channel_elements}"
+                )
+
+            logger.debug(f"Adding channel elements: {channel_elements}")
+            elem = Channel(
+                label=self.name.upper(),
+                upper=channel_elements["upper"],
+                lower=channel_elements["lower"],
+            )
+            elem.shadow = False
+            elements.append(elem)
+            logger.debug(f"added element: {elem}")
+
+        return SubPlot(
+            label=subplot_label,
+            elements=elements,
+            level="indicator",
+            is_subplot=self.is_subplot,
+        ),
 
 # .............................. Public methods .................................
     def run(self, *inputs: tuple[np.ndarray]) -> np.ndarray:  # type: ignore
@@ -412,14 +518,14 @@ class IIndicator(PlottingMixin):
 
         return out
 
-    @abstractmethod
     def help(self):
         """Prints help information (docstring) for the class.
 
         Can be used to have easy access to the parameters of
         each indicator.
         """
-
+        print(self._apply_func.__doc__)
+    
     def randomize(self) -> None:
         """Randomizes the parameters of the indicator."""
         logger.info("randomizing parameters for %s", self.name)
@@ -434,6 +540,9 @@ class IIndicator(PlottingMixin):
         """Callback function for when parameters change."""
         logger.info("parameters changed for %s", self.name)
         logger.debug("Calling subscribers: %s", self.subscribers)
+
+        self._cache = None
+
         for callback in self.subscribers:
             logger.debug("Calling callback %s", callback)
             callback()

@@ -372,7 +372,7 @@ def test_randomize():
 # ============================================================================ #
 if __name__ == "__main__":
     # test_operand_factory('close')
-    test_parameters_tuple()
+    # test_parameters_tuple()
     # test_with_price_series_input()
     # test_with_fixed_value_input()exit
     # test_nested_indicators()
@@ -380,20 +380,19 @@ if __name__ == "__main__":
     # test_randomize()
     # test_operand_run_trigger()
     # test_operand_run_indicator()
-    sys.exit()
+    # sys.exit()
 
     # operand = operand_factory(op_defs.get('sma_of_rsi').get('def'), {})
-    operand = operand_factory(
-        op_defs.get("macd").get('def'), market_data
-        )
+    operand = operand_factory(("er", {"timeperiod": 30}), market_data)
 
     if operand is None:
         logger.error("Operand creation failed")
         sys.exit(1)
 
+    operand.market_data = market_data
+
     pprint(operand.__dict__)
 
-    operand.market_data = market_data
     operand.run()
     operand.plot()
 
@@ -409,7 +408,7 @@ if __name__ == "__main__":
     # logger.info(operand.parameters)
     # print(pd.DataFrame.from_dict(data).tail(10))
 
-    sys.exit()
+    # sys.exit()
 
     # print('-~•~-' * 40)
     # print("indicator:")
@@ -422,16 +421,16 @@ if __name__ == "__main__":
     # print("plot description:")
     # pprint(operand.plot_desc)
 
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
     runs = 10_000
     data = market_data
     st = time.time()
 
-    op_def = op_defs.get('sma').get('def')
-    operand = operand_factory(op_def, market_data)
-    pprint(operand.__dict__)
+    # op_def = op_defs.get('sma').get('def')
+    # operand = operand_factory(op_def, market_data)
+    # pprint(operand.__dict__)
     operand.run()
 
     with Profile(timeunit=0.001) as p:

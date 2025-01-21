@@ -418,14 +418,16 @@ class ConditionParser:
         # form of list[tuple, ...] or in the form of list[list[tuple,...]].
         # We need to convert the former to the latter.
         for k, v in conditions.items():
-            if v is not None:
+            if v and v[0]:
                 if not isinstance(v[0][0], list | tuple):
                     conditions[k] = [v]
 
         # ... now we can process them
         for k,v in conditions.items():
-            if v is not None:
+            if v:
                 conditions[k] = self._parse_or_conditions(v)
+            else:
+                conditions[k] = None  # No conditions, so set it to an empty list.
 
         return conditions
 

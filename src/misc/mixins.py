@@ -10,7 +10,7 @@ Created on Jan 16 00:44:23 2025
 import numpy as np
 import pandas as pd
 
-from analysis.chart.plot_definition import Layout, SubPlot, PlotDefinition, Line
+from analysis.chart.plot_definition import Layout, SubPlot, PlotDefinition, Line, Signal
 from analysis.chart.plotly_styles import backtest_style
 from analysis.chart.chart_artist import ChartArtist
 
@@ -61,7 +61,7 @@ class PlottingMixin:
                 if isinstance(elem, Line):
                     elem.color = line_colors[line_no] 
                     line_no += 1   
-                else:
+                elif not isinstance(elem, Signal):
                     elem.color = self.artist.style.colors.strategy
 
         return PlotDefinition(
@@ -98,6 +98,7 @@ class PlottingMixin:
         #         )
 
         data = self.plot_data
+        data["open time"] = (data["open time"] / 1000).astype(int)
 
         for k,v in data.items():
             print(f"shape of array for {k}: {v.shape}")
@@ -105,15 +106,15 @@ class PlottingMixin:
         if isinstance(data, dict):
             data = pd.DataFrame.from_dict(data)
         
-        data.replace(np.nan, 0, inplace=True)
+        # data.replace(np.nan, 0, inplace=True)
 
         if "open time" in data.columns:
             data["open time"] = pd.to_datetime(
                 data["open time"],
-                utc=True,
-                # format="%Y-%m-%d %H:%M:%S.%f",
-                errors="coerce",
-                unit="ms")
+                utc=False,
+                origin="unix",
+                unit="s",
+                )
             data.set_index("open time", inplace=True)
 
         print(data.tail(25))

@@ -11,6 +11,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import math
+from datetime import datetime, timedelta
 from numba import int64, float32
 from numba.experimental import jitclass
 from typing import Sequence
@@ -488,14 +489,12 @@ class MarketData:
         return MarketData(mds, [symbol])
 
     @classmethod
-    def from_random(cls, length: int, no_of_symbols: int):
-        import numpy as np
-        import pandas as pd
-        from datetime import datetime, timedelta
-    
+    def from_random(cls, length: int, no_of_symbols: int, volatility: float = 0.005):
+        vol = volatility
+
         # Generate end timestamp (current date at 00:00:00)
         end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        start_date = end_date - timedelta(minutes=length)
+        start_date = end_date - timedelta(hours=length / 4)
     
         # Generate timestamps
         timestamps = pd.date_range(start=start_date, end=end_date, periods=length)
@@ -521,7 +520,7 @@ class MarketData:
             initial_price = np.random.uniform(1, 1000)
     
             # Generate price changes using random walk
-            changes = np.random.normal(0, 0.02, length)  # 2% daily volatility
+            changes = np.random.normal(0, vol, length)  # 2% daily volatility
     
             # Calculate prices
             prices = initial_price * np.exp(np.cumsum(changes))
@@ -532,8 +531,8 @@ class MarketData:
             open_prices[1:, i] = close_prices[:-1, i]  # Subsequent open prices
     
             # Generate intraday price movements
-            intraday_high = np.random.uniform(0, 0.01, length)  # Up to 1% higher
-            intraday_low = np.random.uniform(0, 0.01, length)   # Up to 1% lower
+            intraday_high = np.random.uniform(0, vol, length)  # Up to 1% higher
+            intraday_low = np.random.uniform(0, vol, length)   # Up to 1% lower
     
             high_prices[:, i] = np.maximum(open_prices[:, i], close_prices[:, i]) * (1 + intraday_high)
             low_prices[:, i] = np.minimum(open_prices[:, i], close_prices[:, i]) * (1 - intraday_low)

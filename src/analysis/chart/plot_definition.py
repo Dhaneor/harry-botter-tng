@@ -1380,6 +1380,10 @@ class SubPlot:
     def draw_subplot(self, fig, data) -> go.Figure:
         """Draw the subplot and add a legend within the subplot"""
         for element in self.elements:
+            logger.info(
+                "[%s]adding trace to subplot: %s (column: %s)", 
+                self.label, element.label, element.column
+                )
             try:
                 element.add_trace(fig, data)
             except Exception as e:

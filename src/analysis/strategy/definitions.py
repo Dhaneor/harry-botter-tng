@@ -246,7 +246,7 @@ linreg_roc_eth_1d = sg.SignalsDefinition(
 )
 
 linreg = sg.SignalsDefinition(
-    name=f"Linear Regression Slope {linreg_timeperiod}",
+    name="Linear Regression Slope (long/short)",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
