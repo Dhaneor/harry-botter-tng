@@ -425,14 +425,10 @@ class SubPlotBuilder:
         try:
             signals[mask] = self._plot_data[label][mask]
             signals[~mask] = np.nan
-        except KeyError:
-            logger.error("KeyError: 'close' not found in plot_data")
+        except KeyError as e:
+            logger.error("KeyError: %s" % str(e))
             logger.error("existing keys: %s" % list(self._plot_data.keys()))
             logger.error("Exiting function due to error")
-
-        
-        # print(signals)
-        # sys.exit()
 
         key = f"[{idx}].{label}.{action}"
         self._plot_data[key] = signals
@@ -452,14 +448,12 @@ class SubPlotBuilder:
         elements.append(elem)
 
     def _execute_condition(self,  condition: ConditionT) -> np.ndarray:
-
         left = self.operands[condition[0]].run()
         right = self.operands[condition[2]].run()
         func = self.cmp_funcs.get(condition[1])
         return func(left, right).reshape(-1,)[WARMUP_PERIODS:]
     
     def _add_positions_to_ohlcv_subplot(self, ohlcv_subplot: SubPlot) -> None:
-        logger.debug("Adding positions")
         self._plot_data["position"] = self\
             .execute(compact=True)\
             .reshape(-1,)[WARMUP_PERIODS:]

@@ -470,7 +470,8 @@ class OperandIndicator(Operand, PlottingMixin):
     def plot_data(self) -> dict[str, np.ndarray]:
         data = self.market_data.to_dictionary()
         self.run()
-        data.update(self.indicator.plot_data)
+        # data.update(self.indicator.plot_data)
+        data.update({self.unique_name: self.run().reshape(-1,)})
 
         for k,v in data.items():
             data[k] = np.array(v, dtype=np.float64)[WARMUP_PERIODS:]
@@ -498,6 +499,7 @@ class OperandIndicator(Operand, PlottingMixin):
 
                 for elem in elements:
                     elem.label += ext
+                    elem.column = self.unique_name
                     elem.legend += ext
 
         # the same goes for the subplot label

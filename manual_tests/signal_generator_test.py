@@ -21,7 +21,7 @@ from analysis.strategy import signal_generator as sg
 from analysis.strategy.definitions import (  # noqa: F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
     linreg_roc_btc_1d, linreg_roc_eth_1d, test_er, linreg, aroonosc,
-    linreg_ma_cross
+    linreg_ma_cross, test_er_2
 )
 from helpers_ import get_ohlcv  # noqa: F401
 from util import get_logger
@@ -215,7 +215,7 @@ if __name__ == "__main__":
     # test_get_all_parameters()
     # test_get_all_operands()
 
-    sig_gen = test_factory(linreg, False)
+    sig_gen = test_factory(breakout, False)
     sig_gen.market_data = data
     sig_gen.execute()
     # test_subplots(sig_gen)

@@ -43,6 +43,13 @@ class EfficiencyRatio(IIndicator):
                 hard_max=200, 
                 step=5
             ),
+            Parameter(
+                name="smoothing", 
+                initial_value=10, 
+                hard_min=2, 
+                hard_max=50, 
+                step=5
+            ),
         )
         self._plot_desc = dict(real=["Line"])
 
@@ -69,15 +76,25 @@ class EfficiencyRatio(IIndicator):
             The Noise indicator values for the lookback set
             in the 'timeperiod' parameter (default: 14).
         """
-        
+        smoothing = self.parameters[1].value
+
         if self._cache is None:
             if self.method == 1:
-                self._cache = noise_index_nb(
+                res = efficiency_ratio_nb(
                     data=data, 
                     lookback=self.parameters[0].value
                     )
             else:
-                self._cache = self._noise_index_numpy(data)
+                res = self._noise_index_numpy(data)
+
+
+            if smoothing > 1:
+                res = ultimate_smoother(
+                    np.nan_to_num(res), 
+                    smoothing
+                )
+
+            self._cache = res
         
         return self._cache
 
@@ -134,6 +151,153 @@ def noise_index_nb(data, lookback: int) -> np.ndarray:
         rolling_sum = np.sum(returns)
         price_diff = np.abs(data[i] / data[i - lookback] - 1)
         noise[i] = price_diff / rolling_sum
+
+    return noise
+
+
+@njit
+def efficiency_ratio_nb(data, lookback: int) -> np.ndarray:
+    n = len(data)
+    er = np.empty(n)
+    er[:] = np.nan
+
+    for i in range(lookback, n):
+        # Absolute price change over the lookback period
+        price_diff = np.abs(data[i] - data[i - lookback])
+
+        # Sum of absolute price changes within the lookback window
+        window_start = i - lookback
+        window_end = i
+        sum_abs_changes = 0.0
+        for j in range(window_start + 1, window_end):
+            sum_abs_changes += np.abs(data[j] - data[j - 1])
+
+        # Calculate Efficiency Ratio
+        if sum_abs_changes != 0.0:
+            er[i] = price_diff / sum_abs_changes
+        else:
+            er[i] = np.nan
+
+    return er
+
+
+@njit
+def noise_index_weighted_nb(data, lookback: int) -> np.ndarray:
+    n = len(data)
+    noise = np.empty(n)
+    noise[:] = np.nan
+
+    alpha = 2.0 / (lookback + 1)
+    
+    for i in range(lookback, n):
+        # Calculate returns in the lookback window
+        window_data = data[i - lookback: i]
+        returns = np.abs(np.diff(window_data) / window_data[:-1])
+
+        # Build weights (most recent has largest weight)
+        weights = np.array([alpha * (1 - alpha)**k for k in range(lookback - 1, -1, -1)])
+        # If desired, normalize so sum of weights == 1
+        weights /= np.sum(weights)
+        
+        # Weighted sum of returns
+        weighted_sum = np.sum(returns * weights[1:])  # returns is length (lookback-1)
+        
+        # "Price diff" can stay the same or be adjusted with the first weight
+        price_diff = np.abs(data[i] / data[i - lookback] - 1)
+        
+        noise[i] = price_diff / weighted_sum if weighted_sum != 0 else np.nan
+
+    return noise
+
+
+
+@njit
+def weighted_efficiency_ratio_nb(data, lookback: int) -> np.ndarray:
+    n = len(data)
+    er = np.empty(n)
+    er[:] = np.nan
+
+    alpha = 2.0 / (lookback + 1)
+
+    # Precompute weights: weights[k] corresponds to data[i - lookback + k]
+    weights = np.empty(lookback - 1)
+    for k in range(lookback - 1):
+        weights[k] = alpha * (1 - alpha) ** (lookback - 2 - k)  # Exponential weights
+
+    # Normalize weights so that sum(weights) = 1
+    weight_sum = 0.0
+    for k in range(lookback - 1):
+        weight_sum += weights[k]
+    for k in range(lookback - 1):
+        weights[k] /= weight_sum if weight_sum != 0 else 1.0
+
+    for i in range(lookback, n):
+        # Absolute price change over the lookback period
+        price_diff = np.abs(data[i] - data[i - lookback])
+
+        # Sum of weighted absolute price changes within the lookback window
+        window_start = i - lookback
+        window_end = i
+        weighted_sum = 0.0
+        for j in range(window_start + 1, window_end):
+            weighted_sum += weights[j - (window_start + 1)] * np.abs(data[j] - data[j - 1])
+
+        # Calculate Weighted Efficiency Ratio
+        if weighted_sum != 0.0:
+            er[i] = price_diff / weighted_sum
+        else:
+            er[i] = np.nan
+
+    return er
+
+
+
+@njit
+def noise_index_weighted_alt_nb(data, lookback: int) -> np.ndarray:
+    n = len(data)
+    noise = np.empty(n)
+    noise[:] = np.nan
+
+    alpha = 2.0 / (lookback + 1)
+
+    # Precompute weights: weights[k] corresponds to data[i - lookback + k]
+    weights = np.empty(lookback)
+    for k in range(lookback):
+        weights[k] = alpha * (1 - alpha) ** (lookback - 1 - k)
+    
+    # Normalize weights so that sum(weights[:-1]) == 1 for the returns
+    # Since returns have (lookback - 1) elements
+    weight_sum = 0.0
+    for k in range(lookback - 1):
+        weight_sum += weights[k + 1]
+    for k in range(lookback):
+        weights[k] /= weight_sum if weight_sum != 0 else 1.0
+
+    # Loop through each data point starting from 'lookback'
+    for i in range(lookback, n):
+        # Calculate returns in the lookback window
+        # data[i - lookback : i] has 'lookback' points
+        # returns will have (lookback - 1) elements
+        window_start = i - lookback
+        window_end = i
+        # Compute absolute returns
+        returns = np.empty(lookback - 1)
+        for j in range(lookback - 1):
+            returns[j] = np.abs((data[window_start + j + 1] - data[window_start + j]) / data[window_start + j])
+        
+        # Compute weighted sum of returns
+        weighted_sum = 0.0
+        for j in range(lookback - 1):
+            weighted_sum += returns[j] * weights[j + 1]
+        
+        # Compute price difference
+        price_diff = np.abs(data[i] / data[i - lookback] - 1)
+        
+        # Calculate noise index
+        if weighted_sum != 0.0:
+            noise[i] = price_diff / weighted_sum
+        else:
+            noise[i] = np.nan
 
     return noise
 
