@@ -10,6 +10,7 @@ from .layout_validator import LayoutValidator
 from .plot_definition import (
     PlotDefinition,
     SubPlot,
+    Layout,
     Line,
     Channel,
     Signal,
@@ -26,6 +27,7 @@ __all__ = [
     "LayoutValidator",
     "PlotDefinition",
     "SubPlot",
+    "Layout",
     "Line",
     "Channel",
     "Signal",

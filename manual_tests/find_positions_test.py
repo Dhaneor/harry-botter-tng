@@ -45,8 +45,8 @@ risk_level, max_leverage = 0, 1
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='binance', mode='backtest')
-# strategy = sb.build_strategy(strategy)
-# strategy.symbol = symbol
+strategy = sb.build_strategy(strategy)
+strategy.symbol = symbol
 
 # ======================================================================================
 # def get_data(length: int = 1000):
@@ -294,14 +294,14 @@ def test_find_positions(data: dict):
 #                                       MAIN                                          #
 # =================================================================================== #
 if __name__ == '__main__':
-    # logger.info("Starting backtest...")
-    # logger.info(strategy)
-    # run(_get_ohlcv_from_db(), False, False)
+    logger.info("Starting backtest...")
+    logger.info(strategy)
+    run(_get_ohlcv_from_db(), False, False)
 
     # test_find_positions(_get_ohlcv_from_db())
 
     # .................................................................................
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
     runs = 1_000_000

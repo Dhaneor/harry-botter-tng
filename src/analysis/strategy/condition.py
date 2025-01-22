@@ -39,7 +39,7 @@ from util import proj_types as tp
 from models.enums import COMPARISON
 
 logger = logging.getLogger("main.condition")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 
 

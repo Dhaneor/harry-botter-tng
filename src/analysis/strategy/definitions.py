@@ -243,6 +243,37 @@ linreg_roc_eth_1d = sg.SignalsDefinition(
     ],
 )
 
+
+linreg_roc = sg.SignalsDefinition(
+    name="ROCP of Linear Regression",
+    conditions=[
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=(
+                "rocp",
+                ("linearreg", "close", {"timeperiod": 10}),
+                {"timeperiod": 1},
+            ),
+            operand_b=(
+                "rocp",
+                ("linearreg", "close", {"timeperiod": 5}),
+                {"timeperiod": 1},
+            ),
+            operand_c=(
+                "rocp",
+                ("linearreg", "close", {"timeperiod": 3}),
+                {"timeperiod": 1},
+            ),
+            operand_d=("value", 0, [-21, 21, 1]),
+            open_long=("a", cn.COMPARISON.IS_ABOVE, "d"),
+            close_long=("b", cn.COMPARISON.IS_BELOW, "d"),
+            open_short=("b", cn.COMPARISON.IS_BELOW, "d"),
+            close_short=("c", cn.COMPARISON.IS_ABOVE, "d"),
+        ),
+    ],
+)
+
+
 linreg = sg.SignalsDefinition(
     name="Linear Regression Slope (long/short)",
     conditions=[
@@ -309,7 +340,7 @@ ema_cross = sg.SignalsDefinition(
 timeperiod = 30
 
 tema_cross = sg.SignalsDefinition(
-    name=f"TEMA cross {timeperiod}/{timeperiod*4}",
+    name="TEMA Cross",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
@@ -501,7 +532,7 @@ s_linreg = sb.StrategyDefinition(
             strategy="Linear Regression",
             symbol="BTCUSDT",
             interval="1d",
-            signals_definition=linreg,
+            signals_definition=linreg_roc,
             weight=1,
         ),
     ]
