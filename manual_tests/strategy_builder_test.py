@@ -27,7 +27,7 @@ from util import get_logger
 
 logger = get_logger("main")
 
-data = MarketData.from_random(length=1000, no_of_symbols=1)
+data = MarketData.from_random(length=2000, no_of_symbols=1)
 
 # -----------------------------------------------------------------------------
 def __get_sl_strategy_definition():
@@ -58,7 +58,7 @@ def __get_single_strategy_definition():
         symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
         interval="1d",
         signals_definition=tema_cross,
-        weight=random(),
+        weight=1,  # random(),
     )
 
 
@@ -155,19 +155,6 @@ def build_valid_composite_strategy(
     print("\n", s, "\n\n")
 
 
-def test_serialize_object(strategy):
-    try:
-        with open("strategy.pkl", "wb") as f:
-            pickle.dump(strategy, f)
-
-        with open("strategy.pkl", "rb") as f:
-            loaded_strategy = pickle.load(f)
-
-        assert loaded_strategy == strategy
-    except Exception as e:
-        logger.exception(e)
-        return False
-
 # ..............................................................................
 def test_get_strategy_definition():
     pprint(__get_single_strategy_definition())
@@ -183,6 +170,8 @@ def test_strategy_run(s):
 
     assert isinstance(res, np.ndarray)
     assert res.ndim == 3
+
+    print(res)
 
 
 # ============================================================================ #
@@ -206,19 +195,16 @@ if __name__ == "__main__":
     test_strategy_run(s)
 
     # ..........................................................................
-    sys.exit()
+    # sys.exit()
 
     logger.setLevel(logging.ERROR)
-    runs = 1_000
+    runs = 100_000
     data = data
     st = time.perf_counter()
 
-    for i in range(runs):
-        test_strategy_run(s, False)
-
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            s.speak(data)
+            s.speak()
 
     (
         Stats(p)
@@ -231,6 +217,14 @@ if __name__ == "__main__":
     # for _ in range(runs):
     #     test_strategy_run(s, False)
 
-    et = time.perf_counter()
-    print(f'length data: {len(data["close"])} periods')
-    print(f"execution time: {((et - st)*1_000_000/runs):.2f} microseconds")
+    et = time.perf_counter() - st
+    ips = runs / et
+    periods = len(data["close"]) * ips
+
+    print(f'data: {len(data["close"]):,} periods')
+    print(f"periods/s: {periods:,.0f}")
+    print(f"\navg exc time: {(et * 1_000_000 / runs):.0f} µs")
+
+    print(f"\n~iter/s (1 core): {ips:>10,.0f}")
+    print(f"~iter/s (8 core): {ips * 5:>10,.0f}")
+    print(f"~iter/m (8 core): {ips * 5 * 60:>10,.0f}")

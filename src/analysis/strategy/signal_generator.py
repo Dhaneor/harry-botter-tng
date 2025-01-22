@@ -699,7 +699,9 @@ class SignalGenerator(SubPlotBuilder, PlottingMixin):
             Otherwise, shape is (n_timestamps, n_assets, n_param_combinations).
         """
 
-        self.market_data = market_data or self.market_data
+        if market_data is not None:
+            self.market_data = market_data
+
         out = self._build_results_array(depth=len(param_combinations or [1]))
 
         if param_combinations is None:

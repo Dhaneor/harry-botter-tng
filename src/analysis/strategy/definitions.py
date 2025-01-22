@@ -321,11 +321,8 @@ linreg_ma_cross = sg.SignalsDefinition(
 )
 
 
-timeperiod = randint(30, 50)
-timeperiod = 8
-
 ema_cross = sg.SignalsDefinition(
-    name=f"EMA cross {timeperiod}/{timeperiod*4}",
+    name="EMA Cross",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
@@ -337,7 +334,6 @@ ema_cross = sg.SignalsDefinition(
     ]
 )
 
-timeperiod = 30
 
 tema_cross = sg.SignalsDefinition(
     name="TEMA Cross",

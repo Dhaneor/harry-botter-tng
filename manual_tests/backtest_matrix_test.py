@@ -19,9 +19,9 @@ from analysis.strategy.definitions import ema_cross
 logger = get_logger('main', level="DEBUG")
 
 
-periods = 1000
-assets = 10
-strategies = 200
+periods = 2000
+assets = 1
+strategies = 1
 
 
 market_data = MarketData.from_random(length=periods, no_of_symbols=assets)

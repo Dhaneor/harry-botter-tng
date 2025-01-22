@@ -43,7 +43,7 @@ import abc
 import logging
 import numpy as np
 from dataclasses import dataclass
-from typing import Any, NamedTuple, Optional, Sequence, Callable
+from typing import Any, NamedTuple, Optional, Sequence
 
 from util import proj_types as tp
 from .strategy import signal_generator as sg
@@ -124,6 +124,11 @@ class IStrategy(abc.ABC):
     
     @market_data.setter
     def market_data(self, market_data: MarketData) -> None:
+        logger.info(
+            "%s %s has been assigned market data",
+            "Sub-Strategy" if self.is_sub_strategy else "Composite Strategy",
+            self.name
+            )
         if not self.sub_strategies:
             self.signal_generator.market_data = market_data
         else:
@@ -170,16 +175,10 @@ class SubStrategy(IStrategy):
         super().__init__(name, weight)
 
     def __repr__(self) -> str:
-
-        try:
-            sg_str = f'{str(self.signal_generator)}'
-        except AttributeError:
-            sg_str = 'None'
-
         return (
             f"{self.name} strategy for {self.symbol} "
             f'in {self.interval} interval ({self.weight=:.2f})'
-            f'\n\t {sg_str}'
+            f'\n\t {str(self.signal_generator)}'
         )
 
     def __str__(self) -> str:
@@ -206,7 +205,7 @@ class SubStrategy(IStrategy):
     # ----------------------------------------------------------------------------------
     def speak(self) -> tp.Data:
         if self.weight == 1.0:
-            return self.signal_generator.execute(compact=True)
+            return self.signal_generator.execute(compact=False)
         else:
             return np.multiply(
                 self.signal_generator.execute(compact=True), 
@@ -260,7 +259,7 @@ class CompositeStrategy(IStrategy):
         tp.Data
             data with added 'signal' key/values
         """
-        return np.sum(sub.get_signals() for sub in self.sub_strategies)
+        return np.sum((sub.speak() for sub in self.sub_strategies))
 
 
     def randomize(self) -> None:
