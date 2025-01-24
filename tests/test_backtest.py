@@ -217,43 +217,43 @@ def test_backtest_init(config, market_data, leverage_array, signals_array):
         # assert bt.stop_order_fn is None
 
 
-# def test_backtest_run(market_data, leverage_array, signals_array, config):
-#     periods = 1_000
-#     assets = 1
-#     strategies = 1_000
+def test_backtest_run(market_data, leverage_array, signals_array, config):
+    periods = 1_000
+    assets = 1
+    strategies = 1_000
 
-#     md = market_data(
-#         number_of_periods=periods, number_of_assets=assets, data_type="fixed"
-#         )
-#     leverage = leverage_array(md)
+    md = market_data(
+        number_of_periods=periods, number_of_assets=assets, data_type="fixed"
+        )
+    leverage = leverage_array(md)
     
-#     signal_gen_def = SignalGeneratorDefinition(
-#         name="TestSignalGenerator",
-#         operands={"sma": ("sma"), "close": "close"},
-#         conditions={
-#             "open_long": [("close", COMPARISON.IS_ABOVE, "sma")],
-#             "open_short": [("close", COMPARISON.IS_BELOW, "sma")],
-#         },
-#     )
-#     signals = signals_array(md, signal_gen_def, strategies)
+    signal_gen_def = SignalGeneratorDefinition(
+        name="TestSignalGenerator",
+        operands={"sma": ("sma"), "close": "close"},
+        conditions={
+            "open_long": [("close", COMPARISON.IS_ABOVE, "sma")],
+            "open_short": [("close", COMPARISON.IS_BELOW, "sma")],
+        },
+    )
+    signals = signals_array(md, signal_gen_def, strategies)
 
-#     logger.info(
-#         "shape of signals array: %s (%s backtests)", signals.shape, assets * strategies
-#         )
+    logger.info(
+        "shape of signals array: %s (%s backtests)", signals.shape, assets * strategies
+        )
 
-#     bt = BackTestCore(md.mds, leverage, signals, config)
+    bt = BackTestCore(md.mds, leverage, signals, config)
     
-#     try:
-#         result = bt.run()
-#     except Exception as e:
-#         print(f"Error in BackTestCore run: {str(e)}")
-#         raise
+    try:
+        result = bt.run()
+    except Exception as e:
+        print(f"Error in BackTestCore run: {str(e)}")
+        raise
 
-#     assert isinstance(result, np.ndarray), "Positions array creation failed."
-#     assert result.shape == signals.shape, "Portfolios array shape mismatch."
+    assert isinstance(result, np.ndarray), "Positions array creation failed."
+    assert result.shape == signals.shape, "Portfolios array shape mismatch."
 
 
-# def test_run_backtest_fn(market_data, leverage_array, signals_array, config):
+def test_run_backtest_fn(market_data, leverage_array, signals_array, config):
     periods = 1_000
     assets = 10
     strategies = 10_000

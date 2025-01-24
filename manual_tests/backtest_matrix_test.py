@@ -19,7 +19,7 @@ from analysis.strategy.definitions import ema_cross, linreg, rsi
 logger = get_logger('main', level="DEBUG")
 
 
-periods = 1000
+periods = 1_000
 assets = 1
 strategies = 1
 
@@ -29,10 +29,10 @@ market_data = MarketData.from_random(length=periods, no_of_symbols=assets)
 lc = LeverageCalculator(market_data)
 leverage = lc.leverage()
 
-signal_generator = signal_generator_factory(linreg)
+signal_generator = signal_generator_factory(rsi)
 signal_generator.market_data = market_data
 
-base_signals = signal_generator.execute()
+base_signals = signal_generator.execute(compact=True)
 # Extend the signals to the specified number of strategies
 signals = np.repeat(base_signals, strategies, axis=2)
 
@@ -51,8 +51,8 @@ if __name__ == "__main__":
     st = time.time()
     with Profile(timeunit=0.000_001) as p:
         for i in range(runs):
-            signal_generator.randomize()
-            base_signals = signal_generator.execute(compact=True)
+            # signal_generator.randomize()
+            # base_signals = signal_generator.execute(compact=True)
             # Extend the signals to the specified number of strategies
             # bt.signals = np.repeat(base_signals, strategies, axis=2)
             bt.run()

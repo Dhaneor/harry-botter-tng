@@ -8,12 +8,12 @@ Created on Jan 13 02:00:23 20235
 import logging
 import numpy as np
 
-from numba import float64, boolean, types, from_dtype
+from numba import int16, float64, boolean, types, from_dtype
 from numba.experimental import jitclass
 from typing import Tuple
 
-from analysis import MarketDataStore, combine_signals
-from analysis.dtypes import SIGNALS_DTYPE, POSITION_DTYPE, PORTFOLIO_DTYPE
+from analysis import MarketDataStore
+from analysis.dtypes import POSITION_DTYPE, PORTFOLIO_DTYPE
 
 logger = logging.getLogger("main.backtest")
 
@@ -22,6 +22,7 @@ WARMUP_PERIODS = 200  # not included for portfolio calculations, needed for sign
 # ================================= Config class definition ============================
 config_spec = [
     ("initial_capital", float64),
+    ("rebalance_freq", int16),
     ("rebalance_position", boolean),
     ("increase_allowed", boolean),
     ("decrease_allowed", boolean),
@@ -35,7 +36,8 @@ config_spec = [
 class Config:
     def __init__(
         self, 
-        initial_capital, 
+        initial_capital,
+        rebalance_freq = 0,  # in trading periods
         rebalance_position = True, 
         increase_allowed = True, 
         decrease_allowed = True,
@@ -44,6 +46,7 @@ class Config:
         slippage_rate = 0.001, 
     ):
         self.initial_capital = initial_capital
+        self.rebalance_freq = rebalance_freq
         self.rebalance_position = rebalance_position
         self.increase_allowed = increase_allowed
         self.decrease_allowed = decrease_allowed
@@ -114,7 +117,6 @@ class BackTestCore:
         # process the signals for each trading interval (period)
         for p in range(WARMUP_PERIODS, periods):
             self.positions[p] = self.positions[p - 1]  # copy all from previous period
-            
             # ... strategy by strategy
             for s in range(strategies):
                 # market by market
@@ -141,27 +143,28 @@ class BackTestCore:
         self.portfolio[p, s]['total_value'] = total_value
 
     def _process_single(self, p: int, m: int, s: int):
-
         record = self.positions[p, m, s]
         position = record["position"]    
         
         signal = self.signals[p-1, m, s]
-        open_long = signal["open_long"] == 1
-        close_long = signal["close_long"] == 1
-        open_short = signal["open_short"] == 1
-        close_short = signal["close_short"] == 1
+        prev_signal = self.signals[p-2, m, s] if p > 1 else 0
+        
+        open_long = signal > 0 and prev_signal <= 0
+        close_long = signal <= 0 and prev_signal > 0
+        open_short = signal < 0 and prev_signal >= 0
+        close_short = signal >= 0 and prev_signal < 0
 
         if position == 1:
             if close_long or open_short:
                 self._close_position(p, m, s)
             else:
-                self._update_long_position(p, m, s)
+                self._update_position(p, m, s)
 
         if position == -1:
             if close_short or open_long:
                 self._close_position(p, m, s)
             else:
-                self._update_short_position(p, m, s)
+                self._update_position(p, m, s)
 
         if position == 0:
             if open_long:
@@ -173,7 +176,6 @@ class BackTestCore:
         
         self.positions[p, m, s]["equity"] = \
             self.market_data.close[p, m] * self.positions[p, m, s]["qty"]
-        # self.portfolio[p, s] = self.positions[p, m, s]["equity"]
 
     # ............................ PROCESSINNG POSITIONS ...............................
     def _open_position(self, p: int, m: int, s: int, type: int):
@@ -187,33 +189,26 @@ class BackTestCore:
         self.positions[p, m, s]["qty"] = base_qty
         self.positions[p, m, s]["entry_price"] = price
         self.positions[p, m, s]["duration"] = 1
-        self.positions[p, m, s]["change_qty"] = base_qty
-        self.positions[p, m, s]["change_price"] = price        
+
+        if base_qty > 0:
+            self.positions[p, m, s]["buy_qty"] = base_qty
+            self.positions[p, m, s]["buy_price"] = price
+        else:
+            self.positions[p, m, s]["sell_qty"] = abs(base_qty)
+            self.positions[p, m, s]["sell_price"] = price
+
         self.positions[p, m, s]["fee"] = fee
         self.positions[p, m, s]["slippage"] = slippage
 
         return
-    
-    def _update_long_position(self, p, m, s):
-        price = self.market_data.open_[p, m]
-        change_exposure, change_pct = self._calculate_change_exposure(p, m, s, price)
-
-        if change_pct < self.config.minimum_change \
-            or (change_exposure > 0 and not self.config.increase_allowed) \
-            or (change_exposure < 0 and self.config.decrease_allowed):
-            return
-        
-        fee , slippage = self._calculate_fee_and_slippage(change_exposure, price)
-        change_qty = (change_exposure - fee - slippage) / price
-
-        self.positions[p, m, s]["change_qty"] += change_qty
-        self.positions[p, m, s]["change_price"] = price
-        self.positions[p, m, s]["fee"] = fee
-        self.positions[p, m, s]["slippage"] = slippage
 
     def _close_position(self, p, m, s):
         price = self.market_data.close[p, m]
         portfolio = self.positions[p, m, s]
+        position = self.positions[p, m, s]["position"]
+
+        if position == 0:
+            return
         
         change_quote = portfolio["qty"] * price
         fee, slippage = self._calculate_fee_and_slippage(change_quote, price)
@@ -221,18 +216,27 @@ class BackTestCore:
         self.portfolio[p, s]["quote_balance"] += change_quote - fee - slippage
         
         # Update portfolio
-        self.positions[p, m, s]["qty"] = 0
-        self.positions[p, m, s]["position"] = 0
-        self.positions[p, m, s]["duration"] = 0
-        self.positions[p, m, s]["change_qty"] -= portfolio["qty"]
-        self.positions[p, m, s]["change_price"] = price
+        if position == 1:
+            self.positions[p, m, s]["sell_qty"] -= portfolio["qty"]
+            self.positions[p, m, s]["sell_price"] = price
+        elif position == -1:
+            self.positions[p, m, s]["buy_qty"] -= portfolio["qty"]
+            self.positions[p, m, s]["buy_price"] = price
+
         self.positions[p, m, s]["fee"] += fee
         self.positions[p, m, s]["slippage"] += slippage
         self.positions[p, m, s]["equity"] = 0
 
-    def _update_short_position(self, p, m, s):
+        self.positions[p, m, s]["qty"] = 0
+        self.positions[p, m, s]["position"] = 0
+        self.positions[p, m, s]["duration"] = 0
+
+    def _update_position(self, p, m, s):
+        position_type = self.positions[p, m, s]["position"]
         price = self.market_data.open_[p, m]
         change_exposure, change_pct = self._calculate_change_exposure(p, m, s, price)
+
+        self.positions[p, m, s]["duration"] += 1
 
         if change_pct < self.config.minimum_change \
             or (change_exposure > 0 and not self.config.increase_allowed) \
@@ -242,19 +246,30 @@ class BackTestCore:
         fee , slippage = self._calculate_fee_and_slippage(change_exposure, price)
         change_qty = (change_exposure - fee - slippage) / price
 
-        self.positions[p, m, s]["change_qty"] += change_qty
-        self.positions[p, m, s]["change_price"] = price
+        if position_type == 1:
+            self.positions[p, m, s]["buy_qty"] += change_qty
+            self.positions[p, m, s]["buy_price"] = price
+        else:
+            self.positions[p, m, s]["sell_qty"] += change_qty
+            self.positions[p, m, s]["sell_price"] = price
+
         self.positions[p, m, s]["fee"] = fee
         self.positions[p, m, s]["slippage"] = slippage
     
     # ..................................................................................
-    def _calculate_target_exposure(self, p: int, m: int, s: int) -> float:
-        return self.portfolio[p, s]["total_value"] \
-            * self.positions[p, m, s]["asset_weight"] \
-            * self.positions[p, m, s]["strategy_weight"]\
-            * self.leverage[p, m]
-
     def _calculate_change_exposure(self, p, m, s, price) -> Tuple[float, float]:
+        """Calculate the change in exposure for a given position/asset.
+        
+        Parameters:
+        -----------
+        p (int): period index
+        m (int): market index
+        s (int): strategy index
+
+        Returns:
+        --------
+        tuple (float, float): change in exposure (quote asset) and percentage change
+        """
         current_exposure = self.positions[p - 1, m, s]["qty"] * price
         target_exposure = self._calculate_target_exposure(p, m, s)
         
@@ -262,7 +277,32 @@ class BackTestCore:
         change_pct = abs(change / current_exposure) if current_exposure > 0 else 1
         
         return change, change_pct
-    
+
+    def _calculate_target_exposure(self, p: int, m: int, s: int) -> float:
+        """Calculate the target exposure for a given position/asset.
+        
+        The target exposure is determined by several factors:
+        • the value of the whole (sub-)portfolio
+        • the signal (strength) for the asset/strategy
+        • the asset weight in the portfolio
+        • the strategy weight
+
+        Parameters:
+        -----------
+        p (int): period index
+        m (int): market index
+        s (int): strategy index
+
+        Returns:
+        --------
+        float: target (quote asset) exposure for the given position/asset
+        """
+        return self.portfolio[p, s]["total_value"] \
+            * self.signals[p-1, m, s] \
+            * self.positions[p, m, s]["asset_weight"] \
+            * self.positions[p, m, s]["strategy_weight"]\
+            * self.leverage[p, m]
+
     def _calculate_fee_and_slippage(self, change_quote, price):
         # calculate fee & slippage
         fee = self.config.fee_rate * change_quote
