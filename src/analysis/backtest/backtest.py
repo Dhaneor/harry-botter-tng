@@ -8,13 +8,11 @@ Created on Jan 13 02:00:23 20235
 import logging
 import numpy as np
 
-from numba import float64, boolean
+from numba import float64, boolean, types, from_dtype
 from numba.experimental import jitclass
-from numba import types
-from numba import from_dtype
 from typing import Tuple
 
-from analysis import MarketDataStore
+from analysis import MarketDataStore, combine_signals
 from analysis.dtypes import SIGNALS_DTYPE, POSITION_DTYPE, PORTFOLIO_DTYPE
 
 logger = logging.getLogger("main.backtest")
@@ -66,7 +64,7 @@ LeverageArray2D = types.Array(types.float32, 2, "C")
 #       • convert the dtype into a Numba Record type (with a special 
 #         helper function)
 #       • define the array with the Record type and the dimensions
-SignalRecord = from_dtype(SIGNALS_DTYPE)
+SignalRecord = from_dtype(np.float32)
 SignalArray3D = types.Array(SignalRecord, 3, "C")
 # ... the PositionRecord specification (same procedure as for the signals)
 PositionRecord = from_dtype(POSITION_DTYPE)
@@ -280,7 +278,7 @@ def run_backtest(
     config: Config
 ) -> np.ndarray:
 
-    periods, assets, strategies = signals.shape    
+    _, assets, strategies = signals.shape    
     logger.info(
         "shape of signals array: %s (%s backtests)", signals.shape, assets * strategies
     )

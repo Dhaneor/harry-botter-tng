@@ -22,14 +22,12 @@ from analysis.strategy.definitions import (  # noqa: F401
     linreg_roc_btc_1d, linreg_roc_eth_1d, test_er, linreg, aroonosc,
     linreg_ma_cross, test_er_2, linreg_roc
 )    
-from helpers_ import get_ohlcv  # noqa: F401
 from util import get_logger
 
 logger = get_logger('main', level='DEBUG')
 
-# set interval and length of test data
-interval = "2h"
-length = 500
+# set length of test data
+length = 1000
 
 sig_def = breakout
 data = MarketData.from_random(length=length, no_of_symbols=1)
@@ -214,28 +212,29 @@ if __name__ == "__main__":
     # test_get_all_parameters()
     # test_get_all_operands()
 
-    sig_gen = test_factory(linreg_roc, False)
+    sig_gen = test_factory(ema_cross, False)
     sig_gen.market_data = data
     # sig_gen.execute()
     # test_subplots(sig_gen)
-    test_plot(sig_gen)
+    # test_plot(sig_gen)
     # test_returns(sig_gen, data, True)
 
-    sys.exit()
+    # sys.exit()
 
     logger.setLevel(logging.ERROR)
 
     runs = 1_000
-    sig_gen = test_factory(breakout)
+    compact = False
+    sig_gen = test_factory(linreg_roc)
     sig_gen.market_data = data
-    sig_gen.execute()
+    sig_gen.execute(compact=compact)
 
     st = time.time()
     with Profile(timeunit=0.000_001) as p:
         for i in range(runs):
-            sig_gen.execute()
-            if i % 1 == 0:
-                sig_gen.randomize() 
+            sig_gen.execute(compact=compact)
+            # if i % 1 == 0:
+            #     sig_gen.randomize() 
 
     (
         Stats(p)

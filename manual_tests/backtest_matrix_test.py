@@ -14,12 +14,12 @@ from pstats import SortKey, Stats
 from analysis.backtest.backtest import BackTestCore, Config
 from analysis import MarketData, LeverageCalculator, signal_generator_factory
 from util.logger_setup import get_logger
-from analysis.strategy.definitions import ema_cross
+from analysis.strategy.definitions import ema_cross, linreg, rsi
 
 logger = get_logger('main', level="DEBUG")
 
 
-periods = 2000
+periods = 1000
 assets = 1
 strategies = 1
 
@@ -29,7 +29,7 @@ market_data = MarketData.from_random(length=periods, no_of_symbols=assets)
 lc = LeverageCalculator(market_data)
 leverage = lc.leverage()
 
-signal_generator = signal_generator_factory(ema_cross)
+signal_generator = signal_generator_factory(linreg)
 signal_generator.market_data = market_data
 
 base_signals = signal_generator.execute()
@@ -41,6 +41,8 @@ config = Config(10_000)
 if __name__ == "__main__":
     bt = BackTestCore(market_data.mds, leverage, signals, config)
     bt.run()
+    signal_generator.randomize()
+    signal_generator.execute(compact=True)
 
     logger.setLevel("ERROR")
 
@@ -49,9 +51,10 @@ if __name__ == "__main__":
     st = time.time()
     with Profile(timeunit=0.000_001) as p:
         for i in range(runs):
-            # if i % 100 == 0:
-            #     signal_generator.randomize()
-            # bt.signals = signal_generator.execute()
+            signal_generator.randomize()
+            base_signals = signal_generator.execute(compact=True)
+            # Extend the signals to the specified number of strategies
+            # bt.signals = np.repeat(base_signals, strategies, axis=2)
             bt.run()
 
     (
@@ -69,7 +72,7 @@ if __name__ == "__main__":
 
     print(f'data: {periods} periods x {assets} assets x {strategies} strategies')
     print(f"periods/s: {periods / et:,.0f}")
-    print(f"\navg exc time: {(et * 1_000_000 / runs / strategies):.0f} µs")
+    print(f"\navg exc time: {(et * 1_000_000 / runs):,.0f} µs")
 
     print(f"\n~iter/s (1 core): {ips:>10,.0f}")
     print(f"~iter/s (8 core): {ips * 5:>10,.0f}")
