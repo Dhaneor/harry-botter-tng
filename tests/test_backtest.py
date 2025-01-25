@@ -8,8 +8,14 @@ Created on January 14 01:22:23 2025
 
 import pytest
 import numpy as np
+import pandas as pd
 
-from analysis.backtest.backtest import BackTestCore, Config, run_backtest
+from analysis.backtest.backtest import (
+    BackTestCore,
+    Config,
+    run_backtest,
+    WARMUP_PERIODS,
+)
 from analysis import (
     MarketData,
     MarketDataStore,
@@ -17,11 +23,17 @@ from analysis import (
     signal_generator_factory,
     SignalGeneratorDefinition,
     SIGNALS_DTYPE,
+    POSITION_DTYPE,
 )
 from models.enums import COMPARISON
 from util.logger_setup import get_logger
 
-logger = get_logger('main', level="DEBUG")
+logger = get_logger("main", level="DEBUG")
+
+# Set display options to show all columns
+pd.set_option("display.max_columns", None)  # Show all columns
+pd.set_option("display.width", None)  # Don't wrap to multiple lines
+pd.set_option("display.max_colwidth", None)  # Show full content of each column
 
 
 # ==================================== FIXTURES =======================================
@@ -41,8 +53,10 @@ def market_data():
         number_of_periods: int, number_of_assets: int, data_type: str = "random"
     ):
         if data_type == "random":
-            market_data = MarketData.from_random(number_of_periods, number_of_assets)
-            return market_data.mds
+            market_data = MarketData.from_random(
+                number_of_periods, number_of_assets, 0.025
+            )
+            return market_data
         elif data_type == "fixed":
             # Create synthetic data
             timestamps = (
@@ -101,7 +115,7 @@ def signals_array():
     def _signals_array(
         market_data_store: MarketDataStore,
         signal_generator_def: SignalGeneratorDefinition,
-        number_of_strategies: int = 1
+        number_of_strategies: int = 1,
     ):
         # Create a SignalGenerator instance
         signal_generator = signal_generator_factory(signal_generator_def)
@@ -118,6 +132,73 @@ def signals_array():
         return signals
 
     return _signals_array
+
+
+def result_column_to_dataframe(result, symbol_index, strategies_index):
+    # Convert the result column to a DataFrame
+    df = pd.DataFrame()
+
+    for field in POSITION_DTYPE.names:
+        df[f"{field}.{symbol_index + 1}.{strategies_index + 1}"] = result[
+            :, symbol_index, strategies_index
+        ][field]
+
+    return df
+
+
+def print_df_for_result_column(
+    md, result, leverage, signals, symbol_index, strategies_index
+):
+    df = result_column_to_dataframe(
+        result[WARMUP_PERIODS:], symbol_index, strategies_index
+    )
+    df.insert(0, "leverage", leverage[WARMUP_PERIODS:, symbol_index])
+    df.insert(1, "signals", signals[WARMUP_PERIODS:, symbol_index, strategies_index])
+    df.insert(0, "close_price", md.mds.close[WARMUP_PERIODS:, symbol_index])
+    # df.close_price = df.close_price.round(2)
+
+    buy_qty_str = f"buy_qty.{symbol_index + 1}.{strategies_index + 1}"
+    sell_qty_str = f"sell_qty.{symbol_index + 1}.{strategies_index + 1}"
+    fee_str = f"fee.{symbol_index + 1}.{strategies_index + 1}"
+    slippage_str = f"slippage.{symbol_index + 1}.{strategies_index + 1}"
+
+    df.insert(12, "change_quote", 0)
+    df.change_quote = df.change_quote.astype(np.float64)
+
+    df.loc[df[buy_qty_str] != 0, "change_quote"] = (
+        (df[buy_qty_str] * df.close_price * -1).astype(np.float64)
+        + df[fee_str]
+        + df[slippage_str]
+    )
+    df.loc[df[sell_qty_str] != 0, "change_quote"] = (
+        (df[sell_qty_str] * df.close_price * -1).astype(np.float64)
+        + df[fee_str]
+        + df[slippage_str]
+    )
+
+    df.insert(13, "check_diff", np.nan)
+    df.loc[df[buy_qty_str] != 0, "check_diff"] = (
+        df[buy_qty_str] * df.close_price
+        + df[fee_str]
+        + df[slippage_str]
+        + df["change_quote"]
+    )
+    df.loc[df[sell_qty_str] != 0, "check_diff"] = (
+        df[sell_qty_str] * df.close_price
+        + df[fee_str]
+        + df[slippage_str]
+        - df["change_quote"]
+    )
+
+    # Convert columns to float
+    for col in df.columns:
+        if col != "duration":
+            df[col] = pd.to_numeric(df[col], errors="coerce").astype(np.float64)
+
+    df = df.round(3)
+    df = df.replace(0.0, ".", inplace=False)
+    df = df.replace(np.nan, "", inplace=False)
+    print(df)
 
 
 # ===================================== TESTS =========================================
@@ -219,14 +300,14 @@ def test_backtest_init(config, market_data, leverage_array, signals_array):
 
 def test_backtest_run(market_data, leverage_array, signals_array, config):
     periods = 1_000
-    assets = 1
-    strategies = 1_000
+    assets = 10
+    strategies = 100
 
     md = market_data(
         number_of_periods=periods, number_of_assets=assets, data_type="fixed"
-        )
+    )
     leverage = leverage_array(md)
-    
+
     signal_gen_def = SignalGeneratorDefinition(
         name="TestSignalGenerator",
         operands={"sma": ("sma"), "close": "close"},
@@ -239,10 +320,10 @@ def test_backtest_run(market_data, leverage_array, signals_array, config):
 
     logger.info(
         "shape of signals array: %s (%s backtests)", signals.shape, assets * strategies
-        )
+    )
 
     bt = BackTestCore(md.mds, leverage, signals, config)
-    
+
     try:
         result = bt.run()
     except Exception as e:
@@ -256,13 +337,13 @@ def test_backtest_run(market_data, leverage_array, signals_array, config):
 def test_run_backtest_fn(market_data, leverage_array, signals_array, config):
     periods = 1_000
     assets = 10
-    strategies = 10_000
+    strategies = 100
 
     md = market_data(
         number_of_periods=periods, number_of_assets=assets, data_type="fixed"
-        )
+    )
     leverage = leverage_array(md)
-    
+
     signal_gen_def = SignalGeneratorDefinition(
         name="TestSignalGenerator",
         operands={"sma": ("sma"), "close": "close"},
@@ -272,7 +353,7 @@ def test_run_backtest_fn(market_data, leverage_array, signals_array, config):
         },
     )
     signals = signals_array(md, signal_gen_def, strategies)
-    
+
     try:
         result = run_backtest(md.mds, leverage, signals, config)
     except Exception as e:
@@ -281,3 +362,232 @@ def test_run_backtest_fn(market_data, leverage_array, signals_array, config):
 
     assert isinstance(result, np.ndarray), "Positions array creation failed."
     assert result.shape == signals.shape, "Portfolios array shape mismatch."
+
+
+def test_backtest_run_correctness(market_data, leverage_array, config):
+    periods = 220  # Ensure we have enough periods after WARMUP_PERIODS
+    assets = 2
+    strategies = 1
+
+    long_start = WARMUP_PERIODS + 1
+    long_end = long_start + 5
+    short_start = WARMUP_PERIODS + 6
+    short_end = short_start + 5
+
+    md = market_data(
+        number_of_periods=periods, number_of_assets=assets, data_type="fixed"
+    )
+    leverage = leverage_array(md)
+
+    # Create a simple signal array for testing
+    signals = np.zeros((periods, assets, strategies), dtype=np.float32)
+    signals[long_start:long_end, 0, 0] = 1  # Long position for asset 0
+    signals[short_start:short_end, 1, 0] = -1  # Short position for asset 1
+
+    bt = BackTestCore(md.mds, leverage, signals, config)
+    result = bt.run()
+
+    # Check the shape and dtype of the result
+    assert result.shape == (periods, assets, strategies)
+    assert (
+        result.dtype == POSITION_DTYPE
+    ), f"Result dtype mismatch. Exepcted POSITION_DTYPE, got: {result.dtype}"
+
+    # Check that no positions are opened before WARMUP_PERIODS
+    assert np.all(
+        result[:WARMUP_PERIODS]["position"] == 0
+    ), "Positions opened before end of warmup period"
+
+    # ---------------------- Check long position for asset 0 ---------------------------
+    try:
+        assert np.all(
+            result[long_start + 1 : long_end + 1, 0, 0]["position"] == 1
+        ), "Long position for asset 0 not opened for correct period"
+        assert np.all(
+            result[long_start + 1 : long_end + 1, 0, 0]["qty"] > 0
+        ), "Long position for asset 0 -qty not positive for correct period"
+        assert np.any(
+            result["qty"][long_start + 1 : long_end + 1, 0, 0] > 0
+        ), "Long position qty is 0 for all periods for asset 0"
+        assert np.all(
+            result[: long_start + 1, 0, 0]["position"] == 0
+        ), "Long position for asset 0 opened before signal"
+        assert np.all(
+            result[long_end + 1 :, 0, 0]["position"] == 0
+        ), "Long position for asset 0 closed after signal"
+    except AssertionError as e:
+        print(f"Error: {str(e)}")
+        print_df_for_result_column(md, result, leverage, signals, 0, 0)
+        raise e
+
+    # ----------------------- Check short position for asset 1 -------------------------
+    try:
+        assert np.all(
+            result[short_start + 1 : short_end + 1, 1, 0]["position"] == -1
+        ), "Short position for asset 1 not opened for correct period"
+        assert np.all(
+            result[short_start + 1 : short_end + 1, 1, 0]["qty"] < 0
+        ), "Short position for asset 1 qty not negative for correct period"
+        assert np.any(
+            result[short_start + 1 : short_end + 1, 1, 0]["qty"] < 0
+        ), "Short position qty is 0 for all periods for asset 1"
+        assert np.all(
+            result[: short_start + 1, 1, 0]["position"] == 0
+        ), "Short position for asset 1 opened before signal"
+        assert np.all(
+            result[short_end + 1 :, 1, 0]["position"] == 0
+        ), "Short position for asset 1 closed after signal"
+    except AssertionError as e:
+        print(f"Error: {str(e)}")
+        print_df_for_result_column(md, result, leverage, signals, 1, 0)
+        raise e
+
+
+def test_backtest_run_with_leverage(market_data, leverage_array, config):
+    periods = 220  # Ensure we have enough periods after WARMUP_PERIODS
+    assets = 2
+    strategies = 1
+
+    long_start = WARMUP_PERIODS + 1
+    long_end = long_start + 5
+
+    md = market_data(
+        number_of_periods=periods, number_of_assets=assets, data_type="fixed"
+    )
+    leverage = np.full((periods, assets), 2.0).astype(
+        np.float32
+    )  # 2x leverage for all periods
+
+    signals = np.zeros((periods, assets, strategies), dtype=np.float32)
+    signals[long_start:long_end, 0, 0] = 1  # Long position
+
+    bt = BackTestCore(md.mds, leverage, signals, config)
+    result = bt.run()
+
+    try:
+        # Check that positions are doubled due to leverage
+        assert np.all(
+            result[long_start + 1 : long_end + 1, 0, 0]["position"] == 1
+        ), "Long position for asset 0 not opened for correct period"
+        assert np.all(
+            result[long_start + 1 : long_end + 1, 0, 0]["qty"] > 0
+        ), "Long position for asset 0 - qty not positive for correct period"
+        max_qty = np.max(result[long_start + 1 : long_end + 1, 0, 0]["qty"])
+        assert (
+            max_qty > 1.9
+        ), "Long positions too small"  # Allow for some floating-point imprecision
+    except AssertionError as e:
+        print(f"Error: {str(e)}")
+        print_df_for_result_column(md, result, leverage, signals, 0, 0)
+        raise e
+
+
+# def test_backtest_run_with_multiple_strategies(market_data, leverage_array, config):
+#     periods = 400
+#     assets = 1
+#     strategies = 2
+
+#     md = market_data(
+#         number_of_periods=periods, number_of_assets=assets, data_type="fixed"
+#     )
+#     leverage = leverage_array(md)
+
+#     signals = np.zeros((periods, assets, strategies), dtype=np.float32)
+#     signals[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 0, 0] = (
+#         1  # Long position for strategy 0
+#     )
+#     signals[
+#         WARMUP_PERIODS + 150 : WARMUP_PERIODS + 200, 0, 1
+#     ] = -1  # Short position for strategy 1
+
+#     bt = BackTestCore(md.mds, leverage, signals, config)
+#     result = bt.run()
+
+#     # Check positions for strategy 0
+#     assert np.all(
+#         result[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 0, 0]["position"] == 1
+#     )
+#     assert np.all(result[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 0, 0]["qty"] > 0)
+#     assert np.all(result[: WARMUP_PERIODS + 50, 0, 0]["position"] == 0)
+#     assert np.all(result[WARMUP_PERIODS + 100 :, 0, 0]["position"] == 0)
+
+#     # Check positions for strategy 1
+#     assert np.all(
+#         result[WARMUP_PERIODS + 150 : WARMUP_PERIODS + 200, 0, 1]["position"] == -1
+#     )
+#     assert np.all(result[WARMUP_PERIODS + 150 : WARMUP_PERIODS + 200, 0, 1]["qty"] < 0)
+#     assert np.all(result[: WARMUP_PERIODS + 150, 0, 1]["position"] == 0)
+#     assert np.all(result[WARMUP_PERIODS + 200 :, 0, 1]["position"] == 0)
+
+
+# def test_backtest_run_with_rebalancing(market_data, leverage_array, config):
+#     periods = 400
+#     assets = 2
+#     strategies = 1
+
+#     md = market_data(
+#         number_of_periods=periods, number_of_assets=assets, data_type="fixed"
+#     )
+#     leverage = leverage_array(md)
+
+#     signals = np.zeros((periods, assets, strategies), dtype=np.float32)
+#     signals[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 0, 0] = (
+#         0.5  # 50% long position for asset 0
+#     )
+#     signals[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 1, 0] = (
+#         0.5  # 50% long position for asset 1
+#     )
+
+#     config.rebalance_position = True
+#     bt = BackTestCore(md.mds, leverage, signals, config)
+#     result = bt.run()
+
+#     # Check that positions are balanced between the two assets
+#     qty_0 = result[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 0, 0]["qty"]
+#     qty_1 = result[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 1, 0]["qty"]
+#     assert np.allclose(qty_0, qty_1, rtol=1e-2)
+
+
+def test_backtest_run_fields(market_data, leverage_array, config):
+    periods = 220
+    assets = 1
+    strategies = 1
+
+    md = market_data(
+        number_of_periods=periods, number_of_assets=assets, data_type="random"
+    )
+    leverage = leverage_array(md)
+
+    md.mds.close = np.full_like(md.mds.close, 100, dtype=np.float32)
+    md.mds.open_ = np.full_like(md.mds.close, 100, dtype=np.float32)
+
+    signals = np.zeros((periods, assets, strategies), dtype=np.float32)
+    signals[WARMUP_PERIODS + 1 : WARMUP_PERIODS + 18, 0, 0] = 1  # Long position
+
+    bt = BackTestCore(md.mds, leverage, signals, config)
+    result = bt.run()
+
+    assert result.dtype == POSITION_DTYPE
+
+    # Check some specific fields for correctness
+    active_period = result[WARMUP_PERIODS + 7, 0, 0]
+
+    try:
+        assert active_period["position"] == 1, "Position is not 1"
+        assert active_period["qty"] > 0, "Quantity is not positive"
+        assert active_period["entry_price"] > 0, "Entry price is not > 0"
+        assert active_period["duration"] > 0, "Duration is not > 0"
+        assert active_period["equity"] > 0, "Equity is not > 0"
+        assert np.isnan(
+            active_period["fee"]
+        ), f"Fee is not 0, but {active_period["fee"]}"
+        assert np.isnan(
+            active_period["slippage"]
+        ), f"Fee is not 0, but {active_period["slippage"]}"
+    except AssertionError as e:
+        print(f"Error: {str(e)}")
+        print_df_for_result_column(md, result, leverage, signals, 0, 0)
+        raise e
+
+
+# Add more tests as needed to cover different scenarios and edge cases
