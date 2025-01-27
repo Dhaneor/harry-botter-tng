@@ -190,7 +190,10 @@ class Strategy(IStrategy):
             )
 
     def __setattr__(self, attr, value) -> None:
-        if attr in ('name', 'weight', 'signal_generator', '_market_data', 'sub_strategies', 'definition', 'is_sub_strategy'):
+        if attr in (
+            'name', 'weight', 'signal_generator', '_market_data', 
+            'sub_strategies', 'definition', 'is_sub_strategy'
+        ):
             super().__setattr__(attr, value)
         elif self.signal_generator is not None:
             setattr(self.signal_generator, attr, value)
@@ -206,19 +209,13 @@ class Strategy(IStrategy):
         
         Returns:
         --------
-        np.ndarray
-            A 3D array of signals for the current market data with shape 
-            (n_timestamps, n_assets, 1). If multiple parameter combinations 
-            are used, the signals are added for each period/asset.
+        SignalStore
+            A SignalStore object containing the calculated signals. If multiple
+            parameter combinations are used, the signals will be summed up,
+            but not normalized.
         """
-        raw_signals = self.signal_generator.execute(compact=True)
-
-        if raw_signals.shape[2] > 1:
-            # Sum along axis=2 and keep dimensions
-            combined_signals = np.sum(raw_signals, axis=2, keepdims=True)
-            return SignalStore(combined_signals)
-        
-        return raw_signals
+        signals = self.signal_generator.execute(compact=True)
+        return SignalStore(signals).summed(normalized=False)
 
     def randomize(self) -> None:
         """Randomizes the parameters of the strategy."""
@@ -251,30 +248,29 @@ class CompositeStrategy(IStrategy):
     def __str__(self) -> str:
         return self.__repr__()
 
-    def speak(self) -> tp.Data:
-        """Calculates signals and adds them to the data dictionary.
-
-        Use this method to define the actual behaviour in the sub-classes!
-
-        Parameters
-        ----------
-        data : tp.Data
-            OHLCV data dictionary
+    def speak(self) -> SignalStore:
+        """Collects and normalizes signals from all sub-strategies.
 
         Returns
         -------
-        tp.Data
+        SignalStore
             data with added 'signal' key/values
         """
-        return np.sum((sub.speak() for sub in self.sub_strategies))
 
+        # SignalStore instances can be added, so we can just use the 
+        # sum() function. The normalize() function is applied to the 
+        # aggregated signals.
+        return sum((sub.speak() for sub in self.sub_strategies)).normalized()
 
     def randomize(self) -> None:
         """Randomize the parameters of the strategies.
         """
-        for strategy, _ in self.sub_strategies.values():
+        for strategy in self.sub_strategies:
             strategy.randomize()
 
+    def optimize(self) -> None:
+        for strategy in self.sub_strategies:
+            strategy.optimize()
 
 # ======================================================================================
 def build_sub_strategy(sdef: StrategyDefinition) -> IStrategy:
