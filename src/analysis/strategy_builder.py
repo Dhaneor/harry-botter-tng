@@ -8,7 +8,7 @@ functions:
         main entry point for the module, should be the only function
         that a user/client needs
 
-    build_strategy_single(sdef: StrategyDefinition) -> SubStrategy:
+    build_strategy_single(sdef: StrategyDefinition) -> Strategy:
         Builds a single strategy.
 
         This is a helper function for build_strategy(). Because
@@ -21,15 +21,6 @@ functions:
 
 
 classes:
-    COMPARISON
-        enum representing trigger conditions.
-
-    ActionDefinition
-        a complete set of ConditionDefinition objects for defining
-        entry/exit signals for long and/or short trades. These are
-        encapsulated here, so later on we can just call its
-        execute() method whenever new data is available.
-
     StrategyDefinition
         formal description of a strategy,
         with an ActionDefinition and other parameters
@@ -49,6 +40,7 @@ from util import proj_types as tp
 from .strategy import signal_generator as sg
 from .strategy import exit_order_strategies as es
 from analysis.models.market_data import MarketData
+from analysis.models.signals import SignalStore
 
 logger = logging.getLogger("main.strategy_builder")
 
@@ -103,9 +95,8 @@ class StrategyDefinition:
 class IStrategy(abc.ABC):
     """Interface for all strategy classes."""
 
-    def __init__(self, name: str, weight: float) -> None:
+    def __init__(self, name: str) -> None:
         self.name: str = name
-        self.weight: float = weight
 
         self._market_data: MarketData = None
         self.sub_strategies: Sequence[IStrategy] = []
@@ -137,6 +128,10 @@ class IStrategy(abc.ABC):
 
     # ----------------------------------------------------------------------------------
     @abc.abstractmethod
+    def run(self) -> None:
+        ...
+    
+    @abc.abstractmethod
     def speak(self, data: tp.Data) -> tp.Data:
         """Calculates signals, stop loss, take profit and positions
 
@@ -163,16 +158,16 @@ class IStrategy(abc.ABC):
 
 
 # ======================================================================================
-class SubStrategy(IStrategy):
-    """Base class for all strategy classes with only one strategy.
+class Strategy(IStrategy):
+    """Class for simple strategies.
 
     Use the composite strategy class instead of this class, if
     you want to combine the signals (and their weight) from
     multiple of those simple strategies!
     """
-    def __init__(self, name: str, weight: float = 1.0) -> None:
+    def __init__(self, name: str) -> None:
         self.signal_generator: sg.SignalGenerator = None
-        super().__init__(name, weight)
+        super().__init__(name)
 
     def __repr__(self) -> str:
         return (
@@ -203,18 +198,30 @@ class SubStrategy(IStrategy):
             super().__setattr__(attr, value)
         
     # ----------------------------------------------------------------------------------
-    def speak(self) -> tp.Data:
-        if self.weight == 1.0:
-            return self.signal_generator.execute(compact=False)
-        else:
-            return np.multiply(
-                self.signal_generator.execute(compact=True), 
-                self.weight
-            )
+    def run(self):
+        ...
     
-    def randomize(self) -> None:
-        """Randomizes the parameters of the strategy.
+    def speak(self) -> SignalStore:
+        """Calculates signals for the current market data.
+        
+        Returns:
+        --------
+        np.ndarray
+            A 3D array of signals for the current market data with shape 
+            (n_timestamps, n_assets, 1). If multiple parameter combinations 
+            are used, the signals are added for each period/asset.
         """
+        raw_signals = self.signal_generator.execute(compact=True)
+
+        if raw_signals.shape[2] > 1:
+            # Sum along axis=2 and keep dimensions
+            combined_signals = np.sum(raw_signals, axis=2, keepdims=True)
+            return SignalStore(combined_signals)
+        
+        return raw_signals
+
+    def randomize(self) -> None:
+        """Randomizes the parameters of the strategy."""
         self.signal_generator.randomize()
 
     def optimize(self) -> None:
@@ -288,7 +295,7 @@ def build_sub_strategy(sdef: StrategyDefinition) -> IStrategy:
     logger.debug("building single strategy: %s - %s", sdef.strategy, sdef.params)
 
     # create the strategy class from the template for single strategies
-    strategy = SubStrategy(name=sdef.strategy)
+    strategy = Strategy(name=sdef.strategy)
     strategy.symbol = sdef.symbol
     strategy.interval = sdef.interval
     strategy.weight = sdef.weight or 1.0

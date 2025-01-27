@@ -18,7 +18,7 @@ from numba.experimental import jitclass
 from analysis.dtypes import SIGNALS_DTYPE
 from util.proj_types import SignalsArrayT
 from misc.base_wrapper import BaseWrapper3D
-from misc.numba_funcs import ffill_na_numba
+from misc.numba_funcs import ffill_na_numba, apply_to_columns_general
 
 logger = logging.getLogger("main.signals")
 
@@ -48,7 +48,7 @@ def combine_signals(signals: typeof(SignalArray3D)) -> np.ndarray:  # type: igno
     """
     n_periods, n_assets, n_strats = signals.shape
 
-    out = np.zeros((n_periods, n_assets, n_strats), dtype=np.float32)
+    out = np.zeros((n_periods, n_assets, n_strats), dtype=np.float64)
 
     open_long = signals["open_long"]
     close_long = signals["close_long"]
@@ -234,51 +234,64 @@ def split_signals(signals: np.ndarray) -> SignalArray3D:  # type: ignore
 
 # .................. Functions to perform math operations on  signals ..................
 @njit
-def normalize_signal(signal, lookback_period=20, clip=2, weighted=True, alpha=None):
+def normalize_signals_1d(signal, lookback_period=20, clip=2, weighted=True, alpha=None):
     """
-    Normalizes a signal using a rolling lookback period with exponential weighting.
+    Optimized version of normalize_signal using a rolling window approach.
 
     Args:
         signal (np.ndarray): The input signal as a 1D NumPy array.
         lookback_period (int): The lookback period for calculating the mean.
         clip (float): The maximum absolute value of the normalized signal.
-        alpha (float): Decay factor for exponential weighting (optional). If None, defaults to 2 / (lookback_period + 1).
+        weighted (bool): Whether to use weighted normalization or not.
+        alpha (float): Decay factor for exponential weighting (optional).
 
     Returns:
         np.ndarray: The normalized signal.
     """
+    signal_length = len(signal)
+    normalized_signal = np.empty_like(signal, dtype=np.float32)
+
     if weighted:
-      if alpha is None:
-          alpha = 2 / (lookback_period + 1)  # Default decay factor
-      
-      weights = np.array([(1 - alpha) ** i for i in range(lookback_period)][::-1])
-      weights /= np.sum(weights)  # Normalize weights to sum to 1
+        if alpha is None:
+            alpha = 2 / (lookback_period + 1)
+        weights = np.array([(1 - alpha) ** i for i in range(lookback_period)][::-1])
+        weights /= np.sum(weights)
     else:
-      weights = np.ones(lookback_period+1)
+        weights = np.ones(lookback_period) / lookback_period
 
-    normalized_signal = np.zeros_like(signal, dtype=np.float64)
+    abs_signal = np.abs(signal)
+    cumsum = np.cumsum(abs_signal)
+    
+    for i in range(signal_length):
+        if i < lookback_period:
+            lookback_data = abs_signal[:i+1]
+            if weighted:
+                weighted_sum = np.sum(lookback_data * weights[-len(lookback_data):])
+            else:
+                weighted_sum = np.sum(lookback_data) / (i + 1)
+        else:
+            if weighted:
+                weighted_sum = np.sum(abs_signal[i-lookback_period+1:i+1] * weights)
+            else:
+                weighted_sum = (cumsum[i] - cumsum[i-lookback_period]) / lookback_period
 
-    for i in range(len(signal)):
-        start_index = max(0, i - lookback_period + 1)
-        lookback_data = np.abs(signal[start_index:i + 1])
-        
-        weighted_data = lookback_data * weights[-len(lookback_data):]
-        weighted_mean = np.sum(weighted_data) if weighted else np.mean(weighted_data)
-        scaling_factor = 1 / weighted_mean if weighted_mean != 0 else 0
-        
+        scaling_factor = 1 / weighted_sum if weighted_sum != 0 else 0
         normalized_signal[i] = signal[i] * scaling_factor
-  
+
     return np.clip(normalized_signal, -clip, clip)
 
 
+@njit
+def normalize_signals(signals: np.ndarray) -> np.ndarray:
+    return apply_to_columns_general(signals, normalize_signals_1d)
+
 
 # ================================= SignalStore JIT Class ==============================
-@jitclass(
-    [
-        ("data", float32[:, :, :]),
-        ("is_normalized", boolean),
-    ]
-)
+# define Numba type for signal records
+SignalRecord = from_dtype(np.float64)
+SignalArray3D = types.Array(SignalRecord, 3, "C")
+
+@jitclass([("data", SignalArray3D)])
 class SignalStore:
     """A JIT class for storing and manipulating signals.
 
@@ -298,14 +311,13 @@ class SignalStore:
 
     def __init__(self, data: npt.ArrayLike):
         self.data = data
-        self.is_normalized = False
 
     def __add__(self, other):
         if isinstance(other, SignalStore):
             return SignalStore(self.data + other.data)
 
         elif isinstance(other, (float, int)):
-            return SignalStore(np.add(self.data, np.float32(other)))
+            return SignalStore(np.add(self.data, np.float64(other)))
 
         else:
             raise TypeError(f"Unsupported operand type for +: '{type(other)}'")
@@ -313,37 +325,39 @@ class SignalStore:
     def __radd__(self, other):
         return self.__add__(other)
 
-    def combine(self, normalize: bool = False) -> None:
-        """Combines signals from all strategies/parameter sets.
-        
-        Takes the signals from all strategies/parameter sets for each
-        symbol and combines them into one signal, which can then be used
-        by subsequent components.
+    @property
+    def shape(self) -> tuple[int, int, int]:
+        return self.data.shape
 
-        When to use combined signals? This is useful for live/paper
-        trading, but should not be used for optimisation runs.
+    def summed(self, normalized: bool = False) -> "SignalStore":
+        """
+        Sum the signals across all strategies and optionally normalize the result.
 
-        Should only be done at the sub-portfolio level, after all signals 
-        from different strategies have been collected and added with each 
-        other.
+        This method sums the signals along the last axis (strategy axis) of the data,
+        effectively combining signals from all strategies for each symbol and time period.
+        The result can optionally be normalized.
 
-        Parameters
-        ----------
-        normalize : bool, optional
-            Determines whether to normalize the combined signals, see 
-            normalize() method below for more details.
+        Parameters:
+        -----------
+        normalized : bool, optional
+            If True, the summed signals will be normalized using the normalize_signals function.
+            Default is False.
 
         Returns:
         --------
-        None
-            Just changes the internal data attribute.
+        SignalStore
+            A new SignalStore instance containing the summed (and optionally normalized) signals.
+            The returned data has the shape (time_periods, symbols, 1).
         """
-        self.data = np.sum(self.data, axis=2)
+        summed = np.sum(self.data, axis=2)  # sum along the last axis
+        reshaped = summed.reshape(summed.shape[0], summed.shape[1], 1)
 
-        if normalize:
-            self.normalize()
+        if normalized:
+            reshaped = normalize_signals(reshaped)
 
-    def _normalize(self, period: int = 20) -> None:
+        return SignalStore(reshaped)
+
+    def normalized(self, summed: bool = True) -> "SignalStore":
         """Normalizes the combined signals.
 
         NOTE:
@@ -382,36 +396,20 @@ class SignalStore:
         -----------
         period : int, optional
             The lookback period for computing the average absolute signal.
+        summed : bool, optional
+            Determines if the signals should be summed before normalizing,
+            see previous method for more details.
 
         Returns:
         --------
-        None
-            Just changes the internal data attribute. The array will 
-            still have  three dimensions to make it compatible with
-            other components, the shape is (periods, symbols, 1).
+        SignalStore
+            A SignalStore instance containing the normalized signals.
         """
 
-        # we need to make sure that the signals from multiple strategies
-        # have already been combined (per symbol/market)
-        if self.data.shape[2] > 1:
-            self.combine(normalize=False)
+        if summed and self.data.shape[2] > 1:
+            self.summed(normalized=True)
 
-        data = self.data
-        periods, markets, _ = data.shape
-
-        out = np.empty(shape=(periods, markets), dtype=np.float32)
-
-        for p in range(periods):
-            if p < period:
-                out[p, :] = data[p, :]
-            else:
-                for m in range(markets):
-                    scaling_factor = 1 / np.mean(np.abs(data[p - period:p, m]))
-                    out[p, m] = data[p, m] * scaling_factor
-
-        del data
-        self.data = out
-        self.is_normalized = True
+        return SignalStore(normalize_signals(self.data))
 
 
 # ================================= Signals wrapper Class ==============================
@@ -429,7 +427,7 @@ class Signals(BaseWrapper3D):
         
         if dtype == SIGNALS_DTYPE:
             self._store = SignalStore(combine_signals(signals))
-        elif dtype == np.float32:
+        elif dtype == np.float64:
             self._store = SignalStore(signals)
         else:
             raise TypeError(f"Unsupported Numpy dtype: '{np.dtype(signals)}'")

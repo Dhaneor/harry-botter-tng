@@ -23,7 +23,7 @@ SIGNALS_DTYPE = np.dtype([
     ('close_long', np.bool_),
     ('open_short', np.bool_),
     ('close_short', np.bool_),
-    ('combined', np.float32),  # one column representation of all signals
+    ('combined', np.float64),  # one column representation of all signals
 ])
 
 

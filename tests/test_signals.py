@@ -7,15 +7,19 @@ Created on Sun Dec 11 19:08:20 2022
 
 @author dhaneor
 """
+
 import itertools
 import numpy as np
 import pandas as pd
 import pytest
 
 from analysis.models.signals import (  # noqa: F401
-    Signals, SignalStore, 
-    combine_signals, combine_signals_np, 
-    split_signals
+    Signals,
+    SignalStore,
+    combine_signals,
+    combine_signals_np,
+    split_signals,
+    normalize_signals,
 )
 from analysis import SIGNALS_DTYPE
 from util import get_logger
@@ -27,19 +31,23 @@ logger = get_logger("main")
 def generate_test_data():
     def _generate(periods=8, num_symbols=1, num_strategies=1) -> np.ndarray:
         base_patterns = {
-            "open_long":   (1, 0,  0, 0, 1, 0,  0,  0),
-            "close_long":  (0, 1,  0, 0, 0, 0,  0,  0),
-            "open_short":  (0, 0,  1, 0, 0, 0,  1,  0),
-            "close_short": (0, 0,  0, 1, 0, 0,  0,  0),
-            "combined":    (1, 0, -1, 0, 1, 1, -1, -1),
+            "open_long": (1, 0, 0, 0, 1, 0, 0, 0),
+            "close_long": (0, 1, 0, 0, 0, 0, 0, 0),
+            "open_short": (0, 0, 1, 0, 0, 0, 1, 0),
+            "close_short": (0, 0, 0, 1, 0, 0, 0, 0),
+            "combined": (1, 0, -1, 0, 1, 1, -1, -1),
         }
 
         def create_array(pattern):
             cycle = itertools.cycle(pattern)
-            return np.array([next(cycle) for _ in range(periods)]).reshape(periods, 1, 1).astype(np.float32)
-        
-        out = np.empty((periods, num_symbols, num_strategies), dtype=SIGNALS_DTYPE)
-        
+            return (
+                np.array([next(cycle) for _ in range(periods)])
+                .reshape(periods, 1, 1)
+                .astype(np.float32)
+            )
+
+        out = np.empty((periods, 1, 1), dtype=SIGNALS_DTYPE)
+
         for key in base_patterns.keys():
             out[key] = create_array(base_patterns[key])
 
@@ -50,11 +58,12 @@ def generate_test_data():
 
 # --------------------------------------------------------------------------------------
 def test_combine_signals(generate_test_data):
-    td = generate_test_data(periods=10, num_symbols=1, num_strategies=1)
+    td = generate_test_data(periods=10, num_symbols=12, num_strategies=2)
 
-    expected = np.array(td["combined"].copy())  # Convert to float32 for testing)
+    expected = np.array(td["combined"].copy())
     actual = combine_signals(td)
 
+    assert actual.dtype == expected.dtype, "Dtypes mismatch"
     assert expected.shape == actual.shape, "Shape mismatch"
 
     try:
@@ -95,7 +104,7 @@ def test_split_sginals(generate_test_data):
     td = generate_test_data(periods=10, num_symbols=1, num_strategies=1)
 
     result = split_signals(td["combined"])
-            
+
     for i in range(td.shape[0]):
         for j in range(td.shape[1]):
             for k in range(td.shape[2]):
@@ -107,10 +116,11 @@ def test_split_sginals(generate_test_data):
                 acl = result["close_long"][i, j, k]
                 aos = result["open_short"][i, j, k]
                 acs = result["close_short"][i, j, k]
-                
+
                 try:
-                    assert ol == aol and cl == acl and os == aos and cs == acs, \
-                        f"Mismatch at index [{i}, {j}, {k}]"
+                    assert (
+                        ol == aol and cl == acl and os == aos and cs == acs
+                    ), f"Mismatch at index [{i}, {j}, {k}]"
                 except AssertionError as e:
                     print(f"Assertion Error: {e}")
                     # print(f"{ol} {cl} {os} {cs} -> {aol} {acl} {aos} {acs}")
@@ -180,6 +190,108 @@ def test_signal_store_add_int(generate_test_data):
     # np.testing.assert_allclose(result.data, expected, rtol=1e-5, atol=1e-8)
 
 
+def test_signal_store_summed(generate_test_data):
+    td = generate_test_data(periods=100, num_symbols=2, num_strategies=2)
+
+    data = combine_signals(td)
+    print(f"Combined data shape: {data.shape}")
+    print(f"Combined data type: {data.dtype}")
+
+    store = SignalStore(data=data)
+
+    assert store.data.ndim == 3, f"test data should be 3D, but got {store.data.ndim}D"
+    assert store.data.shape == (
+        100,
+        2,
+        2,
+    ), f"test data should have shape (100, 2, 2), but got {store.data.shape}"
+
+    try:
+        result = store.summed(False)
+    except Exception as e:
+        print(f"Error in summed method: {e}")
+        print(f"Shape of original data: {store.data.shape}")
+        print(f"Type of original data: {store.data.dtype}")
+        raise
+
+    expected = SignalStore(np.sum(data, axis=2, keepdims=True))
+
+    print(f"Result shape: {result.data.shape}")
+    print(f"Result type: {result.data.dtype}")
+    print(f"Expected shape: {expected.data.shape}")
+    print(f"Expected type: {expected.data.dtype}")
+
+    assert isinstance(result, SignalStore), "result is not a SignalStore"
+    assert result.data.shape == (
+        100,
+        2,
+        1,
+    ), f"shape mismatch: expected (100, 2, 1), got {result.data.shape}"
+    assert np.array_equal(result.data, expected.data), "data does not match expected"
+
+
+def test_signal_store_normalized(generate_test_data):
+    td = generate_test_data(periods=100, num_symbols=2, num_strategies=2)
+
+    data = combine_signals(td)
+    print(f"Combined data shape: {data.shape}")
+    print(f"Combined data type: {data.dtype}")
+
+    store = SignalStore(data=data)
+
+    assert store.data.ndim == 3, f"test data should be 3D, but got {store.data.ndim}D"
+    assert store.data.shape == (
+        100,
+        2,
+        2,
+    ), f"test data should have shape (100, 2, 2), but got {store.data.shape}"
+
+    try:
+        result = store.normalized()
+    except Exception as e:
+        print(f"Error in normalized method: {e}")
+        print(f"Shape of original data: {store.data.shape}")
+        print(f"Type of original data: {store.data.dtype}")
+        raise
+
+    expected = SignalStore(normalize_signals(data))
+
+    print(f"Result shape: {result.data.shape}")
+    print(f"Result type: {result.data.dtype}")
+    print(f"Expected shape: {expected.data.shape}")
+    print(f"Expected type: {expected.data.dtype}")
+
+    assert isinstance(result, SignalStore), "result is not a SignalStore"
+    assert result.data.shape == (
+        100,
+        2,
+        2,
+    ), f"shape mismatch: expected (100, 2, 2), got {result.data.shape}"
+    np.testing.assert_allclose(
+        result.data,
+        expected.data,
+        rtol=1e-5,
+        atol=1e-8,
+        err_msg="Normalized data does not match expected",
+    )
+
+    # Check that the mean of absolute values for each symbol at each 
+    # time step is close to 1
+    try:
+        np.testing.assert_allclose(
+            np.mean(np.abs(result.data)),
+            1,
+            rtol=1e-3,
+            atol=1e-3,
+            err_msg="Mean is not 1",
+        )
+    except AssertionError as e:
+        print(f"Error in checking mean: {e}")
+        print(f"min value: {np.min(np.abs(result.data))}")
+        print(f"max value: {np.max(np.abs(result.data))}")
+        raise
+
+
 # --------------------------- TESTS FOR Signals class ----------------------------------
 def test_signals_instantiation(generate_test_data):
     td = generate_test_data(periods=1000, num_symbols=1, num_strategies=1)
@@ -193,6 +305,7 @@ def test_signals_instantiation(generate_test_data):
     assert isinstance(signals.data, np.ndarray)
     assert signals.data.shape == td.shape
     assert np.array_equal(signals.data, combine_signals(td))
+
 
 def test_signals_add(generate_test_data):
     td = generate_test_data(periods=1000, num_symbols=1, num_strategies=1)
