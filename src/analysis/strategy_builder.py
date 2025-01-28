@@ -41,6 +41,7 @@ from .strategy import signal_generator as sg
 from .strategy import exit_order_strategies as es
 from analysis.models.market_data import MarketData
 from analysis.models.signals import SignalStore
+from analysis.backtest.backtest import run_backtest, Config
 
 logger = logging.getLogger("main.strategy_builder")
 
@@ -95,13 +96,18 @@ class StrategyDefinition:
 class IStrategy(abc.ABC):
     """Interface for all strategy classes."""
 
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, weight: float) -> None:
         self.name: str = name
+        self.weight: float = weight
 
         self._market_data: MarketData = None
         self.sub_strategies: Sequence[IStrategy] = []
         self.definition: Optional[StrategyDefinition] = None
         self.is_sub_strategy: bool = True
+
+        self.add_signals: bool = True
+        self.normalize_signals: bool = False
+
 
     def __repr__(self) -> str:
         return self.name
@@ -127,33 +133,46 @@ class IStrategy(abc.ABC):
                 strategy.market_data = market_data
 
     # ----------------------------------------------------------------------------------
-    @abc.abstractmethod
-    def run(self) -> None:
-        ...
+    def run(self):
+        return run_backtest(
+            market_data=self.market_data,
+            signals=self.speak(),
+            config=Config(10_000)
+            )
     
-    @abc.abstractmethod
-    def speak(self, data: tp.Data) -> tp.Data:
-        """Calculates signals, stop loss, take profit and positions
-
-        This is the main entry point for getting results from the
-        strategy.
-
-        Parameters
-        ----------
-        data: tp.Data
-            'data' must be a dictionary with the following keys:
-            'o', 'h', 'l', 'c', 'v' (OHLCV data for one symbol)
-
-        Returns
-        -------
-        data: tp.Data
-            data with added signals, values for stop loss and
-            take profit, and the (theoretical) positions
+    def speak(self) -> SignalStore:
+        """Calculates signals for the current market data.
+        
+        Returns:
+        --------
+        SignalStore
+            A SignalStore object containing the calculated signals. If 
+            multiple parameter combinations are used, the signals will 
+            be summed up, but not normalized.
         """
-        ...
+        signals = self._get_raw_signals()
+
+        if self.add_signals and self.normalize_signals:
+            return SignalStore(signals).summed(normalized=True)
+        elif self.add_signals and not self.normaalize_signals:
+            return SignalStore(signals).summed(normalized=False)
+        elif not self.add_signals and not self.normalize_signals:
+            return signals
+        else:
+            raise ValueError(
+                "Can not normalize signals when add_signals is set to False"
+                )
 
     @abc.abstractmethod
     def randomize(self) -> None:
+        ...
+
+    @abc.abstractmethod
+    def plot(self, symbol: str):
+        ...
+
+    @abc.abstractmethod
+    def _get_raw_signals(self) -> SignalStore:
         ...
 
 
@@ -165,15 +184,14 @@ class Strategy(IStrategy):
     you want to combine the signals (and their weight) from
     multiple of those simple strategies!
     """
-    def __init__(self, name: str) -> None:
+    def __init__(self, name: str, weight: float = 1) -> None:
         self.signal_generator: sg.SignalGenerator = None
-        super().__init__(name)
+        super().__init__(name, weight)
 
     def __repr__(self) -> str:
         return (
-            f"{self.name} strategy for {self.symbol} "
-            f'in {self.interval} interval ({self.weight=:.2f})'
-            f'\n\t {str(self.signal_generator)}'
+            f"{self.name} strategy for {self.symbol} ({self.weight=:.2f})"
+            f"\n\t {str(self.signal_generator)}"
         )
 
     def __str__(self) -> str:
@@ -201,25 +219,15 @@ class Strategy(IStrategy):
             super().__setattr__(attr, value)
         
     # ----------------------------------------------------------------------------------
-    def run(self):
-        ...
-    
     def speak(self) -> SignalStore:
-        """Calculates signals for the current market data.
-        
-        Returns:
-        --------
-        SignalStore
-            A SignalStore object containing the calculated signals. If multiple
-            parameter combinations are used, the signals will be summed up,
-            but not normalized.
-        """
-        signals = self.signal_generator.execute(compact=True)
-        return SignalStore(signals).summed(normalized=False)
+        return super().speak()
 
     def randomize(self) -> None:
         """Randomizes the parameters of the strategy."""
         self.signal_generator.randomize()
+
+    def plot(self, symbol: str):
+        raise NotImplementedError(f"plot() not implemented for {self.name}")
 
     def optimize(self) -> None:
         """
@@ -227,6 +235,9 @@ class Strategy(IStrategy):
         pass
         """
         raise NotImplementedError(f"optimize() not implemented for {self.name}")
+
+    def _get_raw_signals(self) -> SignalStore:
+        return self.signal_generator.execute(compact=True)
 
 
 class CompositeStrategy(IStrategy):
@@ -254,13 +265,11 @@ class CompositeStrategy(IStrategy):
         Returns
         -------
         SignalStore
-            data with added 'signal' key/values
+            SignalStore instances can be added, so we can just use the 
+            sum() function. The normalize() function is applied to the 
+            aggregated signals.            
         """
-
-        # SignalStore instances can be added, so we can just use the 
-        # sum() function. The normalize() function is applied to the 
-        # aggregated signals.
-        return sum((sub.speak() for sub in self.sub_strategies)).normalized()
+        return super().speak()
 
     def randomize(self) -> None:
         """Randomize the parameters of the strategies.
@@ -271,6 +280,10 @@ class CompositeStrategy(IStrategy):
     def optimize(self) -> None:
         for strategy in self.sub_strategies:
             strategy.optimize()
+
+    def _get_raw_signals(self) -> SignalStore:
+        return sum((sub.speak() for sub in self.sub_strategies)).normalized()
+    
 
 # ======================================================================================
 def build_sub_strategy(sdef: StrategyDefinition) -> IStrategy:
@@ -291,12 +304,8 @@ def build_sub_strategy(sdef: StrategyDefinition) -> IStrategy:
     logger.debug("building single strategy: %s - %s", sdef.strategy, sdef.params)
 
     # create the strategy class from the template for single strategies
-    strategy = Strategy(name=sdef.strategy)
+    strategy = Strategy(name=sdef.strategy, weight=sdef.weight)
     strategy.symbol = sdef.symbol
-    strategy.interval = sdef.interval
-    strategy.weight = sdef.weight or 1.0
-    strategy.is_sub_strategy = True
-
     strategy.signal_generator = sg.signal_generator_factory(sdef.signals_definition)
     strategy.definition = sdef
 

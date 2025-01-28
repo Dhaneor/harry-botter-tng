@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Jan 13 02:00:23 20235
+Provides backtest components.
+
+Created on Jan 13 02:00:23 2025
 @author dhaneor
 """
 

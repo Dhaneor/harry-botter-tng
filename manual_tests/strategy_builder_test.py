@@ -98,7 +98,6 @@ def build_valid_single_strategy():
 
     assert isinstance(s, sb.IStrategy)
     assert s.symbol is not None
-    assert s.interval is not None
     assert s.weight is not None
 
     return s
@@ -186,6 +185,8 @@ if __name__ == "__main__":
         s.market_data = data
         print('-' * 200)
         print(s)
+
+    sys.exit()
 
     # test_sl_strategy_factory()
     # sdef = __get_single_strategy_definition()

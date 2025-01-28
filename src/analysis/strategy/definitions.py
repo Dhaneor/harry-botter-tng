@@ -457,15 +457,7 @@ s_tema_cross = sb.StrategyDefinition(
     strategy="TEMA Cross",
     symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
     interval="1d",
-    sub_strategies=[
-        sb.StrategyDefinition(
-            strategy="TEMA CROSS",
-            symbol="ETHUSDT",
-            interval="1d",
-            signals_definition=tema_cross,
-            weight=1,
-        ),
-    ]
+    signals_definition=tema_cross,
 )
 
 s_kama_cross = sb.StrategyDefinition(

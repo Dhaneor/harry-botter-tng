@@ -232,7 +232,7 @@ def split_signals(signals: np.ndarray) -> SignalArray3D:  # type: ignore
     return out
 
 
-# .................. Functions to perform math operations on  signals ..................
+# ........................... Functions to normalize signals ...........................
 @njit
 def normalize_signals_1d(signal, lookback_period=20, clip=2, weighted=True, alpha=None):
     """
@@ -351,6 +351,37 @@ class SignalStore:
         """
         summed = np.sum(self.data, axis=2)  # sum along the last axis
         reshaped = summed.reshape(summed.shape[0], summed.shape[1], 1)
+
+        if normalized:
+            reshaped = normalize_signals(reshaped)
+
+        return SignalStore(reshaped)
+
+    def averaged(self, normalized: bool = True) -> "SignalStore":
+        """
+        Calculate the average of signals across all strategies and 
+        optionally normalize the result.
+
+        This method computes the mean of the signals along the last 
+        axis (strategy axis) of the data, effectively averaging signals 
+        from all strategies for each symbol and time period. The result 
+        can optionally be normalized.
+
+        Parameters:
+        -----------
+        normalized : bool, optional
+            If True, the averaged signals will be normalized using the 
+            normalize_signals function. Default is True.
+
+        Returns:
+        --------
+        SignalStore
+            A new SignalStore instance containing the averaged (and 
+            optionally normalized) signals. The returned data has the 
+            shape (time_periods, symbols, 1).
+        """
+        averaged = np.mean(self.data, axis=2)  # average along the last axis
+        reshaped = averaged.reshape(averaged.shape[0], averaged.shape[1], 1)
 
         if normalized:
             reshaped = normalize_signals(reshaped)

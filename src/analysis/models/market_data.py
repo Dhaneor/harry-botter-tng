@@ -61,6 +61,13 @@ class MarketDataStore:
         self.compute_atr()
         self.compute_annual_vol()
 
+    @property
+    def periods_per_year(self) -> int:
+        timestamp_diffs = np.diff(self.timestamp, axis=0)
+        typical_diff = np.min(timestamp_diffs, axis=0)
+        ms_per_year = 356 * 24 * 60 * 60 * 1000  # milliseconds per year
+        return int(ms_per_year / typical_diff)
+
     def get_no_of_periods(self) -> int:
         """
         Return the number of periods in the data.
@@ -188,6 +195,43 @@ class MarketDataStore:
                 stdev = math.sqrt(var_lr)
                 self.annual_vol[i, j] = stdev * math.sqrt(252.0)
 
+    def compute_stdev(self, period=21):
+        """
+        Compute rolling standard deviation of log returns.
+        """
+        rows, cols = self.close.shape
+        out = np.zeros_like(self.close)
+        for j in range(cols):
+            for i in range(period, rows):
+                window = self.log_returns[i-period+1:i+1, j]
+                mean = np.mean(window)
+                sum_sq = np.sum((window - mean)**2)
+                var_lr = sum_sq / (period - 1)  # Use (period - 1) for sample standard deviation
+                stdev = np.sqrt(var_lr)
+                out[i, j] = stdev * np.sqrt(self.periods_per_year)
+        return out
+
+    def compute_annualized_returns(self, period=21):
+        """
+        Compute rolling annualized returns.
+        
+        :param period: int, the lookback period for the rolling window
+        :return: numpy array of shape (rows, cols) with annualized returns
+        """
+        rows, cols = self.close.shape
+        out = np.zeros_like(self.close)
+        
+        for j in range(cols):
+            for i in range(period, rows):
+                # Calculate total return over the period
+                total_return = self.close[i, j] / self.close[i - period, j] - 1
+                
+                # Annualize the return
+                annualized_return = (1 + total_return) ** (self.periods_per_year / period) - 1
+                
+                out[i, j] = annualized_return
+
+        return out
 
 class MarketData:
     """A class to hold OHLCV data for multiple symbols.
