@@ -16,6 +16,8 @@ from numba import int64, float32
 from numba.experimental import jitclass
 from typing import Sequence
 
+from analysis.statistics.statistics import Statistics
+
 
 spec = [
     ("timestamp", int64[:, :]),
@@ -50,6 +52,9 @@ class MarketDataStore:
         self.close = close
         self.volume = volume
 
+        self.stats = Statistics()
+        self.interval_ms = self._calculate_interval(timestamp)
+
         rows, cols = close.shape
 
         # Initialize indicator arrays to zeros or empty
@@ -80,158 +85,24 @@ class MarketDataStore:
         """
         return self.close.shape[1]
 
+    def _calculate_interval(self, timestamp):
+        return int(np.median(np.diff(timestamp)))
+
     def compute_log_returns(self):
-        """
-        Fill self.log_returns with ln(close[i]/close[i-1]) for each column.
-        """
-        rows, cols = self.close.shape
-        if rows == 0:
-            return
-        # First row = 0
-        for j in range(cols):
-            self.log_returns[0, j] = 0.0
+        self.log_returns = self.stats.log_returns(self.close)
 
-        for i in range(1, rows):
-            for j in range(cols):
-                self.log_returns[i, j] = math.log(
-                    self.close[i, j] / self.close[i - 1, j]
-                )
+    def compute_annualized_returns(self):
+        self.annualized_returns = self.stats.annualized_returns(self.close, self.interval_ms)
 
-    def compute_atr(self, period=21):
-        """
-        Compute Wilder's ATR (exponential smoothing) for each column.
-        Fills self.atr with shape (rows, cols).
+    def compute_annualized_volatility(self):
+        self.annualized_volatility = self.stats.annualized_volatility(self.close, self.interval_ms)
 
-        Steps:
-        1) Calculate TR for each bar.
-        2) Seed ATR at index (period - 1) by averaging TR[0..period-1].
-        3) For i >= period, use: ATR(i) = ((ATR(i-1) * (period - 1)) + TR(i)) / period
-        """
-        rows, cols = self.close.shape
-        if rows == 0:
-            return
+    def compute_sharpe_ratio(self, risk_free_rate=0.0):
+        returns = self.stats.pct_change(self.close)
+        self.sharpe_ratio = self.stats.sharpe_ratio(returns, risk_free_rate, self.interval_ms)
 
-        # 1) Compute True Range (TR)
-        TR = np.zeros((rows, cols), dtype=np.float32)
-
-        # bar 0: TR = high(0) - low(0), because there's no prev close
-        for j in range(cols):
-            TR[0, j] = self.high[0, j] - self.low[0, j]
-        # bars [1..rows-1]
-        for i in range(1, rows):
-            for j in range(cols):
-                prev_close = self.close[i - 1, j]
-                tr1 = self.high[i, j] - self.low[i, j]
-                tr2 = abs(self.high[i, j] - prev_close)
-                tr3 = abs(self.low[i, j] - prev_close)
-                TR[i, j] = max(tr1, tr2, tr3)
-
-        # 2) Initialize (seed) ATR for the first `period` bars
-        #    We'll define ATR(k) for k < period-1 as partial average,
-        #    and ATR(period-1) as the average of TR[0..period-1].
-        #    Then from bar = period, use Wilder's formula.
-
-        # If the data has fewer bars than `period`, we handle partial availability
-        max_seed = min(period, rows)
-
-        for j in range(cols):
-            partial_sum = 0.0
-            # partial fill up to (period-1) or row-end
-            for i in range(max_seed):
-                partial_sum += TR[i, j]
-                # For i < period, define an average up to i+1 bars
-                # This is optional "incremental seed" logic.
-                self.atr[i, j] = partial_sum / (i + 1)
-
-        # 3) Wilder's exponential smoothing for i >= period
-        for j in range(cols):
-            for i in range(period, rows):
-                # Formula: ATR(i) = [ATR(i-1)*(period-1) + TR(i)] / period
-                prev_atr = self.atr[i - 1, j]
-                cur_tr = TR[i, j]
-                self.atr[i, j] = (prev_atr * (period - 1) + cur_tr) / period
-
-            # 2) Simple rolling average (naive O(rows*period)):
-            for j in range(cols):
-                # partial for first period bars
-                partial_sum = 0.0
-                for i in range(period):
-                    if i < rows:
-                        partial_sum += TR[i, j]
-                        self.atr[i, j] = partial_sum / (i + 1)
-                for i in range(period, rows):
-                    window_sum = 0.0
-                    for k in range(i - period + 1, i + 1):
-                        window_sum += TR[k, j]
-                    self.atr[i, j] = window_sum / period
-
-    def compute_annual_vol(self, period=21):
-        """
-        Fill self.annual_vol as rolling stdev of log_returns * sqrt(252).
-        """
-        rows, cols = self.close.shape
-        if rows == 0:
-            return
-
-        # Need log_returns first:
-        # (In reality, you'd ensure compute_log_returns() was called or do it here)
-        for j in range(cols):
-            # partial fill
-            for i in range(period):
-                if i < rows:
-                    self.annual_vol[i, j] = np.nan
-            for i in range(period, rows):
-                # compute stdev over the last `period` bars
-                sum_lr = 0.0
-                for k in range(i - period + 1, i + 1):
-                    sum_lr += self.log_returns[k, j]
-                mean_lr = sum_lr / period
-
-                sum_sq = 0.0
-                for k in range(i - period + 1, i + 1):
-                    diff = self.log_returns[k, j] - mean_lr
-                    sum_sq += diff * diff
-                var_lr = sum_sq / period
-                stdev = math.sqrt(var_lr)
-                self.annual_vol[i, j] = stdev * math.sqrt(252.0)
-
-    def compute_stdev(self, period=21):
-        """
-        Compute rolling standard deviation of log returns.
-        """
-        rows, cols = self.close.shape
-        out = np.zeros_like(self.close)
-        for j in range(cols):
-            for i in range(period, rows):
-                window = self.log_returns[i-period+1:i+1, j]
-                mean = np.mean(window)
-                sum_sq = np.sum((window - mean)**2)
-                var_lr = sum_sq / (period - 1)  # Use (period - 1) for sample standard deviation
-                stdev = np.sqrt(var_lr)
-                out[i, j] = stdev * np.sqrt(self.periods_per_year)
-        return out
-
-    def compute_annualized_returns(self, period=21):
-        """
-        Compute rolling annualized returns.
-        
-        :param period: int, the lookback period for the rolling window
-        :return: numpy array of shape (rows, cols) with annualized returns
-        """
-        rows, cols = self.close.shape
-        out = np.zeros_like(self.close)
-        
-        for j in range(cols):
-            for i in range(period, rows):
-                # Calculate total return over the period
-                total_return = self.close[i, j] / self.close[i - period, j] - 1
-                
-                # Annualize the return
-                annualized_return = (1 + total_return) ** (self.periods_per_year / period) - 1
-                
-                out[i, j] = annualized_return
-
-        return out
+    def compute_atr(self, period=14):
+        self.atr = self.stats.atr(self.high, self.low, self.close, period)
 
 class MarketData:
     """A class to hold OHLCV data for multiple symbols.
