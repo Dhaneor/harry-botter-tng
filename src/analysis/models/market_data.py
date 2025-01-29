@@ -10,7 +10,6 @@ import json
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import math
 from datetime import datetime, timedelta
 from numba import int64, float32
 from numba.experimental import jitclass
@@ -26,6 +25,7 @@ spec = [
     ("low", float32[:, :]),
     ("close", float32[:, :]),
     ("volume", float32[:, :]),
+    # ("stats", Statistics.class_type.instance_type),
     ("log_returns", float32[:, :]),
     ("atr", float32[:, :]),
     ("annual_vol", float32[:, :]),
@@ -52,7 +52,7 @@ class MarketDataStore:
         self.close = close
         self.volume = volume
 
-        self.stats = Statistics()
+        # self.stats = Statistics()
         self.interval_ms = self._calculate_interval(timestamp)
 
         rows, cols = close.shape

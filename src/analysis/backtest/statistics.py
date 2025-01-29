@@ -153,7 +153,7 @@ def calculate_sharpe_ratio(
 
 
 @jit(nopython=True)
-def calculate_sortino_ratio(
+def calculate_sortino_ratio(    
     portfolio_values: np.ndarray,
     risk_free_rate: float = 0.0,
     periods_per_year: int = 365

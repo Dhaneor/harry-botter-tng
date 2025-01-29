@@ -8,20 +8,28 @@ Created on Tue Jan 28 17:33:23 2025
 @author dhaneor
 """
 
-from numba import float64
+from numba import float64, int64
 from numba.experimental import jitclass
 import numpy as np
+import math
+
 
 spec = [
-    ('_epsilon', float64),
+    ("_epsilon", float64),
+    ("periods_per_year", int64),
+    ("risk_free_rate", float64),
 ]
 
-@jitclass(spec)
+
+# @jitclass(spec)
 class Statistics:
     def __init__(self):
         self._epsilon = 1e-8  # Small value to avoid division by zero
+        self.periods_per_year = 365
+        self.risk_free_rate = 0.01  # 1% riskfree rate
 
-    def _apply_to_columns(self, arr: np.ndarray, func, *args):
+    def _apply_to_columns(self, arr: np.ndarray, func, period: int) -> np.ndarray:
+
         ndim = arr.ndim
         if ndim < 1:
             raise ValueError("Input array must have at least 1 dimension")
@@ -34,29 +42,41 @@ class Statistics:
         # Reshape the array to 2D: (axis=0, all other axes flattened)
         shape_0 = arr.shape[0]
         shape_other = num_cols
-        arr_reshaped = arr.reshape(shape_0, shape_other)
-        
-        # Apply the function to each column
-        for col in range(shape_other):
-            column = arr_reshaped[:, col]
-            arr_reshaped[:, col] = func(column, *args)
-        
-        # Reshape back to original shape
-        return arr_reshaped.reshape(arr.shape)
 
-    def _apply_rolling(self, arr: np.ndarray, func, period: int, *args):
+        if period > 0:
+            arr_reshaped = arr.reshape(shape_0, shape_other)
+        
+            # Apply the function to each column
+            for col in range(shape_other):
+                column = arr_reshaped[:, col]
+                arr_reshaped[:, col] = self._apply_rolling(column, func, period)
+            # Reshape back to original shape
+            return arr_reshaped.reshape(arr.shape)
+        
+        else:
+            # create an empty array with the same shape as the input array,
+            # ecept for first dimension, which now has a length of 1
+            out = np.ascontiguousarray(np.full((1, shape_other), np.nan))
+            arr_reshaped = arr.reshape(shape_0, shape_other)
+            
+            for col in range(shape_other):
+                column = arr_reshaped[:, col]
+                out[0, col] = func(column)
+
+            new_shape = (1,) + arr.shape[1:]
+            return out.reshape(new_shape)
+
+    def _apply_rolling(self, arr: np.ndarray, func, period: int) -> np.ndarray:
         result = np.full_like(arr, np.nan)
         for i in range(period - 1, arr.shape[0]):
             window = arr[i-period+1:i+1]
-            result[i] = func(window, *args)
+            result[i] = func(window)
         return result
 
-    def compute(self, arr: np.ndarray, func, period: int = 0, *args):
-        if period == 0:
-            return self._apply_to_columns(arr, func, *args)
-        else:
-            return self._apply_to_columns(arr, self._apply_rolling, func, period, *args)
+    def compute(self, arr: np.ndarray, func, period: int) -> np.ndarray:
+        return self._apply_to_columns(arr, func, period)
 
+    # ................................. Simple Stats ...................................
     def mean(self, arr: np.ndarray, period: int = 0) -> np.ndarray:
         return self.compute(arr, np.mean, period)
 
@@ -75,67 +95,89 @@ class Statistics:
     def sum(self, arr: np.ndarray, period: int = 0) -> np.ndarray:
         return self.compute(arr, np.sum, period)
 
-    def cumsum(self, arr: np.ndarray) -> np.ndarray:
-        return self.compute(arr, np.cumsum)
+    # ................................. Returns and Volatility .........................
+    def volatility(self, arr: np.ndarray, period: int = 0) -> np.ndarray:
+        return self.compute(arr, np.std, period)
 
-    def cumprod(self, arr: np.ndarray) -> np.ndarray:
-        return self.compute(arr, np.cumprod)
+    def sharpe_ratio(self, arr: np.ndarray, period: int = 0) -> np.ndarray:
+        return self.compute(arr, self._sharpe_ratio_fn, period)
 
-    def diff(self, arr: np.ndarray, n: int = 1) -> np.ndarray:
-        def diff_func(x, n):
-            return np.diff(x, n)
-        return self.compute(arr, diff_func, 0, n)
+    # ......................... Annualized Returns and Volatility ......................
+    def annualized_returns(self, arr: np.ndarray, periods_per_year: int, period: int = 0) -> np.ndarray:
+        self.periods_per_year = periods_per_year
+        return self.compute(arr, self._annualized_returns_fn, period)
 
-    def pct_change(self, arr: np.ndarray, period: int = 1) -> np.ndarray:
-        def pct_change_func(x, period):
-            return (x[period:] - x[:-period]) / (x[:-period] + self._epsilon)
-        return self.compute(arr, pct_change_func, 0, period)
+    def annualized_volatility(self, arr: np.ndarray, periods_per_year: int, period: int = 0) -> np.ndarray:
+        self.periods_per_year = periods_per_year
+        return self.compute(arr, self._annualized_vol_fn, period)
 
-    def log_returns(self, arr: np.ndarray) -> np.ndarray:
-        def log_return_func(x):
-            return np.log(x[1:] / x[:-1])
-        return self.compute(arr, log_return_func)
+    def annualized_sharpe_ratio(self, returns: np.ndarray, periods_per_year: int, period: int = 0 ) -> np.ndarray:
+        self.periods_per_year = periods_per_year
+        return self.compute(returns, self._annualized_sharpe_ratio_fn, period)
 
-    def annualized_returns(self, arr: np.ndarray, interval_ms: int) -> np.ndarray:
-        def annualized_return_func(x, interval_ms):
-            total_return = x[-1] / x[0] - 1
-            years = (len(x) * interval_ms) / self._ms_per_year
-            return (1 + total_return) ** (1 / years) - 1
-        return self.compute(arr, annualized_return_func, 0, interval_ms)
+    # ................................. Helper methods .................................
+    def _returns_fn(self, arr: np.ndarray) -> np.ndarray:
+        return np.diff(arr, n=1, axis=0)
+    
+    def _log_returns_fn(self, arr: np.ndarray) -> np.ndarray:
+        return np.log(np.diff(arr[1:], arr[:-1]))
+    
+    def _sharpe_ratio_fn(self, arr: np.ndarray) -> np.ndarray:
+        returns = self._returns_fn(arr)
+        returns_mean = np.average(returns)
+        stdev = np.std(arr)
+        return returns_mean / stdev
 
-    def annualized_volatility(self, arr: np.ndarray, interval_ms: int) -> np.ndarray:
-        def annualized_vol_func(x, interval_ms):
-            log_returns = np.log(x[1:] / x[:-1])
-            periods_per_year = self._ms_per_year / interval_ms
-            return np.std(log_returns) * np.sqrt(periods_per_year)
-        return self.compute(arr, annualized_vol_func, 0, interval_ms)
+    def _annualized_returns_fn(self, arr: np.ndarray) -> np.ndarray:
+        total_return = arr[-1] / arr[0] - 1
+        return (1 + total_return) ** (self.periods_per_year / len(arr)) - 1
 
-    def sharpe_ratio(self, returns: np.ndarray, risk_free_rate: float, interval_ms: int) -> np.ndarray:
-        def sharpe_ratio_func(x, risk_free_rate, interval_ms):
-            periods_per_year = self._ms_per_year / interval_ms
-            excess_returns = x - (risk_free_rate / periods_per_year)
-            return np.mean(excess_returns) / (np.std(excess_returns) + self._epsilon) * np.sqrt(periods_per_year)
-        return self.compute(returns, sharpe_ratio_func, 0, risk_free_rate, interval_ms)
+    def _annualized_vol_fn(self, arr: np.ndarray):
+        log_returns = np.log(arr[1:] / arr[:-1])
+        return np.std(log_returns) * np.sqrt(self.periods_per_year)
 
-    def true_range(self, high: np.ndarray, low: np.ndarray, close: np.ndarray) -> np.ndarray:
-        def tr_func(h, l, c):
-            return np.maximum(h - l, np.maximum(np.abs(h - c), np.abs(l - c)))
-        return self.compute(np.stack((high, low, close), axis=-1), tr_func)
+    def _annualized_sharpe_ratio_fn(self, arr: np.ndarray) -> float:
+        n = len(arr)
+        if n < 2:
+            return 0.0
 
-    def atr(self, high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int = 14) -> np.ndarray:
-        tr = self.true_range(high, low, close)
-        return self.mean(tr, period)
+        # Calculate periodic returns
+        returns = np.empty(n - 1, dtype=np.float64)
+        for i in range(n - 1):
+            returns[i] = (arr[i + 1] / arr[i]) - 1
 
-    def max_drawdown(self, arr: np.ndarray) -> np.ndarray:
-        def mdd_func(x):
-            peak = np.maximum.accumulate(x)
-            drawdown = (x - peak) / peak
-            return np.min(drawdown)
-        return self.compute(arr, mdd_func)
+        # Calculate mean return
+        mean_return = 0.0
+        for r in returns:
+            mean_return += r
+        mean_return /= len(returns)
 
-    def rolling_max_drawdown(self, arr: np.ndarray, period: int) -> np.ndarray:
-        def rolling_mdd_func(window):
-            peak = np.maximum.accumulate(window)
-            drawdown = (window - peak) / peak
-            return np.min(drawdown)
-        return self.compute(arr, rolling_mdd_func, period)
+        # Annualized return
+        annualized_return = mean_return * self.periods_per_year
+
+        # Calculate standard deviation
+        sum_sq_diff = 0.0
+        for r in returns:
+            diff = r - mean_return
+            sum_sq_diff += diff * diff
+        std_dev = np.sqrt(sum_sq_diff / (len(returns) - 1))
+
+        # Annualized volatility
+        annualized_volatility = std_dev * np.sqrt(self.periods_per_year)
+
+        # Excess return
+        excess_return = annualized_return - self.risk_free_rate
+
+        # Sharpe ratio
+        sharpe_ratio = excess_return / (annualized_volatility + self._epsilon)
+
+        return sharpe_ratio
+
+    # def true_range(self, high: np.ndarray, low: np.ndarray, close: np.ndarray) -> np.ndarray:
+    #     def tr_func(h, l, c):
+    #         return np.maximum(h - l, np.maximum(np.abs(h - c), np.abs(l - c)))
+    #     return self.compute(np.stack((high, low, close), axis=-1), tr_func)
+
+    # def atr(self, high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int = 14) -> np.ndarray:
+    #     tr = self.true_range(high, low, close)
+    #     return self.mean(tr, period)

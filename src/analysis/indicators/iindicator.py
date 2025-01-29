@@ -208,7 +208,7 @@ class IIndicator(PlottingMixin):
         return (
             f"{self.name.lower()}_"
             f"{'_'.join((str(p.value) for p in self._parameters))}"
-            f"_{"_".join((i for i in self.input))}"
+            f"_{'_'.join((i for i in self.input))}"
         )
 
     @property
