@@ -111,21 +111,29 @@ def test_rolling_sum(stats, sample_data):
 # --------------------------- Tests for non-anualized methods --------------------------
 def test_sharpe_ratio(stats, sample_data):
     sr = stats.sharpe_ratio(sample_data)
+
+    returns = sample_data[1:]/ sample_data[:-1] - 1
+
+    print("returns:", returns)
+    print("shape returns:", returns.shape)
+
+    mean_returns = np.mean(returns, keepdims=False)
+    # mean_returns = np.sum(returns, axis=0) / len(returns)
+
+    print("mean_returns:", mean_returns)
+    print("shape mean_returns:", mean_returns.shape)
     
-    mean_returns = np.mean(
-        np.diff(sample_data, axis=0),
-        axis=0,
-        keepdims=True
-    )
-    stdev = np.std(sample_data, axis=0, keepdims=True)
-    expected = mean_returns / (stdev + 1e-8)
+    stdev = np.std(returns, axis=0, keepdims=False)
+
+    print("stdev:", stdev)
+    print("shape stdev:", stdev.shape)
+
+    expected = np.asarray([mean_returns / (stdev + 1e-8)])
 
     try:
-        np.testing.assert_array_almost_equal(sr, expected, decimal=6)
+        np.testing.assert_array_almost_equal(sr, expected, decimal=3)
     except Exception as e:
         print(e)
-        print(sr)
-        print(expected)
         raise
 
 

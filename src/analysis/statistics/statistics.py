@@ -21,7 +21,7 @@ spec = [
 ]
 
 
-# @jitclass(spec)
+@jitclass(spec)
 class Statistics:
     def __init__(self):
         self._epsilon = 1e-8  # Small value to avoid division by zero
@@ -123,10 +123,16 @@ class Statistics:
         return np.log(np.diff(arr[1:], arr[:-1]))
     
     def _sharpe_ratio_fn(self, arr: np.ndarray) -> np.ndarray:
-        returns = self._returns_fn(arr)
-        returns_mean = np.average(returns)
-        stdev = np.std(arr)
-        return returns_mean / stdev
+        # Calculate periodic returns
+        n = arr.shape[0]
+        returns = np.empty(n - 1, dtype=np.float64)
+        for i in range(n - 1):
+            returns[i] = (arr[i + 1] / arr[i]) - 1
+
+        mean_return = np.sum(returns) / len(returns)
+        std_dev = np.std(returns)
+
+        return mean_return / std_dev
 
     def _annualized_returns_fn(self, arr: np.ndarray) -> np.ndarray:
         total_return = arr[-1] / arr[0] - 1
