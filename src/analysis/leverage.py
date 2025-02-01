@@ -295,7 +295,7 @@ class LeverageCalculator:
 
             # Apply the maximum allowed leverage
             lv = np.minimum(lv, self.max_leverage) 
-            lv = np.asarray(lv, dtype=np.float32) # .astype(np.float32)
+            lv = np.asarray(lv, dtype=np.float32)
 
             self._cache[risk_level] = lv
 

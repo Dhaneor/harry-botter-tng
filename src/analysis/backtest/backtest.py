@@ -70,7 +70,7 @@ LeverageArray2D = types.Array(types.float32, 2, "C")
 #       • convert the dtype into a Numba Record type (with a special 
 #         helper function)
 #       • define the array with the Record type and the dimensions
-SignalRecord = from_dtype(np.float32)
+SignalRecord = from_dtype(np.float64)
 SignalArray3D = types.Array(SignalRecord, 3, "C")
 # ... the PositionRecord specification (same procedure as for the signals)
 PositionRecord = from_dtype(POSITION_DTYPE)
@@ -118,10 +118,12 @@ class BackTestCore:
         self.portfolio = np.zeros(
             shape=(signals.shape[0], signals.shape[2]), 
             dtype=PORTFOLIO_DTYPE
-            )  
+            )
+        
+        capital_per_strategy = self.config.initial_capital / strategies
         
         for s in range(strategies):
-            self.portfolio[WARMUP_PERIODS - 1, s]["quote_balance"] = self.config.initial_capital
+            self.portfolio[WARMUP_PERIODS - 1, s]["quote_balance"] = capital_per_strategy
             self._update_portfolio(WARMUP_PERIODS - 1, s)
 
     def run(self):
@@ -141,7 +143,7 @@ class BackTestCore:
                 
                 self._update_portfolio(p, s)
         
-        return self.positions
+        return self.positions, self.portfolio
     
     # ..................................................................................
     def _update_portfolio(self, p: int, s: int):

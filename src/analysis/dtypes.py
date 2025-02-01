@@ -30,17 +30,17 @@ SIGNALS_DTYPE = np.dtype([
 POSITION_DTYPE = np.dtype([
     ('position', np.int8),  # position of the instrument (0=none, 1=long,  -1=short)
     ('qty', np.float64),  # quantity of the instrument (can be negative for shorts)
-    ('entry_price', np.float32),  # entry price for the position
+    ('entry_price', np.float64),  # entry price for the position
     ('duration', np.uint16),  # duration of the position (trading periods)
-    ('equity', np.float32),  # current equity/value of the position
+    ('equity', np.float64),  # current equity/value of the position
     ('buy_qty', np.float64),  # change in quantity of the position (=buy/sell qty)
     ('buy_price', np.float64),  # price for buys/sells (open price / stop price)
     ('sell_qty', np.float64),  # change in quantity of the position (=buy/sell qty)
     ('sell_price', np.float64),  # price for buys/sells (open price / stop price)
     ('fee', np.float64),  # fee for the trade (in quote asset)
     ('slippage', np.float64),  # slippage for the trade (in quote asset)
-    ('asset_weight', np.float32),  # weight for the asset in the portfolio
-    ('strategy_weight', np.float32),  # weight of the strategy in the portfolio
+    ('asset_weight', np.float64),  # weight for the asset in the portfolio
+    ('strategy_weight', np.float64),  # weight of the strategy in the portfolio
 ])
 
 

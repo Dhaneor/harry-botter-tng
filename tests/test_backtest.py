@@ -82,11 +82,11 @@ def market_data():
             )
 
             mds = MarketDataStore(
-                open_=open_prices.astype(np.float32),
-                high=high_prices.astype(np.float32),
-                low=low_prices.astype(np.float32),
-                close=close_prices.astype(np.float32),
-                volume=volumes.astype(np.float32),
+                open_=open_prices.astype(np.float64),
+                high=high_prices.astype(np.float64),
+                low=low_prices.astype(np.float64),
+                close=close_prices.astype(np.float64),
+                volume=volumes.astype(np.float64),
                 timestamp=timestamps.reshape(-1, 1),
             )
             return MarketData(mds, [f"Asset{i+1}" for i in range(number_of_assets)])
@@ -267,32 +267,39 @@ def test_backtest_init(config, market_data, leverage_array, signals_array):
         bt = BackTestCore(md.mds, leverage, signals, config_)
     except Exception as e:
         print(f"Error in BackTestCore init: {str(e)}")
+        print("leverage dtype: ", leverage.dtype)
+        print("signals dtype: ", signals.dtype)
         raise
     else:
+        print("BacktTestCore initialized: OK")
         assert isinstance(bt, BackTestCore), "BackTestCore instance creation failed."
 
-        # Compare `leverage` arrays correctly
-        np.testing.assert_array_equal(
-            bt.leverage, leverage, err_msg="Leverage mismatch ..."
-        )
-
-        # Compare `signals` arrays correctly
-        np.testing.assert_array_equal(
-            bt.signals, signals, err_msg="Signals mismatch ..."
-        )
-
-        # Compare `market_data` attributes individually
-        for attr in ["open_", "close", "high", "low", "volume"]:
-            bt_attr = getattr(bt.market_data, attr, None)
-            md_attr = getattr(md.mds, attr, None)  # Adjust if `md` structure differs
-
-            assert (
-                bt_attr is not None
-            ), f"Attribute '{attr}' missing in BackTestCore.market_data"
-            assert md_attr is not None, f"Attribute '{attr}' missing in md.mds"
+        try:
+            # Compare `leverage` arrays correctly
             np.testing.assert_array_equal(
-                bt_attr, md_attr, err_msg=f"MarketData '{attr}' mismatch..."
+                bt.leverage, leverage, err_msg="Leverage mismatch ..."
             )
+
+            # Compare `signals` arrays correctly
+            np.testing.assert_array_equal(
+                bt.signals, signals, err_msg="Signals mismatch ..."
+            )
+
+            # Compare `market_data` attributes individually
+            for attr in ["open_", "close", "high", "low", "volume"]:
+                bt_attr = getattr(bt.market_data, attr, None)
+                md_attr = getattr(md.mds, attr, None)  # Adjust if `md` structure differs
+
+                assert (
+                    bt_attr is not None
+                ), f"Attribute '{attr}' missing in BackTestCore.market_data"
+                assert md_attr is not None, f"Attribute '{attr}' missing in md.mds"
+                np.testing.assert_array_equal(
+                    bt_attr, md_attr, err_msg=f"MarketData '{attr}' mismatch..."
+                )
+        except AssertionError as e:
+            print("assertion error:", str(e))
+            raise
         # assert bt.config == config
         # assert bt.rebalance_fn is None
         # assert bt.stop_order_fn is None
@@ -325,7 +332,7 @@ def test_backtest_run(market_data, leverage_array, signals_array, config):
     bt = BackTestCore(md.mds, leverage, signals, config)
 
     try:
-        result = bt.run()
+        result, _ = bt.run()
     except Exception as e:
         print(f"Error in BackTestCore run: {str(e)}")
         raise
@@ -355,7 +362,7 @@ def test_run_backtest_fn(market_data, leverage_array, signals_array, config):
     signals = signals_array(md, signal_gen_def, strategies)
 
     try:
-        result = run_backtest(md.mds, leverage, signals, config)
+        result, _ = run_backtest(md.mds, leverage, signals, config)
     except Exception as e:
         print(f"Error in BackTestCore run: {str(e)}")
         raise
@@ -380,12 +387,12 @@ def test_backtest_run_correctness(market_data, leverage_array, config):
     leverage = leverage_array(md)
 
     # Create a simple signal array for testing
-    signals = np.zeros((periods, assets, strategies), dtype=np.float32)
+    signals = np.zeros((periods, assets, strategies), dtype=np.float64)
     signals[long_start:long_end, 0, 0] = 1  # Long position for asset 0
     signals[short_start:short_end, 1, 0] = -1  # Short position for asset 1
 
     bt = BackTestCore(md.mds, leverage, signals, config)
-    result = bt.run()
+    result, _ = bt.run()
 
     # Check the shape and dtype of the result
     assert result.shape == (periods, assets, strategies)
@@ -458,11 +465,11 @@ def test_backtest_run_with_leverage(market_data, leverage_array, config):
         np.float32
     )  # 2x leverage for all periods
 
-    signals = np.zeros((periods, assets, strategies), dtype=np.float32)
+    signals = np.zeros((periods, assets, strategies), dtype=np.float64)
     signals[long_start:long_end, 0, 0] = 1  # Long position
 
     bt = BackTestCore(md.mds, leverage, signals, config)
-    result = bt.run()
+    result, _ = bt.run()
 
     try:
         # Check that positions are doubled due to leverage
@@ -558,14 +565,14 @@ def test_backtest_run_fields(market_data, leverage_array, config):
     )
     leverage = leverage_array(md)
 
-    md.mds.close = np.full_like(md.mds.close, 100, dtype=np.float32)
-    md.mds.open_ = np.full_like(md.mds.close, 100, dtype=np.float32)
+    md.mds.close = np.full_like(md.mds.close, 100, dtype=np.float64)
+    md.mds.open_ = np.full_like(md.mds.close, 100, dtype=np.float64)
 
-    signals = np.zeros((periods, assets, strategies), dtype=np.float32)
+    signals = np.zeros((periods, assets, strategies), dtype=np.float64)
     signals[WARMUP_PERIODS + 1 : WARMUP_PERIODS + 18, 0, 0] = 1  # Long position
 
     bt = BackTestCore(md.mds, leverage, signals, config)
-    result = bt.run()
+    result, _ = bt.run()
 
     assert result.dtype == POSITION_DTYPE
 
