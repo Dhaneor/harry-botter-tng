@@ -104,7 +104,7 @@ def test_rolling_sum(stats, sample_data):
         [204, 407, 611],
         [205, 408, 613],
         [206, 411, 617],
-    ], dtype=np.float64)
+    ], dtype=np.float32)
     np.testing.assert_array_almost_equal(sum_val, expected, decimal=1)
 
 
@@ -112,7 +112,7 @@ def test_rolling_sum(stats, sample_data):
 def test_sharpe_ratio(stats, sample_data):
     sr = stats.sharpe_ratio(sample_data)
 
-    returns = sample_data[1:]/ sample_data[:-1] - 1
+    returns = sample_data[1:] / sample_data[:-1] - 1
 
     print("returns:", returns)
     print("shape returns:", returns.shape)

@@ -6,6 +6,7 @@ Created on Thu Feb 11 01:28:53 2021
 @author: dhaneor
 """
 import numpy as np
+import matplotlib.pyplot as plt
 
 from analysis.models.market_data import MarketData, MarketDataStore
 from staff.hermes import Hermes
@@ -64,17 +65,23 @@ def test_market_data():
 
 
 def test_from_random():
-    md = MarketData.from_random(30, 3)
+    md = MarketData.from_random(300, 1, 0.025)
 
     assert isinstance(md, MarketData)
 
-    print(md.dataframe.tail())
-    print(md.mds.annual_vol)
-    print(md.get_array('close'))
+    df = md.dataframe.round(3)
+
+    print(df.tail(20))
+
+    print(f"scale factor min: {df[:]["signal_scale"].min()}")
+    print(f"scale factor max: {df[:]["signal_scale"].max()}")
+
+    md.plot()
+
 
 
 def test_get_array():
-    md = MarketData.from_random(30, 3)
+    md = MarketData.from_random(30, 3, 0.05)
     print(md.symbols)
 
     symbol_1 = md.symbols[0]

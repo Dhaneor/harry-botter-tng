@@ -15,7 +15,8 @@ import numpy as np
 from cProfile import Profile
 from pstats import SortKey, Stats
 
-from analysis import MarketData, SignalChart
+from analysis import SignalChart
+from analysis.models.market_data import MarketData
 from analysis.strategy import signal_generator as sg
 from analysis.strategy.definitions import (  # noqa: F401
     cci, ema_cross, tema_cross, rsi, trix, breakout, kama_cross,
@@ -28,9 +29,9 @@ logger = get_logger('main', level='DEBUG')
 
 # set length of test data
 length = 1000
-
+data = MarketData.from_random(length, 1, 0.025)
 sig_def = breakout
-data = MarketData.from_random(length=length, no_of_symbols=1)
+
 
 # ======================================================================================
 def _get_test_data(length=1000):
@@ -212,14 +213,14 @@ if __name__ == "__main__":
     # test_get_all_parameters()
     # test_get_all_operands()
 
-    sig_gen = test_factory(ema_cross, False)
+    sig_gen = test_factory(linreg, False)
     sig_gen.market_data = data
     # sig_gen.execute()
     # test_subplots(sig_gen)
-    # test_plot(sig_gen)
+    test_plot(sig_gen)
     # test_returns(sig_gen, data, True)
 
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
 

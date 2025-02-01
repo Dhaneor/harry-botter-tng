@@ -116,7 +116,9 @@ from analysis import (  # noqa: F401
     combine_signals, SignalStore, 
     SubPlot
 ) 
-from analysis.chart.plot_definition import Candlestick, Buy, Sell, Positions
+from analysis.chart.plot_definition import (
+    Candlestick, Line, Trigger, Buy, Sell, Positions
+)
 from analysis.dtypes import SIGNALS_DTYPE
 from misc.mixins import PlottingMixin
 from util import log_execution_time, DotDict, proj_types as tp  # noqa: F401
@@ -355,6 +357,7 @@ class SubPlotBuilder:
                 self._process_operand(operand_name, using_this_operand)
 
         self._process_unused_operands(unused_operands)
+        self._add_signal_subplot()
         return self._subplots
 
     def _process_operand(self, key: str, conditions: set[str, int, ConditionT]):
@@ -471,6 +474,45 @@ class SubPlotBuilder:
             logger.debug("done")
             self._plot_data.update(operand.plot_data)
             self._subplots.append(operand.subplots[1])
+
+    def _add_signal_subplot(self) -> None:
+        raw_signal = self\
+            .execute(compact=True)\
+            .reshape(-1,)[WARMUP_PERIODS-1:-1]
+        
+        scaled_signal = np.multiply(
+            raw_signal,
+            self.market_data.mds.signal_scale_factor.reshape(-1,)[WARMUP_PERIODS-1:-1]
+        )
+
+        self._plot_data.update(
+            {
+                "signal_scaled": scaled_signal,
+                "signal_zero": np.zeros_like(self.market_data.close.shape[0])
+            }
+        )
+        self.subplots.append(
+            SubPlot(
+                label="signal",
+                is_subplot=True,
+                level="signal_generator",
+                elements=(
+                    Line(
+                        label="signal",
+                        column="signal_scaled",
+                        legend=True,
+                        legendgroup="Signal",
+                        shape="hv"
+                    ),
+                    Trigger(
+                        label="no signal",
+                        column="signal_zero",
+                        legend=False,
+                        legendgroup="Signal",
+                    ),
+                )
+            )
+        )
 
     def _add_sub_plot(self, subplot: SubPlot) -> None:
         if subplot.label not in (sp.label for sp in self._subplots):

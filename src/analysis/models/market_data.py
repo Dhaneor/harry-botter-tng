@@ -11,26 +11,31 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from datetime import datetime, timedelta
-from numba import int64, float32
+from math import exp, cos, pi
+from numba import int64, float64
 from numba.experimental import jitclass
 from typing import Sequence
 
 from analysis.statistics.statistics import Statistics
+from analysis.chart.plot_definition import SubPlot, Candlestick, Line
+from misc.mixins import PlottingMixin
 
 
 spec = [
     ("timestamp", int64[:, :]),
-    ("open_", float32[:, :]),
-    ("high", float32[:, :]),
-    ("low", float32[:, :]),
-    ("close", float32[:, :]),
-    ("volume", float32[:, :]),
-    # ("stats", Statistics.class_type.instance_type),
-    ("log_returns", float32[:, :]),
-    ("atr", float32[:, :]),
-    ("annual_vol", float32[:, :]),
+    ("open_", float64[:, :]),
+    ("high", float64[:, :]),
+    ("low", float64[:, :]),
+    ("close", float64[:, :]),
+    ("volume", float64[:, :]),
+    ("stats", Statistics.class_type.instance_type),
+    ("interval_ms", int64),
+    ("lookback", int64),
+    ("atr", float64[:, :]),
+    ("signal_scale_factor", float64[:, :]),
+    ("annual_vol", float64[:, :]),
+    ("annual_sr", float64[:, :]),
 ]
-
 
 @jitclass(spec)
 class MarketDataStore:
@@ -44,7 +49,17 @@ class MarketDataStore:
         low: npt.ArrayLike,
         close: npt.ArrayLike,
         volume: npt.ArrayLike,
+        lookback: int = 20
     ):
+        
+        print(timestamp.shape)
+        print(open_.shape)
+        print(high.shape)
+        print(low.shape)
+        print(close.shape)
+        print(volume.shape)
+        print("*" * 120)
+        
         self.timestamp = timestamp
         self.open_ = open_
         self.high = high
@@ -52,59 +67,149 @@ class MarketDataStore:
         self.close = close
         self.volume = volume
 
-        # self.stats = Statistics()
-        self.interval_ms = self._calculate_interval(timestamp)
+        self.stats = Statistics()
+        # self.interval_ms = self._calculate_interval(timestamp)
+
+        self.lookback = lookback
 
         rows, cols = close.shape
 
-        # Initialize indicator arrays to zeros or empty
-        self.log_returns = np.zeros((rows, cols), dtype=np.float32)
-        self.atr = np.zeros((rows, cols), dtype=np.float32)
-        self.annual_vol = np.zeros((rows, cols), dtype=np.float32)
+        self.atr = np.full_like(close, np.nan)
+        self.annual_vol = np.zeros((rows, cols), dtype=np.float64)
+        self.annual_sr = np.ones((rows, cols), dtype=np.float64)
+        self.signal_scale_factor = np.ones(close.shape, dtype=np.float64)
 
-        self.compute_log_returns()
         self.compute_atr()
-        self.compute_annual_vol()
+        self.compute_annualized_volatility()
 
+        self.annual_sr = self.stats.annualized_sharpe_ratio(
+            self.close.astype(np.float64),
+            self.periods_per_year,
+            self.lookback
+        )
+
+        # scale_factor = np.abs(
+        #     self.stats.sharpe_ratio(
+        #         self.close.astype(np.float64), 
+        #         self.lookback
+        #     )
+        # )
+
+        scale_factor = self.stats.sharpe_ratio(
+            self.close.astype(np.float64), 
+            self.lookback
+        ) + 1
+
+        # scale_factor = np.abs(
+        #     self.stats.annualized_sharpe_ratio(
+        #         self.close.astype(np.float64),
+        #         self.periods_per_year,
+        #         self.lookback
+        #     )
+        # )
+
+        # scale_factor = 1 + self.stats.annualized_volatility(
+        #     self.close.astype(np.float64),
+        #     self.periods_per_year, 
+        #     self.lookback
+        # )
+
+        self.signal_scale_factor = self.smooth_it(scale_factor, 40)
+
+    # ..................................................................................
     @property
     def periods_per_year(self) -> int:
-        timestamp_diffs = np.diff(self.timestamp, axis=0)
-        typical_diff = np.min(timestamp_diffs, axis=0)
-        ms_per_year = 356 * 24 * 60 * 60 * 1000  # milliseconds per year
+        ts = self.timestamp.astype(np.float64).reshape(-1,)
+        timestamp_diffs = np.diff(ts)
+        mask = timestamp_diffs != 0
+        typical_diff = np.median(timestamp_diffs[mask])
+        ms_per_year = 356 * 24 * 60 * 60 * 1000
         return int(ms_per_year / typical_diff)
 
-    def get_no_of_periods(self) -> int:
+    @property
+    def periods(self) -> int:
         """
         Return the number of periods in the data.
         """
         return self.timestamp.shape[0]
 
-    def get_no_of_symbols(self) -> int:
+    @property
+    def symbols(self) -> int:
         """
         Return the number of symbols in the data.
         """
         return self.close.shape[1]
 
-    def _calculate_interval(self, timestamp):
-        return int(np.median(np.diff(timestamp)))
-
-    def compute_log_returns(self):
-        self.log_returns = self.stats.log_returns(self.close)
-
-    def compute_annualized_returns(self):
-        self.annualized_returns = self.stats.annualized_returns(self.close, self.interval_ms)
-
+    # ..................................................................................
     def compute_annualized_volatility(self):
-        self.annualized_volatility = self.stats.annualized_volatility(self.close, self.interval_ms)
-
-    def compute_sharpe_ratio(self, risk_free_rate=0.0):
-        returns = self.stats.pct_change(self.close)
-        self.sharpe_ratio = self.stats.sharpe_ratio(returns, risk_free_rate, self.interval_ms)
+        self.annual_vol = self.stats.annualized_volatility(
+            self.close.astype(np.float64), 
+            self.periods_per_year,
+            self.lookback
+        )
 
     def compute_atr(self, period=14):
-        self.atr = self.stats.atr(self.high, self.low, self.close, period)
+        markets, periods = self.atr.shape
 
-class MarketData:
+        for m in range(markets):
+            for p in range(period, periods):
+                tr = max(
+                    self.high[m, p] - self.low[m, p],
+                    abs(self.high[m, p] - self.open_[m, p]),
+                    abs(self.low[m, p] - self.open_[m, p])
+                )
+                self.atr[m, p] = ((self.atr[m, p - 1] * (period - 1) + tr) / period)
+
+    def smooth_it(self, arr: np.ndarray, factor: int = 3):
+        for market in range(arr.shape[1]):
+            self._apply_smoothing_1D(arr[:, market], factor)
+        return arr
+
+    # ..................................................................................
+    def _apply_smoothing_1D(self, data: np.ndarray, length: int) -> np.ndarray:
+        """
+        Calculate the Ehlers Ultimate Smoother for a given data series.
+
+        Parameters:
+        - data (array-like): The input data series (e.g., prices).
+        - length (int): The smoothing period.
+
+        Returns:
+        - us (np.ndarray): The smoothed data series.
+        """
+        n: np.int64 = len(data)
+        us: np.ndarray = np.zeros(n, dtype=np.float64)
+        
+        # Check if data length is sufficient
+        if n < 3:
+            raise ValueError("Data array must have at least 3 elements.")
+        
+        # Initialize the smoothed series with zeros
+        us = np.zeros(n)
+
+        f: np.float64 = (1.414 * pi) / length
+        a1 = exp(-f)
+        c2 = 2 * a1 * cos(f)
+        c3 = -a1 ** 2
+        c1 = (1 + c2 - c3) / 4
+        
+        # Initialization:
+        us[0] = data[0]
+        us[1] = data[1]
+        
+        # Iterate through the data starting from index 2
+        for t in range(2, n):
+            us[t] = (
+                (1 - c1) * data[t] +
+                (2 * c1 - c2) * data[t - 1] +
+                (-c1 - c3) * data[t - 2] +
+                c2 * us[t - 1] +
+                c3 * us[t - 2]
+            )
+        
+        return us
+
+class MarketData(PlottingMixin):
     """A class to hold OHLCV data for multiple symbols.
 
     NOTE: This class assumes that the provided data is for
@@ -118,6 +223,8 @@ class MarketData:
         """
         self.mds = market_data_store
         self.symbols = symbols
+
+        self.display_name = f"Market Data ({self.mds.lookback})"
 
         # create a dictionary symbol -> column index
         self.symbol_to_col = {sym: i for i, sym in enumerate(symbols)}
@@ -199,7 +306,7 @@ class MarketData:
         time_index = pd.to_datetime(mds.timestamp[:, 0], unit="ms")
 
         # Define which fields to show in the multi-level columns
-        fields = ["open", "high", "low", "close", "volume", "log_ret", "atr", "ann_vol"]
+        fields = ["open", "high", "low", "close", "volume", "atr", "ann_vol", "ann_sr", "signal_scale"]
 
         # Build a MultiIndex for columns: [(symbol, "open"), (symbol, "high"), ...]
         tuples = []
@@ -219,9 +326,10 @@ class MarketData:
             c_low = mds.low[:, sym_idx]
             c_close = mds.close[:, sym_idx]
             c_vol = mds.volume[:, sym_idx]
-            c_lr = mds.log_returns[:, sym_idx]
             c_atr = mds.atr[:, sym_idx]
             c_av = mds.annual_vol[:, sym_idx]
+            c_asr = mds.annual_sr[:, sym_idx]
+            c_scl = mds.signal_scale_factor[:, sym_idx]
 
             base = sym_idx * len(fields)
             data_matrix[:, base + 0] = c_open
@@ -229,9 +337,10 @@ class MarketData:
             data_matrix[:, base + 2] = c_low
             data_matrix[:, base + 3] = c_close
             data_matrix[:, base + 4] = c_vol
-            data_matrix[:, base + 5] = c_lr
-            data_matrix[:, base + 6] = c_atr
-            data_matrix[:, base + 7] = c_av
+            data_matrix[:, base + 5] = c_atr
+            data_matrix[:, base + 6] = c_av
+            data_matrix[:, base + 7] = c_asr
+            data_matrix[:, base + 8] = c_scl
 
         # Build the final DataFrame
         df = pd.DataFrame(data_matrix, columns=col_index, index=time_index)
@@ -306,6 +415,52 @@ class MarketData:
             int: number of assets.
         """
         return len(self.symbols)
+
+    @property
+    def plot_data(self):
+        return self[self.symbols[0]]
+
+    @property
+    def subplots(self):
+        subplots: list[SubPlot] = [
+            SubPlot(
+                label="OHLCV",
+                is_subplot=False,
+                elements=(Candlestick(),),
+                level="operand",
+            ),
+            SubPlot(
+                label='scaling factor',
+                is_subplot=True,
+                elements=(
+                    Line(
+                        label='scaling factor',
+                        column='signal_scale_factor',
+                    ),
+                )
+            ),
+            SubPlot(
+                label='annualized SR',
+                is_subplot=True,
+                elements=(
+                    Line(
+                        label='annualized sharpe ratio',
+                        column='ann_sr',
+                    ),
+                )
+            ),
+            SubPlot(
+                label='annualized VOLA',
+                is_subplot=True,
+                elements=(
+                    Line(
+                        label='annualized volatility (stdev)',
+                        column='ann_vol',
+                    ),
+                )
+            ),
+        ]
+        return subplots
 
     # ................................ METHODS TO RETRIEVE DATA ...........................
     def get_array(self, field, symbol=None):
@@ -409,7 +564,7 @@ class MarketData:
 
         # Generate end timestamp (current date at 00:00:00)
         end_date = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
-        start_date = end_date - timedelta(hours=length / 4)
+        start_date = end_date - timedelta(days=length)
     
         # Generate timestamps
         timestamps = pd.date_range(start=start_date, end=end_date, periods=length)
@@ -423,11 +578,11 @@ class MarketData:
         ]
     
         # Initialize arrays
-        open_prices = np.zeros((length, no_of_symbols), dtype=np.float32)
-        high_prices = np.zeros((length, no_of_symbols), dtype=np.float32)
-        low_prices = np.zeros((length, no_of_symbols), dtype=np.float32)
-        close_prices = np.zeros((length, no_of_symbols), dtype=np.float32)
-        volumes = np.zeros((length, no_of_symbols), dtype=np.float32)
+        open_prices = np.zeros((length, no_of_symbols), dtype=np.float64)
+        high_prices = np.zeros((length, no_of_symbols), dtype=np.float64)
+        low_prices = np.zeros((length, no_of_symbols), dtype=np.float64)
+        close_prices = np.zeros((length, no_of_symbols), dtype=np.float64)
+        volumes = np.zeros((length, no_of_symbols), dtype=np.float64)
         timestamps = np.tile(timestamps_ms.reshape(-1, 1), (1, no_of_symbols))
     
         for i in range(no_of_symbols):
@@ -461,6 +616,9 @@ class MarketData:
     
             timestamps[:, i] = timestamps_ms
     
+        print(f"shape of close prices: {close_prices.shape}")
+        print(f"shape of timestamps: {timestamps.shape}")
+
         # Create MarketDataStore
         mds = MarketDataStore(
             open_=open_prices,
@@ -481,6 +639,8 @@ class MarketData:
         """
         col = self.symbol_to_col[symbol]
 
+        ["open", "high", "low", "close", "volume", "atr", "ann_vol", "ann_sr", "signal_scale"]
+
         # For convenience, define a small dictionary to map field_name -> actual array
         mds = self.mds
         field_arrays = {
@@ -489,14 +649,17 @@ class MarketData:
             "low": mds.low[:, col],
             "close": mds.close[:, col],
             "volume": mds.volume[:, col],
-            "log_ret": mds.log_returns[:, col],
             "atr": mds.atr[:, col],
             "ann_vol": mds.annual_vol[:, col],
+            "ann_sr": mds.annual_sr[:, col],
+            "signal_scale_factor": mds.signal_scale_factor[:, col],
         }
 
         time_index = mds.timestamp[:, col]  # or mds.timestamp[:, 0] if aligned
         df = pd.DataFrame(
-            {f: field_arrays[f] for f in self.available_fields}, index=time_index
+            field_arrays,
+            # {f: field_arrays[f] for f in self.available_fields}, 
+            index=time_index
         )
         df.index.name = None
         return df
@@ -516,34 +679,12 @@ class MarketData:
         # Prepare a 2D array for all symbols
         data_matrix = np.zeros((rows, len(self.symbols)), dtype=np.float64)
 
-        # Map the user-friendly name to the actual array in the jitclass
-        # Notice that we have `mds.open_`, `mds.close`, etc. are separate arrays
-        # if field == "open":
-        #     arr = mds.open_
-        # elif field == "high":
-        #     arr = mds.high
-        # elif field == "low":
-        #     arr = mds.low
-        # elif field == "close":
-        #     arr = mds.close
-        # elif field == "volume":
-        #     arr = mds.volume
-        # elif field == "log_ret":
-        #     arr = mds.log_returns
-        # elif field == "atr":
-        #     arr = mds.atr
-        # elif field == "ann_vol":
-        #     arr = mds.annual_vol
-        # else:
-        #     raise KeyError(f"Unsupported field '{field}'")
-
         field_arrays = {
             "open": mds.open_,
             "high": mds.high,
             "low": mds.low,
             "close": mds.close,
             "volume": mds.volume,
-            "log_ret": mds.log_returns,
             "atr": mds.atr,
             "ann_vol": mds.annual_vol,
         }
@@ -565,3 +706,6 @@ class MarketData:
         df = pd.DataFrame(data_matrix, columns=col_index, index=time_index)
         df.index.name = None
         return df
+
+    
+
