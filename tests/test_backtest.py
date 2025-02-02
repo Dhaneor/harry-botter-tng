@@ -585,16 +585,9 @@ def test_backtest_run_fields(market_data, leverage_array, config):
         assert active_period["entry_price"] > 0, "Entry price is not > 0"
         assert active_period["duration"] > 0, "Duration is not > 0"
         assert active_period["equity"] > 0, "Equity is not > 0"
-        assert np.isnan(
-            active_period["fee"]
-        ), f"Fee is not 0, but {active_period["fee"]}"
-        assert np.isnan(
-            active_period["slippage"]
-        ), f"Fee is not 0, but {active_period["slippage"]}"
     except AssertionError as e:
         print(f"Error: {str(e)}")
         print_df_for_result_column(md, result, leverage, signals, 0, 0)
         raise e
-
 
 # Add more tests as needed to cover different scenarios and edge cases

@@ -111,8 +111,14 @@ class BackTestCore:
         _, markets, strategies = self.signals.shape
         for s in range(strategies):
             for m in range(markets):
-                self.positions[WARMUP_PERIODS - 1, m, s]["asset_weight"] = 1
-                self.positions[WARMUP_PERIODS - 1, m, s]["strategy_weight"] = 1
+                a_weight = 1 / markets
+                s_weight = 1 / strategies
+                initial_capital = self.config.initial_capital * a_weight * s_weight
+
+                self.positions[WARMUP_PERIODS - 1, m, s]["asset_weight"] = a_weight
+                self.positions[WARMUP_PERIODS - 1, m, s]["strategy_weight"] = s_weight
+                self.positions[WARMUP_PERIODS - 1, m, s]["quote_qty"] = initial_capital
+                self.positions[WARMUP_PERIODS - 1, m, s]["equity"] = initial_capital
         
         # initialize Portfolio array
         self.portfolio = np.zeros(
@@ -196,7 +202,9 @@ class BackTestCore:
                 self._open_position(p, m, s, -1)
         
         self.positions[p, m, s]["equity"] = \
-            self.market_data.close[p, m] * self.positions[p, m, s]["qty"]
+            self.market_data.close[p, m] \
+            * self.positions[p, m, s]["qty"] \
+            + self.positions[p, m, s]["quote_qty"] 
 
     # ............................ PROCESSINNG POSITIONS ...............................
     def _open_position(self, p: int, m: int, s: int, type: int):
@@ -214,16 +222,14 @@ class BackTestCore:
         if base_qty > 0:
             self.positions[p, m, s]["buy_qty"] = base_qty
             self.positions[p, m, s]["buy_price"] = price
-            self.portfolio[p, s]["quote_balance"] -= exposure_quote
+            self.positions[p, m, s]["quote_qty"] -= exposure_quote
         else:
             self.positions[p, m, s]["sell_qty"] = abs(base_qty)
             self.positions[p, m, s]["sell_price"] = price
-            self.portfolio[p, s]["quote_balance"] += exposure_quote
+            self.positions[p, m, s]["quote_qty"] += exposure_quote
 
         self.positions[p, m, s]["fee"] = fee
         self.positions[p, m, s]["slippage"] = slippage
-
-        return
 
     def _close_position(self, p, m, s):
         price = self.market_data.close[p, m]
@@ -236,7 +242,7 @@ class BackTestCore:
         change_quote = portfolio["qty"] * price
         fee, slippage = self._calculate_fee_and_slippage(change_quote)
 
-        self.portfolio[p, s]["quote_balance"] += change_quote - fee - slippage
+        self.positions[p, m, s]["quote_qty"] += change_quote - fee - slippage
         
         # Update portfolio
         if position == 1:
@@ -269,8 +275,6 @@ class BackTestCore:
         fee , slippage = self._calculate_fee_and_slippage(change_exposure)
         change_qty = (change_exposure - fee - slippage) / price * position_type
 
-        # print("change qty: ", change_qty)
-
         if position_type == 1:
             if change_qty > 0 and not self.config.increase_allowed:
                 return
@@ -286,17 +290,42 @@ class BackTestCore:
         if change_qty > 0:
             self.positions[p, m, s]["buy_qty"] = change_qty
             self.positions[p, m, s]["buy_price"] = price
-            self.portfolio[p, s]["quote_balance"] -= change_exposure
+            self.positions[p, m, s]["quote_qty"] -= change_exposure
         else:
             self.positions[p, m, s]["sell_qty"] = change_qty
             self.positions[p, m, s]["sell_price"] = price
-            self.portfolio[p, s]["quote_balance"] += change_exposure
+            self.positions[p, m, s]["quote_qty"] += change_exposure
 
         self.positions[p, m, s]["qty"] += change_qty
-        self.positions[p, m, s]["fee"] = fee
-        self.positions[p, m, s]["slippage"] = slippage
+        self.positions[p, m, s]["fee"] += fee
+        self.positions[p, m, s]["slippage"] += slippage
     
     # ..................................................................................
+    def _process_buy(self, p, m, s, quote_qty, price):
+        fee , slippage = self._calculate_fee_and_slippage(quote_qty)
+        base_qty = (quote_qty - fee - slippage) / price
+
+        self.positions[p, m, s]["buy_qty"] = base_qty
+        self.positions[p, m, s]["buy_price"] = price
+        self.positions[p, m, s]["quote_qty"] -= quote_qty
+
+        self.positions[p, m, s]["qty"] += base_qty
+        self.positions[p, m, s]["fee"] += fee
+        self.positions[p, m, s]["slippage"] += slippage
+
+    def _process_sell(self, p, m, s, quote_qty, price):
+        fee , slippage = self._calculate_fee_and_slippage(quote_qty)
+        base_qty = (quote_qty - fee - slippage) / price
+
+        self.positions[p, m, s]["sell_qty"] = base_qty
+        self.positions[p, m, s]["sell_price"] = price
+        self.positions[p, m, s]["quote_qty"] += quote_qty
+
+        self.positions[p, m, s]["qty"] -= base_qty
+        self.positions[p, m, s]["fee"] += fee
+        self.positions[p, m, s]["slippage"] += slippage
+
+
     def _calculate_change_exposure(self, p, m, s, price) -> Tuple[float, float]:
         """Calculate the change in exposure for a given position/asset.
         
@@ -347,11 +376,14 @@ class BackTestCore:
         --------
         float: target (quote asset) exposure for the given position/asset
         """
-        return self.portfolio[p, s]["total_value"] \
+        return self.positions[p, m, s]["equity"] \
             * self.signals[p-1, m, s] \
-            * self.positions[p, m, s]["asset_weight"] \
-            * self.positions[p, m, s]["strategy_weight"]\
             * self.leverage[p, m]
+        # return self.portfolio[p, s]["total_value"] \
+        #     * self.signals[p-1, m, s] \
+        #     * self.positions[p, m, s]["asset_weight"] \
+        #     * self.positions[p, m, s]["strategy_weight"]\
+        #     * self.leverage[p, m]
 
     def _calculate_fee_and_slippage(self, change_quote):
         # calculate fee & slippage
