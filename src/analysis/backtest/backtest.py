@@ -24,6 +24,7 @@ WARMUP_PERIODS = 200  # not included for portfolio calculations, needed for sign
 # ================================= Config class definition ============================
 config_spec = [
     ("initial_capital", float64),
+    ("max_leverage", float64),
     ("rebalance_freq", int16),
     ("rebalance_position", boolean),
     ("increase_allowed", boolean),
@@ -39,6 +40,7 @@ class Config:
     def __init__(
         self, 
         initial_capital,
+        max_leverage = 1.0,
         rebalance_freq = 0,  # in trading periods
         rebalance_position = True, 
         increase_allowed = True, 
@@ -48,6 +50,7 @@ class Config:
         slippage_rate = 0.001, 
     ):
         self.initial_capital = initial_capital
+        self.max_leverage = max_leverage
         self.rebalance_freq = rebalance_freq
         self.rebalance_position = rebalance_position
         self.increase_allowed = increase_allowed
@@ -90,7 +93,7 @@ spec = [
 
 
 # ================================== BackTest class ====================================
-@jitclass(spec)
+# @jitclass(spec)
 class BackTestCore:
     def __init__(
         self,
@@ -165,12 +168,13 @@ class BackTestCore:
         self.portfolio[p, s]['total_value'] = total_value
 
     def _process_period(self, p: int, m: int, s: int):
+        print("processing: ", p, m, s)
         self.positions[p, m, s]["buy_price"] = np.nan
         self.positions[p, m, s]["sell_price"] = np.nan
         self.positions[p, m, s]["buy_qty"] = np.nan
         self.positions[p, m, s]["sell_qty"] = np.nan
-        self.positions[p, m, s]["fee"] = np.nan
-        self.positions[p, m, s]["slippage"] = np.nan
+        self.positions[p, m, s]["fee"] = 0.0
+        self.positions[p, m, s]["slippage"] = 0.0
 
         record = self.positions[p, m, s]
         position = record["position"]    
@@ -205,31 +209,21 @@ class BackTestCore:
             self.market_data.close[p, m] \
             * self.positions[p, m, s]["qty"] \
             + self.positions[p, m, s]["quote_qty"] 
+        print("-" * 120)
 
     # ............................ PROCESSINNG POSITIONS ...............................
     def _open_position(self, p: int, m: int, s: int, type: int):
-        exposure_quote = self._calculate_target_exposure(p, m, s)
         price = self.market_data.open_[p, m]
-        
-        fee , slippage = self._calculate_fee_and_slippage(exposure_quote)
-        base_qty = (exposure_quote - fee - slippage) / price
+        exposure_quote, _ = self._calculate_change_exposure(p, m, s, price)
 
         self.positions[p, m, s]["position"] = type
-        self.positions[p, m, s]["qty"] = base_qty
         self.positions[p, m, s]["entry_price"] = price
         self.positions[p, m, s]["duration"] = 1
 
-        if base_qty > 0:
-            self.positions[p, m, s]["buy_qty"] = base_qty
-            self.positions[p, m, s]["buy_price"] = price
-            self.positions[p, m, s]["quote_qty"] -= exposure_quote
-        else:
-            self.positions[p, m, s]["sell_qty"] = abs(base_qty)
-            self.positions[p, m, s]["sell_price"] = price
-            self.positions[p, m, s]["quote_qty"] += exposure_quote
-
-        self.positions[p, m, s]["fee"] = fee
-        self.positions[p, m, s]["slippage"] = slippage
+        if exposure_quote > 0:
+            self._process_buy(p, m, s, exposure_quote, price)
+        elif exposure_quote < 0:
+            self._process_sell(p, m, s, -exposure_quote, price)
 
     def _close_position(self, p, m, s):
         price = self.market_data.close[p, m]
@@ -272,8 +266,12 @@ class BackTestCore:
         or change_pct < self.config.minimum_change:
             return
         
+        print("change exposure: ", change_exposure)
+
         fee , slippage = self._calculate_fee_and_slippage(change_exposure)
-        change_qty = (change_exposure - fee - slippage) / price * position_type
+        change_qty = (change_exposure - fee - slippage) / price # * position_type
+
+        print("change qty: ", change_qty)
 
         if position_type == 1:
             if change_qty > 0 and not self.config.increase_allowed:
@@ -288,17 +286,22 @@ class BackTestCore:
                 return
 
         if change_qty > 0:
-            self.positions[p, m, s]["buy_qty"] = change_qty
-            self.positions[p, m, s]["buy_price"] = price
-            self.positions[p, m, s]["quote_qty"] -= change_exposure
-        else:
-            self.positions[p, m, s]["sell_qty"] = change_qty
-            self.positions[p, m, s]["sell_price"] = price
-            self.positions[p, m, s]["quote_qty"] += change_exposure
+            self._process_buy(p, m, s, change_exposure, price)
+        elif change_qty < 0:
+            self._process_sell(p, m, s, -change_exposure, price)
 
-        self.positions[p, m, s]["qty"] += change_qty
-        self.positions[p, m, s]["fee"] += fee
-        self.positions[p, m, s]["slippage"] += slippage
+        # if change_qty > 0:
+        #     self.positions[p, m, s]["buy_qty"] = change_qty
+        #     self.positions[p, m, s]["buy_price"] = price
+        #     self.positions[p, m, s]["quote_qty"] -= change_exposure
+        # else:
+        #     self.positions[p, m, s]["sell_qty"] = change_qty
+        #     self.positions[p, m, s]["sell_price"] = price
+        #     self.positions[p, m, s]["quote_qty"] += change_exposure
+
+        # self.positions[p, m, s]["qty"] += change_qty
+        # self.positions[p, m, s]["fee"] += fee
+        # self.positions[p, m, s]["slippage"] += slippage
     
     # ..................................................................................
     def _process_buy(self, p, m, s, quote_qty, price):
@@ -315,11 +318,11 @@ class BackTestCore:
 
     def _process_sell(self, p, m, s, quote_qty, price):
         fee , slippage = self._calculate_fee_and_slippage(quote_qty)
-        base_qty = (quote_qty - fee - slippage) / price
+        base_qty = quote_qty / price
 
-        self.positions[p, m, s]["sell_qty"] = base_qty
+        self.positions[p, m, s]["sell_qty"] = abs(base_qty)
         self.positions[p, m, s]["sell_price"] = price
-        self.positions[p, m, s]["quote_qty"] += quote_qty
+        self.positions[p, m, s]["quote_qty"] += quote_qty - fee - slippage
 
         self.positions[p, m, s]["qty"] -= base_qty
         self.positions[p, m, s]["fee"] += fee
@@ -339,51 +342,40 @@ class BackTestCore:
         --------
         tuple (float, float): change in exposure (quote asset) and percentage change
         """
-        current_exposure = self.positions[p - 1, m, s]["qty"] * price
-        target_exposure = self._calculate_target_exposure(p, m, s)
-
-        # print("\nCurrent portfolio: ", self.portfolio[p, s])
-        # print(current_exposure)
-        # print(target_exposure)
         
+        # calculate the current exposure
+        current_exposure = self.positions[p - 1, m, s]["qty"] * price
+
+        print("current exposure: ", current_exposure)
+
+        # calulate the target exposure
+        equity = current_exposure + self.positions[p - 1, m, s]["quote_qty"]
+        target_exposure =  equity * self.signals[p-1, m, s] * self.leverage[p, m] 
+
+        print("targrt expsoure: ", target_exposure)
+
+        # even if the leverage value is smaller that the max allowed
+        # leverage, signals can be >1 or <-1, so we need to check the 
+        # effective leverage again and adjust if necessary
+        effective_leverage = abs(target_exposure / equity)
+
+        if effective_leverage > self.config.max_leverage:
+            target_exposure /= (effective_leverage / self.config.max_leverage)
+
+        # calculate the change (absolute & percentage)      
         change = target_exposure - current_exposure
 
-        # print(change)
+        return (
+            change, 
+            change / current_exposure if current_exposure > 0 else effective_leverage,
+        )
 
-        change_pct = abs(change / current_exposure)  # if current_exposure > 0 else 1
-
-        # print(change_pct)
-        # print("----------------")
-
-        return change, change_pct
-
-    def _calculate_target_exposure(self, p: int, m: int, s: int) -> float:
-        """Calculate the target exposure for a given position/asset.
+    def _calculate_leverage(self, p, m, s) -> float:
+        price = self.market_data.open_[p, m]
+        current_exposure = self.positions[p - 1, m, s]["qty"] * price
+        equity = current_exposure + self.positions[p - 1, m, s]["quote_qty"]
         
-        The target exposure is determined by several factors:
-        • the value of the whole (sub-)portfolio
-        • the signal (strength) for the asset/strategy
-        • the asset weight in the portfolio
-        • the strategy weight
-
-        Parameters:
-        -----------
-        p (int): period index
-        m (int): market indexm
-        s (int): strategy index
-
-        Returns:
-        --------
-        float: target (quote asset) exposure for the given position/asset
-        """
-        return self.positions[p, m, s]["equity"] \
-            * self.signals[p-1, m, s] \
-            * self.leverage[p, m]
-        # return self.portfolio[p, s]["total_value"] \
-        #     * self.signals[p-1, m, s] \
-        #     * self.positions[p, m, s]["asset_weight"] \
-        #     * self.positions[p, m, s]["strategy_weight"]\
-        #     * self.leverage[p, m]
+        return abs(current_exposure / equity)  
 
     def _calculate_fee_and_slippage(self, change_quote):
         # calculate fee & slippage

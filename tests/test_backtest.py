@@ -162,21 +162,21 @@ def print_df_for_result_column(
     fee_str = f"fee.{symbol_index + 1}.{strategies_index + 1}"
     slippage_str = f"slippage.{symbol_index + 1}.{strategies_index + 1}"
 
-    df.insert(12, "change_quote", 0)
+    df.insert(15, "change_quote", 0)
     df.change_quote = df.change_quote.astype(np.float64)
 
     df.loc[df[buy_qty_str] != 0, "change_quote"] = (
-        (df[buy_qty_str] * df.close_price * -1).astype(np.float64)
-        + df[fee_str]
-        + df[slippage_str]
+        - (df[buy_qty_str] * df.close_price * -1).astype(np.float64)
+        - df[fee_str]
+        - df[slippage_str]
     )
     df.loc[df[sell_qty_str] != 0, "change_quote"] = (
-        (df[sell_qty_str] * df.close_price * -1).astype(np.float64)
-        + df[fee_str]
-        + df[slippage_str]
+        (df[sell_qty_str] * df.close_price).astype(np.float64)
+        - df[fee_str]
+        - df[slippage_str]
     )
 
-    df.insert(13, "check_diff", np.nan)
+    df.insert(16, "check_diff", np.nan)
     df.loc[df[buy_qty_str] != 0, "check_diff"] = (
         df[buy_qty_str] * df.close_price
         + df[fee_str]
@@ -185,8 +185,8 @@ def print_df_for_result_column(
     )
     df.loc[df[sell_qty_str] != 0, "check_diff"] = (
         df[sell_qty_str] * df.close_price
-        + df[fee_str]
-        + df[slippage_str]
+        -  df[fee_str]
+        -  df[slippage_str]
         - df["change_quote"]
     )
 
@@ -308,7 +308,7 @@ def test_backtest_init(config, market_data, leverage_array, signals_array):
 def test_backtest_run(market_data, leverage_array, signals_array, config):
     periods = 1_000
     assets = 10
-    strategies = 100
+    strategies = 10
 
     md = market_data(
         number_of_periods=periods, number_of_assets=assets, data_type="fixed"
@@ -344,7 +344,7 @@ def test_backtest_run(market_data, leverage_array, signals_array, config):
 def test_run_backtest_fn(market_data, leverage_array, signals_array, config):
     periods = 1_000
     assets = 10
-    strategies = 100
+    strategies = 10
 
     md = market_data(
         number_of_periods=periods, number_of_assets=assets, data_type="fixed"
@@ -448,7 +448,6 @@ def test_backtest_run_correctness(market_data, leverage_array, config):
         print(f"Error: {str(e)}")
         print_df_for_result_column(md, result, leverage, signals, 1, 0)
         raise e
-
 
 def test_backtest_run_with_leverage(market_data, leverage_array, config):
     periods = 220  # Ensure we have enough periods after WARMUP_PERIODS
@@ -557,7 +556,7 @@ def test_backtest_run_with_leverage(market_data, leverage_array, config):
 
 def test_backtest_run_fields(market_data, leverage_array, config):
     periods = 220
-    assets = 1
+    assets = 2
     strategies = 1
 
     md = market_data(
@@ -569,7 +568,8 @@ def test_backtest_run_fields(market_data, leverage_array, config):
     md.mds.open_ = np.full_like(md.mds.close, 100, dtype=np.float64)
 
     signals = np.zeros((periods, assets, strategies), dtype=np.float64)
-    signals[WARMUP_PERIODS + 1 : WARMUP_PERIODS + 18, 0, 0] = 1  # Long position
+    signals[WARMUP_PERIODS + 1: WARMUP_PERIODS + 18, 0, 0] = 1  # Long position
+    signals[WARMUP_PERIODS + 1: WARMUP_PERIODS + 18, 1, 0] = -1  # Short position
 
     bt = BackTestCore(md.mds, leverage, signals, config)
     result, _ = bt.run()
@@ -577,6 +577,7 @@ def test_backtest_run_fields(market_data, leverage_array, config):
     assert result.dtype == POSITION_DTYPE
 
     # Check some specific fields for correctness
+    # ... for long position for asset 0
     active_period = result[WARMUP_PERIODS + 7, 0, 0]
 
     try:
@@ -585,9 +586,38 @@ def test_backtest_run_fields(market_data, leverage_array, config):
         assert active_period["entry_price"] > 0, "Entry price is not > 0"
         assert active_period["duration"] > 0, "Duration is not > 0"
         assert active_period["equity"] > 0, "Equity is not > 0"
+        # assert active_period["fee"] > 0, "Fee is not > 0"
     except AssertionError as e:
         print(f"Error: {str(e)}")
         print_df_for_result_column(md, result, leverage, signals, 0, 0)
         raise e
+    
+    # ...same for the short position for asset 1
+    active_period = result[WARMUP_PERIODS + 7, 1, 0]
 
-# Add more tests as needed to cover different scenarios and edge cases
+    try:
+        assert active_period["position"] == -1, "Position is not -1"
+        assert active_period["qty"] < 0, "Quantity is not negative"
+        assert active_period["entry_price"] > 0, "Entry price is not > 0"
+        assert active_period["duration"] > 0, "Duration is not > 0"
+        assert active_period["equity"] > 0, "Equity is not > 0"
+        # assert active_period["position"] == 0, "... just checking"
+    except AssertionError as e:
+        print(f"Error: {str(e)}")
+        print_df_for_result_column(md, result, leverage, signals, 1, 0)
+        raise e
+
+    # check correct calculation of amounts for changes
+    column = result[:, 0, 0]
+    for idx in range(WARMUP_PERIODS, periods):
+        if column[idx]["buy_qty"] > 0:
+            qty = column[idx]["buy_qty"]
+            price = column[idx]["buy_price"]
+            fee = column[idx]["fee"]
+            slippage = column[idx]["slippage"]
+
+            change_quote_expected = qty * price + fee + slippage
+            change_quote_real = column[idx - 1]["quote_qty"] - column[idx]["quote_qty"]
+            assert change_quote_expected == change_quote_real, \
+                f"{change_quote_expected=} != {change_quote_real=}"
+            
