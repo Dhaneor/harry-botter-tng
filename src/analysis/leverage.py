@@ -12,8 +12,7 @@ import logging
 from sys import getsizeof
 
 from analysis.models.market_data import MarketData
-from analysis.statistics.correlation import Correlation
-from util import proj_types as tp  # noqa: F401, E402
+from analysis.diversification_multiplier import DiversificationMultiplier
 
 logger = logging.getLogger("main.leverage")
 logger.setLevel(logging.DEBUG)
@@ -40,127 +39,6 @@ INTERVAL_IN_MS = {
     "1w": 604800 * 1000,
     "1M": MILLISECONDS_PER_YEAR,
 }
-
-
-# ======================================================================================
-class DiversificationMultiplier:
-    """
-    Class to calculate the diversification multiplier.
-
-    'The only free lunch in investing/trading is diversification.' ;)
-
-    The idea is, that with more assets you can take on more risk with
-    your single positions because of the diversified risk. The less
-    correlated the assets are, the higher the diversification multiplier.
-
-    The multiplier is meant to be applied to:
-
-    1) The leverage/position size that was determined by the position
-    sizing algorithm of a strategy which operates on multiple assets.
-    The input array should contain the 'close' prices for each asset.
-
-    2) The leverage/position size of multiple strategies for the same
-    asset. The input array should contain the the equity/portfolio value
-    for the different strategies in this case.
-
-    The matrix in the class definition belwo is used to determine the
-    'diversification multiplier'. The key represent the (closest value
-    to) the mean correlation of the assets for the lookback period
-    (defined by the argument for the init method, default 14). The
-    sub-keys stand for the number of assets/strategies. The values are
-    the multiplier to apply to the leverage/position size.
-
-    This is taken from Robert Carver´s book: Systematic Trading (p.131)
-    """
-
-    DM_MATRIX = {
-        0: {2: 1.41, 3: 1.73, 4: 2.0, 5: 2.2, 10: 3.2, 15: 3.9, 20: 4.5, 50: 7.1},
-        0.25: {
-            2: 1.27,
-            3: 1.41,
-            4: 1.51,
-            5: 1.58,
-            10: 1.75,
-            15: 1.83,
-            20: 1.86,
-            50: 1.94,
-        },  # noqa: E501
-        0.5: {
-            2: 1.15,
-            3: 1.22,
-            4: 1.27,
-            5: 1.29,
-            10: 1.35,
-            15: 1.37,
-            20: 1.38,
-            50: 1.40,
-        },  # noqa: E501
-        0.75: {
-            2: 1.10,
-            3: 1.12,
-            4: 1.13,
-            5: 1.15,
-            10: 1.17,
-            15: 1.17,
-            20: 1.18,
-            50: 1.19,
-        },  # noqa: E501
-        1.0: {2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0, 10: 1.0, 15: 1.0, 20: 1.0, 50: 1.0},
-    }
-
-    def __init__(self, data: np.ndarray, period: int = 14):
-        self._data = data
-        self.period = period
-        self.correlation_analyzer = Correlation()
-        self._multiplier = None
-
-    def _calculate_rolling_mean_correlation(self):
-        return self.correlation_analyzer.rolling(self._data, self.period)
-
-    @property
-    def data(self):
-        return self._data
-
-    @data.setter
-    def data(self, new_data: np.ndarray):
-        if not np.array_equal(self._data, new_data):
-            self._data = new_data
-            self._rolling_mean_correlation = self._calculate_rolling_mean_correlation()
-            self._multiplier = self._calculate_multiplier()
-
-    @property
-    def multiplier(self) -> np.ndarray:
-        if self._multiplier is None:
-            self._multiplier = self._calculate_multiplier()
-        return self._multiplier
-
-    def _calculate_multiplier(self) -> np.ndarray:
-        rolling_mean_correlation = self._calculate_rolling_mean_correlation()
-
-        if self._data.shape[1] < 2:
-            return np.ones(self._data.shape[0], dtype=np.float16)
-
-        choices_for_correlations = np.array(list(self.DM_MATRIX.keys()))
-        choices_for_no_of_assets = np.array(list(self.DM_MATRIX[0].keys()))
-
-        no_of_assets = min(self._data.shape[1], 50)
-        closest_no_of_assets = choices_for_no_of_assets[
-            np.argmin(np.abs(choices_for_no_of_assets - no_of_assets))
-        ]
-
-        closest_corr_indices = np.searchsorted(
-            choices_for_correlations, rolling_mean_correlation, side="left"
-        )
-        closest_corr_indices = np.clip(
-            closest_corr_indices, 0, len(choices_for_correlations) - 1
-        )
-        closest_corrs = choices_for_correlations[closest_corr_indices]
-
-        result = np.array(
-            [self.DM_MATRIX[corr][closest_no_of_assets] for corr in closest_corrs],
-            dtype=np.float16,
-        ).reshape(-1, 1)
-        return result
 
 
 class LeverageCalculator:

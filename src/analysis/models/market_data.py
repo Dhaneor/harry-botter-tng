@@ -52,13 +52,13 @@ class MarketDataStore:
         lookback: int = 20
     ):
         
-        print(timestamp.shape)
-        print(open_.shape)
-        print(high.shape)
-        print(low.shape)
-        print(close.shape)
-        print(volume.shape)
-        print("*" * 120)
+        # print(timestamp.shape)
+        # print(open_.shape)
+        # print(high.shape)
+        # print(low.shape)
+        # print(close.shape)
+        # print(volume.shape)
+        # print("*" * 120)
         
         self.timestamp = timestamp
         self.open_ = open_
@@ -590,7 +590,7 @@ class MarketData(PlottingMixin):
             initial_price = np.random.uniform(1, 1000)
     
             # Generate price changes using random walk
-            changes = np.random.normal(0, vol, length)  # 2% daily volatility
+            changes = np.random.normal(0, vol, length)
     
             # Calculate prices
             prices = initial_price * np.exp(np.cumsum(changes))
@@ -615,9 +615,6 @@ class MarketData(PlottingMixin):
             volumes[:, i] = np.random.uniform(1000, 100000, length)
     
             timestamps[:, i] = timestamps_ms
-    
-        print(f"shape of close prices: {close_prices.shape}")
-        print(f"shape of timestamps: {timestamps.shape}")
 
         # Create MarketDataStore
         mds = MarketDataStore(

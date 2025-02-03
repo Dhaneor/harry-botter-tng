@@ -168,7 +168,6 @@ class BackTestCore:
         self.portfolio[p, s]['total_value'] = total_value
 
     def _process_period(self, p: int, m: int, s: int):
-        print("processing: ", p, m, s)
         self.positions[p, m, s]["buy_price"] = np.nan
         self.positions[p, m, s]["sell_price"] = np.nan
         self.positions[p, m, s]["buy_qty"] = np.nan
@@ -209,7 +208,6 @@ class BackTestCore:
             self.market_data.close[p, m] \
             * self.positions[p, m, s]["qty"] \
             + self.positions[p, m, s]["quote_qty"] 
-        print("-" * 120)
 
     # ............................ PROCESSINNG POSITIONS ...............................
     def _open_position(self, p: int, m: int, s: int, type: int):
@@ -266,12 +264,8 @@ class BackTestCore:
         or change_pct < self.config.minimum_change:
             return
         
-        print("change exposure: ", change_exposure)
-
         fee , slippage = self._calculate_fee_and_slippage(change_exposure)
-        change_qty = (change_exposure - fee - slippage) / price # * position_type
-
-        print("change qty: ", change_qty)
+        change_qty = (change_exposure - fee - slippage) / price
 
         if position_type == 1:
             if change_qty > 0 and not self.config.increase_allowed:
@@ -289,19 +283,6 @@ class BackTestCore:
             self._process_buy(p, m, s, change_exposure, price)
         elif change_qty < 0:
             self._process_sell(p, m, s, -change_exposure, price)
-
-        # if change_qty > 0:
-        #     self.positions[p, m, s]["buy_qty"] = change_qty
-        #     self.positions[p, m, s]["buy_price"] = price
-        #     self.positions[p, m, s]["quote_qty"] -= change_exposure
-        # else:
-        #     self.positions[p, m, s]["sell_qty"] = change_qty
-        #     self.positions[p, m, s]["sell_price"] = price
-        #     self.positions[p, m, s]["quote_qty"] += change_exposure
-
-        # self.positions[p, m, s]["qty"] += change_qty
-        # self.positions[p, m, s]["fee"] += fee
-        # self.positions[p, m, s]["slippage"] += slippage
     
     # ..................................................................................
     def _process_buy(self, p, m, s, quote_qty, price):
@@ -328,7 +309,6 @@ class BackTestCore:
         self.positions[p, m, s]["fee"] += fee
         self.positions[p, m, s]["slippage"] += slippage
 
-
     def _calculate_change_exposure(self, p, m, s, price) -> Tuple[float, float]:
         """Calculate the change in exposure for a given position/asset.
         
@@ -346,18 +326,14 @@ class BackTestCore:
         # calculate the current exposure
         current_exposure = self.positions[p - 1, m, s]["qty"] * price
 
-        print("current exposure: ", current_exposure)
-
         # calulate the target exposure
         equity = current_exposure + self.positions[p - 1, m, s]["quote_qty"]
-        target_exposure =  equity * self.signals[p-1, m, s] * self.leverage[p, m] 
-
-        print("targrt expsoure: ", target_exposure)
+        target_exposure =  equity * self.signals[p-1, m, s] * self.leverage[p, m]
 
         # even if the leverage value is smaller that the max allowed
         # leverage, signals can be >1 or <-1, so we need to check the 
         # effective leverage again and adjust if necessary
-        effective_leverage = abs(target_exposure / equity)
+        effective_leverage = np.abs(target_exposure / equity)
 
         if effective_leverage > self.config.max_leverage:
             target_exposure /= (effective_leverage / self.config.max_leverage)

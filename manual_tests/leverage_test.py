@@ -37,11 +37,11 @@ ts = (np.arange(length, dtype=np.int64) * 10_000_000,)  # 10 seconds intervals
 
 ohlcv = {
     "timestamp": np.random.randint(5, size=(length, cols)),
-    "open_": np.random.rand(length, cols).astype(np.float32),
-    "high": np.random.rand(length, cols).astype(np.float32),
-    "low": np.random.rand(length, cols).astype(np.float32),
-    "close": np.random.rand(length, cols).astype(np.float32),
-    "volume": np.random.rand(length, cols).astype(np.float32),
+    "open_": np.random.rand(length, cols).astype(np.float64),
+    "high": np.random.rand(length, cols).astype(np.float64),
+    "low": np.random.rand(length, cols).astype(np.float64),
+    "close": np.random.rand(length, cols).astype(np.float64),
+    "volume": np.random.rand(length, cols).astype(np.float64),
 }
 
 mds = MarketDataStore(**ohlcv)
@@ -87,15 +87,27 @@ def generate_stock_prices(
 # --------------------------------------------------------------------------------------
 
 @execution_time
-def test_get_diversification_multiplier(data):
-    dmc = lv.DiversificationMultiplier()
-    multiplier = dmc.multiplier(data)
+def test_get_diversification_multiplier(dmc):
+    runs = 1000
+    exc_times = []
+    for _ in range(1000):
+        md = MarketData.from_random(50, 5)
+        st = time.time()
+        dmc.data = md.mds.close
+        multiplier = dmc.multiplier
+        et = (time.time() - st) * 1e6
+        exc_times.append(et)
+    
 
     print(f"simulated prices for {number_of_assets} assets:\n {data[-2:]}")
     print('-' * 120)
-    print(f"Diversification Multiplier (last 10 days): {multiplier[-11:]}")
+    print(f"Diversification Multiplier (last {dmc.period} days): {multiplier[-11:]}")
     print(f"unique values: {np.unique(multiplier)}")
     print(f"min: {np.min(multiplier)}, max: {np.max(multiplier)}")
+
+    avg_exc_time = sum(exc_times) / runs
+
+    print(f"avg exc time: {avg_exc_time:,.2f}µs")
 
 
 def test_rolling_correlation():
@@ -137,9 +149,11 @@ if __name__ == "__main__":
         num_days=number_of_days, num_assets=number_of_assets, volatility=0.05
         )
     
-    # test_get_diversification_multiplier(data=data)
+    dmc = lv.DiversificationMultiplier(data)
+    
+    test_get_diversification_multiplier(dmc)
     # test_rolling_correlation()
-    # sys.exit()
+    sys.exit()
 
     # =================================================================================
     runs = 1000
