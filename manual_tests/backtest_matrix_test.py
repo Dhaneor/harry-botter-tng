@@ -14,7 +14,7 @@ from pstats import SortKey, Stats
 from analysis.backtest.backtest import BackTestCore, Config
 from analysis import MarketData, LeverageCalculator, signal_generator_factory
 from util.logger_setup import get_logger
-from analysis.strategy.definitions import ema_cross, linreg, rsi
+from analysis.strategy.definitions import ema_cross, linreg, rsi  # noqa: F401
 
 logger = get_logger('main', level="DEBUG")
 

@@ -239,6 +239,7 @@ class LeverageCalculator:
 spec = [
     ("market_data", MarketDataStore.class_type.instance_type),
     ("risk_level", int8),
+    ("smoothing", int8),
     ("_valid_risk_levels", int8[:]),
     ("_target_vola", float32[:])
 ]
@@ -249,10 +250,12 @@ class Leverage:
     def __init__(
             self, 
             market_data: MarketDataStore,
-            risk_level: int = 1
+            risk_level: int = 1,
+            smoothing: int = 1
     ) -> None:
         self.market_data = market_data
         self.risk_level = risk_level
+        self.smoothing = smoothing
 
         self._valid_risk_levels = np.asarray(
             [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
@@ -267,24 +270,41 @@ class Leverage:
         """Calculates the maximum leverage based on 'close' prices.
 
         This is the method described by Robert Carver in 'Leveraged
-        Trading'.
+        Trading'. The leverage calulation is based on the the ratio
+        between the recent annualized volatility and the target 
+        volatility (which is determined by the risk level argument
+        for the init method of this class).
+
+        These are raw values which might still be too high, depending
+        on the market, the leverage allowed by the exchange, and the
+        risk appetite.
+
+        If the 'smmothing' parameter was specified as parameter for the
+        init method, the annualized volatility will be smoothed 
+        accordingly to prevent sudden or too frequent changes in the
+        position size(s).
 
         Returns
         -------
         np.ndarray
-            A 2D array of the recommened leverage for each trading period
+            A 2D array of the recommended leverage per asset and  
+            trading period.
         """
-
-        # # Apply smoothing to volatility
-        # if self.smoothing > 1:
-        #     annualized_volatility = bn.move_mean(annualized_volatility, self.smoothing)
-
+        
+        if self.smoothing > 1:
+            annualized_volatility = self.market_data.smooth_it(
+                self.market_data.annual_vol,
+                self.smoothing
+            )
+        else:
+            annualized_volatility = self.market_data.annual_vol
+        
         return np.divide(
             self._target_vola[self.risk_level],
-            self.market_data.annual_vol
+            annualized_volatility, 
         )
 
 
 if __name__ == "__main__":
     md = MarketData.from_random(1000, 5)
-    l = Leverage(market_data=md.mds)
+    leverage_calculator = Leverage(market_data=md.mds)

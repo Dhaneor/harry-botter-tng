@@ -93,7 +93,7 @@ spec = [
 
 
 # ================================== BackTest class ====================================
-# @jitclass(spec)
+@jitclass(spec)
 class BackTestCore:
     def __init__(
         self,
@@ -102,7 +102,6 @@ class BackTestCore:
         signals: np.ndarray,
         config: Config,
     ):
-
         self.market_data = market_data
         self.leverage = leverage
         self.signals = signals

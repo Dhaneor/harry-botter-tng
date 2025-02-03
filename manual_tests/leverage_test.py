@@ -8,16 +8,15 @@ Created on Thu Feb 11 01:28:53 2021
 
 import time
 import numpy as np
-import sys
+import sys  # noqa: F401
 
 # profiler imports
 from cProfile import Profile
 from pstats import SortKey, Stats
 
 from analysis.leverage import LeverageCalculator, Leverage
-from analysis.statistics import correlation as corr
-from analysis.models.market_data import MarketData, MarketDataStore
-from util import seconds_to, execution_time
+from analysis.models.market_data import MarketData
+from util import seconds_to
 
 
 length = 1_000
@@ -29,7 +28,7 @@ lc = LeverageCalculator(
     market_data=md,
     risk_level=2,
     max_leverage=10,
-    smoothing=1
+    smoothing=10
 )
 
 lnb = Leverage(market_data=md.mds, risk_level=5)
