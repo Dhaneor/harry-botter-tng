@@ -9,10 +9,12 @@ Created on Thu Feb 11 01:28:53 2021
 import numpy as np
 import bottleneck as bn
 import logging
+from numba import int8, float32
+from numba.experimental import jitclass
 from sys import getsizeof
 
-from analysis.models.market_data import MarketData
-from analysis.diversification_multiplier import DiversificationMultiplier
+from analysis.models.market_data import MarketData, MarketDataStore
+from analysis.diversification_multiplier import Multiplier
 
 logger = logging.getLogger("main.leverage")
 logger.setLevel(logging.DEBUG)
@@ -110,7 +112,7 @@ class LeverageCalculator:
         self.interval = market_data.interval
         self.interval_in_ms = market_data.interval_in_ms
 
-        self.dmc = DiversificationMultiplier(market_data.mds.close)
+        self.dmc = Multiplier()
 
         self._cache = {}
 
@@ -120,14 +122,14 @@ class LeverageCalculator:
         if atr_window != 21:
             self.market_data.compute_atr(atr_window)
 
-        # # pre-populate the cache ...
-        # if len(market_data) < 5_000:
-        #     # ...for all risk levels for smaller datasets
-        #     for risk_level in self.RISK_LEVELS:
-        #         self.leverage(risk_level)
-        # else:
-        #     # ...for the current risk level for larger datasets
-        #     self.leverage(self.risk_level)
+        # pre-populate the cache ...
+        if len(market_data) < 5_000:
+            # ...for all risk levels for smaller datasets
+            for risk_level in self.RISK_LEVELS:
+                self.leverage(risk_level)
+        else:
+            # ...for the current risk level for larger datasets
+            self.leverage(self.risk_level)
 
     def leverage(self, risk_level: int = None) -> np.ndarray:
         """Calculates the maximum leverage based on 'close' prices.
@@ -152,7 +154,7 @@ class LeverageCalculator:
         if self._cache.get(risk_level, None) is None:
             if risk_level == 0:
                 lv = np.full_like(
-                    self.market_data.close, self.max_leverage, dtype=np.float16
+                    self.market_data.close, self.max_leverage, dtype=np.float32
                     )
             elif 1 <= risk_level <= 10:
                 lv = self._conservative_sizing(self.RISK_LEVELS[risk_level])
@@ -165,11 +167,12 @@ class LeverageCalculator:
                 self._cache.clear()
                 logger.info("Cache cleared due to high memory usage.")
 
-            # necessary??? np.nan_to_num(leverage)
-
             # apply the diversification multiplier if there are multiple assets
             if self.market_data.close.shape[1] > 1:
-                lv = np.multiply(lv, self.dmc.multiplier)
+                lv = np.multiply(
+                    lv, 
+                    self.dmc.get_multiplier(self.market_data.mds.close)
+                )
 
             # Apply the maximum allowed leverage
             lv = np.minimum(lv, self.max_leverage) 
@@ -232,12 +235,56 @@ class LeverageCalculator:
             self.market_data.mds.atr / self.market_data.close
         )
 
-    def _yield_single(self):  #  -> Generator[np.ndarray, ...]:
-        for idx in range(len(self.market_data.open.shape[1])):
-            yield (
-                self.market_data.open[:, idx],
-                self.market_data.high[:, idx],
-                self.market_data.low[:, idx],
-                self.market_data.close[:, idx],
-                self.market_data.volume[:, idx],
-            )
+
+spec = [
+    ("market_data", MarketDataStore.class_type.instance_type),
+    ("risk_level", int8),
+    ("_valid_risk_levels", int8[:]),
+    ("_target_vola", float32[:])
+]
+
+@jitclass(spec=spec)
+class Leverage:
+
+    def __init__(
+            self, 
+            market_data: MarketDataStore,
+            risk_level: int = 1
+    ) -> None:
+        self.market_data = market_data
+        self.risk_level = risk_level
+
+        self._valid_risk_levels = np.asarray(
+            [0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+            dtype=np.int8
+        )
+        self._target_vola = np.asarray(
+            [0.12, 0.18, 0.24, 0.30, 0.36, 0.42, 0.48, 0.54, 0.60],
+            dtype=np.float32
+        )
+
+    def leverage(self) -> np.ndarray:
+        """Calculates the maximum leverage based on 'close' prices.
+
+        This is the method described by Robert Carver in 'Leveraged
+        Trading'.
+
+        Returns
+        -------
+        np.ndarray
+            A 2D array of the recommened leverage for each trading period
+        """
+
+        # # Apply smoothing to volatility
+        # if self.smoothing > 1:
+        #     annualized_volatility = bn.move_mean(annualized_volatility, self.smoothing)
+
+        return np.divide(
+            self._target_vola[self.risk_level],
+            self.market_data.annual_vol
+        )
+
+
+if __name__ == "__main__":
+    md = MarketData.from_random(1000, 5)
+    l = Leverage(market_data=md.mds)

@@ -14,38 +14,25 @@ import sys
 from cProfile import Profile
 from pstats import SortKey, Stats
 
-from analysis import leverage as lv
+from analysis.leverage import LeverageCalculator, Leverage
 from analysis.statistics import correlation as corr
 from analysis.models.market_data import MarketData, MarketDataStore
 from util import seconds_to, execution_time
 
 
-length = 50
-assets = [
-    "BTCUSDT",
-    "ETHUSDT",
-    "XRPUSDT",
-    "ADAUSDT",
-    "BNBUSDT",
-    "XDCUSDT",
-    "QNTUSDT",
-    "XLMUSDT",
-]
-cols = len(assets)
+length = 1_000
+cols = 20  # len(assets)
 
-ts = (np.arange(length, dtype=np.int64) * 10_000_000,)  # 10 seconds intervals
+md = MarketData.from_random(length, cols)
 
-ohlcv = {
-    "timestamp": np.random.randint(5, size=(length, cols)),
-    "open_": np.random.rand(length, cols).astype(np.float64),
-    "high": np.random.rand(length, cols).astype(np.float64),
-    "low": np.random.rand(length, cols).astype(np.float64),
-    "close": np.random.rand(length, cols).astype(np.float64),
-    "volume": np.random.rand(length, cols).astype(np.float64),
-}
+lc = LeverageCalculator(
+    market_data=md,
+    risk_level=2,
+    max_leverage=10,
+    smoothing=1
+)
 
-mds = MarketDataStore(**ohlcv)
-md = MarketData(mds, ["BTCUSDT"])
+lnb = Leverage(market_data=md.mds, risk_level=5)
 
 
 # ======================================================================================
@@ -85,90 +72,29 @@ def generate_stock_prices(
 
 
 # --------------------------------------------------------------------------------------
+def test_get_leverage():
+    leverage = lc.leverage()
+    print(leverage[-10:])
 
-@execution_time
-def test_get_diversification_multiplier(dmc):
-    runs = 1000
-    exc_times = []
-    for _ in range(1000):
-        md = MarketData.from_random(50, 5)
-        st = time.time()
-        dmc.data = md.mds.close
-        multiplier = dmc.multiplier
-        et = (time.time() - st) * 1e6
-        exc_times.append(et)
-    
-
-    print(f"simulated prices for {number_of_assets} assets:\n {data[-2:]}")
-    print('-' * 120)
-    print(f"Diversification Multiplier (last {dmc.period} days): {multiplier[-11:]}")
-    print(f"unique values: {np.unique(multiplier)}")
-    print(f"min: {np.min(multiplier)}, max: {np.max(multiplier)}")
-
-    avg_exc_time = sum(exc_times) / runs
-
-    print(f"avg exc time: {avg_exc_time:,.2f}µs")
-
-
-def test_rolling_correlation():
-    @execution_time
-    def numpy_version(arr):
-        return corr.rolling_mean_correlation(arr, period=20)
-
-    @execution_time
-    def numba_version(arr, period=20):
-        return corr.rolling_mean_correlation_nb(arr, period=20)
-
-    arr = np.random.rand(100, 3)
-
-    for _ in range(5):
-        np_ = numpy_version(arr)
-        assert np_ is not None
-
-    print('-' * 80)
-
-    for _ in range(5):
-        nb_ = numba_version(arr)
-        assert nb_ is not None
-
-    print(f"Numpy version: {np_[-11:]}")
-    print(f"Numba version: {nb_[-11:]}")
-
-    assert np.allclose(numpy_version(arr), numba_version(arr)), \
-        f"Results are not equal:\n {np.round(np.diff(np.subtract(np_, nb_)), 3)}" \
+def test_get_leverage_jit_class():
+    leverage = lnb.leverage()
+    print(leverage[-10:])
 
 
 # -------------------------------------------------------------------------------------
 #                                        MAIN                                         #
 # -------------------------------------------------------------------------------------
 if __name__ == "__main__":
-    number_of_assets = 20
-    number_of_days = 20_000
-
-    data = generate_stock_prices(
-        num_days=number_of_days, num_assets=number_of_assets, volatility=0.05
-        )
-    
-    dmc = lv.DiversificationMultiplier(data)
-    
-    test_get_diversification_multiplier(dmc)
-    # test_rolling_correlation()
-    sys.exit()
+    test_get_leverage_jit_class()
+    # sys.exit()
 
     # =================================================================================
     runs = 1000
 
-    lc = lv.LeverageCalculator(md)
-    
-    # sys.exit()
-    dmc = lv.DiversificationMultiplier(data=data)
-    print(dmc.multiplier[-11:])
-    # sys.exit()
-
     start = time.perf_counter()
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            _ = dmc.multiplier
+            _ = lnb.leverage()
 
     (
         Stats(p)
@@ -179,6 +105,6 @@ if __name__ == "__main__":
     )
 
     et = time.perf_counter()
-    print(f"data: {number_of_assets} assets / {len(data)} periods")
+    print(f"data: {cols} assets / {len(md)} periods")
     print(f"average execution time: {seconds_to((et - start) / runs)}")
     print(f"iterations per second: {int(runs / ((et - start))):,} iterations/second")

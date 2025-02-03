@@ -17,16 +17,23 @@ from analysis.diversification_multiplier import (
 corr = Correlation()
 
 assets = 20
-md = MarketData.from_random(1000, assets)
+md = MarketData.from_random(180, assets)
 data = md.mds.close
 data = corr.levels_to_log_returns(data)
-runs = 1
+runs = 1000
 
 
 def test_multiplier_single():
     m = Multiplier()
-    ms = m.get_multiplier_single(data)
+
+    st = time.time()
+    for _ in range(runs):
+        ms = m.get_multiplier_single(data)
+
+    avg_exc_time = (time.time() - st) * 1e6 / runs
+    
     print(ms)
+    print(f"avg exc time: {avg_exc_time:,.0f}µs")
 
 
 def test_dmc_class():
