@@ -5,7 +5,7 @@ Created on Nov 10 22:18:20 2024
 
 @author dhaneor
 """
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, UTC
 import logging
 import pandas as pd
 import numpy as np
