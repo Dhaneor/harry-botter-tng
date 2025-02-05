@@ -6,12 +6,14 @@
 
 cimport numpy as np
 import numpy as np
-from abc import ABC, abstractmethod
+from functools import reduce
 from libcpp.vector cimport vector
 
 cdef double fee_rate = 0.001
 cdef double slippage_rate = 0.001
 
+
+# ............................... Trade Action classes .................................
 cdef struct ActionData:
     np.int64_t timestamp
     double price
@@ -32,8 +34,6 @@ cdef class Action:
             raise TypeError("Can only add actions of the same type")
 
         new_qty = self.qty + other.qty
-        new_fee = self.fee + other.fee
-        new_slippage = self.qty + other.qty
         new_quote_qty = self.quote_qty + other.quote_qty
 
         # Calculate volume-weighted average price
@@ -81,9 +81,22 @@ cdef class Action:
 
 
 cdef class Buy(Action):
+    "A class to represent a buy action."
+
     def __init__(self, np.int64_t timestamp, double amount, double price):
+        """Initializes a Buy action object.
+        
+        Parameters:
+        -----------
+        timestamp: int
+            Timestamp for the buy.
+        amount: float
+            Amount of quote currency for the buy.
+        price: float
+            Price for the buy.
+        """
         super().__init__(timestamp, amount, price)
-        self._calculate(amount)
+        self._calculate(amount, price)
 
     def __repr__(self):
         return (
@@ -101,6 +114,7 @@ cdef class Buy(Action):
     @property
     def type(self) -> str:
         return "BUY"
+
 
 cdef class Sell(Action):
     def __init__(self, np.int64_t timestamp, double amount, double price):
@@ -153,46 +167,82 @@ cdef class Position:
             f"realized_pnl={self.realized_pnl:.2f})"
         )
 
+    @property
+    def average_entry(self) -> Action:
+        if not self.buys:
+            return None
+        return reduce(lambda x, y: x + y, self.buys)
+
+    @property
+    def average_exit(self) -> Action:
+        if not self.sells:
+            return None
+        return reduce(lambda x, y: x + y, self.sells)
+
+    def get_actions(self):
+        return sorted(self.buys + self.sells, key=lambda x: x.timestamp)
+
     cpdef void add_action(self, Action action):
+        """Adds a new buy or sell action to the position.
+        
+        Python wrapper method which allows to define the actual 
+        _add_action method for pure cythonic access.
+        """
+        self._add_action(action)
+
+    cpdef void close(self, np.int64_t timestamp, double price):
+        """Adds a new buy or sell action to the position.
+        
+        Python wrapper method which allows to define the actual 
+        _add_action method for pure cythonic access.
+        """
+        self._close(timestamp, price)
+
+    cdef void _add_action(self, Action action):
         if isinstance(action, Buy):
             self.buys.append(action)
         elif isinstance(action, Sell):
             self.sells.append(action)
         self._update_position(action)
 
-    cdef void _update_position(self, Action action):
-        print(action)
-        print(self.current_qty)
+    cdef void _close(self, np.int64_t timestamp, double price):
+        if self.current_qty > 0:
+            self.add_action(Sell(timestamp, self.current_qty, price))
+        if self.current_qty < 0:
+            self.add_action(Buy(timestamp, self.current_qty, price))
+
+    cdef void _update_position(self, Action action) except *:
         cdef double old_qty = self.current_qty
         cdef double old_value = old_qty * self.average_entry_price
 
         if isinstance(action, Buy):
-            self.current_qty += action.data.qty
+            new_qty = self.current_qty + action.data.qty
+
+            if old_qty < 0 and new_qty > 0:
+                raise ValueError(
+                    f"Buying {action.data.qty} would change this short position to a "
+                    f"long position. Use .close() method before opening a new long "
+                    f"position, or buy a max amount of {abs(self.current_qty)}."
+                )
+
+            self.current_qty = new_qty
             new_value = old_value + action.qty * action.data.price
             self.average_entry_price = new_value / self.current_qty
+        
         elif isinstance(action, Sell):
-            if self.current_qty > 0:
-                # Closing long position
-                self.realized_pnl += (action.price - self.average_entry_price) * min(self.current_qty, action.qty)
-            else:
-                # Closing short position
-                self.realized_pnl += (self.average_entry_price - action.price) * min(-self.current_qty, action.qty)
-            
-            self.current_qty -= action.qty
-            if self.current_qty == 0:
-                self.average_entry_price = 0.0
-            elif self.current_qty * old_qty < 0:  # Position direction changed
-                self.average_entry_price = action.price
+            new_qty = self.current_qty - action.data.qty
+        
+            if old_qty > 0 and new_qty < 0:
+                raise ValueError(
+                    f"Selling {action.data.qty} would change this long position to a "
+                    f"short position. Use .close() method before opening a new short "
+                    f"position, or sell a max amount of {self.current_qty}."
+                )
 
-    def get_actions(self):
-        return self.buys + self.sells
+            self.current_qty = new_qty
 
-    def get_average_entry(self):
-        if not self.buys:
-            return None
-        return sum(self.buys, start=self.buys[0])
-
-    def get_average_exit(self):
-        if not self.sells:
-            return None
-        return sum(self.sells, start=self.sells[0])
+        # calculate the PNL if the position is closed now
+        if self.current_qty == 0:
+            self.realized_pnl = abs(
+                self.average_entry_price - self.average_exit_price
+            ) * old_qty

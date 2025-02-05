@@ -7,7 +7,7 @@ Created on Wed Feb 05 06:09:23 2025
 """
 
 import pytest
-from analysis.models.portfolio import Buy, Sell
+from analysis.models.portfolio import Buy, Sell, Position
 
 def test_buy_calculation():
     buy = Buy(1000, 100, 10)  # timestamp, amount, price
@@ -81,3 +81,43 @@ def test_repr():
 
     sell = Sell(2000, 10, 11)
     assert repr(sell) == "Sell(timestamp=2000, amount=10.0, price=11.0)"
+
+# ............................ Tests for the Position class ............................
+def test_position_init():
+    pos = Position("BTCUSDT")
+
+    assert pos.symbol == "BTCUSDT"
+    assert pos.get_actions() == []
+
+def test_position_avg_entry_exit_none():
+    pos = Position("BTCUSDT")
+
+    assert pos.average_entry is None, "average_entry is not None for empty position"
+    assert pos.average_exit is None, "average_exit is not None for empty position"
+
+
+def test_position_avg_entry():
+    pos = Position("BTCUSDT")
+    pos.add_action(Buy(1000, 100, 10))
+    assert pos.average_entry.price == 10 
+    assert pos.average_entry_price == 10
+
+    pos.add_action(Buy(2000, 200, 20))
+    assert pos.average_entry.price == pytest.approx(15)
+    assert pos.average_entry_price == pytest.approx(15)
+
+    pos.add_action(Buy(3000, 300, 15))
+    assert pos.average_entry.price == pytest.approx(15)
+    assert pos.average_entry_price == pytest.approx(15)
+
+
+def test_position_avg_exit():
+    pos = Position("BTCUSDT")
+    pos.add_action(Buy(1000, 1000, 10))
+    assert pos.average_exit is None 
+
+    pos.add_action(Sell(2000, 20, 20))
+    assert pos.average_exit.price == pytest.approx(20)
+
+    pos.add_action(Sell(3000, 20, 30))
+    assert pos.average_exit.price == pytest.approx(25)
