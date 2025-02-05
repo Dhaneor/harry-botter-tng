@@ -6,8 +6,8 @@
 
 cimport numpy as np
 import numpy as np
+from cython cimport fused_type
 from functools import reduce
-from libcpp.vector cimport vector
 
 cdef double fee_rate = 0.001
 cdef double slippage_rate = 0.001
@@ -22,17 +22,25 @@ cdef struct ActionData:
     double fee
     double slippage
 
-cdef class Action:
-    cdef ActionData data
 
-    def __init__(self, np.int64_t timestamp, double amount, double price):
+cdef class ActionInterface:
+    cdef public ActionData data
+
+
+cdef class Buy(ActionInterface):
+
+    def __cinit__(self, np.int64_t timestamp, double amount, double price):
         self.data.timestamp = timestamp
         self.data.price = price
+        self._calculate(amount)
 
-    def __add__(self, Action other):
-        if type(self) != type(other):
-            raise TypeError("Can only add actions of the same type")
+    def __repr__(self):
+        return (
+            f"Buy(timestamp={self.timestamp}, amount={self.data.qty}, "
+            f"price={self.data.price})"
+        )
 
+    def __add__(self, Buy other):
         new_qty = self.qty + other.qty
         new_quote_qty = self.quote_qty + other.quote_qty
 
@@ -41,11 +49,18 @@ cdef class Action:
             self.data.price * self.data.qty + other.data.price * other.data.qty
             ) / new_qty
 
-        if self.type == "BUY":
-             return Buy(self.timestamp, new_quote_qty, new_price)
+        return Buy(self.timestamp, new_quote_qty, new_price)
 
-        elif self.type == "SELL":
-            return Sell(self.timestamp, new_qty, new_price)
+    cdef void _calculate(self, double amount):
+        self.data.quote_qty = amount
+        self.data.fee = amount * fee_rate
+        self.data.slippage = amount * slippage_rate
+        cdef double net_amount = amount - self.data.fee - self.data.slippage
+        self.data.qty = net_amount / self.data.price
+
+    @property
+    def type(self) -> str:
+        return "BUY"
 
     @property
     def timestamp(self):
@@ -80,45 +95,11 @@ cdef class Action:
         self.data.slippage = value
 
 
-cdef class Buy(Action):
-    "A class to represent a buy action."
+cdef class Sell(ActionInterface):
 
-    def __init__(self, np.int64_t timestamp, double amount, double price):
-        """Initializes a Buy action object.
-        
-        Parameters:
-        -----------
-        timestamp: int
-            Timestamp for the buy.
-        amount: float
-            Amount of quote currency for the buy.
-        price: float
-            Price for the buy.
-        """
-        super().__init__(timestamp, amount, price)
-        self._calculate(amount, price)
-
-    def __repr__(self):
-        return (
-            f"Buy(timestamp={self.timestamp}, amount={self.data.qty}, "
-            f"price={self.data.price})"
-        )
-
-    cdef void _calculate(self, double amount):
-        self.data.quote_qty = amount
-        self.data.fee = amount * fee_rate
-        self.data.slippage = amount * slippage_rate
-        cdef double net_amount = amount - self.data.fee - self.data.slippage
-        self.data.qty = net_amount / self.data.price
-
-    @property
-    def type(self) -> str:
-        return "BUY"
-
-
-cdef class Sell(Action):
-    def __init__(self, np.int64_t timestamp, double amount, double price):
-        super().__init__(timestamp, amount, price)
+    def __cinit__(self, np.int64_t timestamp, double amount, double price):
+        self.data.timestamp = timestamp
+        self.data.price = price
         self._calculate(amount)
 
     def __repr__(self):
@@ -126,6 +107,17 @@ cdef class Sell(Action):
             f"Sell(timestamp={self.timestamp}, amount={self.data.qty}, "
             f"price={self.data.price})"
         )
+
+    def __add__(self, Sell other):
+        new_qty = self.qty + other.qty
+        new_quote_qty = self.quote_qty + other.quote_qty
+
+        # Calculate volume-weighted average price
+        new_price = (
+            self.data.price * self.data.qty + other.data.price * other.data.qty
+            ) / new_qty
+
+        return Sell(self.timestamp, new_qty, new_price)
 
     cdef void _calculate(self, double amount):
         self.data.qty = amount
@@ -137,6 +129,38 @@ cdef class Sell(Action):
     @property
     def type(self) -> str:
         return "BUY"
+
+    @property
+    def timestamp(self):
+        return self.data.timestamp
+
+    @property
+    def qty(self):
+        return self.data.qty
+
+    @property
+    def price(self):
+        return self.data.price
+
+    @property
+    def quote_qty(self):
+        return self.data.quote_qty
+
+    @property
+    def fee(self):
+        return self.data.fee
+
+    @fee.setter
+    def fee(self, value):
+        self.data.fee = value
+
+    @property
+    def slippage(self):
+        return self.data.slippage
+
+    @slippage.setter
+    def slippage(self, value):
+        self.data.slippage = value
 
 
 # .................................. Position class ....................................
@@ -168,13 +192,13 @@ cdef class Position:
         )
 
     @property
-    def average_entry(self) -> Action:
+    def average_entry(self) -> ActionInterface:
         if not self.buys:
             return None
         return reduce(lambda x, y: x + y, self.buys)
 
     @property
-    def average_exit(self) -> Action:
+    def average_exit(self) -> ActionInterface:
         if not self.sells:
             return None
         return reduce(lambda x, y: x + y, self.sells)
@@ -182,7 +206,7 @@ cdef class Position:
     def get_actions(self):
         return sorted(self.buys + self.sells, key=lambda x: x.timestamp)
 
-    cpdef void add_action(self, Action action):
+    cpdef void add_action(self, ActionInterface action):
         """Adds a new buy or sell action to the position.
         
         Python wrapper method which allows to define the actual 
@@ -198,7 +222,7 @@ cdef class Position:
         """
         self._close(timestamp, price)
 
-    cdef void _add_action(self, Action action):
+    cdef void _add_action(self, ActionInterface action):
         if isinstance(action, Buy):
             self.buys.append(action)
         elif isinstance(action, Sell):
@@ -211,7 +235,7 @@ cdef class Position:
         if self.current_qty < 0:
             self.add_action(Buy(timestamp, self.current_qty, price))
 
-    cdef void _update_position(self, Action action) except *:
+    cdef void _update_position(self, ActionInterface action) except *:
         cdef double old_qty = self.current_qty
         cdef double old_value = old_qty * self.average_entry_price
 

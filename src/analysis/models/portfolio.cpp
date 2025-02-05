@@ -1264,11 +1264,6 @@ static CYTHON_INLINE float __PYX_NAN() {
 #include "numpy/ndarraytypes.h"
 #include "numpy/arrayscalars.h"
 #include "numpy/ufuncobject.h"
-#include "ios"
-#include "new"
-#include "stdexcept"
-#include "typeinfo"
-#include <vector>
 #ifdef _OPENMP
 #include <omp.h>
 #endif /* _OPENMP */
@@ -1539,9 +1534,9 @@ static const char *__pyx_filename;
 /* #### Code section: filename_table ### */
 
 static const char *__pyx_f[] = {
+  "<stringsource>",
   "src/analysis/models/portfolio.pyx",
   "__init__.cython-30.pxd",
-  "<stringsource>",
   "type.pxd",
 };
 /* #### Code section: utility_code_proto_before_types ### */
@@ -1744,7 +1739,7 @@ static CYTHON_INLINE __pyx_t_long_double_complex __pyx_t_long_double_complex_fro
 /* #### Code section: type_declarations ### */
 
 /*--- Type declarations ---*/
-struct __pyx_obj_3src_8analysis_6models_9portfolio_Action;
+struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface;
 struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy;
 struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell;
 struct __pyx_obj_3src_8analysis_6models_9portfolio_Position;
@@ -1784,46 +1779,46 @@ struct __pyx_t_3src_8analysis_6models_9portfolio_ActionData {
   double slippage;
 };
 
-/* "src/analysis/models/portfolio.pyx":25
- *     double slippage
+/* "src/analysis/models/portfolio.pyx":26
  * 
- * cdef class Action:             # <<<<<<<<<<<<<<
- *     cdef ActionData data
+ * 
+ * cdef class ActionInterface:             # <<<<<<<<<<<<<<
+ *     cdef public ActionData data
  * 
  */
-struct __pyx_obj_3src_8analysis_6models_9portfolio_Action {
+struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface {
   PyObject_HEAD
   struct __pyx_t_3src_8analysis_6models_9portfolio_ActionData data;
 };
 
 
-/* "src/analysis/models/portfolio.pyx":83
+/* "src/analysis/models/portfolio.pyx":30
  * 
  * 
- * cdef class Buy(Action):             # <<<<<<<<<<<<<<
- *     "A class to represent a buy action."
+ * cdef class Buy(ActionInterface):             # <<<<<<<<<<<<<<
  * 
+ *     def __cinit__(self, np.int64_t timestamp, double amount, double price):
  */
 struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy {
-  struct __pyx_obj_3src_8analysis_6models_9portfolio_Action __pyx_base;
+  struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface __pyx_base;
   struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Buy *__pyx_vtab;
 };
 
 
-/* "src/analysis/models/portfolio.pyx":119
+/* "src/analysis/models/portfolio.pyx":98
  * 
  * 
- * cdef class Sell(Action):             # <<<<<<<<<<<<<<
- *     def __init__(self, np.int64_t timestamp, double amount, double price):
- *         super().__init__(timestamp, amount, price)
+ * cdef class Sell(ActionInterface):             # <<<<<<<<<<<<<<
+ * 
+ *     def __cinit__(self, np.int64_t timestamp, double amount, double price):
  */
 struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell {
-  struct __pyx_obj_3src_8analysis_6models_9portfolio_Action __pyx_base;
+  struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface __pyx_base;
   struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Sell *__pyx_vtab;
 };
 
 
-/* "src/analysis/models/portfolio.pyx":143
+/* "src/analysis/models/portfolio.pyx":167
  * 
  * # .................................. Position class ....................................
  * cdef class Position:             # <<<<<<<<<<<<<<
@@ -1843,12 +1838,12 @@ struct __pyx_obj_3src_8analysis_6models_9portfolio_Position {
 
 
 
-/* "src/analysis/models/portfolio.pyx":83
+/* "src/analysis/models/portfolio.pyx":30
  * 
  * 
- * cdef class Buy(Action):             # <<<<<<<<<<<<<<
- *     "A class to represent a buy action."
+ * cdef class Buy(ActionInterface):             # <<<<<<<<<<<<<<
  * 
+ *     def __cinit__(self, np.int64_t timestamp, double amount, double price):
  */
 
 struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Buy {
@@ -1857,12 +1852,12 @@ struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Buy {
 static struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Buy *__pyx_vtabptr_3src_8analysis_6models_9portfolio_Buy;
 
 
-/* "src/analysis/models/portfolio.pyx":119
+/* "src/analysis/models/portfolio.pyx":98
  * 
  * 
- * cdef class Sell(Action):             # <<<<<<<<<<<<<<
- *     def __init__(self, np.int64_t timestamp, double amount, double price):
- *         super().__init__(timestamp, amount, price)
+ * cdef class Sell(ActionInterface):             # <<<<<<<<<<<<<<
+ * 
+ *     def __cinit__(self, np.int64_t timestamp, double amount, double price):
  */
 
 struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Sell {
@@ -1871,7 +1866,7 @@ struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Sell {
 static struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Sell *__pyx_vtabptr_3src_8analysis_6models_9portfolio_Sell;
 
 
-/* "src/analysis/models/portfolio.pyx":143
+/* "src/analysis/models/portfolio.pyx":167
  * 
  * # .................................. Position class ....................................
  * cdef class Position:             # <<<<<<<<<<<<<<
@@ -1880,10 +1875,11 @@ static struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Sell *__pyx_vta
  */
 
 struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Position {
-  void (*add_action)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *, int __pyx_skip_dispatch);
-  void (*_add_action)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *);
-  void (*close)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, __pyx_t_5numpy_int64_t, double);
-  void (*_update_position)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *);
+  void (*add_action)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *, int __pyx_skip_dispatch);
+  void (*close)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, __pyx_t_5numpy_int64_t, double, int __pyx_skip_dispatch);
+  void (*_add_action)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *);
+  void (*_close)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, __pyx_t_5numpy_int64_t, double);
+  void (*_update_position)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *);
 };
 static struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Position *__pyx_vtabptr_3src_8analysis_6models_9portfolio_Position;
 /* #### Code section: utility_code_proto ### */
@@ -2032,6 +2028,17 @@ static CYTHON_INLINE PyObject* __Pyx_PyObject_GetAttrStrNoError(PyObject* obj, P
 /* GetBuiltinName.proto */
 static PyObject *__Pyx_GetBuiltinName(PyObject *name);
 
+/* DictGetItem.proto */
+#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
+static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key);
+#define __Pyx_PyObject_Dict_GetItem(obj, name)\
+    (likely(PyDict_CheckExact(obj)) ?\
+     __Pyx_PyDict_GetItem(obj, name) : PyObject_GetItem(obj, name))
+#else
+#define __Pyx_PyDict_GetItem(d, key) PyObject_GetItem(d, key)
+#define __Pyx_PyObject_Dict_GetItem(obj, name)  PyObject_GetItem(obj, name)
+#endif
+
 /* GetTopmostException.proto */
 #if CYTHON_USE_EXC_INFO_STACK && CYTHON_FAST_THREAD_STATE
 static _PyErr_StackItem * __Pyx_PyErr_GetTopmostException(PyThreadState *tstate);
@@ -2134,6 +2141,9 @@ static CYTHON_INLINE int __Pyx_PyUnicode_Equals(PyObject* s1, PyObject* s2, int 
 static void __Pyx_RaiseArgtupleInvalid(const char* func_name, int exact,
     Py_ssize_t num_min, Py_ssize_t num_max, Py_ssize_t num_found);
 
+/* KeywordStringCheck.proto */
+static int __Pyx_CheckKeywordStrings(PyObject *kw, const char* function_name, int kw_allowed);
+
 /* RaiseDoubleKeywords.proto */
 static void __Pyx_RaiseDoubleKeywordsError(const char* func_name, PyObject* kw_name);
 
@@ -2142,59 +2152,6 @@ static int __Pyx_ParseOptionalKeywords(PyObject *kwds, PyObject *const *kwvalues
     PyObject **argnames[],
     PyObject *kwds2, PyObject *values[], Py_ssize_t num_pos_args,
     const char* function_name);
-
-/* ArgTypeTest.proto */
-#define __Pyx_ArgTypeTest(obj, type, none_allowed, name, exact)\
-    ((likely(__Pyx_IS_TYPE(obj, type) | (none_allowed && (obj == Py_None)))) ? 1 :\
-        __Pyx__ArgTypeTest(obj, type, name, exact))
-static int __Pyx__ArgTypeTest(PyObject *obj, PyTypeObject *type, const char *name, int exact);
-
-/* KeywordStringCheck.proto */
-static int __Pyx_CheckKeywordStrings(PyObject *kw, const char* function_name, int kw_allowed);
-
-/* PyFunctionFastCall.proto */
-#if CYTHON_FAST_PYCALL
-#if !CYTHON_VECTORCALL
-#define __Pyx_PyFunction_FastCall(func, args, nargs)\
-    __Pyx_PyFunction_FastCallDict((func), (args), (nargs), NULL)
-static PyObject *__Pyx_PyFunction_FastCallDict(PyObject *func, PyObject **args, Py_ssize_t nargs, PyObject *kwargs);
-#endif
-#define __Pyx_BUILD_ASSERT_EXPR(cond)\
-    (sizeof(char [1 - 2*!(cond)]) - 1)
-#ifndef Py_MEMBER_SIZE
-#define Py_MEMBER_SIZE(type, member) sizeof(((type *)0)->member)
-#endif
-#if !CYTHON_VECTORCALL
-#if PY_VERSION_HEX >= 0x03080000
-  #include "frameobject.h"
-#if PY_VERSION_HEX >= 0x030b00a6 && !CYTHON_COMPILING_IN_LIMITED_API
-  #ifndef Py_BUILD_CORE
-    #define Py_BUILD_CORE 1
-  #endif
-  #include "internal/pycore_frame.h"
-#endif
-  #define __Pxy_PyFrame_Initialize_Offsets()
-  #define __Pyx_PyFrame_GetLocalsplus(frame)  ((frame)->f_localsplus)
-#else
-  static size_t __pyx_pyframe_localsplus_offset = 0;
-  #include "frameobject.h"
-  #define __Pxy_PyFrame_Initialize_Offsets()\
-    ((void)__Pyx_BUILD_ASSERT_EXPR(sizeof(PyFrameObject) == offsetof(PyFrameObject, f_localsplus) + Py_MEMBER_SIZE(PyFrameObject, f_localsplus)),\
-     (void)(__pyx_pyframe_localsplus_offset = ((size_t)PyFrame_Type.tp_basicsize) - Py_MEMBER_SIZE(PyFrameObject, f_localsplus)))
-  #define __Pyx_PyFrame_GetLocalsplus(frame)\
-    (assert(__pyx_pyframe_localsplus_offset), (PyObject **)(((char *)(frame)) + __pyx_pyframe_localsplus_offset))
-#endif
-#endif
-#endif
-
-/* PyObjectCallMethO.proto */
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg);
-#endif
-
-/* PyObjectFastCall.proto */
-#define __Pyx_PyObject_FastCall(func, args, nargs)  __Pyx_PyObject_FastCallDict(func, args, (size_t)(nargs), NULL)
-static CYTHON_INLINE PyObject* __Pyx_PyObject_FastCallDict(PyObject *func, PyObject **args, size_t nargs, PyObject *kwargs);
 
 /* PyObjectFormatSimple.proto */
 #if CYTHON_COMPILING_IN_PYPY
@@ -2221,6 +2178,12 @@ static CYTHON_INLINE PyObject* __Pyx_PyObject_FastCallDict(PyObject *func, PyObj
 /* JoinPyUnicode.proto */
 static PyObject* __Pyx_PyUnicode_Join(PyObject* value_tuple, Py_ssize_t value_count, Py_ssize_t result_ulength,
                                       Py_UCS4 max_char);
+
+/* ArgTypeTest.proto */
+#define __Pyx_ArgTypeTest(obj, type, none_allowed, name, exact)\
+    ((likely(__Pyx_IS_TYPE(obj, type) | (none_allowed && (obj == Py_None)))) ? 1 :\
+        __Pyx__ArgTypeTest(obj, type, name, exact))
+static int __Pyx__ArgTypeTest(PyObject *obj, PyTypeObject *type, const char *name, int exact);
 
 /* PyUnicode_Unicode.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyUnicode_Unicode(PyObject *obj);
@@ -2257,30 +2220,6 @@ static CYTHON_INLINE int __Pyx_object_dict_version_matches(PyObject* obj, PY_UIN
 #define __PYX_UPDATE_DICT_CACHE(dict, value, cache_var, version_var)
 #define __PYX_PY_DICT_LOOKUP_IF_MODIFIED(VAR, DICT, LOOKUP)  (VAR) = (LOOKUP);
 #endif
-
-/* ListAppend.proto */
-#if CYTHON_USE_PYLIST_INTERNALS && CYTHON_ASSUME_SAFE_MACROS
-static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
-    PyListObject* L = (PyListObject*) list;
-    Py_ssize_t len = Py_SIZE(list);
-    if (likely(L->allocated > len) & likely(len > (L->allocated >> 1))) {
-        Py_INCREF(x);
-        #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030d0000
-        L->ob_item[len] = x;
-        #else
-        PyList_SET_ITEM(list, len, x);
-        #endif
-        __Pyx_SET_SIZE(list, len + 1);
-        return 0;
-    }
-    return PyList_Append(list, x);
-}
-#else
-#define __Pyx_PyList_Append(L,x) PyList_Append(L,x)
-#endif
-
-/* PyObjectCallOneArg.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg);
 
 /* GetModuleGlobalName.proto */
 #if CYTHON_USE_DICT_VERSIONS
@@ -2451,6 +2390,85 @@ static PyObject *__Pyx_CyFunction_New(PyMethodDef *ml,
                                       PyObject *module, PyObject *globals,
                                       PyObject* code);
 
+/* PyFunctionFastCall.proto */
+#if CYTHON_FAST_PYCALL
+#if !CYTHON_VECTORCALL
+#define __Pyx_PyFunction_FastCall(func, args, nargs)\
+    __Pyx_PyFunction_FastCallDict((func), (args), (nargs), NULL)
+static PyObject *__Pyx_PyFunction_FastCallDict(PyObject *func, PyObject **args, Py_ssize_t nargs, PyObject *kwargs);
+#endif
+#define __Pyx_BUILD_ASSERT_EXPR(cond)\
+    (sizeof(char [1 - 2*!(cond)]) - 1)
+#ifndef Py_MEMBER_SIZE
+#define Py_MEMBER_SIZE(type, member) sizeof(((type *)0)->member)
+#endif
+#if !CYTHON_VECTORCALL
+#if PY_VERSION_HEX >= 0x03080000
+  #include "frameobject.h"
+#if PY_VERSION_HEX >= 0x030b00a6 && !CYTHON_COMPILING_IN_LIMITED_API
+  #ifndef Py_BUILD_CORE
+    #define Py_BUILD_CORE 1
+  #endif
+  #include "internal/pycore_frame.h"
+#endif
+  #define __Pxy_PyFrame_Initialize_Offsets()
+  #define __Pyx_PyFrame_GetLocalsplus(frame)  ((frame)->f_localsplus)
+#else
+  static size_t __pyx_pyframe_localsplus_offset = 0;
+  #include "frameobject.h"
+  #define __Pxy_PyFrame_Initialize_Offsets()\
+    ((void)__Pyx_BUILD_ASSERT_EXPR(sizeof(PyFrameObject) == offsetof(PyFrameObject, f_localsplus) + Py_MEMBER_SIZE(PyFrameObject, f_localsplus)),\
+     (void)(__pyx_pyframe_localsplus_offset = ((size_t)PyFrame_Type.tp_basicsize) - Py_MEMBER_SIZE(PyFrameObject, f_localsplus)))
+  #define __Pyx_PyFrame_GetLocalsplus(frame)\
+    (assert(__pyx_pyframe_localsplus_offset), (PyObject **)(((char *)(frame)) + __pyx_pyframe_localsplus_offset))
+#endif
+#endif
+#endif
+
+/* PyObjectCallMethO.proto */
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg);
+#endif
+
+/* PyObjectFastCall.proto */
+#define __Pyx_PyObject_FastCall(func, args, nargs)  __Pyx_PyObject_FastCallDict(func, args, (size_t)(nargs), NULL)
+static CYTHON_INLINE PyObject* __Pyx_PyObject_FastCallDict(PyObject *func, PyObject **args, size_t nargs, PyObject *kwargs);
+
+/* ListAppend.proto */
+#if CYTHON_USE_PYLIST_INTERNALS && CYTHON_ASSUME_SAFE_MACROS
+static CYTHON_INLINE int __Pyx_PyList_Append(PyObject* list, PyObject* x) {
+    PyListObject* L = (PyListObject*) list;
+    Py_ssize_t len = Py_SIZE(list);
+    if (likely(L->allocated > len) & likely(len > (L->allocated >> 1))) {
+        Py_INCREF(x);
+        #if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX >= 0x030d0000
+        L->ob_item[len] = x;
+        #else
+        PyList_SET_ITEM(list, len, x);
+        #endif
+        __Pyx_SET_SIZE(list, len + 1);
+        return 0;
+    }
+    return PyList_Append(list, x);
+}
+#else
+#define __Pyx_PyList_Append(L,x) PyList_Append(L,x)
+#endif
+
+/* PyObjectCallOneArg.proto */
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg);
+
+/* py_abs.proto */
+#if CYTHON_USE_PYLONG_INTERNALS
+static PyObject *__Pyx_PyLong_AbsNeg(PyObject *num);
+#define __Pyx_PyNumber_Absolute(x)\
+    ((likely(PyLong_CheckExact(x))) ?\
+         (likely(__Pyx_PyLong_IsNonNeg(x)) ? (Py_INCREF(x), (x)) : __Pyx_PyLong_AbsNeg(x)) :\
+         PyNumber_Absolute(x))
+#else
+#define __Pyx_PyNumber_Absolute(x)  PyNumber_Absolute(x)
+#endif
+
 /* PyObjectCallNoArg.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func);
 
@@ -2564,6 +2582,11 @@ static void __Pyx_AddTraceback(const char *funcname, int c_line,
 #if !defined(__INTEL_COMPILER) && defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6))
 #define __Pyx_HAS_GCC_DIAGNOSTIC
 #endif
+
+struct __pyx_t_3src_8analysis_6models_9portfolio_ActionData;
+static PyObject* __pyx_convert__to_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData(struct __pyx_t_3src_8analysis_6models_9portfolio_ActionData s);
+/* RaiseUnexpectedTypeError.proto */
+static int __Pyx_RaiseUnexpectedTypeError(const char *expected, PyObject *obj);
 
 /* RealImag.proto */
 #if CYTHON_CCOMPLEX
@@ -2775,10 +2798,11 @@ static CYTHON_INLINE npy_intp __pyx_f_5numpy_7ndarray_4size_size(PyArrayObject *
 static CYTHON_INLINE char *__pyx_f_5numpy_7ndarray_4data_data(PyArrayObject *__pyx_v_self); /* proto*/
 static void __pyx_f_3src_8analysis_6models_9portfolio_3Buy__calculate(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, double __pyx_v_amount); /* proto*/
 static void __pyx_f_3src_8analysis_6models_9portfolio_4Sell__calculate(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, double __pyx_v_amount); /* proto*/
-static void __pyx_f_3src_8analysis_6models_9portfolio_8Position_add_action(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_action, int __pyx_skip_dispatch); /* proto*/
-static void __pyx_f_3src_8analysis_6models_9portfolio_8Position__add_action(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_action); /* proto*/
-static void __pyx_f_3src_8analysis_6models_9portfolio_8Position_close(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_price); /* proto*/
-static void __pyx_f_3src_8analysis_6models_9portfolio_8Position__update_position(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_action); /* proto*/
+static void __pyx_f_3src_8analysis_6models_9portfolio_8Position_add_action(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_action, int __pyx_skip_dispatch); /* proto*/
+static void __pyx_f_3src_8analysis_6models_9portfolio_8Position_close(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_price, int __pyx_skip_dispatch); /* proto*/
+static void __pyx_f_3src_8analysis_6models_9portfolio_8Position__add_action(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_action); /* proto*/
+static void __pyx_f_3src_8analysis_6models_9portfolio_8Position__close(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_price); /* proto*/
+static void __pyx_f_3src_8analysis_6models_9portfolio_8Position__update_position(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_action); /* proto*/
 
 /* Module declarations from "libc.string" */
 
@@ -2798,11 +2822,10 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_8Position__update_position
 
 /* Module declarations from "numpy" */
 
-/* Module declarations from "libcpp.vector" */
-
 /* Module declarations from "src.analysis.models.portfolio" */
 static double __pyx_v_3src_8analysis_6models_9portfolio_fee_rate;
 static double __pyx_v_3src_8analysis_6models_9portfolio_slippage_rate;
+static struct __pyx_t_3src_8analysis_6models_9portfolio_ActionData __pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData(PyObject *); /*proto*/
 /* #### Code section: typeinfo ### */
 /* #### Code section: before_global_var ### */
 #define __Pyx_MODULE_NAME "src.analysis.models.portfolio"
@@ -2812,51 +2835,53 @@ int __pyx_module_is_main_src__analysis__models__portfolio = 0;
 /* Implementation of "src.analysis.models.portfolio" */
 /* #### Code section: global_var ### */
 static PyObject *__pyx_builtin_TypeError;
-static PyObject *__pyx_builtin_super;
+static PyObject *__pyx_builtin_sorted;
 static PyObject *__pyx_builtin_ValueError;
+static PyObject *__pyx_builtin_KeyError;
 static PyObject *__pyx_builtin_ImportError;
 /* #### Code section: string_decls ### */
 static const char __pyx_k_x[] = "x";
 static const char __pyx_k_y[] = "y";
 static const char __pyx_k_2f[] = ".2f";
-static const char __pyx_k__4[] = ")";
-static const char __pyx_k__5[] = ".";
-static const char __pyx_k__6[] = "*";
+static const char __pyx_k__9[] = ")";
 static const char __pyx_k_gc[] = "gc";
 static const char __pyx_k_np[] = "np";
 static const char __pyx_k_BUY[] = "BUY";
 static const char __pyx_k_Buy[] = "Buy";
-static const char __pyx_k__20[] = "?";
+static const char __pyx_k__10[] = ".";
+static const char __pyx_k__11[] = "*";
+static const char __pyx_k__27[] = "?";
+static const char __pyx_k_fee[] = "fee";
+static const char __pyx_k_key[] = "key";
 static const char __pyx_k_qty[] = "qty";
 static const char __pyx_k_None[] = "None";
-static const char __pyx_k_SELL[] = "SELL";
 static const char __pyx_k_Sell[] = "Sell";
-static const char __pyx_k_init[] = "__init__";
 static const char __pyx_k_main[] = "__main__";
 static const char __pyx_k_name[] = "__name__";
 static const char __pyx_k_self[] = "self";
 static const char __pyx_k_spec[] = "__spec__";
 static const char __pyx_k_test[] = "__test__";
-static const char __pyx_k_type[] = "type";
+static const char __pyx_k_close[] = "close";
 static const char __pyx_k_numpy[] = "numpy";
 static const char __pyx_k_price[] = "price";
-static const char __pyx_k_super[] = "super";
-static const char __pyx_k_Action[] = "Action";
 static const char __pyx_k_Buying[] = "Buying ";
 static const char __pyx_k_action[] = "action";
 static const char __pyx_k_amount[] = "amount";
 static const char __pyx_k_enable[] = "enable";
 static const char __pyx_k_import[] = "__import__";
 static const char __pyx_k_reduce[] = "reduce";
+static const char __pyx_k_sorted[] = "sorted";
 static const char __pyx_k_symbol[] = "symbol";
 static const char __pyx_k_Selling[] = "Selling ";
 static const char __pyx_k_disable[] = "disable";
 static const char __pyx_k_price_2[] = ", price=";
+static const char __pyx_k_KeyError[] = "KeyError";
 static const char __pyx_k_Position[] = "Position";
 static const char __pyx_k_amount_2[] = ", amount=";
 static const char __pyx_k_getstate[] = "__getstate__";
 static const char __pyx_k_reduce_2[] = "__reduce__";
 static const char __pyx_k_setstate[] = "__setstate__";
+static const char __pyx_k_slippage[] = "slippage";
 static const char __pyx_k_TypeError[] = "TypeError";
 static const char __pyx_k_functools[] = "functools";
 static const char __pyx_k_isenabled[] = "isenabled";
@@ -2876,10 +2901,13 @@ static const char __pyx_k_realized_pnl[] = ", realized_pnl=";
 static const char __pyx_k_stringsource[] = "<stringsource>";
 static const char __pyx_k_Buy_timestamp[] = "Buy(timestamp=";
 static const char __pyx_k_reduce_cython[] = "__reduce_cython__";
+static const char __pyx_k_Position_close[] = "Position.close";
 static const char __pyx_k_Sell_timestamp[] = "Sell(timestamp=";
+static const char __pyx_k_ActionInterface[] = "ActionInterface";
 static const char __pyx_k_Position_symbol[] = "Position(symbol=";
 static const char __pyx_k_setstate_cython[] = "__setstate_cython__";
 static const char __pyx_k_asyncio_coroutines[] = "asyncio.coroutines";
+static const char __pyx_k_average_exit_price[] = "average_exit_price";
 static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
 static const char __pyx_k_Buy___reduce_cython[] = "Buy.__reduce_cython__";
 static const char __pyx_k_Position_add_action[] = "Position.add_action";
@@ -2887,59 +2915,77 @@ static const char __pyx_k_average_entry_price[] = ", average_entry_price=";
 static const char __pyx_k_Position_get_actions[] = "Position.get_actions";
 static const char __pyx_k_Sell___reduce_cython[] = "Sell.__reduce_cython__";
 static const char __pyx_k_Buy___setstate_cython[] = "Buy.__setstate_cython__";
-static const char __pyx_k_Action___reduce_cython[] = "Action.__reduce_cython__";
 static const char __pyx_k_Sell___setstate_cython[] = "Sell.__setstate_cython__";
-static const char __pyx_k_Action___setstate_cython[] = "Action.__setstate_cython__";
 static const char __pyx_k_Position___reduce_cython[] = "Position.__reduce_cython__";
+static const char __pyx_k_get_actions_locals_lambda[] = "get_actions.<locals>.<lambda>";
 static const char __pyx_k_Position___setstate_cython[] = "Position.__setstate_cython__";
 static const char __pyx_k_src_analysis_models_portfolio[] = "src.analysis.models.portfolio";
 static const char __pyx_k_Position___get___locals_lambda[] = "Position.__get__.<locals>.<lambda>";
+static const char __pyx_k_ActionInterface___reduce_cython[] = "ActionInterface.__reduce_cython__";
 static const char __pyx_k_Pickling_of_struct_members_such[] = "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)";
 static const char __pyx_k_would_change_this_long_position[] = " would change this long position to a short position. Use .close() method before opening a new short position, or sell a max amount of ";
 static const char __pyx_k_would_change_this_short_positio[] = " would change this short position to a long position. Use .close() method before opening a new long position, or buy a max amount of ";
-static const char __pyx_k_Can_only_add_actions_of_the_same[] = "Can only add actions of the same type";
+static const char __pyx_k_ActionInterface___setstate_cytho[] = "ActionInterface.__setstate_cython__";
+static const char __pyx_k_No_value_specified_for_struct_at[] = "No value specified for struct attribute 'timestamp'";
 static const char __pyx_k_no_default___reduce___due_to_non[] = "no default __reduce__ due to non-trivial __cinit__";
 static const char __pyx_k_numpy__core_multiarray_failed_to[] = "numpy._core.multiarray failed to import";
 static const char __pyx_k_numpy__core_umath_failed_to_impo[] = "numpy._core.umath failed to import";
 static const char __pyx_k_src_analysis_models_portfolio_py[] = "src/analysis/models/portfolio.pyx";
+static const char __pyx_k_No_value_specified_for_struct_at_2[] = "No value specified for struct attribute 'price'";
+static const char __pyx_k_No_value_specified_for_struct_at_3[] = "No value specified for struct attribute 'qty'";
+static const char __pyx_k_No_value_specified_for_struct_at_4[] = "No value specified for struct attribute 'quote_qty'";
+static const char __pyx_k_No_value_specified_for_struct_at_5[] = "No value specified for struct attribute 'fee'";
+static const char __pyx_k_No_value_specified_for_struct_at_6[] = "No value specified for struct attribute 'slippage'";
 /* #### Code section: decls ### */
-static int __pyx_pf_3src_8analysis_6models_9portfolio_6Action___init__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, CYTHON_UNUSED double __pyx_v_amount, double __pyx_v_price); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_2__add__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_other); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_9timestamp___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_3qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_5price___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_9quote_qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_3fee___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self); /* proto */
-static int __pyx_pf_3src_8analysis_6models_9portfolio_6Action_3fee_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_8slippage___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self); /* proto */
-static int __pyx_pf_3src_8analysis_6models_9portfolio_6Action_8slippage_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
-static int __pyx_pf_3src_8analysis_6models_9portfolio_3Buy___init__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_amount, double __pyx_v_price); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_15ActionInterface_4data___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_self); /* proto */
+static int __pyx_pf_3src_8analysis_6models_9portfolio_15ActionInterface_4data_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_15ActionInterface___reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_15ActionInterface_2__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
+static int __pyx_pf_3src_8analysis_6models_9portfolio_3Buy___cinit__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_amount, double __pyx_v_price); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_2__repr__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_4__add__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_other); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_4type___get__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
-static int __pyx_pf_3src_8analysis_6models_9portfolio_4Sell___init__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_amount, double __pyx_v_price); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_9timestamp___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_3qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_5price___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_9quote_qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_3fee___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self); /* proto */
+static int __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_3fee_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_8slippage___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self); /* proto */
+static int __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_8slippage_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_6__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_8__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
+static int __pyx_pf_3src_8analysis_6models_9portfolio_4Sell___cinit__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_amount, double __pyx_v_price); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_2__repr__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_4__add__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_other); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_4type___get__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_9timestamp___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_3qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_5price___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_9quote_qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_3fee___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self); /* proto */
+static int __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_3fee_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_8slippage___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self); /* proto */
+static int __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_8slippage_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_6__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_8__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static int __pyx_pf_3src_8analysis_6models_9portfolio_8Position___cinit__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, PyObject *__pyx_v_symbol); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_2__repr__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_4add_action(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_action); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_6get_actions(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self); /* proto */
 static PyObject *__pyx_lambda_funcdef_lambda(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_x, PyObject *__pyx_v_y); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_13average_entry___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self); /* proto */
 static PyObject *__pyx_lambda_funcdef_lambda1(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_x, PyObject *__pyx_v_y); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_12average_exit___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self); /* proto */
+static PyObject *__pyx_lambda_funcdef_lambda2(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_x); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_4get_actions(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_6add_action(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_action); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_8close(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_price); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_6symbol___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_11current_qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_19average_entry_price___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_12realized_pnl___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_8__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self); /* proto */
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_10__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
-static PyObject *__pyx_tp_new_3src_8analysis_6models_9portfolio_Action(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_10__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_12__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
+static PyObject *__pyx_tp_new_3src_8analysis_6models_9portfolio_ActionInterface(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_3src_8analysis_6models_9portfolio_Buy(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_3src_8analysis_6models_9portfolio_Sell(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
 static PyObject *__pyx_tp_new_3src_8analysis_6models_9portfolio_Position(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
@@ -3005,29 +3051,33 @@ typedef struct {
   PyTypeObject *__pyx_ptype_5numpy_character;
   PyTypeObject *__pyx_ptype_5numpy_ufunc;
   #if CYTHON_USE_MODULE_STATE
-  #endif
-  #if CYTHON_USE_MODULE_STATE
-  PyObject *__pyx_type_3src_8analysis_6models_9portfolio_Action;
+  PyObject *__pyx_type_3src_8analysis_6models_9portfolio_ActionInterface;
   PyObject *__pyx_type_3src_8analysis_6models_9portfolio_Buy;
   PyObject *__pyx_type_3src_8analysis_6models_9portfolio_Sell;
   PyObject *__pyx_type_3src_8analysis_6models_9portfolio_Position;
   #endif
-  PyTypeObject *__pyx_ptype_3src_8analysis_6models_9portfolio_Action;
+  PyTypeObject *__pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface;
   PyTypeObject *__pyx_ptype_3src_8analysis_6models_9portfolio_Buy;
   PyTypeObject *__pyx_ptype_3src_8analysis_6models_9portfolio_Sell;
   PyTypeObject *__pyx_ptype_3src_8analysis_6models_9portfolio_Position;
   PyObject *__pyx_kp_u_2f;
-  PyObject *__pyx_n_s_Action;
-  PyObject *__pyx_n_s_Action___reduce_cython;
-  PyObject *__pyx_n_s_Action___setstate_cython;
+  PyObject *__pyx_n_s_ActionInterface;
+  PyObject *__pyx_n_s_ActionInterface___reduce_cython;
+  PyObject *__pyx_n_s_ActionInterface___setstate_cytho;
   PyObject *__pyx_n_u_BUY;
   PyObject *__pyx_n_s_Buy;
   PyObject *__pyx_n_s_Buy___reduce_cython;
   PyObject *__pyx_n_s_Buy___setstate_cython;
   PyObject *__pyx_kp_u_Buy_timestamp;
   PyObject *__pyx_kp_u_Buying;
-  PyObject *__pyx_kp_u_Can_only_add_actions_of_the_same;
   PyObject *__pyx_n_s_ImportError;
+  PyObject *__pyx_n_s_KeyError;
+  PyObject *__pyx_kp_s_No_value_specified_for_struct_at;
+  PyObject *__pyx_kp_s_No_value_specified_for_struct_at_2;
+  PyObject *__pyx_kp_s_No_value_specified_for_struct_at_3;
+  PyObject *__pyx_kp_s_No_value_specified_for_struct_at_4;
+  PyObject *__pyx_kp_s_No_value_specified_for_struct_at_5;
+  PyObject *__pyx_kp_s_No_value_specified_for_struct_at_6;
   PyObject *__pyx_kp_u_None;
   PyObject *__pyx_kp_s_Pickling_of_struct_members_such;
   PyObject *__pyx_n_s_Position;
@@ -3035,9 +3085,9 @@ typedef struct {
   PyObject *__pyx_n_s_Position___reduce_cython;
   PyObject *__pyx_n_s_Position___setstate_cython;
   PyObject *__pyx_n_s_Position_add_action;
+  PyObject *__pyx_n_s_Position_close;
   PyObject *__pyx_n_s_Position_get_actions;
   PyObject *__pyx_kp_u_Position_symbol;
-  PyObject *__pyx_n_u_SELL;
   PyObject *__pyx_n_s_Sell;
   PyObject *__pyx_n_s_Sell___reduce_cython;
   PyObject *__pyx_n_s_Sell___setstate_cython;
@@ -3045,29 +3095,33 @@ typedef struct {
   PyObject *__pyx_kp_u_Selling;
   PyObject *__pyx_n_s_TypeError;
   PyObject *__pyx_n_s_ValueError;
-  PyObject *__pyx_n_s__20;
-  PyObject *__pyx_kp_u__4;
-  PyObject *__pyx_kp_u__5;
-  PyObject *__pyx_n_s__6;
+  PyObject *__pyx_kp_u__10;
+  PyObject *__pyx_n_s__11;
+  PyObject *__pyx_n_s__27;
+  PyObject *__pyx_kp_u__9;
   PyObject *__pyx_n_s_action;
   PyObject *__pyx_n_s_add_action;
   PyObject *__pyx_n_s_amount;
   PyObject *__pyx_kp_u_amount_2;
   PyObject *__pyx_n_s_asyncio_coroutines;
   PyObject *__pyx_kp_u_average_entry_price;
+  PyObject *__pyx_n_s_average_exit_price;
   PyObject *__pyx_n_s_cline_in_traceback;
+  PyObject *__pyx_n_s_close;
   PyObject *__pyx_kp_u_current_qty;
   PyObject *__pyx_kp_u_disable;
   PyObject *__pyx_kp_u_enable;
+  PyObject *__pyx_n_s_fee;
   PyObject *__pyx_n_s_functools;
   PyObject *__pyx_kp_u_gc;
   PyObject *__pyx_n_s_get_actions;
+  PyObject *__pyx_n_s_get_actions_locals_lambda;
   PyObject *__pyx_n_s_getstate;
   PyObject *__pyx_n_s_import;
-  PyObject *__pyx_n_s_init;
   PyObject *__pyx_n_s_initializing;
   PyObject *__pyx_n_s_is_coroutine;
   PyObject *__pyx_kp_u_isenabled;
+  PyObject *__pyx_n_s_key;
   PyObject *__pyx_n_s_main;
   PyObject *__pyx_n_s_name;
   PyObject *__pyx_kp_s_no_default___reduce___due_to_non;
@@ -3089,15 +3143,15 @@ typedef struct {
   PyObject *__pyx_n_s_self;
   PyObject *__pyx_n_s_setstate;
   PyObject *__pyx_n_s_setstate_cython;
+  PyObject *__pyx_n_s_slippage;
+  PyObject *__pyx_n_s_sorted;
   PyObject *__pyx_n_s_spec;
   PyObject *__pyx_n_s_src_analysis_models_portfolio;
   PyObject *__pyx_kp_s_src_analysis_models_portfolio_py;
   PyObject *__pyx_kp_s_stringsource;
-  PyObject *__pyx_n_s_super;
   PyObject *__pyx_n_s_symbol;
   PyObject *__pyx_n_s_test;
   PyObject *__pyx_n_s_timestamp;
-  PyObject *__pyx_n_s_type;
   PyObject *__pyx_kp_u_would_change_this_long_position;
   PyObject *__pyx_kp_u_would_change_this_short_positio;
   PyObject *__pyx_n_s_x;
@@ -3105,19 +3159,26 @@ typedef struct {
   PyObject *__pyx_tuple_;
   PyObject *__pyx_tuple__2;
   PyObject *__pyx_tuple__3;
+  PyObject *__pyx_tuple__4;
+  PyObject *__pyx_tuple__5;
+  PyObject *__pyx_tuple__6;
   PyObject *__pyx_tuple__7;
-  PyObject *__pyx_tuple__9;
-  PyObject *__pyx_tuple__15;
-  PyObject *__pyx_codeobj__8;
-  PyObject *__pyx_codeobj__10;
-  PyObject *__pyx_codeobj__11;
-  PyObject *__pyx_codeobj__12;
+  PyObject *__pyx_tuple__8;
+  PyObject *__pyx_tuple__12;
+  PyObject *__pyx_tuple__14;
+  PyObject *__pyx_tuple__21;
+  PyObject *__pyx_tuple__23;
   PyObject *__pyx_codeobj__13;
-  PyObject *__pyx_codeobj__14;
+  PyObject *__pyx_codeobj__15;
   PyObject *__pyx_codeobj__16;
   PyObject *__pyx_codeobj__17;
   PyObject *__pyx_codeobj__18;
   PyObject *__pyx_codeobj__19;
+  PyObject *__pyx_codeobj__20;
+  PyObject *__pyx_codeobj__22;
+  PyObject *__pyx_codeobj__24;
+  PyObject *__pyx_codeobj__25;
+  PyObject *__pyx_codeobj__26;
 } __pyx_mstate;
 
 #if CYTHON_USE_MODULE_STATE
@@ -3176,8 +3237,8 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_ptype_5numpy_flexible);
   Py_CLEAR(clear_module_state->__pyx_ptype_5numpy_character);
   Py_CLEAR(clear_module_state->__pyx_ptype_5numpy_ufunc);
-  Py_CLEAR(clear_module_state->__pyx_ptype_3src_8analysis_6models_9portfolio_Action);
-  Py_CLEAR(clear_module_state->__pyx_type_3src_8analysis_6models_9portfolio_Action);
+  Py_CLEAR(clear_module_state->__pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface);
+  Py_CLEAR(clear_module_state->__pyx_type_3src_8analysis_6models_9portfolio_ActionInterface);
   Py_CLEAR(clear_module_state->__pyx_ptype_3src_8analysis_6models_9portfolio_Buy);
   Py_CLEAR(clear_module_state->__pyx_type_3src_8analysis_6models_9portfolio_Buy);
   Py_CLEAR(clear_module_state->__pyx_ptype_3src_8analysis_6models_9portfolio_Sell);
@@ -3185,17 +3246,23 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_ptype_3src_8analysis_6models_9portfolio_Position);
   Py_CLEAR(clear_module_state->__pyx_type_3src_8analysis_6models_9portfolio_Position);
   Py_CLEAR(clear_module_state->__pyx_kp_u_2f);
-  Py_CLEAR(clear_module_state->__pyx_n_s_Action);
-  Py_CLEAR(clear_module_state->__pyx_n_s_Action___reduce_cython);
-  Py_CLEAR(clear_module_state->__pyx_n_s_Action___setstate_cython);
+  Py_CLEAR(clear_module_state->__pyx_n_s_ActionInterface);
+  Py_CLEAR(clear_module_state->__pyx_n_s_ActionInterface___reduce_cython);
+  Py_CLEAR(clear_module_state->__pyx_n_s_ActionInterface___setstate_cytho);
   Py_CLEAR(clear_module_state->__pyx_n_u_BUY);
   Py_CLEAR(clear_module_state->__pyx_n_s_Buy);
   Py_CLEAR(clear_module_state->__pyx_n_s_Buy___reduce_cython);
   Py_CLEAR(clear_module_state->__pyx_n_s_Buy___setstate_cython);
   Py_CLEAR(clear_module_state->__pyx_kp_u_Buy_timestamp);
   Py_CLEAR(clear_module_state->__pyx_kp_u_Buying);
-  Py_CLEAR(clear_module_state->__pyx_kp_u_Can_only_add_actions_of_the_same);
   Py_CLEAR(clear_module_state->__pyx_n_s_ImportError);
+  Py_CLEAR(clear_module_state->__pyx_n_s_KeyError);
+  Py_CLEAR(clear_module_state->__pyx_kp_s_No_value_specified_for_struct_at);
+  Py_CLEAR(clear_module_state->__pyx_kp_s_No_value_specified_for_struct_at_2);
+  Py_CLEAR(clear_module_state->__pyx_kp_s_No_value_specified_for_struct_at_3);
+  Py_CLEAR(clear_module_state->__pyx_kp_s_No_value_specified_for_struct_at_4);
+  Py_CLEAR(clear_module_state->__pyx_kp_s_No_value_specified_for_struct_at_5);
+  Py_CLEAR(clear_module_state->__pyx_kp_s_No_value_specified_for_struct_at_6);
   Py_CLEAR(clear_module_state->__pyx_kp_u_None);
   Py_CLEAR(clear_module_state->__pyx_kp_s_Pickling_of_struct_members_such);
   Py_CLEAR(clear_module_state->__pyx_n_s_Position);
@@ -3203,9 +3270,9 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_n_s_Position___reduce_cython);
   Py_CLEAR(clear_module_state->__pyx_n_s_Position___setstate_cython);
   Py_CLEAR(clear_module_state->__pyx_n_s_Position_add_action);
+  Py_CLEAR(clear_module_state->__pyx_n_s_Position_close);
   Py_CLEAR(clear_module_state->__pyx_n_s_Position_get_actions);
   Py_CLEAR(clear_module_state->__pyx_kp_u_Position_symbol);
-  Py_CLEAR(clear_module_state->__pyx_n_u_SELL);
   Py_CLEAR(clear_module_state->__pyx_n_s_Sell);
   Py_CLEAR(clear_module_state->__pyx_n_s_Sell___reduce_cython);
   Py_CLEAR(clear_module_state->__pyx_n_s_Sell___setstate_cython);
@@ -3213,29 +3280,33 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_kp_u_Selling);
   Py_CLEAR(clear_module_state->__pyx_n_s_TypeError);
   Py_CLEAR(clear_module_state->__pyx_n_s_ValueError);
-  Py_CLEAR(clear_module_state->__pyx_n_s__20);
-  Py_CLEAR(clear_module_state->__pyx_kp_u__4);
-  Py_CLEAR(clear_module_state->__pyx_kp_u__5);
-  Py_CLEAR(clear_module_state->__pyx_n_s__6);
+  Py_CLEAR(clear_module_state->__pyx_kp_u__10);
+  Py_CLEAR(clear_module_state->__pyx_n_s__11);
+  Py_CLEAR(clear_module_state->__pyx_n_s__27);
+  Py_CLEAR(clear_module_state->__pyx_kp_u__9);
   Py_CLEAR(clear_module_state->__pyx_n_s_action);
   Py_CLEAR(clear_module_state->__pyx_n_s_add_action);
   Py_CLEAR(clear_module_state->__pyx_n_s_amount);
   Py_CLEAR(clear_module_state->__pyx_kp_u_amount_2);
   Py_CLEAR(clear_module_state->__pyx_n_s_asyncio_coroutines);
   Py_CLEAR(clear_module_state->__pyx_kp_u_average_entry_price);
+  Py_CLEAR(clear_module_state->__pyx_n_s_average_exit_price);
   Py_CLEAR(clear_module_state->__pyx_n_s_cline_in_traceback);
+  Py_CLEAR(clear_module_state->__pyx_n_s_close);
   Py_CLEAR(clear_module_state->__pyx_kp_u_current_qty);
   Py_CLEAR(clear_module_state->__pyx_kp_u_disable);
   Py_CLEAR(clear_module_state->__pyx_kp_u_enable);
+  Py_CLEAR(clear_module_state->__pyx_n_s_fee);
   Py_CLEAR(clear_module_state->__pyx_n_s_functools);
   Py_CLEAR(clear_module_state->__pyx_kp_u_gc);
   Py_CLEAR(clear_module_state->__pyx_n_s_get_actions);
+  Py_CLEAR(clear_module_state->__pyx_n_s_get_actions_locals_lambda);
   Py_CLEAR(clear_module_state->__pyx_n_s_getstate);
   Py_CLEAR(clear_module_state->__pyx_n_s_import);
-  Py_CLEAR(clear_module_state->__pyx_n_s_init);
   Py_CLEAR(clear_module_state->__pyx_n_s_initializing);
   Py_CLEAR(clear_module_state->__pyx_n_s_is_coroutine);
   Py_CLEAR(clear_module_state->__pyx_kp_u_isenabled);
+  Py_CLEAR(clear_module_state->__pyx_n_s_key);
   Py_CLEAR(clear_module_state->__pyx_n_s_main);
   Py_CLEAR(clear_module_state->__pyx_n_s_name);
   Py_CLEAR(clear_module_state->__pyx_kp_s_no_default___reduce___due_to_non);
@@ -3257,15 +3328,15 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_n_s_self);
   Py_CLEAR(clear_module_state->__pyx_n_s_setstate);
   Py_CLEAR(clear_module_state->__pyx_n_s_setstate_cython);
+  Py_CLEAR(clear_module_state->__pyx_n_s_slippage);
+  Py_CLEAR(clear_module_state->__pyx_n_s_sorted);
   Py_CLEAR(clear_module_state->__pyx_n_s_spec);
   Py_CLEAR(clear_module_state->__pyx_n_s_src_analysis_models_portfolio);
   Py_CLEAR(clear_module_state->__pyx_kp_s_src_analysis_models_portfolio_py);
   Py_CLEAR(clear_module_state->__pyx_kp_s_stringsource);
-  Py_CLEAR(clear_module_state->__pyx_n_s_super);
   Py_CLEAR(clear_module_state->__pyx_n_s_symbol);
   Py_CLEAR(clear_module_state->__pyx_n_s_test);
   Py_CLEAR(clear_module_state->__pyx_n_s_timestamp);
-  Py_CLEAR(clear_module_state->__pyx_n_s_type);
   Py_CLEAR(clear_module_state->__pyx_kp_u_would_change_this_long_position);
   Py_CLEAR(clear_module_state->__pyx_kp_u_would_change_this_short_positio);
   Py_CLEAR(clear_module_state->__pyx_n_s_x);
@@ -3273,19 +3344,26 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_tuple_);
   Py_CLEAR(clear_module_state->__pyx_tuple__2);
   Py_CLEAR(clear_module_state->__pyx_tuple__3);
+  Py_CLEAR(clear_module_state->__pyx_tuple__4);
+  Py_CLEAR(clear_module_state->__pyx_tuple__5);
+  Py_CLEAR(clear_module_state->__pyx_tuple__6);
   Py_CLEAR(clear_module_state->__pyx_tuple__7);
-  Py_CLEAR(clear_module_state->__pyx_tuple__9);
-  Py_CLEAR(clear_module_state->__pyx_tuple__15);
-  Py_CLEAR(clear_module_state->__pyx_codeobj__8);
-  Py_CLEAR(clear_module_state->__pyx_codeobj__10);
-  Py_CLEAR(clear_module_state->__pyx_codeobj__11);
-  Py_CLEAR(clear_module_state->__pyx_codeobj__12);
+  Py_CLEAR(clear_module_state->__pyx_tuple__8);
+  Py_CLEAR(clear_module_state->__pyx_tuple__12);
+  Py_CLEAR(clear_module_state->__pyx_tuple__14);
+  Py_CLEAR(clear_module_state->__pyx_tuple__21);
+  Py_CLEAR(clear_module_state->__pyx_tuple__23);
   Py_CLEAR(clear_module_state->__pyx_codeobj__13);
-  Py_CLEAR(clear_module_state->__pyx_codeobj__14);
+  Py_CLEAR(clear_module_state->__pyx_codeobj__15);
   Py_CLEAR(clear_module_state->__pyx_codeobj__16);
   Py_CLEAR(clear_module_state->__pyx_codeobj__17);
   Py_CLEAR(clear_module_state->__pyx_codeobj__18);
   Py_CLEAR(clear_module_state->__pyx_codeobj__19);
+  Py_CLEAR(clear_module_state->__pyx_codeobj__20);
+  Py_CLEAR(clear_module_state->__pyx_codeobj__22);
+  Py_CLEAR(clear_module_state->__pyx_codeobj__24);
+  Py_CLEAR(clear_module_state->__pyx_codeobj__25);
+  Py_CLEAR(clear_module_state->__pyx_codeobj__26);
   return 0;
 }
 #endif
@@ -3322,8 +3400,8 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_ptype_5numpy_flexible);
   Py_VISIT(traverse_module_state->__pyx_ptype_5numpy_character);
   Py_VISIT(traverse_module_state->__pyx_ptype_5numpy_ufunc);
-  Py_VISIT(traverse_module_state->__pyx_ptype_3src_8analysis_6models_9portfolio_Action);
-  Py_VISIT(traverse_module_state->__pyx_type_3src_8analysis_6models_9portfolio_Action);
+  Py_VISIT(traverse_module_state->__pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface);
+  Py_VISIT(traverse_module_state->__pyx_type_3src_8analysis_6models_9portfolio_ActionInterface);
   Py_VISIT(traverse_module_state->__pyx_ptype_3src_8analysis_6models_9portfolio_Buy);
   Py_VISIT(traverse_module_state->__pyx_type_3src_8analysis_6models_9portfolio_Buy);
   Py_VISIT(traverse_module_state->__pyx_ptype_3src_8analysis_6models_9portfolio_Sell);
@@ -3331,17 +3409,23 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_ptype_3src_8analysis_6models_9portfolio_Position);
   Py_VISIT(traverse_module_state->__pyx_type_3src_8analysis_6models_9portfolio_Position);
   Py_VISIT(traverse_module_state->__pyx_kp_u_2f);
-  Py_VISIT(traverse_module_state->__pyx_n_s_Action);
-  Py_VISIT(traverse_module_state->__pyx_n_s_Action___reduce_cython);
-  Py_VISIT(traverse_module_state->__pyx_n_s_Action___setstate_cython);
+  Py_VISIT(traverse_module_state->__pyx_n_s_ActionInterface);
+  Py_VISIT(traverse_module_state->__pyx_n_s_ActionInterface___reduce_cython);
+  Py_VISIT(traverse_module_state->__pyx_n_s_ActionInterface___setstate_cytho);
   Py_VISIT(traverse_module_state->__pyx_n_u_BUY);
   Py_VISIT(traverse_module_state->__pyx_n_s_Buy);
   Py_VISIT(traverse_module_state->__pyx_n_s_Buy___reduce_cython);
   Py_VISIT(traverse_module_state->__pyx_n_s_Buy___setstate_cython);
   Py_VISIT(traverse_module_state->__pyx_kp_u_Buy_timestamp);
   Py_VISIT(traverse_module_state->__pyx_kp_u_Buying);
-  Py_VISIT(traverse_module_state->__pyx_kp_u_Can_only_add_actions_of_the_same);
   Py_VISIT(traverse_module_state->__pyx_n_s_ImportError);
+  Py_VISIT(traverse_module_state->__pyx_n_s_KeyError);
+  Py_VISIT(traverse_module_state->__pyx_kp_s_No_value_specified_for_struct_at);
+  Py_VISIT(traverse_module_state->__pyx_kp_s_No_value_specified_for_struct_at_2);
+  Py_VISIT(traverse_module_state->__pyx_kp_s_No_value_specified_for_struct_at_3);
+  Py_VISIT(traverse_module_state->__pyx_kp_s_No_value_specified_for_struct_at_4);
+  Py_VISIT(traverse_module_state->__pyx_kp_s_No_value_specified_for_struct_at_5);
+  Py_VISIT(traverse_module_state->__pyx_kp_s_No_value_specified_for_struct_at_6);
   Py_VISIT(traverse_module_state->__pyx_kp_u_None);
   Py_VISIT(traverse_module_state->__pyx_kp_s_Pickling_of_struct_members_such);
   Py_VISIT(traverse_module_state->__pyx_n_s_Position);
@@ -3349,9 +3433,9 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_n_s_Position___reduce_cython);
   Py_VISIT(traverse_module_state->__pyx_n_s_Position___setstate_cython);
   Py_VISIT(traverse_module_state->__pyx_n_s_Position_add_action);
+  Py_VISIT(traverse_module_state->__pyx_n_s_Position_close);
   Py_VISIT(traverse_module_state->__pyx_n_s_Position_get_actions);
   Py_VISIT(traverse_module_state->__pyx_kp_u_Position_symbol);
-  Py_VISIT(traverse_module_state->__pyx_n_u_SELL);
   Py_VISIT(traverse_module_state->__pyx_n_s_Sell);
   Py_VISIT(traverse_module_state->__pyx_n_s_Sell___reduce_cython);
   Py_VISIT(traverse_module_state->__pyx_n_s_Sell___setstate_cython);
@@ -3359,29 +3443,33 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_kp_u_Selling);
   Py_VISIT(traverse_module_state->__pyx_n_s_TypeError);
   Py_VISIT(traverse_module_state->__pyx_n_s_ValueError);
-  Py_VISIT(traverse_module_state->__pyx_n_s__20);
-  Py_VISIT(traverse_module_state->__pyx_kp_u__4);
-  Py_VISIT(traverse_module_state->__pyx_kp_u__5);
-  Py_VISIT(traverse_module_state->__pyx_n_s__6);
+  Py_VISIT(traverse_module_state->__pyx_kp_u__10);
+  Py_VISIT(traverse_module_state->__pyx_n_s__11);
+  Py_VISIT(traverse_module_state->__pyx_n_s__27);
+  Py_VISIT(traverse_module_state->__pyx_kp_u__9);
   Py_VISIT(traverse_module_state->__pyx_n_s_action);
   Py_VISIT(traverse_module_state->__pyx_n_s_add_action);
   Py_VISIT(traverse_module_state->__pyx_n_s_amount);
   Py_VISIT(traverse_module_state->__pyx_kp_u_amount_2);
   Py_VISIT(traverse_module_state->__pyx_n_s_asyncio_coroutines);
   Py_VISIT(traverse_module_state->__pyx_kp_u_average_entry_price);
+  Py_VISIT(traverse_module_state->__pyx_n_s_average_exit_price);
   Py_VISIT(traverse_module_state->__pyx_n_s_cline_in_traceback);
+  Py_VISIT(traverse_module_state->__pyx_n_s_close);
   Py_VISIT(traverse_module_state->__pyx_kp_u_current_qty);
   Py_VISIT(traverse_module_state->__pyx_kp_u_disable);
   Py_VISIT(traverse_module_state->__pyx_kp_u_enable);
+  Py_VISIT(traverse_module_state->__pyx_n_s_fee);
   Py_VISIT(traverse_module_state->__pyx_n_s_functools);
   Py_VISIT(traverse_module_state->__pyx_kp_u_gc);
   Py_VISIT(traverse_module_state->__pyx_n_s_get_actions);
+  Py_VISIT(traverse_module_state->__pyx_n_s_get_actions_locals_lambda);
   Py_VISIT(traverse_module_state->__pyx_n_s_getstate);
   Py_VISIT(traverse_module_state->__pyx_n_s_import);
-  Py_VISIT(traverse_module_state->__pyx_n_s_init);
   Py_VISIT(traverse_module_state->__pyx_n_s_initializing);
   Py_VISIT(traverse_module_state->__pyx_n_s_is_coroutine);
   Py_VISIT(traverse_module_state->__pyx_kp_u_isenabled);
+  Py_VISIT(traverse_module_state->__pyx_n_s_key);
   Py_VISIT(traverse_module_state->__pyx_n_s_main);
   Py_VISIT(traverse_module_state->__pyx_n_s_name);
   Py_VISIT(traverse_module_state->__pyx_kp_s_no_default___reduce___due_to_non);
@@ -3403,15 +3491,15 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_n_s_self);
   Py_VISIT(traverse_module_state->__pyx_n_s_setstate);
   Py_VISIT(traverse_module_state->__pyx_n_s_setstate_cython);
+  Py_VISIT(traverse_module_state->__pyx_n_s_slippage);
+  Py_VISIT(traverse_module_state->__pyx_n_s_sorted);
   Py_VISIT(traverse_module_state->__pyx_n_s_spec);
   Py_VISIT(traverse_module_state->__pyx_n_s_src_analysis_models_portfolio);
   Py_VISIT(traverse_module_state->__pyx_kp_s_src_analysis_models_portfolio_py);
   Py_VISIT(traverse_module_state->__pyx_kp_s_stringsource);
-  Py_VISIT(traverse_module_state->__pyx_n_s_super);
   Py_VISIT(traverse_module_state->__pyx_n_s_symbol);
   Py_VISIT(traverse_module_state->__pyx_n_s_test);
   Py_VISIT(traverse_module_state->__pyx_n_s_timestamp);
-  Py_VISIT(traverse_module_state->__pyx_n_s_type);
   Py_VISIT(traverse_module_state->__pyx_kp_u_would_change_this_long_position);
   Py_VISIT(traverse_module_state->__pyx_kp_u_would_change_this_short_positio);
   Py_VISIT(traverse_module_state->__pyx_n_s_x);
@@ -3419,19 +3507,26 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_tuple_);
   Py_VISIT(traverse_module_state->__pyx_tuple__2);
   Py_VISIT(traverse_module_state->__pyx_tuple__3);
+  Py_VISIT(traverse_module_state->__pyx_tuple__4);
+  Py_VISIT(traverse_module_state->__pyx_tuple__5);
+  Py_VISIT(traverse_module_state->__pyx_tuple__6);
   Py_VISIT(traverse_module_state->__pyx_tuple__7);
-  Py_VISIT(traverse_module_state->__pyx_tuple__9);
-  Py_VISIT(traverse_module_state->__pyx_tuple__15);
-  Py_VISIT(traverse_module_state->__pyx_codeobj__8);
-  Py_VISIT(traverse_module_state->__pyx_codeobj__10);
-  Py_VISIT(traverse_module_state->__pyx_codeobj__11);
-  Py_VISIT(traverse_module_state->__pyx_codeobj__12);
+  Py_VISIT(traverse_module_state->__pyx_tuple__8);
+  Py_VISIT(traverse_module_state->__pyx_tuple__12);
+  Py_VISIT(traverse_module_state->__pyx_tuple__14);
+  Py_VISIT(traverse_module_state->__pyx_tuple__21);
+  Py_VISIT(traverse_module_state->__pyx_tuple__23);
   Py_VISIT(traverse_module_state->__pyx_codeobj__13);
-  Py_VISIT(traverse_module_state->__pyx_codeobj__14);
+  Py_VISIT(traverse_module_state->__pyx_codeobj__15);
   Py_VISIT(traverse_module_state->__pyx_codeobj__16);
   Py_VISIT(traverse_module_state->__pyx_codeobj__17);
   Py_VISIT(traverse_module_state->__pyx_codeobj__18);
   Py_VISIT(traverse_module_state->__pyx_codeobj__19);
+  Py_VISIT(traverse_module_state->__pyx_codeobj__20);
+  Py_VISIT(traverse_module_state->__pyx_codeobj__22);
+  Py_VISIT(traverse_module_state->__pyx_codeobj__24);
+  Py_VISIT(traverse_module_state->__pyx_codeobj__25);
+  Py_VISIT(traverse_module_state->__pyx_codeobj__26);
   return 0;
 }
 #endif
@@ -3495,29 +3590,33 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_ptype_5numpy_character __pyx_mstate_global->__pyx_ptype_5numpy_character
 #define __pyx_ptype_5numpy_ufunc __pyx_mstate_global->__pyx_ptype_5numpy_ufunc
 #if CYTHON_USE_MODULE_STATE
-#endif
-#if CYTHON_USE_MODULE_STATE
-#define __pyx_type_3src_8analysis_6models_9portfolio_Action __pyx_mstate_global->__pyx_type_3src_8analysis_6models_9portfolio_Action
+#define __pyx_type_3src_8analysis_6models_9portfolio_ActionInterface __pyx_mstate_global->__pyx_type_3src_8analysis_6models_9portfolio_ActionInterface
 #define __pyx_type_3src_8analysis_6models_9portfolio_Buy __pyx_mstate_global->__pyx_type_3src_8analysis_6models_9portfolio_Buy
 #define __pyx_type_3src_8analysis_6models_9portfolio_Sell __pyx_mstate_global->__pyx_type_3src_8analysis_6models_9portfolio_Sell
 #define __pyx_type_3src_8analysis_6models_9portfolio_Position __pyx_mstate_global->__pyx_type_3src_8analysis_6models_9portfolio_Position
 #endif
-#define __pyx_ptype_3src_8analysis_6models_9portfolio_Action __pyx_mstate_global->__pyx_ptype_3src_8analysis_6models_9portfolio_Action
+#define __pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface __pyx_mstate_global->__pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface
 #define __pyx_ptype_3src_8analysis_6models_9portfolio_Buy __pyx_mstate_global->__pyx_ptype_3src_8analysis_6models_9portfolio_Buy
 #define __pyx_ptype_3src_8analysis_6models_9portfolio_Sell __pyx_mstate_global->__pyx_ptype_3src_8analysis_6models_9portfolio_Sell
 #define __pyx_ptype_3src_8analysis_6models_9portfolio_Position __pyx_mstate_global->__pyx_ptype_3src_8analysis_6models_9portfolio_Position
 #define __pyx_kp_u_2f __pyx_mstate_global->__pyx_kp_u_2f
-#define __pyx_n_s_Action __pyx_mstate_global->__pyx_n_s_Action
-#define __pyx_n_s_Action___reduce_cython __pyx_mstate_global->__pyx_n_s_Action___reduce_cython
-#define __pyx_n_s_Action___setstate_cython __pyx_mstate_global->__pyx_n_s_Action___setstate_cython
+#define __pyx_n_s_ActionInterface __pyx_mstate_global->__pyx_n_s_ActionInterface
+#define __pyx_n_s_ActionInterface___reduce_cython __pyx_mstate_global->__pyx_n_s_ActionInterface___reduce_cython
+#define __pyx_n_s_ActionInterface___setstate_cytho __pyx_mstate_global->__pyx_n_s_ActionInterface___setstate_cytho
 #define __pyx_n_u_BUY __pyx_mstate_global->__pyx_n_u_BUY
 #define __pyx_n_s_Buy __pyx_mstate_global->__pyx_n_s_Buy
 #define __pyx_n_s_Buy___reduce_cython __pyx_mstate_global->__pyx_n_s_Buy___reduce_cython
 #define __pyx_n_s_Buy___setstate_cython __pyx_mstate_global->__pyx_n_s_Buy___setstate_cython
 #define __pyx_kp_u_Buy_timestamp __pyx_mstate_global->__pyx_kp_u_Buy_timestamp
 #define __pyx_kp_u_Buying __pyx_mstate_global->__pyx_kp_u_Buying
-#define __pyx_kp_u_Can_only_add_actions_of_the_same __pyx_mstate_global->__pyx_kp_u_Can_only_add_actions_of_the_same
 #define __pyx_n_s_ImportError __pyx_mstate_global->__pyx_n_s_ImportError
+#define __pyx_n_s_KeyError __pyx_mstate_global->__pyx_n_s_KeyError
+#define __pyx_kp_s_No_value_specified_for_struct_at __pyx_mstate_global->__pyx_kp_s_No_value_specified_for_struct_at
+#define __pyx_kp_s_No_value_specified_for_struct_at_2 __pyx_mstate_global->__pyx_kp_s_No_value_specified_for_struct_at_2
+#define __pyx_kp_s_No_value_specified_for_struct_at_3 __pyx_mstate_global->__pyx_kp_s_No_value_specified_for_struct_at_3
+#define __pyx_kp_s_No_value_specified_for_struct_at_4 __pyx_mstate_global->__pyx_kp_s_No_value_specified_for_struct_at_4
+#define __pyx_kp_s_No_value_specified_for_struct_at_5 __pyx_mstate_global->__pyx_kp_s_No_value_specified_for_struct_at_5
+#define __pyx_kp_s_No_value_specified_for_struct_at_6 __pyx_mstate_global->__pyx_kp_s_No_value_specified_for_struct_at_6
 #define __pyx_kp_u_None __pyx_mstate_global->__pyx_kp_u_None
 #define __pyx_kp_s_Pickling_of_struct_members_such __pyx_mstate_global->__pyx_kp_s_Pickling_of_struct_members_such
 #define __pyx_n_s_Position __pyx_mstate_global->__pyx_n_s_Position
@@ -3525,9 +3624,9 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_n_s_Position___reduce_cython __pyx_mstate_global->__pyx_n_s_Position___reduce_cython
 #define __pyx_n_s_Position___setstate_cython __pyx_mstate_global->__pyx_n_s_Position___setstate_cython
 #define __pyx_n_s_Position_add_action __pyx_mstate_global->__pyx_n_s_Position_add_action
+#define __pyx_n_s_Position_close __pyx_mstate_global->__pyx_n_s_Position_close
 #define __pyx_n_s_Position_get_actions __pyx_mstate_global->__pyx_n_s_Position_get_actions
 #define __pyx_kp_u_Position_symbol __pyx_mstate_global->__pyx_kp_u_Position_symbol
-#define __pyx_n_u_SELL __pyx_mstate_global->__pyx_n_u_SELL
 #define __pyx_n_s_Sell __pyx_mstate_global->__pyx_n_s_Sell
 #define __pyx_n_s_Sell___reduce_cython __pyx_mstate_global->__pyx_n_s_Sell___reduce_cython
 #define __pyx_n_s_Sell___setstate_cython __pyx_mstate_global->__pyx_n_s_Sell___setstate_cython
@@ -3535,29 +3634,33 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_kp_u_Selling __pyx_mstate_global->__pyx_kp_u_Selling
 #define __pyx_n_s_TypeError __pyx_mstate_global->__pyx_n_s_TypeError
 #define __pyx_n_s_ValueError __pyx_mstate_global->__pyx_n_s_ValueError
-#define __pyx_n_s__20 __pyx_mstate_global->__pyx_n_s__20
-#define __pyx_kp_u__4 __pyx_mstate_global->__pyx_kp_u__4
-#define __pyx_kp_u__5 __pyx_mstate_global->__pyx_kp_u__5
-#define __pyx_n_s__6 __pyx_mstate_global->__pyx_n_s__6
+#define __pyx_kp_u__10 __pyx_mstate_global->__pyx_kp_u__10
+#define __pyx_n_s__11 __pyx_mstate_global->__pyx_n_s__11
+#define __pyx_n_s__27 __pyx_mstate_global->__pyx_n_s__27
+#define __pyx_kp_u__9 __pyx_mstate_global->__pyx_kp_u__9
 #define __pyx_n_s_action __pyx_mstate_global->__pyx_n_s_action
 #define __pyx_n_s_add_action __pyx_mstate_global->__pyx_n_s_add_action
 #define __pyx_n_s_amount __pyx_mstate_global->__pyx_n_s_amount
 #define __pyx_kp_u_amount_2 __pyx_mstate_global->__pyx_kp_u_amount_2
 #define __pyx_n_s_asyncio_coroutines __pyx_mstate_global->__pyx_n_s_asyncio_coroutines
 #define __pyx_kp_u_average_entry_price __pyx_mstate_global->__pyx_kp_u_average_entry_price
+#define __pyx_n_s_average_exit_price __pyx_mstate_global->__pyx_n_s_average_exit_price
 #define __pyx_n_s_cline_in_traceback __pyx_mstate_global->__pyx_n_s_cline_in_traceback
+#define __pyx_n_s_close __pyx_mstate_global->__pyx_n_s_close
 #define __pyx_kp_u_current_qty __pyx_mstate_global->__pyx_kp_u_current_qty
 #define __pyx_kp_u_disable __pyx_mstate_global->__pyx_kp_u_disable
 #define __pyx_kp_u_enable __pyx_mstate_global->__pyx_kp_u_enable
+#define __pyx_n_s_fee __pyx_mstate_global->__pyx_n_s_fee
 #define __pyx_n_s_functools __pyx_mstate_global->__pyx_n_s_functools
 #define __pyx_kp_u_gc __pyx_mstate_global->__pyx_kp_u_gc
 #define __pyx_n_s_get_actions __pyx_mstate_global->__pyx_n_s_get_actions
+#define __pyx_n_s_get_actions_locals_lambda __pyx_mstate_global->__pyx_n_s_get_actions_locals_lambda
 #define __pyx_n_s_getstate __pyx_mstate_global->__pyx_n_s_getstate
 #define __pyx_n_s_import __pyx_mstate_global->__pyx_n_s_import
-#define __pyx_n_s_init __pyx_mstate_global->__pyx_n_s_init
 #define __pyx_n_s_initializing __pyx_mstate_global->__pyx_n_s_initializing
 #define __pyx_n_s_is_coroutine __pyx_mstate_global->__pyx_n_s_is_coroutine
 #define __pyx_kp_u_isenabled __pyx_mstate_global->__pyx_kp_u_isenabled
+#define __pyx_n_s_key __pyx_mstate_global->__pyx_n_s_key
 #define __pyx_n_s_main __pyx_mstate_global->__pyx_n_s_main
 #define __pyx_n_s_name __pyx_mstate_global->__pyx_n_s_name
 #define __pyx_kp_s_no_default___reduce___due_to_non __pyx_mstate_global->__pyx_kp_s_no_default___reduce___due_to_non
@@ -3579,15 +3682,15 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_n_s_self __pyx_mstate_global->__pyx_n_s_self
 #define __pyx_n_s_setstate __pyx_mstate_global->__pyx_n_s_setstate
 #define __pyx_n_s_setstate_cython __pyx_mstate_global->__pyx_n_s_setstate_cython
+#define __pyx_n_s_slippage __pyx_mstate_global->__pyx_n_s_slippage
+#define __pyx_n_s_sorted __pyx_mstate_global->__pyx_n_s_sorted
 #define __pyx_n_s_spec __pyx_mstate_global->__pyx_n_s_spec
 #define __pyx_n_s_src_analysis_models_portfolio __pyx_mstate_global->__pyx_n_s_src_analysis_models_portfolio
 #define __pyx_kp_s_src_analysis_models_portfolio_py __pyx_mstate_global->__pyx_kp_s_src_analysis_models_portfolio_py
 #define __pyx_kp_s_stringsource __pyx_mstate_global->__pyx_kp_s_stringsource
-#define __pyx_n_s_super __pyx_mstate_global->__pyx_n_s_super
 #define __pyx_n_s_symbol __pyx_mstate_global->__pyx_n_s_symbol
 #define __pyx_n_s_test __pyx_mstate_global->__pyx_n_s_test
 #define __pyx_n_s_timestamp __pyx_mstate_global->__pyx_n_s_timestamp
-#define __pyx_n_s_type __pyx_mstate_global->__pyx_n_s_type
 #define __pyx_kp_u_would_change_this_long_position __pyx_mstate_global->__pyx_kp_u_would_change_this_long_position
 #define __pyx_kp_u_would_change_this_short_positio __pyx_mstate_global->__pyx_kp_u_would_change_this_short_positio
 #define __pyx_n_s_x __pyx_mstate_global->__pyx_n_s_x
@@ -3595,20 +3698,725 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_tuple_ __pyx_mstate_global->__pyx_tuple_
 #define __pyx_tuple__2 __pyx_mstate_global->__pyx_tuple__2
 #define __pyx_tuple__3 __pyx_mstate_global->__pyx_tuple__3
+#define __pyx_tuple__4 __pyx_mstate_global->__pyx_tuple__4
+#define __pyx_tuple__5 __pyx_mstate_global->__pyx_tuple__5
+#define __pyx_tuple__6 __pyx_mstate_global->__pyx_tuple__6
 #define __pyx_tuple__7 __pyx_mstate_global->__pyx_tuple__7
-#define __pyx_tuple__9 __pyx_mstate_global->__pyx_tuple__9
-#define __pyx_tuple__15 __pyx_mstate_global->__pyx_tuple__15
-#define __pyx_codeobj__8 __pyx_mstate_global->__pyx_codeobj__8
-#define __pyx_codeobj__10 __pyx_mstate_global->__pyx_codeobj__10
-#define __pyx_codeobj__11 __pyx_mstate_global->__pyx_codeobj__11
-#define __pyx_codeobj__12 __pyx_mstate_global->__pyx_codeobj__12
+#define __pyx_tuple__8 __pyx_mstate_global->__pyx_tuple__8
+#define __pyx_tuple__12 __pyx_mstate_global->__pyx_tuple__12
+#define __pyx_tuple__14 __pyx_mstate_global->__pyx_tuple__14
+#define __pyx_tuple__21 __pyx_mstate_global->__pyx_tuple__21
+#define __pyx_tuple__23 __pyx_mstate_global->__pyx_tuple__23
 #define __pyx_codeobj__13 __pyx_mstate_global->__pyx_codeobj__13
-#define __pyx_codeobj__14 __pyx_mstate_global->__pyx_codeobj__14
+#define __pyx_codeobj__15 __pyx_mstate_global->__pyx_codeobj__15
 #define __pyx_codeobj__16 __pyx_mstate_global->__pyx_codeobj__16
 #define __pyx_codeobj__17 __pyx_mstate_global->__pyx_codeobj__17
 #define __pyx_codeobj__18 __pyx_mstate_global->__pyx_codeobj__18
 #define __pyx_codeobj__19 __pyx_mstate_global->__pyx_codeobj__19
+#define __pyx_codeobj__20 __pyx_mstate_global->__pyx_codeobj__20
+#define __pyx_codeobj__22 __pyx_mstate_global->__pyx_codeobj__22
+#define __pyx_codeobj__24 __pyx_mstate_global->__pyx_codeobj__24
+#define __pyx_codeobj__25 __pyx_mstate_global->__pyx_codeobj__25
+#define __pyx_codeobj__26 __pyx_mstate_global->__pyx_codeobj__26
 /* #### Code section: module_code ### */
+
+/* "FromPyStructUtility":12
+ * 
+ * @cname("__pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData")
+ * cdef struct_type __pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData(obj) except *:             # <<<<<<<<<<<<<<
+ *     cdef struct_type result
+ *     if not PyMapping_Check(obj):
+ */
+
+static struct __pyx_t_3src_8analysis_6models_9portfolio_ActionData __pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData(PyObject *__pyx_v_obj) {
+  struct __pyx_t_3src_8analysis_6models_9portfolio_ActionData __pyx_v_result;
+  PyObject *__pyx_v_value = NULL;
+  struct __pyx_t_3src_8analysis_6models_9portfolio_ActionData __pyx_r;
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  int __pyx_t_2;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  PyObject *__pyx_t_6 = NULL;
+  PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
+  PyObject *__pyx_t_9 = NULL;
+  __pyx_t_5numpy_int64_t __pyx_t_10;
+  double __pyx_t_11;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData", 1);
+
+  /* "FromPyStructUtility":14
+ * cdef struct_type __pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData(obj) except *:
+ *     cdef struct_type result
+ *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
+ *         __Pyx_RaiseUnexpectedTypeError(b"a mapping", obj)
+ * 
+ */
+  __pyx_t_1 = (!PyMapping_Check(__pyx_v_obj));
+  if (__pyx_t_1) {
+
+    /* "FromPyStructUtility":15
+ *     cdef struct_type result
+ *     if not PyMapping_Check(obj):
+ *         __Pyx_RaiseUnexpectedTypeError(b"a mapping", obj)             # <<<<<<<<<<<<<<
+ * 
+ *     try:
+ */
+    __pyx_t_2 = __Pyx_RaiseUnexpectedTypeError(((char const *)"a mapping"), __pyx_v_obj); if (unlikely(__pyx_t_2 == ((int)0))) __PYX_ERR(0, 15, __pyx_L1_error)
+
+    /* "FromPyStructUtility":14
+ * cdef struct_type __pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData(obj) except *:
+ *     cdef struct_type result
+ *     if not PyMapping_Check(obj):             # <<<<<<<<<<<<<<
+ *         __Pyx_RaiseUnexpectedTypeError(b"a mapping", obj)
+ * 
+ */
+  }
+
+  /* "FromPyStructUtility":17
+ *         __Pyx_RaiseUnexpectedTypeError(b"a mapping", obj)
+ * 
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['timestamp']
+ *     except KeyError:
+ */
+  {
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":18
+ * 
+ *     try:
+ *         value = obj['timestamp']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'timestamp'")
+ */
+      __pyx_t_6 = __Pyx_PyObject_Dict_GetItem(__pyx_v_obj, __pyx_n_s_timestamp); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 18, __pyx_L4_error)
+      __Pyx_GOTREF(__pyx_t_6);
+      __pyx_v_value = __pyx_t_6;
+      __pyx_t_6 = 0;
+
+      /* "FromPyStructUtility":17
+ *         __Pyx_RaiseUnexpectedTypeError(b"a mapping", obj)
+ * 
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['timestamp']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L9_try_end;
+    __pyx_L4_error:;
+    __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+
+    /* "FromPyStructUtility":19
+ *     try:
+ *         value = obj['timestamp']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'timestamp'")
+ *     result.timestamp = value
+ */
+    __pyx_t_2 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_2) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_6, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(0, 19, __pyx_L6_except_error)
+      __Pyx_XGOTREF(__pyx_t_6);
+      __Pyx_XGOTREF(__pyx_t_7);
+      __Pyx_XGOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":20
+ *         value = obj['timestamp']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'timestamp'")             # <<<<<<<<<<<<<<
+ *     result.timestamp = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 20, __pyx_L6_except_error)
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      __PYX_ERR(0, 20, __pyx_L6_except_error)
+    }
+    goto __pyx_L6_except_error;
+
+    /* "FromPyStructUtility":17
+ *         __Pyx_RaiseUnexpectedTypeError(b"a mapping", obj)
+ * 
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['timestamp']
+ *     except KeyError:
+ */
+    __pyx_L6_except_error:;
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L9_try_end:;
+  }
+
+  /* "FromPyStructUtility":21
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'timestamp'")
+ *     result.timestamp = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['price']
+ */
+  __pyx_t_10 = __Pyx_PyInt_As_npy_int64(__pyx_v_value); if (unlikely((__pyx_t_10 == ((npy_int64)-1)) && PyErr_Occurred())) __PYX_ERR(0, 21, __pyx_L1_error)
+  __pyx_v_result.timestamp = __pyx_t_10;
+
+  /* "FromPyStructUtility":22
+ *         raise ValueError("No value specified for struct attribute 'timestamp'")
+ *     result.timestamp = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['price']
+ *     except KeyError:
+ */
+  {
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":23
+ *     result.timestamp = value
+ *     try:
+ *         value = obj['price']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'price'")
+ */
+      __pyx_t_8 = __Pyx_PyObject_Dict_GetItem(__pyx_v_obj, __pyx_n_s_price); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 23, __pyx_L12_error)
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":22
+ *         raise ValueError("No value specified for struct attribute 'timestamp'")
+ *     result.timestamp = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['price']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L17_try_end;
+    __pyx_L12_error:;
+    __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+
+    /* "FromPyStructUtility":24
+ *     try:
+ *         value = obj['price']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'price'")
+ *     result.price = value
+ */
+    __pyx_t_2 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_2) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_6) < 0) __PYX_ERR(0, 24, __pyx_L14_except_error)
+      __Pyx_XGOTREF(__pyx_t_8);
+      __Pyx_XGOTREF(__pyx_t_7);
+      __Pyx_XGOTREF(__pyx_t_6);
+
+      /* "FromPyStructUtility":25
+ *         value = obj['price']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'price'")             # <<<<<<<<<<<<<<
+ *     result.price = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 25, __pyx_L14_except_error)
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      __PYX_ERR(0, 25, __pyx_L14_except_error)
+    }
+    goto __pyx_L14_except_error;
+
+    /* "FromPyStructUtility":22
+ *         raise ValueError("No value specified for struct attribute 'timestamp'")
+ *     result.timestamp = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['price']
+ *     except KeyError:
+ */
+    __pyx_L14_except_error:;
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L17_try_end:;
+  }
+
+  /* "FromPyStructUtility":26
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'price'")
+ *     result.price = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['qty']
+ */
+  __pyx_t_11 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_11 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 26, __pyx_L1_error)
+  __pyx_v_result.price = __pyx_t_11;
+
+  /* "FromPyStructUtility":27
+ *         raise ValueError("No value specified for struct attribute 'price'")
+ *     result.price = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['qty']
+ *     except KeyError:
+ */
+  {
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":28
+ *     result.price = value
+ *     try:
+ *         value = obj['qty']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'qty'")
+ */
+      __pyx_t_6 = __Pyx_PyObject_Dict_GetItem(__pyx_v_obj, __pyx_n_s_qty); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 28, __pyx_L20_error)
+      __Pyx_GOTREF(__pyx_t_6);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_6);
+      __pyx_t_6 = 0;
+
+      /* "FromPyStructUtility":27
+ *         raise ValueError("No value specified for struct attribute 'price'")
+ *     result.price = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['qty']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L25_try_end;
+    __pyx_L20_error:;
+    __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+
+    /* "FromPyStructUtility":29
+ *     try:
+ *         value = obj['qty']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'qty'")
+ *     result.qty = value
+ */
+    __pyx_t_2 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_2) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_6, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(0, 29, __pyx_L22_except_error)
+      __Pyx_XGOTREF(__pyx_t_6);
+      __Pyx_XGOTREF(__pyx_t_7);
+      __Pyx_XGOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":30
+ *         value = obj['qty']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'qty'")             # <<<<<<<<<<<<<<
+ *     result.qty = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 30, __pyx_L22_except_error)
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      __PYX_ERR(0, 30, __pyx_L22_except_error)
+    }
+    goto __pyx_L22_except_error;
+
+    /* "FromPyStructUtility":27
+ *         raise ValueError("No value specified for struct attribute 'price'")
+ *     result.price = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['qty']
+ *     except KeyError:
+ */
+    __pyx_L22_except_error:;
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L25_try_end:;
+  }
+
+  /* "FromPyStructUtility":31
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'qty'")
+ *     result.qty = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['quote_qty']
+ */
+  __pyx_t_11 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_11 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 31, __pyx_L1_error)
+  __pyx_v_result.qty = __pyx_t_11;
+
+  /* "FromPyStructUtility":32
+ *         raise ValueError("No value specified for struct attribute 'qty'")
+ *     result.qty = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['quote_qty']
+ *     except KeyError:
+ */
+  {
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":33
+ *     result.qty = value
+ *     try:
+ *         value = obj['quote_qty']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'quote_qty'")
+ */
+      __pyx_t_8 = __Pyx_PyObject_Dict_GetItem(__pyx_v_obj, __pyx_n_s_quote_qty); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 33, __pyx_L28_error)
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":32
+ *         raise ValueError("No value specified for struct attribute 'qty'")
+ *     result.qty = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['quote_qty']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L33_try_end;
+    __pyx_L28_error:;
+    __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+
+    /* "FromPyStructUtility":34
+ *     try:
+ *         value = obj['quote_qty']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'quote_qty'")
+ *     result.quote_qty = value
+ */
+    __pyx_t_2 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_2) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_6) < 0) __PYX_ERR(0, 34, __pyx_L30_except_error)
+      __Pyx_XGOTREF(__pyx_t_8);
+      __Pyx_XGOTREF(__pyx_t_7);
+      __Pyx_XGOTREF(__pyx_t_6);
+
+      /* "FromPyStructUtility":35
+ *         value = obj['quote_qty']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'quote_qty'")             # <<<<<<<<<<<<<<
+ *     result.quote_qty = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 35, __pyx_L30_except_error)
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      __PYX_ERR(0, 35, __pyx_L30_except_error)
+    }
+    goto __pyx_L30_except_error;
+
+    /* "FromPyStructUtility":32
+ *         raise ValueError("No value specified for struct attribute 'qty'")
+ *     result.qty = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['quote_qty']
+ *     except KeyError:
+ */
+    __pyx_L30_except_error:;
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L33_try_end:;
+  }
+
+  /* "FromPyStructUtility":36
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'quote_qty'")
+ *     result.quote_qty = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['fee']
+ */
+  __pyx_t_11 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_11 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 36, __pyx_L1_error)
+  __pyx_v_result.quote_qty = __pyx_t_11;
+
+  /* "FromPyStructUtility":37
+ *         raise ValueError("No value specified for struct attribute 'quote_qty'")
+ *     result.quote_qty = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['fee']
+ *     except KeyError:
+ */
+  {
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ExceptionSave(&__pyx_t_3, &__pyx_t_4, &__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_5);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":38
+ *     result.quote_qty = value
+ *     try:
+ *         value = obj['fee']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'fee'")
+ */
+      __pyx_t_6 = __Pyx_PyObject_Dict_GetItem(__pyx_v_obj, __pyx_n_s_fee); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 38, __pyx_L36_error)
+      __Pyx_GOTREF(__pyx_t_6);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_6);
+      __pyx_t_6 = 0;
+
+      /* "FromPyStructUtility":37
+ *         raise ValueError("No value specified for struct attribute 'quote_qty'")
+ *     result.quote_qty = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['fee']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    goto __pyx_L41_try_end;
+    __pyx_L36_error:;
+    __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+
+    /* "FromPyStructUtility":39
+ *     try:
+ *         value = obj['fee']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'fee'")
+ *     result.fee = value
+ */
+    __pyx_t_2 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_2) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_6, &__pyx_t_7, &__pyx_t_8) < 0) __PYX_ERR(0, 39, __pyx_L38_except_error)
+      __Pyx_XGOTREF(__pyx_t_6);
+      __Pyx_XGOTREF(__pyx_t_7);
+      __Pyx_XGOTREF(__pyx_t_8);
+
+      /* "FromPyStructUtility":40
+ *         value = obj['fee']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'fee'")             # <<<<<<<<<<<<<<
+ *     result.fee = value
+ *     try:
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__5, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 40, __pyx_L38_except_error)
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      __PYX_ERR(0, 40, __pyx_L38_except_error)
+    }
+    goto __pyx_L38_except_error;
+
+    /* "FromPyStructUtility":37
+ *         raise ValueError("No value specified for struct attribute 'quote_qty'")
+ *     result.quote_qty = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['fee']
+ *     except KeyError:
+ */
+    __pyx_L38_except_error:;
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_ExceptionReset(__pyx_t_3, __pyx_t_4, __pyx_t_5);
+    goto __pyx_L1_error;
+    __pyx_L41_try_end:;
+  }
+
+  /* "FromPyStructUtility":41
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'fee'")
+ *     result.fee = value             # <<<<<<<<<<<<<<
+ *     try:
+ *         value = obj['slippage']
+ */
+  __pyx_t_11 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_11 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 41, __pyx_L1_error)
+  __pyx_v_result.fee = __pyx_t_11;
+
+  /* "FromPyStructUtility":42
+ *         raise ValueError("No value specified for struct attribute 'fee'")
+ *     result.fee = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['slippage']
+ *     except KeyError:
+ */
+  {
+    __Pyx_PyThreadState_declare
+    __Pyx_PyThreadState_assign
+    __Pyx_ExceptionSave(&__pyx_t_5, &__pyx_t_4, &__pyx_t_3);
+    __Pyx_XGOTREF(__pyx_t_5);
+    __Pyx_XGOTREF(__pyx_t_4);
+    __Pyx_XGOTREF(__pyx_t_3);
+    /*try:*/ {
+
+      /* "FromPyStructUtility":43
+ *     result.fee = value
+ *     try:
+ *         value = obj['slippage']             # <<<<<<<<<<<<<<
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'slippage'")
+ */
+      __pyx_t_8 = __Pyx_PyObject_Dict_GetItem(__pyx_v_obj, __pyx_n_s_slippage); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 43, __pyx_L44_error)
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF_SET(__pyx_v_value, __pyx_t_8);
+      __pyx_t_8 = 0;
+
+      /* "FromPyStructUtility":42
+ *         raise ValueError("No value specified for struct attribute 'fee'")
+ *     result.fee = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['slippage']
+ *     except KeyError:
+ */
+    }
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    goto __pyx_L49_try_end;
+    __pyx_L44_error:;
+    __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __Pyx_XDECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_XDECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_XDECREF(__pyx_t_9); __pyx_t_9 = 0;
+
+    /* "FromPyStructUtility":44
+ *     try:
+ *         value = obj['slippage']
+ *     except KeyError:             # <<<<<<<<<<<<<<
+ *         raise ValueError("No value specified for struct attribute 'slippage'")
+ *     result.slippage = value
+ */
+    __pyx_t_2 = __Pyx_PyErr_ExceptionMatches(__pyx_builtin_KeyError);
+    if (__pyx_t_2) {
+      __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData", __pyx_clineno, __pyx_lineno, __pyx_filename);
+      if (__Pyx_GetException(&__pyx_t_8, &__pyx_t_7, &__pyx_t_6) < 0) __PYX_ERR(0, 44, __pyx_L46_except_error)
+      __Pyx_XGOTREF(__pyx_t_8);
+      __Pyx_XGOTREF(__pyx_t_7);
+      __Pyx_XGOTREF(__pyx_t_6);
+
+      /* "FromPyStructUtility":45
+ *         value = obj['slippage']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'slippage'")             # <<<<<<<<<<<<<<
+ *     result.slippage = value
+ *     return result
+ */
+      __pyx_t_9 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__6, NULL); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 45, __pyx_L46_except_error)
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      __PYX_ERR(0, 45, __pyx_L46_except_error)
+    }
+    goto __pyx_L46_except_error;
+
+    /* "FromPyStructUtility":42
+ *         raise ValueError("No value specified for struct attribute 'fee'")
+ *     result.fee = value
+ *     try:             # <<<<<<<<<<<<<<
+ *         value = obj['slippage']
+ *     except KeyError:
+ */
+    __pyx_L46_except_error:;
+    __Pyx_XGIVEREF(__pyx_t_5);
+    __Pyx_XGIVEREF(__pyx_t_4);
+    __Pyx_XGIVEREF(__pyx_t_3);
+    __Pyx_ExceptionReset(__pyx_t_5, __pyx_t_4, __pyx_t_3);
+    goto __pyx_L1_error;
+    __pyx_L49_try_end:;
+  }
+
+  /* "FromPyStructUtility":46
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'slippage'")
+ *     result.slippage = value             # <<<<<<<<<<<<<<
+ *     return result
+ * 
+ */
+  __pyx_t_11 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_11 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 46, __pyx_L1_error)
+  __pyx_v_result.slippage = __pyx_t_11;
+
+  /* "FromPyStructUtility":47
+ *         raise ValueError("No value specified for struct attribute 'slippage'")
+ *     result.slippage = value
+ *     return result             # <<<<<<<<<<<<<<
+ * 
+ * 
+ */
+  __pyx_r = __pyx_v_result;
+  goto __pyx_L0;
+
+  /* "FromPyStructUtility":12
+ * 
+ * @cname("__pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData")
+ * cdef struct_type __pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData(obj) except *:             # <<<<<<<<<<<<<<
+ *     cdef struct_type result
+ *     if not PyMapping_Check(obj):
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
+  __Pyx_XDECREF(__pyx_t_9);
+  __Pyx_AddTraceback("FromPyStructUtility.__pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_pretend_to_initialize(&__pyx_r);
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_value);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
 
 /* "../../../../miniconda3/envs/hb01/lib/python3.12/site-packages/numpy/__init__.cython-30.pxd":286
  * 
@@ -4305,7 +5113,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew1(PyObject *__
  * cdef inline object PyArray_MultiIterNew2(a, b):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(1, ((void *)__pyx_v_a)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 808, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(1, ((void *)__pyx_v_a)); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 808, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4355,7 +5163,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew2(PyObject *__
  * cdef inline object PyArray_MultiIterNew3(a, b, c):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(2, ((void *)__pyx_v_a), ((void *)__pyx_v_b)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 811, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(2, ((void *)__pyx_v_a), ((void *)__pyx_v_b)); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 811, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4405,7 +5213,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew3(PyObject *__
  * cdef inline object PyArray_MultiIterNew4(a, b, c, d):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(3, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 814, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(3, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c)); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 814, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4455,7 +5263,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew4(PyObject *__
  * cdef inline object PyArray_MultiIterNew5(a, b, c, d, e):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(4, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c), ((void *)__pyx_v_d)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 817, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(4, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c), ((void *)__pyx_v_d)); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 817, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4505,7 +5313,7 @@ static CYTHON_INLINE PyObject *__pyx_f_5numpy_PyArray_MultiIterNew5(PyObject *__
  * cdef inline tuple PyDataType_SHAPE(dtype d):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyArray_MultiIterNew(5, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c), ((void *)__pyx_v_d), ((void *)__pyx_v_e)); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 820, __pyx_L1_error)
+  __pyx_t_1 = PyArray_MultiIterNew(5, ((void *)__pyx_v_a), ((void *)__pyx_v_b), ((void *)__pyx_v_c), ((void *)__pyx_v_d), ((void *)__pyx_v_e)); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 820, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -4636,7 +5444,7 @@ static CYTHON_INLINE void __pyx_f_5numpy_set_array_base(PyArrayObject *__pyx_v_a
  * 
  * cdef inline object get_array_base(ndarray arr):
  */
-  __pyx_t_1 = PyArray_SetBaseObject(__pyx_v_arr, __pyx_v_base); if (unlikely(__pyx_t_1 == ((int)-1))) __PYX_ERR(1, 1012, __pyx_L1_error)
+  __pyx_t_1 = PyArray_SetBaseObject(__pyx_v_arr, __pyx_v_base); if (unlikely(__pyx_t_1 == ((int)-1))) __PYX_ERR(2, 1012, __pyx_L1_error)
 
   /* "../../../../miniconda3/envs/hb01/lib/python3.12/site-packages/numpy/__init__.cython-30.pxd":1010
  *     int _import_umath() except -1
@@ -4781,7 +5589,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
  *     except Exception:
  *         raise ImportError("numpy._core.multiarray failed to import")
  */
-      __pyx_t_4 = _import_array(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(1, 1024, __pyx_L3_error)
+      __pyx_t_4 = _import_array(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(2, 1024, __pyx_L3_error)
 
       /* "../../../../miniconda3/envs/hb01/lib/python3.12/site-packages/numpy/__init__.cython-30.pxd":1023
  * # Cython code.
@@ -4807,7 +5615,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
     __pyx_t_4 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_4) {
       __Pyx_AddTraceback("numpy.import_array", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(1, 1025, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(2, 1025, __pyx_L5_except_error)
       __Pyx_XGOTREF(__pyx_t_5);
       __Pyx_XGOTREF(__pyx_t_6);
       __Pyx_XGOTREF(__pyx_t_7);
@@ -4819,11 +5627,11 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_array(void) {
  * 
  * cdef inline int import_umath() except -1:
  */
-      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple_, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 1026, __pyx_L5_except_error)
+      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__7, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(2, 1026, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_Raise(__pyx_t_8, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __PYX_ERR(1, 1026, __pyx_L5_except_error)
+      __PYX_ERR(2, 1026, __pyx_L5_except_error)
     }
     goto __pyx_L5_except_error;
 
@@ -4913,7 +5721,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_umath(void) {
  *     except Exception:
  *         raise ImportError("numpy._core.umath failed to import")
  */
-      __pyx_t_4 = _import_umath(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(1, 1030, __pyx_L3_error)
+      __pyx_t_4 = _import_umath(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(2, 1030, __pyx_L3_error)
 
       /* "../../../../miniconda3/envs/hb01/lib/python3.12/site-packages/numpy/__init__.cython-30.pxd":1029
  * 
@@ -4939,7 +5747,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_umath(void) {
     __pyx_t_4 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_4) {
       __Pyx_AddTraceback("numpy.import_umath", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(1, 1031, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(2, 1031, __pyx_L5_except_error)
       __Pyx_XGOTREF(__pyx_t_5);
       __Pyx_XGOTREF(__pyx_t_6);
       __Pyx_XGOTREF(__pyx_t_7);
@@ -4951,11 +5759,11 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_umath(void) {
  * 
  * cdef inline int import_ufunc() except -1:
  */
-      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 1032, __pyx_L5_except_error)
+      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__8, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(2, 1032, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_Raise(__pyx_t_8, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __PYX_ERR(1, 1032, __pyx_L5_except_error)
+      __PYX_ERR(2, 1032, __pyx_L5_except_error)
     }
     goto __pyx_L5_except_error;
 
@@ -5045,7 +5853,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_ufunc(void) {
  *     except Exception:
  *         raise ImportError("numpy._core.umath failed to import")
  */
-      __pyx_t_4 = _import_umath(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(1, 1036, __pyx_L3_error)
+      __pyx_t_4 = _import_umath(); if (unlikely(__pyx_t_4 == ((int)-1))) __PYX_ERR(2, 1036, __pyx_L3_error)
 
       /* "../../../../miniconda3/envs/hb01/lib/python3.12/site-packages/numpy/__init__.cython-30.pxd":1035
  * 
@@ -5071,7 +5879,7 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_ufunc(void) {
     __pyx_t_4 = __Pyx_PyErr_ExceptionMatches(((PyObject *)(&((PyTypeObject*)PyExc_Exception)[0])));
     if (__pyx_t_4) {
       __Pyx_AddTraceback("numpy.import_ufunc", __pyx_clineno, __pyx_lineno, __pyx_filename);
-      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(1, 1037, __pyx_L5_except_error)
+      if (__Pyx_GetException(&__pyx_t_5, &__pyx_t_6, &__pyx_t_7) < 0) __PYX_ERR(2, 1037, __pyx_L5_except_error)
       __Pyx_XGOTREF(__pyx_t_5);
       __Pyx_XGOTREF(__pyx_t_6);
       __Pyx_XGOTREF(__pyx_t_7);
@@ -5083,11 +5891,11 @@ static CYTHON_INLINE int __pyx_f_5numpy_import_ufunc(void) {
  * 
  * 
  */
-      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__2, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 1038, __pyx_L5_except_error)
+      __pyx_t_8 = __Pyx_PyObject_Call(__pyx_builtin_ImportError, __pyx_tuple__8, NULL); if (unlikely(!__pyx_t_8)) __PYX_ERR(2, 1038, __pyx_L5_except_error)
       __Pyx_GOTREF(__pyx_t_8);
       __Pyx_Raise(__pyx_t_8, 0, 0, 0);
       __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __PYX_ERR(1, 1038, __pyx_L5_except_error)
+      __PYX_ERR(2, 1038, __pyx_L5_except_error)
     }
     goto __pyx_L5_except_error;
 
@@ -5300,446 +6108,30 @@ static CYTHON_INLINE NPY_DATETIMEUNIT __pyx_f_5numpy_get_datetime64_unit(PyObjec
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":28
- *     cdef ActionData data
+/* "src/analysis/models/portfolio.pyx":27
  * 
- *     def __init__(self, np.int64_t timestamp, double amount, double price):             # <<<<<<<<<<<<<<
- *         self.data.timestamp = timestamp
- *         self.data.price = price
+ * cdef class ActionInterface:
+ *     cdef public ActionData data             # <<<<<<<<<<<<<<
+ * 
+ * 
  */
 
 /* Python wrapper */
-static int __pyx_pw_3src_8analysis_6models_9portfolio_6Action_1__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_pw_3src_8analysis_6models_9portfolio_6Action_1__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
-  __pyx_t_5numpy_int64_t __pyx_v_timestamp;
-  CYTHON_UNUSED double __pyx_v_amount;
-  double __pyx_v_price;
-  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject* values[3] = {0,0,0};
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__init__ (wrapper)", 0);
-  #if CYTHON_ASSUME_SAFE_MACROS
-  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
-  #else
-  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return -1;
-  #endif
-  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  {
-    PyObject **__pyx_pyargnames[] = {&__pyx_n_s_timestamp,&__pyx_n_s_amount,&__pyx_n_s_price,0};
-    if (__pyx_kwds) {
-      Py_ssize_t kw_args;
-      switch (__pyx_nargs) {
-        case  3: values[2] = __Pyx_Arg_VARARGS(__pyx_args, 2);
-        CYTHON_FALLTHROUGH;
-        case  2: values[1] = __Pyx_Arg_VARARGS(__pyx_args, 1);
-        CYTHON_FALLTHROUGH;
-        case  1: values[0] = __Pyx_Arg_VARARGS(__pyx_args, 0);
-        CYTHON_FALLTHROUGH;
-        case  0: break;
-        default: goto __pyx_L5_argtuple_error;
-      }
-      kw_args = __Pyx_NumKwargs_VARARGS(__pyx_kwds);
-      switch (__pyx_nargs) {
-        case  0:
-        if (likely((values[0] = __Pyx_GetKwValue_VARARGS(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_timestamp)) != 0)) {
-          (void)__Pyx_Arg_NewRef_VARARGS(values[0]);
-          kw_args--;
-        }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 28, __pyx_L3_error)
-        else goto __pyx_L5_argtuple_error;
-        CYTHON_FALLTHROUGH;
-        case  1:
-        if (likely((values[1] = __Pyx_GetKwValue_VARARGS(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_amount)) != 0)) {
-          (void)__Pyx_Arg_NewRef_VARARGS(values[1]);
-          kw_args--;
-        }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 28, __pyx_L3_error)
-        else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 1); __PYX_ERR(0, 28, __pyx_L3_error)
-        }
-        CYTHON_FALLTHROUGH;
-        case  2:
-        if (likely((values[2] = __Pyx_GetKwValue_VARARGS(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_price)) != 0)) {
-          (void)__Pyx_Arg_NewRef_VARARGS(values[2]);
-          kw_args--;
-        }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 28, __pyx_L3_error)
-        else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 2); __PYX_ERR(0, 28, __pyx_L3_error)
-        }
-      }
-      if (unlikely(kw_args > 0)) {
-        const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__init__") < 0)) __PYX_ERR(0, 28, __pyx_L3_error)
-      }
-    } else if (unlikely(__pyx_nargs != 3)) {
-      goto __pyx_L5_argtuple_error;
-    } else {
-      values[0] = __Pyx_Arg_VARARGS(__pyx_args, 0);
-      values[1] = __Pyx_Arg_VARARGS(__pyx_args, 1);
-      values[2] = __Pyx_Arg_VARARGS(__pyx_args, 2);
-    }
-    __pyx_v_timestamp = __Pyx_PyInt_As_npy_int64(values[0]); if (unlikely((__pyx_v_timestamp == ((npy_int64)-1)) && PyErr_Occurred())) __PYX_ERR(0, 28, __pyx_L3_error)
-    __pyx_v_amount = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_amount == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 28, __pyx_L3_error)
-    __pyx_v_price = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 28, __pyx_L3_error)
-  }
-  goto __pyx_L6_skip;
-  __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, __pyx_nargs); __PYX_ERR(0, 28, __pyx_L3_error)
-  __pyx_L6_skip:;
-  goto __pyx_L4_argument_unpacking_done;
-  __pyx_L3_error:;
-  {
-    Py_ssize_t __pyx_temp;
-    for (__pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
-      __Pyx_Arg_XDECREF_VARARGS(values[__pyx_temp]);
-    }
-  }
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __Pyx_RefNannyFinishContext();
-  return -1;
-  __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_6Action___init__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_self), __pyx_v_timestamp, __pyx_v_amount, __pyx_v_price);
-
-  /* function exit code */
-  {
-    Py_ssize_t __pyx_temp;
-    for (__pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
-      __Pyx_Arg_XDECREF_VARARGS(values[__pyx_temp]);
-    }
-  }
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static int __pyx_pf_3src_8analysis_6models_9portfolio_6Action___init__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, CYTHON_UNUSED double __pyx_v_amount, double __pyx_v_price) {
-  int __pyx_r;
-
-  /* "src/analysis/models/portfolio.pyx":29
- * 
- *     def __init__(self, np.int64_t timestamp, double amount, double price):
- *         self.data.timestamp = timestamp             # <<<<<<<<<<<<<<
- *         self.data.price = price
- * 
- */
-  __pyx_v_self->data.timestamp = __pyx_v_timestamp;
-
-  /* "src/analysis/models/portfolio.pyx":30
- *     def __init__(self, np.int64_t timestamp, double amount, double price):
- *         self.data.timestamp = timestamp
- *         self.data.price = price             # <<<<<<<<<<<<<<
- * 
- *     def __add__(self, Action other):
- */
-  __pyx_v_self->data.price = __pyx_v_price;
-
-  /* "src/analysis/models/portfolio.pyx":28
- *     cdef ActionData data
- * 
- *     def __init__(self, np.int64_t timestamp, double amount, double price):             # <<<<<<<<<<<<<<
- *         self.data.timestamp = timestamp
- *         self.data.price = price
- */
-
-  /* function exit code */
-  __pyx_r = 0;
-  return __pyx_r;
-}
-
-/* "src/analysis/models/portfolio.pyx":32
- *         self.data.price = price
- * 
- *     def __add__(self, Action other):             # <<<<<<<<<<<<<<
- *         if type(self) != type(other):
- *             raise TypeError("Can only add actions of the same type")
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_3__add__(PyObject *__pyx_v_self, PyObject *__pyx_v_other); /*proto*/
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_3__add__(PyObject *__pyx_v_self, PyObject *__pyx_v_other) {
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__add__ (wrapper)", 0);
-  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_other), __pyx_ptype_3src_8analysis_6models_9portfolio_Action, 1, "other", 0))) __PYX_ERR(0, 32, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_6Action_2__add__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_self), ((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_other));
-
-  /* function exit code */
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_2__add__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_other) {
-  PyObject *__pyx_v_new_qty = NULL;
-  PyObject *__pyx_v_new_quote_qty = NULL;
-  PyObject *__pyx_v_new_price = NULL;
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_t_2;
-  PyObject *__pyx_t_3 = NULL;
-  PyObject *__pyx_t_4 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__add__", 1);
-
-  /* "src/analysis/models/portfolio.pyx":33
- * 
- *     def __add__(self, Action other):
- *         if type(self) != type(other):             # <<<<<<<<<<<<<<
- *             raise TypeError("Can only add actions of the same type")
- * 
- */
-  __pyx_t_1 = PyObject_RichCompare(((PyObject *)Py_TYPE(((PyObject *)__pyx_v_self))), ((PyObject *)Py_TYPE(((PyObject *)__pyx_v_other))), Py_NE); __Pyx_XGOTREF(__pyx_t_1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 33, __pyx_L1_error)
-  __pyx_t_2 = __Pyx_PyObject_IsTrue(__pyx_t_1); if (unlikely((__pyx_t_2 < 0))) __PYX_ERR(0, 33, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (unlikely(__pyx_t_2)) {
-
-    /* "src/analysis/models/portfolio.pyx":34
- *     def __add__(self, Action other):
- *         if type(self) != type(other):
- *             raise TypeError("Can only add actions of the same type")             # <<<<<<<<<<<<<<
- * 
- *         new_qty = self.qty + other.qty
- */
-    __pyx_t_1 = __Pyx_PyObject_Call(__pyx_builtin_TypeError, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 34, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_Raise(__pyx_t_1, 0, 0, 0);
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __PYX_ERR(0, 34, __pyx_L1_error)
-
-    /* "src/analysis/models/portfolio.pyx":33
- * 
- *     def __add__(self, Action other):
- *         if type(self) != type(other):             # <<<<<<<<<<<<<<
- *             raise TypeError("Can only add actions of the same type")
- * 
- */
-  }
-
-  /* "src/analysis/models/portfolio.pyx":36
- *             raise TypeError("Can only add actions of the same type")
- * 
- *         new_qty = self.qty + other.qty             # <<<<<<<<<<<<<<
- *         new_quote_qty = self.quote_qty + other.quote_qty
- * 
- */
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 36, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_other), __pyx_n_s_qty); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 36, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyNumber_Add(__pyx_t_1, __pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 36, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_v_new_qty = __pyx_t_4;
-  __pyx_t_4 = 0;
-
-  /* "src/analysis/models/portfolio.pyx":37
- * 
- *         new_qty = self.qty + other.qty
- *         new_quote_qty = self.quote_qty + other.quote_qty             # <<<<<<<<<<<<<<
- * 
- *         # Calculate volume-weighted average price
- */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_quote_qty); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 37, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_other), __pyx_n_s_quote_qty); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 37, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_1 = PyNumber_Add(__pyx_t_4, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 37, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_v_new_quote_qty = __pyx_t_1;
-  __pyx_t_1 = 0;
-
-  /* "src/analysis/models/portfolio.pyx":41
- *         # Calculate volume-weighted average price
- *         new_price = (
- *             self.data.price * self.data.qty + other.data.price * other.data.qty             # <<<<<<<<<<<<<<
- *             ) / new_qty
- * 
- */
-  __pyx_t_1 = PyFloat_FromDouble(((__pyx_v_self->data.price * __pyx_v_self->data.qty) + (__pyx_v_other->data.price * __pyx_v_other->data.qty))); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 41, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-
-  /* "src/analysis/models/portfolio.pyx":42
- *         new_price = (
- *             self.data.price * self.data.qty + other.data.price * other.data.qty
- *             ) / new_qty             # <<<<<<<<<<<<<<
- * 
- *         if self.type == "BUY":
- */
-  __pyx_t_3 = __Pyx_PyNumber_Divide(__pyx_t_1, __pyx_v_new_qty); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 42, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_v_new_price = __pyx_t_3;
-  __pyx_t_3 = 0;
-
-  /* "src/analysis/models/portfolio.pyx":44
- *             ) / new_qty
- * 
- *         if self.type == "BUY":             # <<<<<<<<<<<<<<
- *              return Buy(self.timestamp, new_quote_qty, new_price)
- * 
- */
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_type); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 44, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_2 = (__Pyx_PyUnicode_Equals(__pyx_t_3, __pyx_n_u_BUY, Py_EQ)); if (unlikely((__pyx_t_2 < 0))) __PYX_ERR(0, 44, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (__pyx_t_2) {
-
-    /* "src/analysis/models/portfolio.pyx":45
- * 
- *         if self.type == "BUY":
- *              return Buy(self.timestamp, new_quote_qty, new_price)             # <<<<<<<<<<<<<<
- * 
- *         elif self.type == "SELL":
- */
-    __Pyx_XDECREF(__pyx_r);
-    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_timestamp); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 45, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_1 = PyTuple_New(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 45, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_GIVEREF(__pyx_t_3);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_3)) __PYX_ERR(0, 45, __pyx_L1_error);
-    __Pyx_INCREF(__pyx_v_new_quote_qty);
-    __Pyx_GIVEREF(__pyx_v_new_quote_qty);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_v_new_quote_qty)) __PYX_ERR(0, 45, __pyx_L1_error);
-    __Pyx_INCREF(__pyx_v_new_price);
-    __Pyx_GIVEREF(__pyx_v_new_price);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 2, __pyx_v_new_price)) __PYX_ERR(0, 45, __pyx_L1_error);
-    __pyx_t_3 = 0;
-    __pyx_t_3 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Buy), __pyx_t_1, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 45, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_3);
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_r = __pyx_t_3;
-    __pyx_t_3 = 0;
-    goto __pyx_L0;
-
-    /* "src/analysis/models/portfolio.pyx":44
- *             ) / new_qty
- * 
- *         if self.type == "BUY":             # <<<<<<<<<<<<<<
- *              return Buy(self.timestamp, new_quote_qty, new_price)
- * 
- */
-  }
-
-  /* "src/analysis/models/portfolio.pyx":47
- *              return Buy(self.timestamp, new_quote_qty, new_price)
- * 
- *         elif self.type == "SELL":             # <<<<<<<<<<<<<<
- *             return Sell(self.timestamp, new_qty, new_price)
- * 
- */
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_type); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 47, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_2 = (__Pyx_PyUnicode_Equals(__pyx_t_3, __pyx_n_u_SELL, Py_EQ)); if (unlikely((__pyx_t_2 < 0))) __PYX_ERR(0, 47, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  if (__pyx_t_2) {
-
-    /* "src/analysis/models/portfolio.pyx":48
- * 
- *         elif self.type == "SELL":
- *             return Sell(self.timestamp, new_qty, new_price)             # <<<<<<<<<<<<<<
- * 
- *     @property
- */
-    __Pyx_XDECREF(__pyx_r);
-    __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_timestamp); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 48, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_1 = PyTuple_New(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 48, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_GIVEREF(__pyx_t_3);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_3)) __PYX_ERR(0, 48, __pyx_L1_error);
-    __Pyx_INCREF(__pyx_v_new_qty);
-    __Pyx_GIVEREF(__pyx_v_new_qty);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_v_new_qty)) __PYX_ERR(0, 48, __pyx_L1_error);
-    __Pyx_INCREF(__pyx_v_new_price);
-    __Pyx_GIVEREF(__pyx_v_new_price);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 2, __pyx_v_new_price)) __PYX_ERR(0, 48, __pyx_L1_error);
-    __pyx_t_3 = 0;
-    __pyx_t_3 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Sell), __pyx_t_1, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 48, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_3);
-    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-    __pyx_r = __pyx_t_3;
-    __pyx_t_3 = 0;
-    goto __pyx_L0;
-
-    /* "src/analysis/models/portfolio.pyx":47
- *              return Buy(self.timestamp, new_quote_qty, new_price)
- * 
- *         elif self.type == "SELL":             # <<<<<<<<<<<<<<
- *             return Sell(self.timestamp, new_qty, new_price)
- * 
- */
-  }
-
-  /* "src/analysis/models/portfolio.pyx":32
- *         self.data.price = price
- * 
- *     def __add__(self, Action other):             # <<<<<<<<<<<<<<
- *         if type(self) != type(other):
- *             raise TypeError("Can only add actions of the same type")
- */
-
-  /* function exit code */
-  __pyx_r = Py_None; __Pyx_INCREF(Py_None);
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.__add__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XDECREF(__pyx_v_new_qty);
-  __Pyx_XDECREF(__pyx_v_new_quote_qty);
-  __Pyx_XDECREF(__pyx_v_new_price);
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "src/analysis/models/portfolio.pyx":50
- *             return Sell(self.timestamp, new_qty, new_price)
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def timestamp(self):
- *         return self.data.timestamp
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_9timestamp_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_9timestamp_1__get__(PyObject *__pyx_v_self) {
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_4data_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_4data_1__get__(PyObject *__pyx_v_self) {
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   PyObject *__pyx_r = 0;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
   __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_6Action_9timestamp___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_self));
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_15ActionInterface_4data___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_9timestamp___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self) {
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_15ActionInterface_4data___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
@@ -5747,33 +6139,17 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_9timestamp__
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
-
-  /* "src/analysis/models/portfolio.pyx":52
- *     @property
- *     def timestamp(self):
- *         return self.data.timestamp             # <<<<<<<<<<<<<<
- * 
- *     @property
- */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_npy_int64(__pyx_v_self->data.timestamp); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 52, __pyx_L1_error)
+  __pyx_t_1 = __pyx_convert__to_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData(__pyx_v_self->data); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 27, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "src/analysis/models/portfolio.pyx":50
- *             return Sell(self.timestamp, new_qty, new_price)
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def timestamp(self):
- *         return self.data.timestamp
- */
-
   /* function exit code */
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.timestamp.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.ActionInterface.data.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XGIVEREF(__pyx_r);
@@ -5781,442 +6157,35 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_9timestamp__
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":54
- *         return self.data.timestamp
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def qty(self):
- *         return self.data.qty
- */
-
 /* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_3qty_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_3qty_1__get__(PyObject *__pyx_v_self) {
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_6Action_3qty___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_3qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__get__", 1);
-
-  /* "src/analysis/models/portfolio.pyx":56
- *     @property
- *     def qty(self):
- *         return self.data.qty             # <<<<<<<<<<<<<<
- * 
- *     @property
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->data.qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 56, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* "src/analysis/models/portfolio.pyx":54
- *         return self.data.timestamp
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def qty(self):
- *         return self.data.qty
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.qty.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "src/analysis/models/portfolio.pyx":58
- *         return self.data.qty
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def price(self):
- *         return self.data.price
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_5price_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_5price_1__get__(PyObject *__pyx_v_self) {
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_6Action_5price___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_5price___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__get__", 1);
-
-  /* "src/analysis/models/portfolio.pyx":60
- *     @property
- *     def price(self):
- *         return self.data.price             # <<<<<<<<<<<<<<
- * 
- *     @property
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->data.price); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 60, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* "src/analysis/models/portfolio.pyx":58
- *         return self.data.qty
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def price(self):
- *         return self.data.price
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.price.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "src/analysis/models/portfolio.pyx":62
- *         return self.data.price
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def quote_qty(self):
- *         return self.data.quote_qty
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_9quote_qty_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_9quote_qty_1__get__(PyObject *__pyx_v_self) {
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_6Action_9quote_qty___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_9quote_qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__get__", 1);
-
-  /* "src/analysis/models/portfolio.pyx":64
- *     @property
- *     def quote_qty(self):
- *         return self.data.quote_qty             # <<<<<<<<<<<<<<
- * 
- *     @property
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->data.quote_qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 64, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* "src/analysis/models/portfolio.pyx":62
- *         return self.data.price
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def quote_qty(self):
- *         return self.data.quote_qty
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.quote_qty.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "src/analysis/models/portfolio.pyx":66
- *         return self.data.quote_qty
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def fee(self):
- *         return self.data.fee
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_3fee_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_3fee_1__get__(PyObject *__pyx_v_self) {
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_6Action_3fee___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_3fee___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__get__", 1);
-
-  /* "src/analysis/models/portfolio.pyx":68
- *     @property
- *     def fee(self):
- *         return self.data.fee             # <<<<<<<<<<<<<<
- * 
- *     @fee.setter
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->data.fee); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 68, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* "src/analysis/models/portfolio.pyx":66
- *         return self.data.quote_qty
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def fee(self):
- *         return self.data.fee
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.fee.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "src/analysis/models/portfolio.pyx":70
- *         return self.data.fee
- * 
- *     @fee.setter             # <<<<<<<<<<<<<<
- *     def fee(self, value):
- *         self.data.fee = value
- */
-
-/* Python wrapper */
-static int __pyx_pw_3src_8analysis_6models_9portfolio_6Action_3fee_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
-static int __pyx_pw_3src_8analysis_6models_9portfolio_6Action_3fee_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+static int __pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_4data_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_4data_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
   __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_6Action_3fee_2__set__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_15ActionInterface_4data_2__set__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *)__pyx_v_self), ((PyObject *)__pyx_v_value));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static int __pyx_pf_3src_8analysis_6models_9portfolio_6Action_3fee_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self, PyObject *__pyx_v_value) {
+static int __pyx_pf_3src_8analysis_6models_9portfolio_15ActionInterface_4data_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_self, PyObject *__pyx_v_value) {
   int __pyx_r;
-  double __pyx_t_1;
+  struct __pyx_t_3src_8analysis_6models_9portfolio_ActionData __pyx_t_1;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
-
-  /* "src/analysis/models/portfolio.pyx":72
- *     @fee.setter
- *     def fee(self, value):
- *         self.data.fee = value             # <<<<<<<<<<<<<<
- * 
- *     @property
- */
-  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 72, __pyx_L1_error)
-  __pyx_v_self->data.fee = __pyx_t_1;
-
-  /* "src/analysis/models/portfolio.pyx":70
- *         return self.data.fee
- * 
- *     @fee.setter             # <<<<<<<<<<<<<<
- *     def fee(self, value):
- *         self.data.fee = value
- */
+  __pyx_t_1 = __pyx_convert__from_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData(__pyx_v_value); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 27, __pyx_L1_error)
+  __pyx_v_self->data = __pyx_t_1;
 
   /* function exit code */
   __pyx_r = 0;
   goto __pyx_L0;
   __pyx_L1_error:;
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.fee.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = -1;
-  __pyx_L0:;
-  return __pyx_r;
-}
-
-/* "src/analysis/models/portfolio.pyx":74
- *         self.data.fee = value
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def slippage(self):
- *         return self.data.slippage
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_8slippage_1__get__(PyObject *__pyx_v_self); /*proto*/
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_8slippage_1__get__(PyObject *__pyx_v_self) {
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
-  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_6Action_8slippage___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_8slippage___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__get__", 1);
-
-  /* "src/analysis/models/portfolio.pyx":76
- *     @property
- *     def slippage(self):
- *         return self.data.slippage             # <<<<<<<<<<<<<<
- * 
- *     @slippage.setter
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->data.slippage); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 76, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* "src/analysis/models/portfolio.pyx":74
- *         self.data.fee = value
- * 
- *     @property             # <<<<<<<<<<<<<<
- *     def slippage(self):
- *         return self.data.slippage
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.slippage.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "src/analysis/models/portfolio.pyx":78
- *         return self.data.slippage
- * 
- *     @slippage.setter             # <<<<<<<<<<<<<<
- *     def slippage(self, value):
- *         self.data.slippage = value
- */
-
-/* Python wrapper */
-static int __pyx_pw_3src_8analysis_6models_9portfolio_6Action_8slippage_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
-static int __pyx_pw_3src_8analysis_6models_9portfolio_6Action_8slippage_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
-  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_6Action_8slippage_2__set__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_self), ((PyObject *)__pyx_v_value));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static int __pyx_pf_3src_8analysis_6models_9portfolio_6Action_8slippage_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self, PyObject *__pyx_v_value) {
-  int __pyx_r;
-  double __pyx_t_1;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-
-  /* "src/analysis/models/portfolio.pyx":80
- *     @slippage.setter
- *     def slippage(self, value):
- *         self.data.slippage = value             # <<<<<<<<<<<<<<
- * 
- * 
- */
-  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 80, __pyx_L1_error)
-  __pyx_v_self->data.slippage = __pyx_t_1;
-
-  /* "src/analysis/models/portfolio.pyx":78
- *         return self.data.slippage
- * 
- *     @slippage.setter             # <<<<<<<<<<<<<<
- *     def slippage(self, value):
- *         self.data.slippage = value
- */
-
-  /* function exit code */
-  __pyx_r = 0;
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.slippage.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.ActionInterface.data.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = -1;
   __pyx_L0:;
   return __pyx_r;
@@ -6229,15 +6198,15 @@ static int __pyx_pf_3src_8analysis_6models_9portfolio_6Action_8slippage_2__set__
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_5__reduce_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_1__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_6Action_5__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_6Action_5__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_5__reduce_cython__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_15ActionInterface_1__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_1__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_1__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -6262,14 +6231,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   if (unlikely(__pyx_nargs > 0)) {
     __Pyx_RaiseArgtupleInvalid("__reduce_cython__", 1, 0, 0, __pyx_nargs); return NULL;}
   if (unlikely(__pyx_kwds) && __Pyx_NumKwargs_FASTCALL(__pyx_kwds) && unlikely(!__Pyx_CheckKeywordStrings(__pyx_kwds, "__reduce_cython__", 0))) return NULL;
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_6Action_4__reduce_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_self));
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_15ActionInterface___reduce_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self) {
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_15ActionInterface___reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -6284,7 +6253,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_4__reduce_cy
  *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
  */
   __Pyx_Raise(__pyx_builtin_TypeError, __pyx_kp_s_Pickling_of_struct_members_such, 0, 0);
-  __PYX_ERR(2, 2, __pyx_L1_error)
+  __PYX_ERR(0, 2, __pyx_L1_error)
 
   /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
@@ -6294,7 +6263,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_4__reduce_cy
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.__reduce_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.ActionInterface.__reduce_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
@@ -6309,15 +6278,15 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_4__reduce_cy
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_7__setstate_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_3__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_6Action_7__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_6Action_7__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_6Action_7__setstate_cython__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_15ActionInterface_3__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_3__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_3__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -6361,12 +6330,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(2, 3, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 3, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__setstate_cython__") < 0)) __PYX_ERR(2, 3, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__setstate_cython__") < 0)) __PYX_ERR(0, 3, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -6377,7 +6346,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__setstate_cython__", 1, 1, 1, __pyx_nargs); __PYX_ERR(2, 3, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__setstate_cython__", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 3, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -6387,11 +6356,11 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
       __Pyx_Arg_XDECREF_FASTCALL(values[__pyx_temp]);
     }
   }
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.__setstate_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.ActionInterface.__setstate_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_6Action_6__setstate_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_v_self), __pyx_v___pyx_state);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_15ActionInterface_2__setstate_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *)__pyx_v_self), __pyx_v___pyx_state);
 
   /* function exit code */
   {
@@ -6404,7 +6373,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_15ActionInterface_2__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -6418,7 +6387,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_6__setstate_
  *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"             # <<<<<<<<<<<<<<
  */
   __Pyx_Raise(__pyx_builtin_TypeError, __pyx_kp_s_Pickling_of_struct_members_such, 0, 0);
-  __PYX_ERR(2, 4, __pyx_L1_error)
+  __PYX_ERR(0, 4, __pyx_L1_error)
 
   /* "(tree fragment)":3
  * def __reduce_cython__(self):
@@ -6429,28 +6398,24 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_6Action_6__setstate_
 
   /* function exit code */
   __pyx_L1_error:;
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Action.__setstate_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.ActionInterface.__setstate_cython__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __Pyx_XGIVEREF(__pyx_r);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":86
- *     "A class to represent a buy action."
+/* "src/analysis/models/portfolio.pyx":32
+ * cdef class Buy(ActionInterface):
  * 
- *     def __init__(self, np.int64_t timestamp, double amount, double price):             # <<<<<<<<<<<<<<
- *         """Initializes a Buy action object.
- * 
+ *     def __cinit__(self, np.int64_t timestamp, double amount, double price):             # <<<<<<<<<<<<<<
+ *         self.data.timestamp = timestamp
+ *         self.data.price = price
  */
 
 /* Python wrapper */
-static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-PyDoc_STRVAR(__pyx_doc_3src_8analysis_6models_9portfolio_3Buy___init__, "Initializes a Buy action object.\n        \n        Parameters:\n        -----------\n        timestamp: int\n            Timestamp for the buy.\n        amount: float\n            Amount of quote currency for the buy.\n        price: float\n            Price for the buy.\n        ");
-#if CYTHON_UPDATE_DESCRIPTOR_DOC
-struct wrapperbase __pyx_wrapperbase_3src_8analysis_6models_9portfolio_3Buy___init__;
-#endif
-static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __pyx_t_5numpy_int64_t __pyx_v_timestamp;
   double __pyx_v_amount;
   double __pyx_v_price;
@@ -6462,7 +6427,7 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__init__(PyObject *_
   int __pyx_clineno = 0;
   int __pyx_r;
   __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__init__ (wrapper)", 0);
+  __Pyx_RefNannySetupContext("__cinit__ (wrapper)", 0);
   #if CYTHON_ASSUME_SAFE_MACROS
   __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
   #else
@@ -6490,7 +6455,7 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__init__(PyObject *_
           (void)__Pyx_Arg_NewRef_VARARGS(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 86, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 32, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
         CYTHON_FALLTHROUGH;
         case  1:
@@ -6498,9 +6463,9 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__init__(PyObject *_
           (void)__Pyx_Arg_NewRef_VARARGS(values[1]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 86, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 32, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 1); __PYX_ERR(0, 86, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 3, 3, 1); __PYX_ERR(1, 32, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
@@ -6508,14 +6473,14 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__init__(PyObject *_
           (void)__Pyx_Arg_NewRef_VARARGS(values[2]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 86, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 32, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 2); __PYX_ERR(0, 86, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 3, 3, 2); __PYX_ERR(1, 32, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__init__") < 0)) __PYX_ERR(0, 86, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__cinit__") < 0)) __PYX_ERR(1, 32, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 3)) {
       goto __pyx_L5_argtuple_error;
@@ -6524,13 +6489,13 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__init__(PyObject *_
       values[1] = __Pyx_Arg_VARARGS(__pyx_args, 1);
       values[2] = __Pyx_Arg_VARARGS(__pyx_args, 2);
     }
-    __pyx_v_timestamp = __Pyx_PyInt_As_npy_int64(values[0]); if (unlikely((__pyx_v_timestamp == ((npy_int64)-1)) && PyErr_Occurred())) __PYX_ERR(0, 86, __pyx_L3_error)
-    __pyx_v_amount = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_amount == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 86, __pyx_L3_error)
-    __pyx_v_price = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 86, __pyx_L3_error)
+    __pyx_v_timestamp = __Pyx_PyInt_As_npy_int64(values[0]); if (unlikely((__pyx_v_timestamp == ((npy_int64)-1)) && PyErr_Occurred())) __PYX_ERR(1, 32, __pyx_L3_error)
+    __pyx_v_amount = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_amount == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 32, __pyx_L3_error)
+    __pyx_v_price = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 32, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, __pyx_nargs); __PYX_ERR(0, 86, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 3, 3, __pyx_nargs); __PYX_ERR(1, 32, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -6540,11 +6505,11 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__init__(PyObject *_
       __Pyx_Arg_XDECREF_VARARGS(values[__pyx_temp]);
     }
   }
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy___init__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self), __pyx_v_timestamp, __pyx_v_amount, __pyx_v_price);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy___cinit__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self), __pyx_v_timestamp, __pyx_v_amount, __pyx_v_price);
 
   /* function exit code */
   {
@@ -6557,110 +6522,58 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__init__(PyObject *_
   return __pyx_r;
 }
 
-static int __pyx_pf_3src_8analysis_6models_9portfolio_3Buy___init__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_amount, double __pyx_v_price) {
+static int __pyx_pf_3src_8analysis_6models_9portfolio_3Buy___cinit__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_amount, double __pyx_v_price) {
   int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  PyObject *__pyx_t_2 = NULL;
-  PyObject *__pyx_t_3 = NULL;
-  PyObject *__pyx_t_4 = NULL;
-  PyObject *__pyx_t_5 = NULL;
-  PyObject *__pyx_t_6 = NULL;
-  unsigned int __pyx_t_7;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__init__", 1);
 
-  /* "src/analysis/models/portfolio.pyx":98
- *             Price for the buy.
- *         """
- *         super().__init__(timestamp, amount, price)             # <<<<<<<<<<<<<<
+  /* "src/analysis/models/portfolio.pyx":33
+ * 
+ *     def __cinit__(self, np.int64_t timestamp, double amount, double price):
+ *         self.data.timestamp = timestamp             # <<<<<<<<<<<<<<
+ *         self.data.price = price
+ *         self._calculate(amount)
+ */
+  __pyx_v_self->__pyx_base.data.timestamp = __pyx_v_timestamp;
+
+  /* "src/analysis/models/portfolio.pyx":34
+ *     def __cinit__(self, np.int64_t timestamp, double amount, double price):
+ *         self.data.timestamp = timestamp
+ *         self.data.price = price             # <<<<<<<<<<<<<<
  *         self._calculate(amount)
  * 
  */
-  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 98, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_INCREF((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Buy);
-  __Pyx_GIVEREF((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Buy);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 0, ((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Buy))) __PYX_ERR(0, 98, __pyx_L1_error);
-  __Pyx_INCREF((PyObject *)__pyx_v_self);
-  __Pyx_GIVEREF((PyObject *)__pyx_v_self);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 1, ((PyObject *)__pyx_v_self))) __PYX_ERR(0, 98, __pyx_L1_error);
-  __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_super, __pyx_t_2, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 98, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_init); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 98, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyInt_From_npy_int64(__pyx_v_timestamp); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 98, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 98, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_price); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 98, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = NULL;
-  __pyx_t_7 = 0;
-  #if CYTHON_UNPACK_METHODS
-  if (likely(PyMethod_Check(__pyx_t_2))) {
-    __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_2);
-    if (likely(__pyx_t_6)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
-      __Pyx_INCREF(__pyx_t_6);
-      __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_2, function);
-      __pyx_t_7 = 1;
-    }
-  }
-  #endif
-  {
-    PyObject *__pyx_callargs[4] = {__pyx_t_6, __pyx_t_3, __pyx_t_4, __pyx_t_5};
-    __pyx_t_1 = __Pyx_PyObject_FastCall(__pyx_t_2, __pyx_callargs+1-__pyx_t_7, 3+__pyx_t_7);
-    __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 98, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  }
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_self->__pyx_base.data.price = __pyx_v_price;
 
-  /* "src/analysis/models/portfolio.pyx":99
- *         """
- *         super().__init__(timestamp, amount, price)
+  /* "src/analysis/models/portfolio.pyx":35
+ *         self.data.timestamp = timestamp
+ *         self.data.price = price
  *         self._calculate(amount)             # <<<<<<<<<<<<<<
  * 
  *     def __repr__(self):
  */
-  ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self->__pyx_vtab)->_calculate(__pyx_v_self, __pyx_v_amount); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 99, __pyx_L1_error)
+  ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self->__pyx_vtab)->_calculate(__pyx_v_self, __pyx_v_amount); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 35, __pyx_L1_error)
 
-  /* "src/analysis/models/portfolio.pyx":86
- *     "A class to represent a buy action."
+  /* "src/analysis/models/portfolio.pyx":32
+ * cdef class Buy(ActionInterface):
  * 
- *     def __init__(self, np.int64_t timestamp, double amount, double price):             # <<<<<<<<<<<<<<
- *         """Initializes a Buy action object.
- * 
+ *     def __cinit__(self, np.int64_t timestamp, double amount, double price):             # <<<<<<<<<<<<<<
+ *         self.data.timestamp = timestamp
+ *         self.data.price = price
  */
 
   /* function exit code */
   __pyx_r = 0;
   goto __pyx_L0;
   __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = -1;
   __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":101
+/* "src/analysis/models/portfolio.pyx":37
  *         self._calculate(amount)
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -6696,7 +6609,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_2__repr__(struc
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__repr__", 1);
 
-  /* "src/analysis/models/portfolio.pyx":102
+  /* "src/analysis/models/portfolio.pyx":38
  * 
  *     def __repr__(self):
  *         return (             # <<<<<<<<<<<<<<
@@ -6705,14 +6618,14 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_2__repr__(struc
  */
   __Pyx_XDECREF(__pyx_r);
 
-  /* "src/analysis/models/portfolio.pyx":103
+  /* "src/analysis/models/portfolio.pyx":39
  *     def __repr__(self):
  *         return (
  *             f"Buy(timestamp={self.timestamp}, amount={self.data.qty}, "             # <<<<<<<<<<<<<<
  *             f"price={self.data.price})"
  *         )
  */
-  __pyx_t_1 = PyTuple_New(7); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_New(7); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = 0;
   __pyx_t_3 = 127;
@@ -6720,9 +6633,9 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_2__repr__(struc
   __pyx_t_2 += 14;
   __Pyx_GIVEREF(__pyx_kp_u_Buy_timestamp);
   PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_kp_u_Buy_timestamp);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_timestamp); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_timestamp); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_PyObject_FormatSimple(__pyx_t_4, __pyx_empty_unicode); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_FormatSimple(__pyx_t_4, __pyx_empty_unicode); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_5) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_5) : __pyx_t_3;
@@ -6734,9 +6647,9 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_2__repr__(struc
   __pyx_t_2 += 9;
   __Pyx_GIVEREF(__pyx_kp_u_amount_2);
   PyTuple_SET_ITEM(__pyx_t_1, 2, __pyx_kp_u_amount_2);
-  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.qty); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.qty); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_4 = __Pyx_PyObject_FormatSimple(__pyx_t_5, __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_FormatSimple(__pyx_t_5, __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) : __pyx_t_3;
@@ -6749,16 +6662,16 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_2__repr__(struc
   __Pyx_GIVEREF(__pyx_kp_u_price_2);
   PyTuple_SET_ITEM(__pyx_t_1, 4, __pyx_kp_u_price_2);
 
-  /* "src/analysis/models/portfolio.pyx":104
+  /* "src/analysis/models/portfolio.pyx":40
  *         return (
  *             f"Buy(timestamp={self.timestamp}, amount={self.data.qty}, "
  *             f"price={self.data.price})"             # <<<<<<<<<<<<<<
  *         )
  * 
  */
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 104, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.price); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 40, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_PyObject_FormatSimple(__pyx_t_4, __pyx_empty_unicode); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 104, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_FormatSimple(__pyx_t_4, __pyx_empty_unicode); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 40, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_5) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_5) : __pyx_t_3;
@@ -6766,26 +6679,26 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_2__repr__(struc
   __Pyx_GIVEREF(__pyx_t_5);
   PyTuple_SET_ITEM(__pyx_t_1, 5, __pyx_t_5);
   __pyx_t_5 = 0;
-  __Pyx_INCREF(__pyx_kp_u__4);
+  __Pyx_INCREF(__pyx_kp_u__9);
   __pyx_t_2 += 1;
-  __Pyx_GIVEREF(__pyx_kp_u__4);
-  PyTuple_SET_ITEM(__pyx_t_1, 6, __pyx_kp_u__4);
+  __Pyx_GIVEREF(__pyx_kp_u__9);
+  PyTuple_SET_ITEM(__pyx_t_1, 6, __pyx_kp_u__9);
 
-  /* "src/analysis/models/portfolio.pyx":103
+  /* "src/analysis/models/portfolio.pyx":39
  *     def __repr__(self):
  *         return (
  *             f"Buy(timestamp={self.timestamp}, amount={self.data.qty}, "             # <<<<<<<<<<<<<<
  *             f"price={self.data.price})"
  *         )
  */
-  __pyx_t_5 = __Pyx_PyUnicode_Join(__pyx_t_1, 7, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyUnicode_Join(__pyx_t_1, 7, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_r = __pyx_t_5;
   __pyx_t_5 = 0;
   goto __pyx_L0;
 
-  /* "src/analysis/models/portfolio.pyx":101
+  /* "src/analysis/models/portfolio.pyx":37
  *         self._calculate(amount)
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -6806,8 +6719,164 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_2__repr__(struc
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":107
+/* "src/analysis/models/portfolio.pyx":43
  *         )
+ * 
+ *     def __add__(self, Buy other):             # <<<<<<<<<<<<<<
+ *         new_qty = self.qty + other.qty
+ *         new_quote_qty = self.quote_qty + other.quote_qty
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_5__add__(PyObject *__pyx_v_self, PyObject *__pyx_v_other); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_5__add__(PyObject *__pyx_v_self, PyObject *__pyx_v_other) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__add__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_other), __pyx_ptype_3src_8analysis_6models_9portfolio_Buy, 1, "other", 0))) __PYX_ERR(1, 43, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_4__add__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self), ((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_other));
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_4__add__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_other) {
+  PyObject *__pyx_v_new_qty = NULL;
+  PyObject *__pyx_v_new_quote_qty = NULL;
+  PyObject *__pyx_v_new_price = NULL;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__add__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":44
+ * 
+ *     def __add__(self, Buy other):
+ *         new_qty = self.qty + other.qty             # <<<<<<<<<<<<<<
+ *         new_quote_qty = self.quote_qty + other.quote_qty
+ * 
+ */
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_other), __pyx_n_s_qty); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_v_new_qty = __pyx_t_3;
+  __pyx_t_3 = 0;
+
+  /* "src/analysis/models/portfolio.pyx":45
+ *     def __add__(self, Buy other):
+ *         new_qty = self.qty + other.qty
+ *         new_quote_qty = self.quote_qty + other.quote_qty             # <<<<<<<<<<<<<<
+ * 
+ *         # Calculate volume-weighted average price
+ */
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_quote_qty); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 45, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_other), __pyx_n_s_quote_qty); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 45, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_1 = PyNumber_Add(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 45, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_v_new_quote_qty = __pyx_t_1;
+  __pyx_t_1 = 0;
+
+  /* "src/analysis/models/portfolio.pyx":49
+ *         # Calculate volume-weighted average price
+ *         new_price = (
+ *             self.data.price * self.data.qty + other.data.price * other.data.qty             # <<<<<<<<<<<<<<
+ *             ) / new_qty
+ * 
+ */
+  __pyx_t_1 = PyFloat_FromDouble(((__pyx_v_self->__pyx_base.data.price * __pyx_v_self->__pyx_base.data.qty) + (__pyx_v_other->__pyx_base.data.price * __pyx_v_other->__pyx_base.data.qty))); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 49, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+
+  /* "src/analysis/models/portfolio.pyx":50
+ *         new_price = (
+ *             self.data.price * self.data.qty + other.data.price * other.data.qty
+ *             ) / new_qty             # <<<<<<<<<<<<<<
+ * 
+ *         return Buy(self.timestamp, new_quote_qty, new_price)
+ */
+  __pyx_t_2 = __Pyx_PyNumber_Divide(__pyx_t_1, __pyx_v_new_qty); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 50, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_new_price = __pyx_t_2;
+  __pyx_t_2 = 0;
+
+  /* "src/analysis/models/portfolio.pyx":52
+ *             ) / new_qty
+ * 
+ *         return Buy(self.timestamp, new_quote_qty, new_price)             # <<<<<<<<<<<<<<
+ * 
+ *     cdef void _calculate(self, double amount):
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_timestamp); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 52, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_1 = PyTuple_New(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 52, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_2);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_2)) __PYX_ERR(1, 52, __pyx_L1_error);
+  __Pyx_INCREF(__pyx_v_new_quote_qty);
+  __Pyx_GIVEREF(__pyx_v_new_quote_qty);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_v_new_quote_qty)) __PYX_ERR(1, 52, __pyx_L1_error);
+  __Pyx_INCREF(__pyx_v_new_price);
+  __Pyx_GIVEREF(__pyx_v_new_price);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 2, __pyx_v_new_price)) __PYX_ERR(1, 52, __pyx_L1_error);
+  __pyx_t_2 = 0;
+  __pyx_t_2 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Buy), __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 52, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_r = __pyx_t_2;
+  __pyx_t_2 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":43
+ *         )
+ * 
+ *     def __add__(self, Buy other):             # <<<<<<<<<<<<<<
+ *         new_qty = self.qty + other.qty
+ *         new_quote_qty = self.quote_qty + other.quote_qty
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.__add__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_new_qty);
+  __Pyx_XDECREF(__pyx_v_new_quote_qty);
+  __Pyx_XDECREF(__pyx_v_new_price);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":54
+ *         return Buy(self.timestamp, new_quote_qty, new_price)
  * 
  *     cdef void _calculate(self, double amount):             # <<<<<<<<<<<<<<
  *         self.data.quote_qty = amount
@@ -6820,7 +6889,7 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_3Buy__calculate(struct __p
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
 
-  /* "src/analysis/models/portfolio.pyx":108
+  /* "src/analysis/models/portfolio.pyx":55
  * 
  *     cdef void _calculate(self, double amount):
  *         self.data.quote_qty = amount             # <<<<<<<<<<<<<<
@@ -6829,7 +6898,7 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_3Buy__calculate(struct __p
  */
   __pyx_v_self->__pyx_base.data.quote_qty = __pyx_v_amount;
 
-  /* "src/analysis/models/portfolio.pyx":109
+  /* "src/analysis/models/portfolio.pyx":56
  *     cdef void _calculate(self, double amount):
  *         self.data.quote_qty = amount
  *         self.data.fee = amount * fee_rate             # <<<<<<<<<<<<<<
@@ -6838,7 +6907,7 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_3Buy__calculate(struct __p
  */
   __pyx_v_self->__pyx_base.data.fee = (__pyx_v_amount * __pyx_v_3src_8analysis_6models_9portfolio_fee_rate);
 
-  /* "src/analysis/models/portfolio.pyx":110
+  /* "src/analysis/models/portfolio.pyx":57
  *         self.data.quote_qty = amount
  *         self.data.fee = amount * fee_rate
  *         self.data.slippage = amount * slippage_rate             # <<<<<<<<<<<<<<
@@ -6847,7 +6916,7 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_3Buy__calculate(struct __p
  */
   __pyx_v_self->__pyx_base.data.slippage = (__pyx_v_amount * __pyx_v_3src_8analysis_6models_9portfolio_slippage_rate);
 
-  /* "src/analysis/models/portfolio.pyx":111
+  /* "src/analysis/models/portfolio.pyx":58
  *         self.data.fee = amount * fee_rate
  *         self.data.slippage = amount * slippage_rate
  *         cdef double net_amount = amount - self.data.fee - self.data.slippage             # <<<<<<<<<<<<<<
@@ -6856,7 +6925,7 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_3Buy__calculate(struct __p
  */
   __pyx_v_net_amount = ((__pyx_v_amount - __pyx_v_self->__pyx_base.data.fee) - __pyx_v_self->__pyx_base.data.slippage);
 
-  /* "src/analysis/models/portfolio.pyx":112
+  /* "src/analysis/models/portfolio.pyx":59
  *         self.data.slippage = amount * slippage_rate
  *         cdef double net_amount = amount - self.data.fee - self.data.slippage
  *         self.data.qty = net_amount / self.data.price             # <<<<<<<<<<<<<<
@@ -6865,12 +6934,12 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_3Buy__calculate(struct __p
  */
   if (unlikely(__pyx_v_self->__pyx_base.data.price == 0)) {
     PyErr_SetString(PyExc_ZeroDivisionError, "float division");
-    __PYX_ERR(0, 112, __pyx_L1_error)
+    __PYX_ERR(1, 59, __pyx_L1_error)
   }
   __pyx_v_self->__pyx_base.data.qty = (__pyx_v_net_amount / __pyx_v_self->__pyx_base.data.price);
 
-  /* "src/analysis/models/portfolio.pyx":107
- *         )
+  /* "src/analysis/models/portfolio.pyx":54
+ *         return Buy(self.timestamp, new_quote_qty, new_price)
  * 
  *     cdef void _calculate(self, double amount):             # <<<<<<<<<<<<<<
  *         self.data.quote_qty = amount
@@ -6884,7 +6953,7 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_3Buy__calculate(struct __p
   __pyx_L0:;
 }
 
-/* "src/analysis/models/portfolio.pyx":114
+/* "src/analysis/models/portfolio.pyx":61
  *         self.data.qty = net_amount / self.data.price
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -6912,19 +6981,19 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_4type___get__(C
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "src/analysis/models/portfolio.pyx":116
+  /* "src/analysis/models/portfolio.pyx":63
  *     @property
  *     def type(self) -> str:
  *         return "BUY"             # <<<<<<<<<<<<<<
  * 
- * 
+ *     @property
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(__pyx_n_u_BUY);
   __pyx_r = __pyx_n_u_BUY;
   goto __pyx_L0;
 
-  /* "src/analysis/models/portfolio.pyx":114
+  /* "src/analysis/models/portfolio.pyx":61
  *         self.data.qty = net_amount / self.data.price
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -6939,22 +7008,528 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_4type___get__(C
   return __pyx_r;
 }
 
+/* "src/analysis/models/portfolio.pyx":65
+ *         return "BUY"
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def timestamp(self):
+ *         return self.data.timestamp
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_9timestamp_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_9timestamp_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_9timestamp___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_9timestamp___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":67
+ *     @property
+ *     def timestamp(self):
+ *         return self.data.timestamp             # <<<<<<<<<<<<<<
+ * 
+ *     @property
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __Pyx_PyInt_From_npy_int64(__pyx_v_self->__pyx_base.data.timestamp); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 67, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":65
+ *         return "BUY"
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def timestamp(self):
+ *         return self.data.timestamp
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.timestamp.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":69
+ *         return self.data.timestamp
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def qty(self):
+ *         return self.data.qty
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3qty_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3qty_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_3qty___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_3qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":71
+ *     @property
+ *     def qty(self):
+ *         return self.data.qty             # <<<<<<<<<<<<<<
+ * 
+ *     @property
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 71, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":69
+ *         return self.data.timestamp
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def qty(self):
+ *         return self.data.qty
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.qty.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":73
+ *         return self.data.qty
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def price(self):
+ *         return self.data.price
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_5price_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_5price_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_5price___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_5price___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":75
+ *     @property
+ *     def price(self):
+ *         return self.data.price             # <<<<<<<<<<<<<<
+ * 
+ *     @property
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.price); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 75, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":73
+ *         return self.data.qty
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def price(self):
+ *         return self.data.price
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.price.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":77
+ *         return self.data.price
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def quote_qty(self):
+ *         return self.data.quote_qty
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_9quote_qty_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_9quote_qty_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_9quote_qty___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_9quote_qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":79
+ *     @property
+ *     def quote_qty(self):
+ *         return self.data.quote_qty             # <<<<<<<<<<<<<<
+ * 
+ *     @property
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.quote_qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 79, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":77
+ *         return self.data.price
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def quote_qty(self):
+ *         return self.data.quote_qty
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.quote_qty.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":81
+ *         return self.data.quote_qty
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def fee(self):
+ *         return self.data.fee
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3fee_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3fee_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_3fee___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_3fee___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":83
+ *     @property
+ *     def fee(self):
+ *         return self.data.fee             # <<<<<<<<<<<<<<
+ * 
+ *     @fee.setter
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.fee); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 83, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":81
+ *         return self.data.quote_qty
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def fee(self):
+ *         return self.data.fee
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.fee.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":85
+ *         return self.data.fee
+ * 
+ *     @fee.setter             # <<<<<<<<<<<<<<
+ *     def fee(self, value):
+ *         self.data.fee = value
+ */
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3fee_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3fee_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_3fee_2__set__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_3fee_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  double __pyx_t_1;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+
+  /* "src/analysis/models/portfolio.pyx":87
+ *     @fee.setter
+ *     def fee(self, value):
+ *         self.data.fee = value             # <<<<<<<<<<<<<<
+ * 
+ *     @property
+ */
+  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 87, __pyx_L1_error)
+  __pyx_v_self->__pyx_base.data.fee = __pyx_t_1;
+
+  /* "src/analysis/models/portfolio.pyx":85
+ *         return self.data.fee
+ * 
+ *     @fee.setter             # <<<<<<<<<<<<<<
+ *     def fee(self, value):
+ *         self.data.fee = value
+ */
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.fee.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":89
+ *         self.data.fee = value
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def slippage(self):
+ *         return self.data.slippage
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_8slippage_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_8slippage_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_8slippage___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_8slippage___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":91
+ *     @property
+ *     def slippage(self):
+ *         return self.data.slippage             # <<<<<<<<<<<<<<
+ * 
+ *     @slippage.setter
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.slippage); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 91, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":89
+ *         self.data.fee = value
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def slippage(self):
+ *         return self.data.slippage
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.slippage.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":93
+ *         return self.data.slippage
+ * 
+ *     @slippage.setter             # <<<<<<<<<<<<<<
+ *     def slippage(self, value):
+ *         self.data.slippage = value
+ */
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_8slippage_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_8slippage_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_8slippage_2__set__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_8slippage_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  double __pyx_t_1;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+
+  /* "src/analysis/models/portfolio.pyx":95
+ *     @slippage.setter
+ *     def slippage(self, value):
+ *         self.data.slippage = value             # <<<<<<<<<<<<<<
+ * 
+ * 
+ */
+  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 95, __pyx_L1_error)
+  __pyx_v_self->__pyx_base.data.slippage = __pyx_t_1;
+
+  /* "src/analysis/models/portfolio.pyx":93
+ *         return self.data.slippage
+ * 
+ *     @slippage.setter             # <<<<<<<<<<<<<<
+ *     def slippage(self, value):
+ *         self.data.slippage = value
+ */
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Buy.slippage.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  return __pyx_r;
+}
+
 /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_5__reduce_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_7__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_3Buy_5__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_5__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_5__reduce_cython__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_3Buy_7__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_7__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_7__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -6979,14 +7554,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   if (unlikely(__pyx_nargs > 0)) {
     __Pyx_RaiseArgtupleInvalid("__reduce_cython__", 1, 0, 0, __pyx_nargs); return NULL;}
   if (unlikely(__pyx_kwds) && __Pyx_NumKwargs_FASTCALL(__pyx_kwds) && unlikely(!__Pyx_CheckKeywordStrings(__pyx_kwds, "__reduce_cython__", 0))) return NULL;
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_4__reduce_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self));
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_6__reduce_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self) {
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_6__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -6996,16 +7571,16 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_4__reduce_cytho
 
   /* "(tree fragment)":2
  * def __reduce_cython__(self):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"             # <<<<<<<<<<<<<<
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"             # <<<<<<<<<<<<<<
  * def __setstate_cython__(self, __pyx_state):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
-  __Pyx_Raise(__pyx_builtin_TypeError, __pyx_kp_s_Pickling_of_struct_members_such, 0, 0);
-  __PYX_ERR(2, 2, __pyx_L1_error)
+  __Pyx_Raise(__pyx_builtin_TypeError, __pyx_kp_s_no_default___reduce___due_to_non, 0, 0);
+  __PYX_ERR(0, 2, __pyx_L1_error)
 
   /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
  */
 
@@ -7020,21 +7595,21 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_4__reduce_cytho
 
 /* "(tree fragment)":3
  * def __reduce_cython__(self):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_7__setstate_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_9__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_3Buy_7__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_7__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_7__setstate_cython__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_3Buy_9__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_9__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_9__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -7078,12 +7653,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(2, 3, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 3, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__setstate_cython__") < 0)) __PYX_ERR(2, 3, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__setstate_cython__") < 0)) __PYX_ERR(0, 3, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -7094,7 +7669,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__setstate_cython__", 1, 1, 1, __pyx_nargs); __PYX_ERR(2, 3, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__setstate_cython__", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 3, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -7108,7 +7683,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_6__setstate_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self), __pyx_v___pyx_state);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_3Buy_8__setstate_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)__pyx_v_self), __pyx_v___pyx_state);
 
   /* function exit code */
   {
@@ -7121,7 +7696,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_8__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -7130,18 +7705,18 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_6__setstate_cyt
   __Pyx_RefNannySetupContext("__setstate_cython__", 1);
 
   /* "(tree fragment)":4
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"             # <<<<<<<<<<<<<<
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"             # <<<<<<<<<<<<<<
  */
-  __Pyx_Raise(__pyx_builtin_TypeError, __pyx_kp_s_Pickling_of_struct_members_such, 0, 0);
-  __PYX_ERR(2, 4, __pyx_L1_error)
+  __Pyx_Raise(__pyx_builtin_TypeError, __pyx_kp_s_no_default___reduce___due_to_non, 0, 0);
+  __PYX_ERR(0, 4, __pyx_L1_error)
 
   /* "(tree fragment)":3
  * def __reduce_cython__(self):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
 
   /* function exit code */
@@ -7153,17 +7728,17 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_3Buy_6__setstate_cyt
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":120
+/* "src/analysis/models/portfolio.pyx":100
+ * cdef class Sell(ActionInterface):
  * 
- * cdef class Sell(Action):
- *     def __init__(self, np.int64_t timestamp, double amount, double price):             # <<<<<<<<<<<<<<
- *         super().__init__(timestamp, amount, price)
- *         self._calculate(amount)
+ *     def __cinit__(self, np.int64_t timestamp, double amount, double price):             # <<<<<<<<<<<<<<
+ *         self.data.timestamp = timestamp
+ *         self.data.price = price
  */
 
 /* Python wrapper */
-static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__init__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__cinit__(PyObject *__pyx_v_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   __pyx_t_5numpy_int64_t __pyx_v_timestamp;
   double __pyx_v_amount;
   double __pyx_v_price;
@@ -7175,7 +7750,7 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__init__(PyObject *
   int __pyx_clineno = 0;
   int __pyx_r;
   __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("__init__ (wrapper)", 0);
+  __Pyx_RefNannySetupContext("__cinit__ (wrapper)", 0);
   #if CYTHON_ASSUME_SAFE_MACROS
   __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
   #else
@@ -7203,7 +7778,7 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__init__(PyObject *
           (void)__Pyx_Arg_NewRef_VARARGS(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 120, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 100, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
         CYTHON_FALLTHROUGH;
         case  1:
@@ -7211,9 +7786,9 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__init__(PyObject *
           (void)__Pyx_Arg_NewRef_VARARGS(values[1]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 120, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 100, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 1); __PYX_ERR(0, 120, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 3, 3, 1); __PYX_ERR(1, 100, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
@@ -7221,14 +7796,14 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__init__(PyObject *
           (void)__Pyx_Arg_NewRef_VARARGS(values[2]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 120, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 100, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, 2); __PYX_ERR(0, 120, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 3, 3, 2); __PYX_ERR(1, 100, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__init__") < 0)) __PYX_ERR(0, 120, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__cinit__") < 0)) __PYX_ERR(1, 100, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 3)) {
       goto __pyx_L5_argtuple_error;
@@ -7237,13 +7812,13 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__init__(PyObject *
       values[1] = __Pyx_Arg_VARARGS(__pyx_args, 1);
       values[2] = __Pyx_Arg_VARARGS(__pyx_args, 2);
     }
-    __pyx_v_timestamp = __Pyx_PyInt_As_npy_int64(values[0]); if (unlikely((__pyx_v_timestamp == ((npy_int64)-1)) && PyErr_Occurred())) __PYX_ERR(0, 120, __pyx_L3_error)
-    __pyx_v_amount = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_amount == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 120, __pyx_L3_error)
-    __pyx_v_price = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 120, __pyx_L3_error)
+    __pyx_v_timestamp = __Pyx_PyInt_As_npy_int64(values[0]); if (unlikely((__pyx_v_timestamp == ((npy_int64)-1)) && PyErr_Occurred())) __PYX_ERR(1, 100, __pyx_L3_error)
+    __pyx_v_amount = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_amount == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 100, __pyx_L3_error)
+    __pyx_v_price = __pyx_PyFloat_AsDouble(values[2]); if (unlikely((__pyx_v_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 100, __pyx_L3_error)
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__init__", 1, 3, 3, __pyx_nargs); __PYX_ERR(0, 120, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 3, 3, __pyx_nargs); __PYX_ERR(1, 100, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -7253,11 +7828,11 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__init__(PyObject *
       __Pyx_Arg_XDECREF_VARARGS(values[__pyx_temp]);
     }
   }
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell___init__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self), __pyx_v_timestamp, __pyx_v_amount, __pyx_v_price);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell___cinit__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self), __pyx_v_timestamp, __pyx_v_amount, __pyx_v_price);
 
   /* function exit code */
   {
@@ -7270,110 +7845,58 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__init__(PyObject *
   return __pyx_r;
 }
 
-static int __pyx_pf_3src_8analysis_6models_9portfolio_4Sell___init__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_amount, double __pyx_v_price) {
+static int __pyx_pf_3src_8analysis_6models_9portfolio_4Sell___cinit__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_amount, double __pyx_v_price) {
   int __pyx_r;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  PyObject *__pyx_t_2 = NULL;
-  PyObject *__pyx_t_3 = NULL;
-  PyObject *__pyx_t_4 = NULL;
-  PyObject *__pyx_t_5 = NULL;
-  PyObject *__pyx_t_6 = NULL;
-  unsigned int __pyx_t_7;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("__init__", 1);
 
-  /* "src/analysis/models/portfolio.pyx":121
- * cdef class Sell(Action):
- *     def __init__(self, np.int64_t timestamp, double amount, double price):
- *         super().__init__(timestamp, amount, price)             # <<<<<<<<<<<<<<
+  /* "src/analysis/models/portfolio.pyx":101
+ * 
+ *     def __cinit__(self, np.int64_t timestamp, double amount, double price):
+ *         self.data.timestamp = timestamp             # <<<<<<<<<<<<<<
+ *         self.data.price = price
+ *         self._calculate(amount)
+ */
+  __pyx_v_self->__pyx_base.data.timestamp = __pyx_v_timestamp;
+
+  /* "src/analysis/models/portfolio.pyx":102
+ *     def __cinit__(self, np.int64_t timestamp, double amount, double price):
+ *         self.data.timestamp = timestamp
+ *         self.data.price = price             # <<<<<<<<<<<<<<
  *         self._calculate(amount)
  * 
  */
-  __pyx_t_2 = PyTuple_New(2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 121, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_INCREF((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Sell);
-  __Pyx_GIVEREF((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Sell);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 0, ((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Sell))) __PYX_ERR(0, 121, __pyx_L1_error);
-  __Pyx_INCREF((PyObject *)__pyx_v_self);
-  __Pyx_GIVEREF((PyObject *)__pyx_v_self);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 1, ((PyObject *)__pyx_v_self))) __PYX_ERR(0, 121, __pyx_L1_error);
-  __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_super, __pyx_t_2, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 121, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_init); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 121, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyInt_From_npy_int64(__pyx_v_timestamp); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 121, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_amount); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 121, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_price); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 121, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = NULL;
-  __pyx_t_7 = 0;
-  #if CYTHON_UNPACK_METHODS
-  if (likely(PyMethod_Check(__pyx_t_2))) {
-    __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_2);
-    if (likely(__pyx_t_6)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
-      __Pyx_INCREF(__pyx_t_6);
-      __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_2, function);
-      __pyx_t_7 = 1;
-    }
-  }
-  #endif
-  {
-    PyObject *__pyx_callargs[4] = {__pyx_t_6, __pyx_t_3, __pyx_t_4, __pyx_t_5};
-    __pyx_t_1 = __Pyx_PyObject_FastCall(__pyx_t_2, __pyx_callargs+1-__pyx_t_7, 3+__pyx_t_7);
-    __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 121, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  }
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_self->__pyx_base.data.price = __pyx_v_price;
 
-  /* "src/analysis/models/portfolio.pyx":122
- *     def __init__(self, np.int64_t timestamp, double amount, double price):
- *         super().__init__(timestamp, amount, price)
+  /* "src/analysis/models/portfolio.pyx":103
+ *         self.data.timestamp = timestamp
+ *         self.data.price = price
  *         self._calculate(amount)             # <<<<<<<<<<<<<<
  * 
  *     def __repr__(self):
  */
-  ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self->__pyx_vtab)->_calculate(__pyx_v_self, __pyx_v_amount); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 122, __pyx_L1_error)
+  ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self->__pyx_vtab)->_calculate(__pyx_v_self, __pyx_v_amount); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 103, __pyx_L1_error)
 
-  /* "src/analysis/models/portfolio.pyx":120
+  /* "src/analysis/models/portfolio.pyx":100
+ * cdef class Sell(ActionInterface):
  * 
- * cdef class Sell(Action):
- *     def __init__(self, np.int64_t timestamp, double amount, double price):             # <<<<<<<<<<<<<<
- *         super().__init__(timestamp, amount, price)
- *         self._calculate(amount)
+ *     def __cinit__(self, np.int64_t timestamp, double amount, double price):             # <<<<<<<<<<<<<<
+ *         self.data.timestamp = timestamp
+ *         self.data.price = price
  */
 
   /* function exit code */
   __pyx_r = 0;
   goto __pyx_L0;
   __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_XDECREF(__pyx_t_6);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.__init__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = -1;
   __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":124
+/* "src/analysis/models/portfolio.pyx":105
  *         self._calculate(amount)
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -7409,7 +7932,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_2__repr__(stru
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__repr__", 1);
 
-  /* "src/analysis/models/portfolio.pyx":125
+  /* "src/analysis/models/portfolio.pyx":106
  * 
  *     def __repr__(self):
  *         return (             # <<<<<<<<<<<<<<
@@ -7418,14 +7941,14 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_2__repr__(stru
  */
   __Pyx_XDECREF(__pyx_r);
 
-  /* "src/analysis/models/portfolio.pyx":126
+  /* "src/analysis/models/portfolio.pyx":107
  *     def __repr__(self):
  *         return (
  *             f"Sell(timestamp={self.timestamp}, amount={self.data.qty}, "             # <<<<<<<<<<<<<<
  *             f"price={self.data.price})"
  *         )
  */
-  __pyx_t_1 = PyTuple_New(7); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 126, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_New(7); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 107, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = 0;
   __pyx_t_3 = 127;
@@ -7433,9 +7956,9 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_2__repr__(stru
   __pyx_t_2 += 15;
   __Pyx_GIVEREF(__pyx_kp_u_Sell_timestamp);
   PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_kp_u_Sell_timestamp);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_timestamp); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 126, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_timestamp); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 107, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_PyObject_FormatSimple(__pyx_t_4, __pyx_empty_unicode); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 126, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_FormatSimple(__pyx_t_4, __pyx_empty_unicode); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 107, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_5) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_5) : __pyx_t_3;
@@ -7447,9 +7970,9 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_2__repr__(stru
   __pyx_t_2 += 9;
   __Pyx_GIVEREF(__pyx_kp_u_amount_2);
   PyTuple_SET_ITEM(__pyx_t_1, 2, __pyx_kp_u_amount_2);
-  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.qty); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 126, __pyx_L1_error)
+  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.qty); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 107, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_4 = __Pyx_PyObject_FormatSimple(__pyx_t_5, __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 126, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_FormatSimple(__pyx_t_5, __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 107, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) : __pyx_t_3;
@@ -7462,16 +7985,16 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_2__repr__(stru
   __Pyx_GIVEREF(__pyx_kp_u_price_2);
   PyTuple_SET_ITEM(__pyx_t_1, 4, __pyx_kp_u_price_2);
 
-  /* "src/analysis/models/portfolio.pyx":127
+  /* "src/analysis/models/portfolio.pyx":108
  *         return (
  *             f"Sell(timestamp={self.timestamp}, amount={self.data.qty}, "
  *             f"price={self.data.price})"             # <<<<<<<<<<<<<<
  *         )
  * 
  */
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 127, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.price); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 108, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_PyObject_FormatSimple(__pyx_t_4, __pyx_empty_unicode); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 127, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_FormatSimple(__pyx_t_4, __pyx_empty_unicode); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 108, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_5) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_5) : __pyx_t_3;
@@ -7479,26 +8002,26 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_2__repr__(stru
   __Pyx_GIVEREF(__pyx_t_5);
   PyTuple_SET_ITEM(__pyx_t_1, 5, __pyx_t_5);
   __pyx_t_5 = 0;
-  __Pyx_INCREF(__pyx_kp_u__4);
+  __Pyx_INCREF(__pyx_kp_u__9);
   __pyx_t_2 += 1;
-  __Pyx_GIVEREF(__pyx_kp_u__4);
-  PyTuple_SET_ITEM(__pyx_t_1, 6, __pyx_kp_u__4);
+  __Pyx_GIVEREF(__pyx_kp_u__9);
+  PyTuple_SET_ITEM(__pyx_t_1, 6, __pyx_kp_u__9);
 
-  /* "src/analysis/models/portfolio.pyx":126
+  /* "src/analysis/models/portfolio.pyx":107
  *     def __repr__(self):
  *         return (
  *             f"Sell(timestamp={self.timestamp}, amount={self.data.qty}, "             # <<<<<<<<<<<<<<
  *             f"price={self.data.price})"
  *         )
  */
-  __pyx_t_5 = __Pyx_PyUnicode_Join(__pyx_t_1, 7, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 126, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyUnicode_Join(__pyx_t_1, 7, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 107, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_r = __pyx_t_5;
   __pyx_t_5 = 0;
   goto __pyx_L0;
 
-  /* "src/analysis/models/portfolio.pyx":124
+  /* "src/analysis/models/portfolio.pyx":105
  *         self._calculate(amount)
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -7519,8 +8042,164 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_2__repr__(stru
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":130
+/* "src/analysis/models/portfolio.pyx":111
  *         )
+ * 
+ *     def __add__(self, Sell other):             # <<<<<<<<<<<<<<
+ *         new_qty = self.qty + other.qty
+ *         new_quote_qty = self.quote_qty + other.quote_qty
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_5__add__(PyObject *__pyx_v_self, PyObject *__pyx_v_other); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_5__add__(PyObject *__pyx_v_self, PyObject *__pyx_v_other) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__add__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_other), __pyx_ptype_3src_8analysis_6models_9portfolio_Sell, 1, "other", 0))) __PYX_ERR(1, 111, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_4__add__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self), ((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_other));
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_4__add__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_other) {
+  PyObject *__pyx_v_new_qty = NULL;
+  CYTHON_UNUSED PyObject *__pyx_v_new_quote_qty = NULL;
+  PyObject *__pyx_v_new_price = NULL;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__add__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":112
+ * 
+ *     def __add__(self, Sell other):
+ *         new_qty = self.qty + other.qty             # <<<<<<<<<<<<<<
+ *         new_quote_qty = self.quote_qty + other.quote_qty
+ * 
+ */
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 112, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_other), __pyx_n_s_qty); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 112, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = PyNumber_Add(__pyx_t_1, __pyx_t_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 112, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_v_new_qty = __pyx_t_3;
+  __pyx_t_3 = 0;
+
+  /* "src/analysis/models/portfolio.pyx":113
+ *     def __add__(self, Sell other):
+ *         new_qty = self.qty + other.qty
+ *         new_quote_qty = self.quote_qty + other.quote_qty             # <<<<<<<<<<<<<<
+ * 
+ *         # Calculate volume-weighted average price
+ */
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_quote_qty); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 113, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_other), __pyx_n_s_quote_qty); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 113, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_1 = PyNumber_Add(__pyx_t_3, __pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 113, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_v_new_quote_qty = __pyx_t_1;
+  __pyx_t_1 = 0;
+
+  /* "src/analysis/models/portfolio.pyx":117
+ *         # Calculate volume-weighted average price
+ *         new_price = (
+ *             self.data.price * self.data.qty + other.data.price * other.data.qty             # <<<<<<<<<<<<<<
+ *             ) / new_qty
+ * 
+ */
+  __pyx_t_1 = PyFloat_FromDouble(((__pyx_v_self->__pyx_base.data.price * __pyx_v_self->__pyx_base.data.qty) + (__pyx_v_other->__pyx_base.data.price * __pyx_v_other->__pyx_base.data.qty))); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 117, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+
+  /* "src/analysis/models/portfolio.pyx":118
+ *         new_price = (
+ *             self.data.price * self.data.qty + other.data.price * other.data.qty
+ *             ) / new_qty             # <<<<<<<<<<<<<<
+ * 
+ *         return Sell(self.timestamp, new_qty, new_price)
+ */
+  __pyx_t_2 = __Pyx_PyNumber_Divide(__pyx_t_1, __pyx_v_new_qty); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 118, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_new_price = __pyx_t_2;
+  __pyx_t_2 = 0;
+
+  /* "src/analysis/models/portfolio.pyx":120
+ *             ) / new_qty
+ * 
+ *         return Sell(self.timestamp, new_qty, new_price)             # <<<<<<<<<<<<<<
+ * 
+ *     cdef void _calculate(self, double amount):
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_timestamp); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 120, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_1 = PyTuple_New(3); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 120, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_2);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_2)) __PYX_ERR(1, 120, __pyx_L1_error);
+  __Pyx_INCREF(__pyx_v_new_qty);
+  __Pyx_GIVEREF(__pyx_v_new_qty);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_v_new_qty)) __PYX_ERR(1, 120, __pyx_L1_error);
+  __Pyx_INCREF(__pyx_v_new_price);
+  __Pyx_GIVEREF(__pyx_v_new_price);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 2, __pyx_v_new_price)) __PYX_ERR(1, 120, __pyx_L1_error);
+  __pyx_t_2 = 0;
+  __pyx_t_2 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Sell), __pyx_t_1, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 120, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_r = __pyx_t_2;
+  __pyx_t_2 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":111
+ *         )
+ * 
+ *     def __add__(self, Sell other):             # <<<<<<<<<<<<<<
+ *         new_qty = self.qty + other.qty
+ *         new_quote_qty = self.quote_qty + other.quote_qty
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.__add__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_new_qty);
+  __Pyx_XDECREF(__pyx_v_new_quote_qty);
+  __Pyx_XDECREF(__pyx_v_new_price);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":122
+ *         return Sell(self.timestamp, new_qty, new_price)
  * 
  *     cdef void _calculate(self, double amount):             # <<<<<<<<<<<<<<
  *         self.data.qty = amount
@@ -7530,7 +8209,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_2__repr__(stru
 static void __pyx_f_3src_8analysis_6models_9portfolio_4Sell__calculate(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, double __pyx_v_amount) {
   double __pyx_v_gross_quote;
 
-  /* "src/analysis/models/portfolio.pyx":131
+  /* "src/analysis/models/portfolio.pyx":123
  * 
  *     cdef void _calculate(self, double amount):
  *         self.data.qty = amount             # <<<<<<<<<<<<<<
@@ -7539,7 +8218,7 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_4Sell__calculate(struct __
  */
   __pyx_v_self->__pyx_base.data.qty = __pyx_v_amount;
 
-  /* "src/analysis/models/portfolio.pyx":132
+  /* "src/analysis/models/portfolio.pyx":124
  *     cdef void _calculate(self, double amount):
  *         self.data.qty = amount
  *         cdef double gross_quote = amount * self.data.price             # <<<<<<<<<<<<<<
@@ -7548,7 +8227,7 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_4Sell__calculate(struct __
  */
   __pyx_v_gross_quote = (__pyx_v_amount * __pyx_v_self->__pyx_base.data.price);
 
-  /* "src/analysis/models/portfolio.pyx":133
+  /* "src/analysis/models/portfolio.pyx":125
  *         self.data.qty = amount
  *         cdef double gross_quote = amount * self.data.price
  *         self.data.fee = gross_quote * fee_rate             # <<<<<<<<<<<<<<
@@ -7557,7 +8236,7 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_4Sell__calculate(struct __
  */
   __pyx_v_self->__pyx_base.data.fee = (__pyx_v_gross_quote * __pyx_v_3src_8analysis_6models_9portfolio_fee_rate);
 
-  /* "src/analysis/models/portfolio.pyx":134
+  /* "src/analysis/models/portfolio.pyx":126
  *         cdef double gross_quote = amount * self.data.price
  *         self.data.fee = gross_quote * fee_rate
  *         self.data.slippage = gross_quote * slippage_rate             # <<<<<<<<<<<<<<
@@ -7566,7 +8245,7 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_4Sell__calculate(struct __
  */
   __pyx_v_self->__pyx_base.data.slippage = (__pyx_v_gross_quote * __pyx_v_3src_8analysis_6models_9portfolio_slippage_rate);
 
-  /* "src/analysis/models/portfolio.pyx":135
+  /* "src/analysis/models/portfolio.pyx":127
  *         self.data.fee = gross_quote * fee_rate
  *         self.data.slippage = gross_quote * slippage_rate
  *         self.data.quote_qty = gross_quote - self.data.fee - self.data.slippage             # <<<<<<<<<<<<<<
@@ -7575,8 +8254,8 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_4Sell__calculate(struct __
  */
   __pyx_v_self->__pyx_base.data.quote_qty = ((__pyx_v_gross_quote - __pyx_v_self->__pyx_base.data.fee) - __pyx_v_self->__pyx_base.data.slippage);
 
-  /* "src/analysis/models/portfolio.pyx":130
- *         )
+  /* "src/analysis/models/portfolio.pyx":122
+ *         return Sell(self.timestamp, new_qty, new_price)
  * 
  *     cdef void _calculate(self, double amount):             # <<<<<<<<<<<<<<
  *         self.data.qty = amount
@@ -7586,7 +8265,7 @@ static void __pyx_f_3src_8analysis_6models_9portfolio_4Sell__calculate(struct __
   /* function exit code */
 }
 
-/* "src/analysis/models/portfolio.pyx":137
+/* "src/analysis/models/portfolio.pyx":129
  *         self.data.quote_qty = gross_quote - self.data.fee - self.data.slippage
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -7614,19 +8293,19 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_4type___get__(
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "src/analysis/models/portfolio.pyx":139
+  /* "src/analysis/models/portfolio.pyx":131
  *     @property
  *     def type(self) -> str:
  *         return "BUY"             # <<<<<<<<<<<<<<
  * 
- * 
+ *     @property
  */
   __Pyx_XDECREF(__pyx_r);
   __Pyx_INCREF(__pyx_n_u_BUY);
   __pyx_r = __pyx_n_u_BUY;
   goto __pyx_L0;
 
-  /* "src/analysis/models/portfolio.pyx":137
+  /* "src/analysis/models/portfolio.pyx":129
  *         self.data.quote_qty = gross_quote - self.data.fee - self.data.slippage
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -7641,22 +8320,528 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_4type___get__(
   return __pyx_r;
 }
 
+/* "src/analysis/models/portfolio.pyx":133
+ *         return "BUY"
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def timestamp(self):
+ *         return self.data.timestamp
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_9timestamp_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_9timestamp_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_9timestamp___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_9timestamp___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":135
+ *     @property
+ *     def timestamp(self):
+ *         return self.data.timestamp             # <<<<<<<<<<<<<<
+ * 
+ *     @property
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __Pyx_PyInt_From_npy_int64(__pyx_v_self->__pyx_base.data.timestamp); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 135, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":133
+ *         return "BUY"
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def timestamp(self):
+ *         return self.data.timestamp
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.timestamp.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":137
+ *         return self.data.timestamp
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def qty(self):
+ *         return self.data.qty
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3qty_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3qty_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_3qty___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_3qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":139
+ *     @property
+ *     def qty(self):
+ *         return self.data.qty             # <<<<<<<<<<<<<<
+ * 
+ *     @property
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 139, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":137
+ *         return self.data.timestamp
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def qty(self):
+ *         return self.data.qty
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.qty.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":141
+ *         return self.data.qty
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def price(self):
+ *         return self.data.price
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_5price_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_5price_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_5price___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_5price___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":143
+ *     @property
+ *     def price(self):
+ *         return self.data.price             # <<<<<<<<<<<<<<
+ * 
+ *     @property
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.price); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 143, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":141
+ *         return self.data.qty
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def price(self):
+ *         return self.data.price
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.price.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":145
+ *         return self.data.price
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def quote_qty(self):
+ *         return self.data.quote_qty
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_9quote_qty_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_9quote_qty_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_9quote_qty___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_9quote_qty___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":147
+ *     @property
+ *     def quote_qty(self):
+ *         return self.data.quote_qty             # <<<<<<<<<<<<<<
+ * 
+ *     @property
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.quote_qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 147, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":145
+ *         return self.data.price
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def quote_qty(self):
+ *         return self.data.quote_qty
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.quote_qty.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":149
+ *         return self.data.quote_qty
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def fee(self):
+ *         return self.data.fee
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3fee_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3fee_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_3fee___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_3fee___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":151
+ *     @property
+ *     def fee(self):
+ *         return self.data.fee             # <<<<<<<<<<<<<<
+ * 
+ *     @fee.setter
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.fee); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 151, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":149
+ *         return self.data.quote_qty
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def fee(self):
+ *         return self.data.fee
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.fee.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":153
+ *         return self.data.fee
+ * 
+ *     @fee.setter             # <<<<<<<<<<<<<<
+ *     def fee(self, value):
+ *         self.data.fee = value
+ */
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3fee_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3fee_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_3fee_2__set__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_3fee_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  double __pyx_t_1;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+
+  /* "src/analysis/models/portfolio.pyx":155
+ *     @fee.setter
+ *     def fee(self, value):
+ *         self.data.fee = value             # <<<<<<<<<<<<<<
+ * 
+ *     @property
+ */
+  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 155, __pyx_L1_error)
+  __pyx_v_self->__pyx_base.data.fee = __pyx_t_1;
+
+  /* "src/analysis/models/portfolio.pyx":153
+ *         return self.data.fee
+ * 
+ *     @fee.setter             # <<<<<<<<<<<<<<
+ *     def fee(self, value):
+ *         self.data.fee = value
+ */
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.fee.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":157
+ *         self.data.fee = value
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def slippage(self):
+ *         return self.data.slippage
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_8slippage_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_8slippage_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_8slippage___get__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_8slippage___get__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+
+  /* "src/analysis/models/portfolio.pyx":159
+ *     @property
+ *     def slippage(self):
+ *         return self.data.slippage             # <<<<<<<<<<<<<<
+ * 
+ *     @slippage.setter
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->__pyx_base.data.slippage); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 159, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":157
+ *         self.data.fee = value
+ * 
+ *     @property             # <<<<<<<<<<<<<<
+ *     def slippage(self):
+ *         return self.data.slippage
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.slippage.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":161
+ *         return self.data.slippage
+ * 
+ *     @slippage.setter             # <<<<<<<<<<<<<<
+ *     def slippage(self, value):
+ *         self.data.slippage = value
+ */
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_8slippage_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_8slippage_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_8slippage_2__set__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_8slippage_2__set__(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  double __pyx_t_1;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+
+  /* "src/analysis/models/portfolio.pyx":163
+ *     @slippage.setter
+ *     def slippage(self, value):
+ *         self.data.slippage = value             # <<<<<<<<<<<<<<
+ * 
+ * 
+ */
+  __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_v_value); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 163, __pyx_L1_error)
+  __pyx_v_self->__pyx_base.data.slippage = __pyx_t_1;
+
+  /* "src/analysis/models/portfolio.pyx":161
+ *         return self.data.slippage
+ * 
+ *     @slippage.setter             # <<<<<<<<<<<<<<
+ *     def slippage(self, value):
+ *         self.data.slippage = value
+ */
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Sell.slippage.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  return __pyx_r;
+}
+
 /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_5__reduce_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_7__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_4Sell_5__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_5__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_5__reduce_cython__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_4Sell_7__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_7__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_7__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -7681,14 +8866,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   if (unlikely(__pyx_nargs > 0)) {
     __Pyx_RaiseArgtupleInvalid("__reduce_cython__", 1, 0, 0, __pyx_nargs); return NULL;}
   if (unlikely(__pyx_kwds) && __Pyx_NumKwargs_FASTCALL(__pyx_kwds) && unlikely(!__Pyx_CheckKeywordStrings(__pyx_kwds, "__reduce_cython__", 0))) return NULL;
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_4__reduce_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self));
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_6__reduce_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_4__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self) {
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_6__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -7698,16 +8883,16 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_4__reduce_cyth
 
   /* "(tree fragment)":2
  * def __reduce_cython__(self):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"             # <<<<<<<<<<<<<<
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"             # <<<<<<<<<<<<<<
  * def __setstate_cython__(self, __pyx_state):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
-  __Pyx_Raise(__pyx_builtin_TypeError, __pyx_kp_s_Pickling_of_struct_members_such, 0, 0);
-  __PYX_ERR(2, 2, __pyx_L1_error)
+  __Pyx_Raise(__pyx_builtin_TypeError, __pyx_kp_s_no_default___reduce___due_to_non, 0, 0);
+  __PYX_ERR(0, 2, __pyx_L1_error)
 
   /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
  */
 
@@ -7722,21 +8907,21 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_4__reduce_cyth
 
 /* "(tree fragment)":3
  * def __reduce_cython__(self):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_7__setstate_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_9__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_4Sell_7__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_7__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_7__setstate_cython__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_4Sell_9__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_9__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_9__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -7780,12 +8965,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(2, 3, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 3, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__setstate_cython__") < 0)) __PYX_ERR(2, 3, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__setstate_cython__") < 0)) __PYX_ERR(0, 3, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -7796,7 +8981,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__setstate_cython__", 1, 1, 1, __pyx_nargs); __PYX_ERR(2, 3, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__setstate_cython__", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 3, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -7810,7 +8995,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_6__setstate_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self), __pyx_v___pyx_state);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_4Sell_8__setstate_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)__pyx_v_self), __pyx_v___pyx_state);
 
   /* function exit code */
   {
@@ -7823,7 +9008,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_6__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_8__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -7832,18 +9017,18 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_6__setstate_cy
   __Pyx_RefNannySetupContext("__setstate_cython__", 1);
 
   /* "(tree fragment)":4
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"             # <<<<<<<<<<<<<<
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"             # <<<<<<<<<<<<<<
  */
-  __Pyx_Raise(__pyx_builtin_TypeError, __pyx_kp_s_Pickling_of_struct_members_such, 0, 0);
-  __PYX_ERR(2, 4, __pyx_L1_error)
+  __Pyx_Raise(__pyx_builtin_TypeError, __pyx_kp_s_no_default___reduce___due_to_non, 0, 0);
+  __PYX_ERR(0, 4, __pyx_L1_error)
 
   /* "(tree fragment)":3
  * def __reduce_cython__(self):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
 
   /* function exit code */
@@ -7855,7 +9040,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_4Sell_6__setstate_cy
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":154
+/* "src/analysis/models/portfolio.pyx":178
  *         readonly double realized_pnl
  * 
  *     def __cinit__(self, str symbol):             # <<<<<<<<<<<<<<
@@ -7899,12 +9084,12 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_8Position_1__cinit__(PyObj
           (void)__Pyx_Arg_NewRef_VARARGS(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 154, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 178, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__cinit__") < 0)) __PYX_ERR(0, 154, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__cinit__") < 0)) __PYX_ERR(1, 178, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -7915,7 +9100,7 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_8Position_1__cinit__(PyObj
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 154, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__cinit__", 1, 1, 1, __pyx_nargs); __PYX_ERR(1, 178, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -7929,7 +9114,7 @@ static int __pyx_pw_3src_8analysis_6models_9portfolio_8Position_1__cinit__(PyObj
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_symbol), (&PyUnicode_Type), 1, "symbol", 1))) __PYX_ERR(0, 154, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_symbol), (&PyUnicode_Type), 1, "symbol", 1))) __PYX_ERR(1, 178, __pyx_L1_error)
   __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_8Position___cinit__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self), __pyx_v_symbol);
 
   /* function exit code */
@@ -7956,14 +9141,14 @@ static int __pyx_pf_3src_8analysis_6models_9portfolio_8Position___cinit__(struct
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__cinit__", 1);
 
-  /* "src/analysis/models/portfolio.pyx":155
+  /* "src/analysis/models/portfolio.pyx":179
  * 
  *     def __cinit__(self, str symbol):
  *         self.buys = []             # <<<<<<<<<<<<<<
  *         self.sells = []
  * 
  */
-  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 155, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 179, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->buys);
@@ -7971,14 +9156,14 @@ static int __pyx_pf_3src_8analysis_6models_9portfolio_8Position___cinit__(struct
   __pyx_v_self->buys = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "src/analysis/models/portfolio.pyx":156
+  /* "src/analysis/models/portfolio.pyx":180
  *     def __cinit__(self, str symbol):
  *         self.buys = []
  *         self.sells = []             # <<<<<<<<<<<<<<
  * 
  *         self.symbol = symbol
  */
-  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 156, __pyx_L1_error)
+  __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 180, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
   __Pyx_GOTREF(__pyx_v_self->sells);
@@ -7986,7 +9171,7 @@ static int __pyx_pf_3src_8analysis_6models_9portfolio_8Position___cinit__(struct
   __pyx_v_self->sells = ((PyObject*)__pyx_t_1);
   __pyx_t_1 = 0;
 
-  /* "src/analysis/models/portfolio.pyx":158
+  /* "src/analysis/models/portfolio.pyx":182
  *         self.sells = []
  * 
  *         self.symbol = symbol             # <<<<<<<<<<<<<<
@@ -7999,7 +9184,7 @@ static int __pyx_pf_3src_8analysis_6models_9portfolio_8Position___cinit__(struct
   __Pyx_DECREF(__pyx_v_self->symbol);
   __pyx_v_self->symbol = __pyx_v_symbol;
 
-  /* "src/analysis/models/portfolio.pyx":159
+  /* "src/analysis/models/portfolio.pyx":183
  * 
  *         self.symbol = symbol
  *         self.current_qty = 0.0             # <<<<<<<<<<<<<<
@@ -8008,7 +9193,7 @@ static int __pyx_pf_3src_8analysis_6models_9portfolio_8Position___cinit__(struct
  */
   __pyx_v_self->current_qty = 0.0;
 
-  /* "src/analysis/models/portfolio.pyx":160
+  /* "src/analysis/models/portfolio.pyx":184
  *         self.symbol = symbol
  *         self.current_qty = 0.0
  *         self.average_entry_price = 0.0             # <<<<<<<<<<<<<<
@@ -8017,7 +9202,7 @@ static int __pyx_pf_3src_8analysis_6models_9portfolio_8Position___cinit__(struct
  */
   __pyx_v_self->average_entry_price = 0.0;
 
-  /* "src/analysis/models/portfolio.pyx":161
+  /* "src/analysis/models/portfolio.pyx":185
  *         self.current_qty = 0.0
  *         self.average_entry_price = 0.0
  *         self.realized_pnl = 0.0             # <<<<<<<<<<<<<<
@@ -8026,7 +9211,7 @@ static int __pyx_pf_3src_8analysis_6models_9portfolio_8Position___cinit__(struct
  */
   __pyx_v_self->realized_pnl = 0.0;
 
-  /* "src/analysis/models/portfolio.pyx":154
+  /* "src/analysis/models/portfolio.pyx":178
  *         readonly double realized_pnl
  * 
  *     def __cinit__(self, str symbol):             # <<<<<<<<<<<<<<
@@ -8046,7 +9231,7 @@ static int __pyx_pf_3src_8analysis_6models_9portfolio_8Position___cinit__(struct
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":163
+/* "src/analysis/models/portfolio.pyx":187
  *         self.realized_pnl = 0.0
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -8082,7 +9267,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_2__repr__(
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__repr__", 1);
 
-  /* "src/analysis/models/portfolio.pyx":164
+  /* "src/analysis/models/portfolio.pyx":188
  * 
  *     def __repr__(self):
  *         return (             # <<<<<<<<<<<<<<
@@ -8091,14 +9276,14 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_2__repr__(
  */
   __Pyx_XDECREF(__pyx_r);
 
-  /* "src/analysis/models/portfolio.pyx":165
+  /* "src/analysis/models/portfolio.pyx":189
  *     def __repr__(self):
  *         return (
  *             f"Position(symbol={self.symbol}, current_qty={self.current_qty}, "             # <<<<<<<<<<<<<<
  *             f"average_entry_price={self.average_entry_price:.2f}, "
  *             f"realized_pnl={self.realized_pnl:.2f})"
  */
-  __pyx_t_1 = PyTuple_New(9); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 165, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_New(9); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_t_2 = 0;
   __pyx_t_3 = 127;
@@ -8106,7 +9291,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_2__repr__(
   __pyx_t_2 += 16;
   __Pyx_GIVEREF(__pyx_kp_u_Position_symbol);
   PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_kp_u_Position_symbol);
-  __pyx_t_4 = __Pyx_PyUnicode_Unicode(__pyx_v_self->symbol); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 165, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyUnicode_Unicode(__pyx_v_self->symbol); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) : __pyx_t_3;
   __pyx_t_2 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_4);
@@ -8117,9 +9302,9 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_2__repr__(
   __pyx_t_2 += 14;
   __Pyx_GIVEREF(__pyx_kp_u_current_qty);
   PyTuple_SET_ITEM(__pyx_t_1, 2, __pyx_kp_u_current_qty);
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->current_qty); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 165, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->current_qty); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_PyObject_FormatSimple(__pyx_t_4, __pyx_empty_unicode); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 165, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_FormatSimple(__pyx_t_4, __pyx_empty_unicode); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_5) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_5) : __pyx_t_3;
@@ -8132,16 +9317,16 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_2__repr__(
   __Pyx_GIVEREF(__pyx_kp_u_average_entry_price);
   PyTuple_SET_ITEM(__pyx_t_1, 4, __pyx_kp_u_average_entry_price);
 
-  /* "src/analysis/models/portfolio.pyx":166
+  /* "src/analysis/models/portfolio.pyx":190
  *         return (
  *             f"Position(symbol={self.symbol}, current_qty={self.current_qty}, "
  *             f"average_entry_price={self.average_entry_price:.2f}, "             # <<<<<<<<<<<<<<
  *             f"realized_pnl={self.realized_pnl:.2f})"
  *         )
  */
-  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_self->average_entry_price); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 166, __pyx_L1_error)
+  __pyx_t_5 = PyFloat_FromDouble(__pyx_v_self->average_entry_price); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 190, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_4 = __Pyx_PyObject_Format(__pyx_t_5, __pyx_kp_u_2f); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 166, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_Format(__pyx_t_5, __pyx_kp_u_2f); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 190, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) : __pyx_t_3;
@@ -8154,16 +9339,16 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_2__repr__(
   __Pyx_GIVEREF(__pyx_kp_u_realized_pnl);
   PyTuple_SET_ITEM(__pyx_t_1, 6, __pyx_kp_u_realized_pnl);
 
-  /* "src/analysis/models/portfolio.pyx":167
+  /* "src/analysis/models/portfolio.pyx":191
  *             f"Position(symbol={self.symbol}, current_qty={self.current_qty}, "
  *             f"average_entry_price={self.average_entry_price:.2f}, "
  *             f"realized_pnl={self.realized_pnl:.2f})"             # <<<<<<<<<<<<<<
  *         )
  * 
  */
-  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->realized_pnl); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 167, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->realized_pnl); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 191, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_PyObject_Format(__pyx_t_4, __pyx_kp_u_2f); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 167, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_Format(__pyx_t_4, __pyx_kp_u_2f); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 191, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_t_3 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_5) > __pyx_t_3) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_5) : __pyx_t_3;
@@ -8171,26 +9356,26 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_2__repr__(
   __Pyx_GIVEREF(__pyx_t_5);
   PyTuple_SET_ITEM(__pyx_t_1, 7, __pyx_t_5);
   __pyx_t_5 = 0;
-  __Pyx_INCREF(__pyx_kp_u__4);
+  __Pyx_INCREF(__pyx_kp_u__9);
   __pyx_t_2 += 1;
-  __Pyx_GIVEREF(__pyx_kp_u__4);
-  PyTuple_SET_ITEM(__pyx_t_1, 8, __pyx_kp_u__4);
+  __Pyx_GIVEREF(__pyx_kp_u__9);
+  PyTuple_SET_ITEM(__pyx_t_1, 8, __pyx_kp_u__9);
 
-  /* "src/analysis/models/portfolio.pyx":165
+  /* "src/analysis/models/portfolio.pyx":189
  *     def __repr__(self):
  *         return (
  *             f"Position(symbol={self.symbol}, current_qty={self.current_qty}, "             # <<<<<<<<<<<<<<
  *             f"average_entry_price={self.average_entry_price:.2f}, "
  *             f"realized_pnl={self.realized_pnl:.2f})"
  */
-  __pyx_t_5 = __Pyx_PyUnicode_Join(__pyx_t_1, 9, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 165, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyUnicode_Join(__pyx_t_1, 9, __pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 189, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_r = __pyx_t_5;
   __pyx_t_5 = 0;
   goto __pyx_L0;
 
-  /* "src/analysis/models/portfolio.pyx":163
+  /* "src/analysis/models/portfolio.pyx":187
  *         self.realized_pnl = 0.0
  * 
  *     def __repr__(self):             # <<<<<<<<<<<<<<
@@ -8211,1034 +9396,11 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_2__repr__(
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":170
+/* "src/analysis/models/portfolio.pyx":194
  *         )
- * 
- *     cpdef void add_action(self, Action action):             # <<<<<<<<<<<<<<
- *         self._add_action(action)
- * 
- */
-
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_5add_action(PyObject *__pyx_v_self, 
-#if CYTHON_METH_FASTCALL
-PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
-#else
-PyObject *__pyx_args, PyObject *__pyx_kwds
-#endif
-); /*proto*/
-static void __pyx_f_3src_8analysis_6models_9portfolio_8Position_add_action(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_action, int __pyx_skip_dispatch) {
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  PyObject *__pyx_t_2 = NULL;
-  PyObject *__pyx_t_3 = NULL;
-  PyObject *__pyx_t_4 = NULL;
-  unsigned int __pyx_t_5;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("add_action", 1);
-  /* Check if called by wrapper */
-  if (unlikely(__pyx_skip_dispatch)) ;
-  /* Check if overridden in Python */
-  else if (unlikely((Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0) || __Pyx_PyType_HasFeature(Py_TYPE(((PyObject *)__pyx_v_self)), (Py_TPFLAGS_IS_ABSTRACT | Py_TPFLAGS_HEAPTYPE)))) {
-    #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
-    static PY_UINT64_T __pyx_tp_dict_version = __PYX_DICT_VERSION_INIT, __pyx_obj_dict_version = __PYX_DICT_VERSION_INIT;
-    if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
-      PY_UINT64_T __pyx_typedict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
-      #endif
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_add_action); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 170, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_1);
-      if (!__Pyx_IsSameCFunction(__pyx_t_1, (void*) __pyx_pw_3src_8analysis_6models_9portfolio_8Position_5add_action)) {
-        __Pyx_INCREF(__pyx_t_1);
-        __pyx_t_3 = __pyx_t_1; __pyx_t_4 = NULL;
-        __pyx_t_5 = 0;
-        #if CYTHON_UNPACK_METHODS
-        if (unlikely(PyMethod_Check(__pyx_t_3))) {
-          __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
-          if (likely(__pyx_t_4)) {
-            PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
-            __Pyx_INCREF(__pyx_t_4);
-            __Pyx_INCREF(function);
-            __Pyx_DECREF_SET(__pyx_t_3, function);
-            __pyx_t_5 = 1;
-          }
-        }
-        #endif
-        {
-          PyObject *__pyx_callargs[2] = {__pyx_t_4, ((PyObject *)__pyx_v_action)};
-          __pyx_t_2 = __Pyx_PyObject_FastCall(__pyx_t_3, __pyx_callargs+1-__pyx_t_5, 1+__pyx_t_5);
-          __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-          if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 170, __pyx_L1_error)
-          __Pyx_GOTREF(__pyx_t_2);
-          __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-        }
-        __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-        goto __pyx_L0;
-      }
-      #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
-      __pyx_tp_dict_version = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
-      __pyx_obj_dict_version = __Pyx_get_object_dict_version(((PyObject *)__pyx_v_self));
-      if (unlikely(__pyx_typedict_guard != __pyx_tp_dict_version)) {
-        __pyx_tp_dict_version = __pyx_obj_dict_version = __PYX_DICT_VERSION_INIT;
-      }
-      #endif
-      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
-    }
-    #endif
-  }
-
-  /* "src/analysis/models/portfolio.pyx":171
- * 
- *     cpdef void add_action(self, Action action):
- *         self._add_action(action)             # <<<<<<<<<<<<<<
- * 
- *     cdef void _add_action(self, Action action):
- */
-  ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self->__pyx_vtab)->_add_action(__pyx_v_self, __pyx_v_action); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 171, __pyx_L1_error)
-
-  /* "src/analysis/models/portfolio.pyx":170
- *         )
- * 
- *     cpdef void add_action(self, Action action):             # <<<<<<<<<<<<<<
- *         self._add_action(action)
- * 
- */
-
-  /* function exit code */
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.add_action", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
-}
-
-/* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_5add_action(PyObject *__pyx_v_self, 
-#if CYTHON_METH_FASTCALL
-PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
-#else
-PyObject *__pyx_args, PyObject *__pyx_kwds
-#endif
-); /*proto*/
-static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_8Position_5add_action = {"add_action", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_5add_action, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_5add_action(PyObject *__pyx_v_self, 
-#if CYTHON_METH_FASTCALL
-PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
-#else
-PyObject *__pyx_args, PyObject *__pyx_kwds
-#endif
-) {
-  struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_action = 0;
-  #if !CYTHON_METH_FASTCALL
-  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
-  #endif
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject* values[1] = {0};
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("add_action (wrapper)", 0);
-  #if !CYTHON_METH_FASTCALL
-  #if CYTHON_ASSUME_SAFE_MACROS
-  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
-  #else
-  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
-  #endif
-  #endif
-  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
-  {
-    PyObject **__pyx_pyargnames[] = {&__pyx_n_s_action,0};
-    if (__pyx_kwds) {
-      Py_ssize_t kw_args;
-      switch (__pyx_nargs) {
-        case  1: values[0] = __Pyx_Arg_FASTCALL(__pyx_args, 0);
-        CYTHON_FALLTHROUGH;
-        case  0: break;
-        default: goto __pyx_L5_argtuple_error;
-      }
-      kw_args = __Pyx_NumKwargs_FASTCALL(__pyx_kwds);
-      switch (__pyx_nargs) {
-        case  0:
-        if (likely((values[0] = __Pyx_GetKwValue_FASTCALL(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_action)) != 0)) {
-          (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
-          kw_args--;
-        }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 170, __pyx_L3_error)
-        else goto __pyx_L5_argtuple_error;
-      }
-      if (unlikely(kw_args > 0)) {
-        const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "add_action") < 0)) __PYX_ERR(0, 170, __pyx_L3_error)
-      }
-    } else if (unlikely(__pyx_nargs != 1)) {
-      goto __pyx_L5_argtuple_error;
-    } else {
-      values[0] = __Pyx_Arg_FASTCALL(__pyx_args, 0);
-    }
-    __pyx_v_action = ((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)values[0]);
-  }
-  goto __pyx_L6_skip;
-  __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("add_action", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 170, __pyx_L3_error)
-  __pyx_L6_skip:;
-  goto __pyx_L4_argument_unpacking_done;
-  __pyx_L3_error:;
-  {
-    Py_ssize_t __pyx_temp;
-    for (__pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
-      __Pyx_Arg_XDECREF_FASTCALL(values[__pyx_temp]);
-    }
-  }
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.add_action", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __Pyx_RefNannyFinishContext();
-  return NULL;
-  __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_action), __pyx_ptype_3src_8analysis_6models_9portfolio_Action, 1, "action", 0))) __PYX_ERR(0, 170, __pyx_L1_error)
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_8Position_4add_action(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self), __pyx_v_action);
-
-  /* function exit code */
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __pyx_r = NULL;
-  __pyx_L0:;
-  {
-    Py_ssize_t __pyx_temp;
-    for (__pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
-      __Pyx_Arg_XDECREF_FASTCALL(values[__pyx_temp]);
-    }
-  }
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_4add_action(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_action) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("add_action", 1);
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_f_3src_8analysis_6models_9portfolio_8Position_add_action(__pyx_v_self, __pyx_v_action, 1); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 170, __pyx_L1_error)
-  __pyx_t_1 = __Pyx_void_to_None(NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 170, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.add_action", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "src/analysis/models/portfolio.pyx":173
- *         self._add_action(action)
- * 
- *     cdef void _add_action(self, Action action):             # <<<<<<<<<<<<<<
- *         """Adds a new buy or sell action to the position."""
- *         if isinstance(action, Buy):
- */
-
-static void __pyx_f_3src_8analysis_6models_9portfolio_8Position__add_action(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_action) {
-  int __pyx_t_1;
-  int __pyx_t_2;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-
-  /* "src/analysis/models/portfolio.pyx":175
- *     cdef void _add_action(self, Action action):
- *         """Adds a new buy or sell action to the position."""
- *         if isinstance(action, Buy):             # <<<<<<<<<<<<<<
- *             self.buys.append(action)
- *         elif isinstance(action, Sell):
- */
-  __pyx_t_1 = __Pyx_TypeCheck(((PyObject *)__pyx_v_action), __pyx_ptype_3src_8analysis_6models_9portfolio_Buy); 
-  if (__pyx_t_1) {
-
-    /* "src/analysis/models/portfolio.pyx":176
- *         """Adds a new buy or sell action to the position."""
- *         if isinstance(action, Buy):
- *             self.buys.append(action)             # <<<<<<<<<<<<<<
- *         elif isinstance(action, Sell):
- *             self.sells.append(action)
- */
-    if (unlikely(__pyx_v_self->buys == Py_None)) {
-      PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "append");
-      __PYX_ERR(0, 176, __pyx_L1_error)
-    }
-    __pyx_t_2 = __Pyx_PyList_Append(__pyx_v_self->buys, ((PyObject *)__pyx_v_action)); if (unlikely(__pyx_t_2 == ((int)-1))) __PYX_ERR(0, 176, __pyx_L1_error)
-
-    /* "src/analysis/models/portfolio.pyx":175
- *     cdef void _add_action(self, Action action):
- *         """Adds a new buy or sell action to the position."""
- *         if isinstance(action, Buy):             # <<<<<<<<<<<<<<
- *             self.buys.append(action)
- *         elif isinstance(action, Sell):
- */
-    goto __pyx_L3;
-  }
-
-  /* "src/analysis/models/portfolio.pyx":177
- *         if isinstance(action, Buy):
- *             self.buys.append(action)
- *         elif isinstance(action, Sell):             # <<<<<<<<<<<<<<
- *             self.sells.append(action)
- *         self._update_position(action)
- */
-  __pyx_t_1 = __Pyx_TypeCheck(((PyObject *)__pyx_v_action), __pyx_ptype_3src_8analysis_6models_9portfolio_Sell); 
-  if (__pyx_t_1) {
-
-    /* "src/analysis/models/portfolio.pyx":178
- *             self.buys.append(action)
- *         elif isinstance(action, Sell):
- *             self.sells.append(action)             # <<<<<<<<<<<<<<
- *         self._update_position(action)
- * 
- */
-    if (unlikely(__pyx_v_self->sells == Py_None)) {
-      PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "append");
-      __PYX_ERR(0, 178, __pyx_L1_error)
-    }
-    __pyx_t_2 = __Pyx_PyList_Append(__pyx_v_self->sells, ((PyObject *)__pyx_v_action)); if (unlikely(__pyx_t_2 == ((int)-1))) __PYX_ERR(0, 178, __pyx_L1_error)
-
-    /* "src/analysis/models/portfolio.pyx":177
- *         if isinstance(action, Buy):
- *             self.buys.append(action)
- *         elif isinstance(action, Sell):             # <<<<<<<<<<<<<<
- *             self.sells.append(action)
- *         self._update_position(action)
- */
-  }
-  __pyx_L3:;
-
-  /* "src/analysis/models/portfolio.pyx":179
- *         elif isinstance(action, Sell):
- *             self.sells.append(action)
- *         self._update_position(action)             # <<<<<<<<<<<<<<
- * 
- *     cdef void close(self, np.int64_t timestamp, double price):
- */
-  ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self->__pyx_vtab)->_update_position(__pyx_v_self, __pyx_v_action); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 179, __pyx_L1_error)
-
-  /* "src/analysis/models/portfolio.pyx":173
- *         self._add_action(action)
- * 
- *     cdef void _add_action(self, Action action):             # <<<<<<<<<<<<<<
- *         """Adds a new buy or sell action to the position."""
- *         if isinstance(action, Buy):
- */
-
-  /* function exit code */
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Position._add_action", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_L0:;
-}
-
-/* "src/analysis/models/portfolio.pyx":181
- *         self._update_position(action)
- * 
- *     cdef void close(self, np.int64_t timestamp, double price):             # <<<<<<<<<<<<<<
- *         if self.current_qty > 0:
- *             self.add_action(Sell(timestamp, self.current_qty, price))
- */
-
-static void __pyx_f_3src_8analysis_6models_9portfolio_8Position_close(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_price) {
-  __Pyx_RefNannyDeclarations
-  int __pyx_t_1;
-  PyObject *__pyx_t_2 = NULL;
-  PyObject *__pyx_t_3 = NULL;
-  PyObject *__pyx_t_4 = NULL;
-  PyObject *__pyx_t_5 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("close", 1);
-
-  /* "src/analysis/models/portfolio.pyx":182
- * 
- *     cdef void close(self, np.int64_t timestamp, double price):
- *         if self.current_qty > 0:             # <<<<<<<<<<<<<<
- *             self.add_action(Sell(timestamp, self.current_qty, price))
- *         if self.current_qty < 0:
- */
-  __pyx_t_1 = (__pyx_v_self->current_qty > 0.0);
-  if (__pyx_t_1) {
-
-    /* "src/analysis/models/portfolio.pyx":183
- *     cdef void close(self, np.int64_t timestamp, double price):
- *         if self.current_qty > 0:
- *             self.add_action(Sell(timestamp, self.current_qty, price))             # <<<<<<<<<<<<<<
- *         if self.current_qty < 0:
- *             self.add_action(Buy(timestamp, self.current_qty, price))
- */
-    __pyx_t_2 = __Pyx_PyInt_From_npy_int64(__pyx_v_timestamp); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 183, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
-    __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->current_qty); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 183, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_4 = PyFloat_FromDouble(__pyx_v_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 183, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_5 = PyTuple_New(3); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 183, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
-    __Pyx_GIVEREF(__pyx_t_2);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_2)) __PYX_ERR(0, 183, __pyx_L1_error);
-    __Pyx_GIVEREF(__pyx_t_3);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_t_3)) __PYX_ERR(0, 183, __pyx_L1_error);
-    __Pyx_GIVEREF(__pyx_t_4);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_5, 2, __pyx_t_4)) __PYX_ERR(0, 183, __pyx_L1_error);
-    __pyx_t_2 = 0;
-    __pyx_t_3 = 0;
-    __pyx_t_4 = 0;
-    __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Sell), __pyx_t_5, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 183, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self->__pyx_vtab)->add_action(__pyx_v_self, ((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_t_4), 0); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 183, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-
-    /* "src/analysis/models/portfolio.pyx":182
- * 
- *     cdef void close(self, np.int64_t timestamp, double price):
- *         if self.current_qty > 0:             # <<<<<<<<<<<<<<
- *             self.add_action(Sell(timestamp, self.current_qty, price))
- *         if self.current_qty < 0:
- */
-  }
-
-  /* "src/analysis/models/portfolio.pyx":184
- *         if self.current_qty > 0:
- *             self.add_action(Sell(timestamp, self.current_qty, price))
- *         if self.current_qty < 0:             # <<<<<<<<<<<<<<
- *             self.add_action(Buy(timestamp, self.current_qty, price))
- * 
- */
-  __pyx_t_1 = (__pyx_v_self->current_qty < 0.0);
-  if (__pyx_t_1) {
-
-    /* "src/analysis/models/portfolio.pyx":185
- *             self.add_action(Sell(timestamp, self.current_qty, price))
- *         if self.current_qty < 0:
- *             self.add_action(Buy(timestamp, self.current_qty, price))             # <<<<<<<<<<<<<<
- * 
- *     cdef void _update_position(self, Action action) except *:
- */
-    __pyx_t_4 = __Pyx_PyInt_From_npy_int64(__pyx_v_timestamp); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 185, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_5 = PyFloat_FromDouble(__pyx_v_self->current_qty); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 185, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_5);
-    __pyx_t_3 = PyFloat_FromDouble(__pyx_v_price); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 185, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_2 = PyTuple_New(3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 185, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
-    __Pyx_GIVEREF(__pyx_t_4);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_4)) __PYX_ERR(0, 185, __pyx_L1_error);
-    __Pyx_GIVEREF(__pyx_t_5);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_t_5)) __PYX_ERR(0, 185, __pyx_L1_error);
-    __Pyx_GIVEREF(__pyx_t_3);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 2, __pyx_t_3)) __PYX_ERR(0, 185, __pyx_L1_error);
-    __pyx_t_4 = 0;
-    __pyx_t_5 = 0;
-    __pyx_t_3 = 0;
-    __pyx_t_3 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Buy), __pyx_t_2, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 185, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_3);
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self->__pyx_vtab)->add_action(__pyx_v_self, ((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)__pyx_t_3), 0); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 185, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-
-    /* "src/analysis/models/portfolio.pyx":184
- *         if self.current_qty > 0:
- *             self.add_action(Sell(timestamp, self.current_qty, price))
- *         if self.current_qty < 0:             # <<<<<<<<<<<<<<
- *             self.add_action(Buy(timestamp, self.current_qty, price))
- * 
- */
-  }
-
-  /* "src/analysis/models/portfolio.pyx":181
- *         self._update_position(action)
- * 
- *     cdef void close(self, np.int64_t timestamp, double price):             # <<<<<<<<<<<<<<
- *         if self.current_qty > 0:
- *             self.add_action(Sell(timestamp, self.current_qty, price))
- */
-
-  /* function exit code */
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_2);
-  __Pyx_XDECREF(__pyx_t_3);
-  __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.close", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_L0:;
-  __Pyx_RefNannyFinishContext();
-}
-
-/* "src/analysis/models/portfolio.pyx":187
- *             self.add_action(Buy(timestamp, self.current_qty, price))
- * 
- *     cdef void _update_position(self, Action action) except *:             # <<<<<<<<<<<<<<
- *         cdef double old_qty = self.current_qty
- *         cdef double old_value = old_qty * self.average_entry_price
- */
-
-static void __pyx_f_3src_8analysis_6models_9portfolio_8Position__update_position(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *__pyx_v_action) {
-  double __pyx_v_old_qty;
-  double __pyx_v_old_value;
-  double __pyx_v_new_qty;
-  PyObject *__pyx_v_new_value = NULL;
-  __Pyx_RefNannyDeclarations
-  double __pyx_t_1;
-  int __pyx_t_2;
-  int __pyx_t_3;
-  PyObject *__pyx_t_4 = NULL;
-  Py_ssize_t __pyx_t_5;
-  Py_UCS4 __pyx_t_6;
-  PyObject *__pyx_t_7 = NULL;
-  PyObject *__pyx_t_8 = NULL;
-  PyObject *__pyx_t_9 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("_update_position", 1);
-
-  /* "src/analysis/models/portfolio.pyx":188
- * 
- *     cdef void _update_position(self, Action action) except *:
- *         cdef double old_qty = self.current_qty             # <<<<<<<<<<<<<<
- *         cdef double old_value = old_qty * self.average_entry_price
- * 
- */
-  __pyx_t_1 = __pyx_v_self->current_qty;
-  __pyx_v_old_qty = __pyx_t_1;
-
-  /* "src/analysis/models/portfolio.pyx":189
- *     cdef void _update_position(self, Action action) except *:
- *         cdef double old_qty = self.current_qty
- *         cdef double old_value = old_qty * self.average_entry_price             # <<<<<<<<<<<<<<
- * 
- *         if isinstance(action, Buy):
- */
-  __pyx_v_old_value = (__pyx_v_old_qty * __pyx_v_self->average_entry_price);
-
-  /* "src/analysis/models/portfolio.pyx":191
- *         cdef double old_value = old_qty * self.average_entry_price
- * 
- *         if isinstance(action, Buy):             # <<<<<<<<<<<<<<
- *             new_qty = self.current_qty + action.data.qty
- * 
- */
-  __pyx_t_2 = __Pyx_TypeCheck(((PyObject *)__pyx_v_action), __pyx_ptype_3src_8analysis_6models_9portfolio_Buy); 
-  if (__pyx_t_2) {
-
-    /* "src/analysis/models/portfolio.pyx":192
- * 
- *         if isinstance(action, Buy):
- *             new_qty = self.current_qty + action.data.qty             # <<<<<<<<<<<<<<
- * 
- *             if old_qty < 0 and new_qty > 0:
- */
-    __pyx_v_new_qty = (__pyx_v_self->current_qty + __pyx_v_action->data.qty);
-
-    /* "src/analysis/models/portfolio.pyx":194
- *             new_qty = self.current_qty + action.data.qty
- * 
- *             if old_qty < 0 and new_qty > 0:             # <<<<<<<<<<<<<<
- *                 raise ValueError(
- *                     f"Buying {action.data.qty} would change this short position to a "
- */
-    __pyx_t_3 = (__pyx_v_old_qty < 0.0);
-    if (__pyx_t_3) {
-    } else {
-      __pyx_t_2 = __pyx_t_3;
-      goto __pyx_L5_bool_binop_done;
-    }
-    __pyx_t_3 = (__pyx_v_new_qty > 0.0);
-    __pyx_t_2 = __pyx_t_3;
-    __pyx_L5_bool_binop_done:;
-    if (unlikely(__pyx_t_2)) {
-
-      /* "src/analysis/models/portfolio.pyx":196
- *             if old_qty < 0 and new_qty > 0:
- *                 raise ValueError(
- *                     f"Buying {action.data.qty} would change this short position to a "             # <<<<<<<<<<<<<<
- *                     f"long position. Use .close() method before opening a new long "
- *                     f"position, or buy a max amount of {abs(self.current_qty)}."
- */
-      __pyx_t_4 = PyTuple_New(5); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 196, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_5 = 0;
-      __pyx_t_6 = 127;
-      __Pyx_INCREF(__pyx_kp_u_Buying);
-      __pyx_t_5 += 7;
-      __Pyx_GIVEREF(__pyx_kp_u_Buying);
-      PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_kp_u_Buying);
-      __pyx_t_7 = PyFloat_FromDouble(__pyx_v_action->data.qty); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 196, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_8 = __Pyx_PyObject_FormatSimple(__pyx_t_7, __pyx_empty_unicode); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 196, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __pyx_t_6 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_8) > __pyx_t_6) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_8) : __pyx_t_6;
-      __pyx_t_5 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_8);
-      __Pyx_GIVEREF(__pyx_t_8);
-      PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_8);
-      __pyx_t_8 = 0;
-      __Pyx_INCREF(__pyx_kp_u_would_change_this_short_positio);
-      __pyx_t_5 += 133;
-      __Pyx_GIVEREF(__pyx_kp_u_would_change_this_short_positio);
-      PyTuple_SET_ITEM(__pyx_t_4, 2, __pyx_kp_u_would_change_this_short_positio);
-
-      /* "src/analysis/models/portfolio.pyx":198
- *                     f"Buying {action.data.qty} would change this short position to a "
- *                     f"long position. Use .close() method before opening a new long "
- *                     f"position, or buy a max amount of {abs(self.current_qty)}."             # <<<<<<<<<<<<<<
- *                 )
- * 
- */
-      __pyx_t_8 = PyFloat_FromDouble(fabs(__pyx_v_self->current_qty)); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 198, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __pyx_t_7 = __Pyx_PyObject_FormatSimple(__pyx_t_8, __pyx_empty_unicode); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 198, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __pyx_t_6 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_7) > __pyx_t_6) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_7) : __pyx_t_6;
-      __pyx_t_5 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_7);
-      __Pyx_GIVEREF(__pyx_t_7);
-      PyTuple_SET_ITEM(__pyx_t_4, 3, __pyx_t_7);
-      __pyx_t_7 = 0;
-      __Pyx_INCREF(__pyx_kp_u__5);
-      __pyx_t_5 += 1;
-      __Pyx_GIVEREF(__pyx_kp_u__5);
-      PyTuple_SET_ITEM(__pyx_t_4, 4, __pyx_kp_u__5);
-
-      /* "src/analysis/models/portfolio.pyx":196
- *             if old_qty < 0 and new_qty > 0:
- *                 raise ValueError(
- *                     f"Buying {action.data.qty} would change this short position to a "             # <<<<<<<<<<<<<<
- *                     f"long position. Use .close() method before opening a new long "
- *                     f"position, or buy a max amount of {abs(self.current_qty)}."
- */
-      __pyx_t_7 = __Pyx_PyUnicode_Join(__pyx_t_4, 5, __pyx_t_5, __pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 196, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-
-      /* "src/analysis/models/portfolio.pyx":195
- * 
- *             if old_qty < 0 and new_qty > 0:
- *                 raise ValueError(             # <<<<<<<<<<<<<<
- *                     f"Buying {action.data.qty} would change this short position to a "
- *                     f"long position. Use .close() method before opening a new long "
- */
-      __pyx_t_4 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_7); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 195, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __Pyx_Raise(__pyx_t_4, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __PYX_ERR(0, 195, __pyx_L1_error)
-
-      /* "src/analysis/models/portfolio.pyx":194
- *             new_qty = self.current_qty + action.data.qty
- * 
- *             if old_qty < 0 and new_qty > 0:             # <<<<<<<<<<<<<<
- *                 raise ValueError(
- *                     f"Buying {action.data.qty} would change this short position to a "
- */
-    }
-
-    /* "src/analysis/models/portfolio.pyx":201
- *                 )
- * 
- *             self.current_qty = new_qty             # <<<<<<<<<<<<<<
- *             new_value = old_value + action.qty * action.data.price
- *             self.average_entry_price = new_value / self.current_qty
- */
-    __pyx_v_self->current_qty = __pyx_v_new_qty;
-
-    /* "src/analysis/models/portfolio.pyx":202
- * 
- *             self.current_qty = new_qty
- *             new_value = old_value + action.qty * action.data.price             # <<<<<<<<<<<<<<
- *             self.average_entry_price = new_value / self.current_qty
- * 
- */
-    __pyx_t_4 = PyFloat_FromDouble(__pyx_v_old_value); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 202, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_7 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_action), __pyx_n_s_qty); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 202, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_8 = PyFloat_FromDouble(__pyx_v_action->data.price); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 202, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_8);
-    __pyx_t_9 = PyNumber_Multiply(__pyx_t_7, __pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 202, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_9);
-    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-    __pyx_t_8 = PyNumber_Add(__pyx_t_4, __pyx_t_9); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 202, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_8);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __pyx_v_new_value = __pyx_t_8;
-    __pyx_t_8 = 0;
-
-    /* "src/analysis/models/portfolio.pyx":203
- *             self.current_qty = new_qty
- *             new_value = old_value + action.qty * action.data.price
- *             self.average_entry_price = new_value / self.current_qty             # <<<<<<<<<<<<<<
- * 
- *         elif isinstance(action, Sell):
- */
-    __pyx_t_8 = PyFloat_FromDouble(__pyx_v_self->current_qty); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 203, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_8);
-    __pyx_t_9 = __Pyx_PyNumber_Divide(__pyx_v_new_value, __pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 203, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_9);
-    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-    __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_t_9); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 203, __pyx_L1_error)
-    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-    __pyx_v_self->average_entry_price = __pyx_t_1;
-
-    /* "src/analysis/models/portfolio.pyx":191
- *         cdef double old_value = old_qty * self.average_entry_price
- * 
- *         if isinstance(action, Buy):             # <<<<<<<<<<<<<<
- *             new_qty = self.current_qty + action.data.qty
- * 
- */
-    goto __pyx_L3;
-  }
-
-  /* "src/analysis/models/portfolio.pyx":205
- *             self.average_entry_price = new_value / self.current_qty
- * 
- *         elif isinstance(action, Sell):             # <<<<<<<<<<<<<<
- *             new_qty = self.current_qty - action.data.qty
- * 
- */
-  __pyx_t_2 = __Pyx_TypeCheck(((PyObject *)__pyx_v_action), __pyx_ptype_3src_8analysis_6models_9portfolio_Sell); 
-  if (__pyx_t_2) {
-
-    /* "src/analysis/models/portfolio.pyx":206
- * 
- *         elif isinstance(action, Sell):
- *             new_qty = self.current_qty - action.data.qty             # <<<<<<<<<<<<<<
- * 
- *             if old_qty > 0 and new_qty < 0:
- */
-    __pyx_v_new_qty = (__pyx_v_self->current_qty - __pyx_v_action->data.qty);
-
-    /* "src/analysis/models/portfolio.pyx":208
- *             new_qty = self.current_qty - action.data.qty
- * 
- *             if old_qty > 0 and new_qty < 0:             # <<<<<<<<<<<<<<
- *                 raise ValueError(
- *                     f"Selling {action.data.qty} would change this long position to a "
- */
-    __pyx_t_3 = (__pyx_v_old_qty > 0.0);
-    if (__pyx_t_3) {
-    } else {
-      __pyx_t_2 = __pyx_t_3;
-      goto __pyx_L8_bool_binop_done;
-    }
-    __pyx_t_3 = (__pyx_v_new_qty < 0.0);
-    __pyx_t_2 = __pyx_t_3;
-    __pyx_L8_bool_binop_done:;
-    if (unlikely(__pyx_t_2)) {
-
-      /* "src/analysis/models/portfolio.pyx":210
- *             if old_qty > 0 and new_qty < 0:
- *                 raise ValueError(
- *                     f"Selling {action.data.qty} would change this long position to a "             # <<<<<<<<<<<<<<
- *                     f"short position. Use .close() method before opening a new short "
- *                     f"position, or sell a max amount of {self.current_qty}."
- */
-      __pyx_t_9 = PyTuple_New(5); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 210, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __pyx_t_5 = 0;
-      __pyx_t_6 = 127;
-      __Pyx_INCREF(__pyx_kp_u_Selling);
-      __pyx_t_5 += 8;
-      __Pyx_GIVEREF(__pyx_kp_u_Selling);
-      PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_kp_u_Selling);
-      __pyx_t_8 = PyFloat_FromDouble(__pyx_v_action->data.qty); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 210, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __pyx_t_4 = __Pyx_PyObject_FormatSimple(__pyx_t_8, __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 210, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __pyx_t_6 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) > __pyx_t_6) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) : __pyx_t_6;
-      __pyx_t_5 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_4);
-      __Pyx_GIVEREF(__pyx_t_4);
-      PyTuple_SET_ITEM(__pyx_t_9, 1, __pyx_t_4);
-      __pyx_t_4 = 0;
-      __Pyx_INCREF(__pyx_kp_u_would_change_this_long_position);
-      __pyx_t_5 += 135;
-      __Pyx_GIVEREF(__pyx_kp_u_would_change_this_long_position);
-      PyTuple_SET_ITEM(__pyx_t_9, 2, __pyx_kp_u_would_change_this_long_position);
-
-      /* "src/analysis/models/portfolio.pyx":212
- *                     f"Selling {action.data.qty} would change this long position to a "
- *                     f"short position. Use .close() method before opening a new short "
- *                     f"position, or sell a max amount of {self.current_qty}."             # <<<<<<<<<<<<<<
- *                 )
- * 
- */
-      __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->current_qty); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 212, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_4);
-      __pyx_t_8 = __Pyx_PyObject_FormatSimple(__pyx_t_4, __pyx_empty_unicode); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 212, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-      __pyx_t_6 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_8) > __pyx_t_6) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_8) : __pyx_t_6;
-      __pyx_t_5 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_8);
-      __Pyx_GIVEREF(__pyx_t_8);
-      PyTuple_SET_ITEM(__pyx_t_9, 3, __pyx_t_8);
-      __pyx_t_8 = 0;
-      __Pyx_INCREF(__pyx_kp_u__5);
-      __pyx_t_5 += 1;
-      __Pyx_GIVEREF(__pyx_kp_u__5);
-      PyTuple_SET_ITEM(__pyx_t_9, 4, __pyx_kp_u__5);
-
-      /* "src/analysis/models/portfolio.pyx":210
- *             if old_qty > 0 and new_qty < 0:
- *                 raise ValueError(
- *                     f"Selling {action.data.qty} would change this long position to a "             # <<<<<<<<<<<<<<
- *                     f"short position. Use .close() method before opening a new short "
- *                     f"position, or sell a max amount of {self.current_qty}."
- */
-      __pyx_t_8 = __Pyx_PyUnicode_Join(__pyx_t_9, 5, __pyx_t_5, __pyx_t_6); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 210, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_8);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-
-      /* "src/analysis/models/portfolio.pyx":209
- * 
- *             if old_qty > 0 and new_qty < 0:
- *                 raise ValueError(             # <<<<<<<<<<<<<<
- *                     f"Selling {action.data.qty} would change this long position to a "
- *                     f"short position. Use .close() method before opening a new short "
- */
-      __pyx_t_9 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 209, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
-      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __PYX_ERR(0, 209, __pyx_L1_error)
-
-      /* "src/analysis/models/portfolio.pyx":208
- *             new_qty = self.current_qty - action.data.qty
- * 
- *             if old_qty > 0 and new_qty < 0:             # <<<<<<<<<<<<<<
- *                 raise ValueError(
- *                     f"Selling {action.data.qty} would change this long position to a "
- */
-    }
-
-    /* "src/analysis/models/portfolio.pyx":215
- *                 )
- * 
- *             self.current_qty = new_qty             # <<<<<<<<<<<<<<
- *             if self.current_qty == 0:
- *                 self.average_entry_price = 0.0
- */
-    __pyx_v_self->current_qty = __pyx_v_new_qty;
-
-    /* "src/analysis/models/portfolio.pyx":216
- * 
- *             self.current_qty = new_qty
- *             if self.current_qty == 0:             # <<<<<<<<<<<<<<
- *                 self.average_entry_price = 0.0
- *             elif self.current_qty * old_qty < 0:  # Position direction changed
- */
-    __pyx_t_2 = (__pyx_v_self->current_qty == 0.0);
-    if (__pyx_t_2) {
-
-      /* "src/analysis/models/portfolio.pyx":217
- *             self.current_qty = new_qty
- *             if self.current_qty == 0:
- *                 self.average_entry_price = 0.0             # <<<<<<<<<<<<<<
- *             elif self.current_qty * old_qty < 0:  # Position direction changed
- *                 self.average_entry_price = action.price
- */
-      __pyx_v_self->average_entry_price = 0.0;
-
-      /* "src/analysis/models/portfolio.pyx":216
- * 
- *             self.current_qty = new_qty
- *             if self.current_qty == 0:             # <<<<<<<<<<<<<<
- *                 self.average_entry_price = 0.0
- *             elif self.current_qty * old_qty < 0:  # Position direction changed
- */
-      goto __pyx_L10;
-    }
-
-    /* "src/analysis/models/portfolio.pyx":218
- *             if self.current_qty == 0:
- *                 self.average_entry_price = 0.0
- *             elif self.current_qty * old_qty < 0:  # Position direction changed             # <<<<<<<<<<<<<<
- *                 self.average_entry_price = action.price
- * 
- */
-    __pyx_t_2 = ((__pyx_v_self->current_qty * __pyx_v_old_qty) < 0.0);
-    if (__pyx_t_2) {
-
-      /* "src/analysis/models/portfolio.pyx":219
- *                 self.average_entry_price = 0.0
- *             elif self.current_qty * old_qty < 0:  # Position direction changed
- *                 self.average_entry_price = action.price             # <<<<<<<<<<<<<<
- * 
- *     def get_actions(self):
- */
-      __pyx_t_9 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_action), __pyx_n_s_price); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 219, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_9);
-      __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_t_9); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 219, __pyx_L1_error)
-      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
-      __pyx_v_self->average_entry_price = __pyx_t_1;
-
-      /* "src/analysis/models/portfolio.pyx":218
- *             if self.current_qty == 0:
- *                 self.average_entry_price = 0.0
- *             elif self.current_qty * old_qty < 0:  # Position direction changed             # <<<<<<<<<<<<<<
- *                 self.average_entry_price = action.price
- * 
- */
-    }
-    __pyx_L10:;
-
-    /* "src/analysis/models/portfolio.pyx":205
- *             self.average_entry_price = new_value / self.current_qty
- * 
- *         elif isinstance(action, Sell):             # <<<<<<<<<<<<<<
- *             new_qty = self.current_qty - action.data.qty
- * 
- */
-  }
-  __pyx_L3:;
-
-  /* "src/analysis/models/portfolio.pyx":187
- *             self.add_action(Buy(timestamp, self.current_qty, price))
- * 
- *     cdef void _update_position(self, Action action) except *:             # <<<<<<<<<<<<<<
- *         cdef double old_qty = self.current_qty
- *         cdef double old_value = old_qty * self.average_entry_price
- */
-
-  /* function exit code */
-  goto __pyx_L0;
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_7);
-  __Pyx_XDECREF(__pyx_t_8);
-  __Pyx_XDECREF(__pyx_t_9);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Position._update_position", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_L0:;
-  __Pyx_XDECREF(__pyx_v_new_value);
-  __Pyx_RefNannyFinishContext();
-}
-
-/* "src/analysis/models/portfolio.pyx":221
- *                 self.average_entry_price = action.price
- * 
- *     def get_actions(self):             # <<<<<<<<<<<<<<
- *         return self.buys + self.sells
- * 
- */
-
-/* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_7get_actions(PyObject *__pyx_v_self, 
-#if CYTHON_METH_FASTCALL
-PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
-#else
-PyObject *__pyx_args, PyObject *__pyx_kwds
-#endif
-); /*proto*/
-static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_8Position_7get_actions = {"get_actions", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_7get_actions, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_7get_actions(PyObject *__pyx_v_self, 
-#if CYTHON_METH_FASTCALL
-PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
-#else
-PyObject *__pyx_args, PyObject *__pyx_kwds
-#endif
-) {
-  #if !CYTHON_METH_FASTCALL
-  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
-  #endif
-  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
-  PyObject *__pyx_r = 0;
-  __Pyx_RefNannyDeclarations
-  __Pyx_RefNannySetupContext("get_actions (wrapper)", 0);
-  #if !CYTHON_METH_FASTCALL
-  #if CYTHON_ASSUME_SAFE_MACROS
-  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
-  #else
-  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
-  #endif
-  #endif
-  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
-  if (unlikely(__pyx_nargs > 0)) {
-    __Pyx_RaiseArgtupleInvalid("get_actions", 1, 0, 0, __pyx_nargs); return NULL;}
-  if (unlikely(__pyx_kwds) && __Pyx_NumKwargs_FASTCALL(__pyx_kwds) && unlikely(!__Pyx_CheckKeywordStrings(__pyx_kwds, "get_actions", 0))) return NULL;
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_8Position_6get_actions(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self));
-
-  /* function exit code */
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_6get_actions(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self) {
-  PyObject *__pyx_r = NULL;
-  __Pyx_RefNannyDeclarations
-  PyObject *__pyx_t_1 = NULL;
-  int __pyx_lineno = 0;
-  const char *__pyx_filename = NULL;
-  int __pyx_clineno = 0;
-  __Pyx_RefNannySetupContext("get_actions", 1);
-
-  /* "src/analysis/models/portfolio.pyx":222
- * 
- *     def get_actions(self):
- *         return self.buys + self.sells             # <<<<<<<<<<<<<<
- * 
- *     @property
- */
-  __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyNumber_Add(__pyx_v_self->buys, __pyx_v_self->sells); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 222, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
-  goto __pyx_L0;
-
-  /* "src/analysis/models/portfolio.pyx":221
- *                 self.average_entry_price = action.price
- * 
- *     def get_actions(self):             # <<<<<<<<<<<<<<
- *         return self.buys + self.sells
- * 
- */
-
-  /* function exit code */
-  __pyx_L1_error:;
-  __Pyx_XDECREF(__pyx_t_1);
-  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.get_actions", __pyx_clineno, __pyx_lineno, __pyx_filename);
-  __pyx_r = NULL;
-  __pyx_L0:;
-  __Pyx_XGIVEREF(__pyx_r);
-  __Pyx_RefNannyFinishContext();
-  return __pyx_r;
-}
-
-/* "src/analysis/models/portfolio.pyx":224
- *         return self.buys + self.sells
  * 
  *     @property             # <<<<<<<<<<<<<<
- *     def average_entry(self) -> Action:
+ *     def average_entry(self) -> ActionInterface:
  *         if not self.buys:
  */
 
@@ -9257,7 +9419,7 @@ static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_13average_
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":228
+/* "src/analysis/models/portfolio.pyx":198
  *         if not self.buys:
  *             return None
  *         return reduce(lambda x, y: x + y, self.buys)             # <<<<<<<<<<<<<<
@@ -9321,7 +9483,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 228, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 198, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
         CYTHON_FALLTHROUGH;
         case  1:
@@ -9329,14 +9491,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[1]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 228, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 198, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("lambda", 1, 2, 2, 1); __PYX_ERR(0, 228, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("lambda", 1, 2, 2, 1); __PYX_ERR(1, 198, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "lambda") < 0)) __PYX_ERR(0, 228, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "lambda") < 0)) __PYX_ERR(1, 198, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
@@ -9349,7 +9511,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("lambda", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 228, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("lambda", 1, 2, 2, __pyx_nargs); __PYX_ERR(1, 198, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -9385,7 +9547,7 @@ static PyObject *__pyx_lambda_funcdef_lambda(CYTHON_UNUSED PyObject *__pyx_self,
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("lambda", 1);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyNumber_Add(__pyx_v_x, __pyx_v_y); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 228, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Add(__pyx_v_x, __pyx_v_y); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 198, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -9402,11 +9564,11 @@ static PyObject *__pyx_lambda_funcdef_lambda(CYTHON_UNUSED PyObject *__pyx_self,
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":224
- *         return self.buys + self.sells
+/* "src/analysis/models/portfolio.pyx":194
+ *         )
  * 
  *     @property             # <<<<<<<<<<<<<<
- *     def average_entry(self) -> Action:
+ *     def average_entry(self) -> ActionInterface:
  *         if not self.buys:
  */
 
@@ -9425,9 +9587,9 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_13average_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "src/analysis/models/portfolio.pyx":226
+  /* "src/analysis/models/portfolio.pyx":196
  *     @property
- *     def average_entry(self) -> Action:
+ *     def average_entry(self) -> ActionInterface:
  *         if not self.buys:             # <<<<<<<<<<<<<<
  *             return None
  *         return reduce(lambda x, y: x + y, self.buys)
@@ -9436,8 +9598,8 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_13average_
   __pyx_t_2 = (!__pyx_t_1);
   if (__pyx_t_2) {
 
-    /* "src/analysis/models/portfolio.pyx":227
- *     def average_entry(self) -> Action:
+    /* "src/analysis/models/portfolio.pyx":197
+ *     def average_entry(self) -> ActionInterface:
  *         if not self.buys:
  *             return None             # <<<<<<<<<<<<<<
  *         return reduce(lambda x, y: x + y, self.buys)
@@ -9447,16 +9609,16 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_13average_
     __pyx_r = Py_None; __Pyx_INCREF(Py_None);
     goto __pyx_L0;
 
-    /* "src/analysis/models/portfolio.pyx":226
+    /* "src/analysis/models/portfolio.pyx":196
  *     @property
- *     def average_entry(self) -> Action:
+ *     def average_entry(self) -> ActionInterface:
  *         if not self.buys:             # <<<<<<<<<<<<<<
  *             return None
  *         return reduce(lambda x, y: x + y, self.buys)
  */
   }
 
-  /* "src/analysis/models/portfolio.pyx":228
+  /* "src/analysis/models/portfolio.pyx":198
  *         if not self.buys:
  *             return None
  *         return reduce(lambda x, y: x + y, self.buys)             # <<<<<<<<<<<<<<
@@ -9464,9 +9626,9 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_13average_
  *     @property
  */
   __Pyx_XDECREF(__pyx_r);
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_reduce); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 228, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_reduce); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 198, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_13average_entry_7__get___lambda, 0, __pyx_n_s_Position___get___locals_lambda, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 228, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_13average_entry_7__get___lambda, 0, __pyx_n_s_Position___get___locals_lambda, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 198, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __pyx_t_6 = NULL;
   __pyx_t_7 = 0;
@@ -9487,7 +9649,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_13average_
     __pyx_t_3 = __Pyx_PyObject_FastCall(__pyx_t_4, __pyx_callargs+1-__pyx_t_7, 2+__pyx_t_7);
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 228, __pyx_L1_error)
+    if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 198, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   }
@@ -9495,11 +9657,11 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_13average_
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "src/analysis/models/portfolio.pyx":224
- *         return self.buys + self.sells
+  /* "src/analysis/models/portfolio.pyx":194
+ *         )
  * 
  *     @property             # <<<<<<<<<<<<<<
- *     def average_entry(self) -> Action:
+ *     def average_entry(self) -> ActionInterface:
  *         if not self.buys:
  */
 
@@ -9517,11 +9679,11 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_13average_
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":230
+/* "src/analysis/models/portfolio.pyx":200
  *         return reduce(lambda x, y: x + y, self.buys)
  * 
  *     @property             # <<<<<<<<<<<<<<
- *     def average_exit(self) -> Action:
+ *     def average_exit(self) -> ActionInterface:
  *         if not self.sells:
  */
 
@@ -9540,10 +9702,12 @@ static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_12average_
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":234
+/* "src/analysis/models/portfolio.pyx":204
  *         if not self.sells:
  *             return None
  *         return reduce(lambda x, y: x + y, self.sells)             # <<<<<<<<<<<<<<
+ * 
+ *     def get_actions(self):
  */
 
 /* Python wrapper */
@@ -9602,7 +9766,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 234, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 204, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
         CYTHON_FALLTHROUGH;
         case  1:
@@ -9610,14 +9774,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[1]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 234, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 204, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("lambda1", 1, 2, 2, 1); __PYX_ERR(0, 234, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("lambda1", 1, 2, 2, 1); __PYX_ERR(1, 204, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "lambda1") < 0)) __PYX_ERR(0, 234, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "lambda1") < 0)) __PYX_ERR(1, 204, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 2)) {
       goto __pyx_L5_argtuple_error;
@@ -9630,7 +9794,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("lambda1", 1, 2, 2, __pyx_nargs); __PYX_ERR(0, 234, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("lambda1", 1, 2, 2, __pyx_nargs); __PYX_ERR(1, 204, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -9666,7 +9830,7 @@ static PyObject *__pyx_lambda_funcdef_lambda1(CYTHON_UNUSED PyObject *__pyx_self
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("lambda1", 1);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyNumber_Add(__pyx_v_x, __pyx_v_y); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 234, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Add(__pyx_v_x, __pyx_v_y); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 204, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -9683,11 +9847,11 @@ static PyObject *__pyx_lambda_funcdef_lambda1(CYTHON_UNUSED PyObject *__pyx_self
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":230
+/* "src/analysis/models/portfolio.pyx":200
  *         return reduce(lambda x, y: x + y, self.buys)
  * 
  *     @property             # <<<<<<<<<<<<<<
- *     def average_exit(self) -> Action:
+ *     def average_exit(self) -> ActionInterface:
  *         if not self.sells:
  */
 
@@ -9706,9 +9870,9 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_12average_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "src/analysis/models/portfolio.pyx":232
+  /* "src/analysis/models/portfolio.pyx":202
  *     @property
- *     def average_exit(self) -> Action:
+ *     def average_exit(self) -> ActionInterface:
  *         if not self.sells:             # <<<<<<<<<<<<<<
  *             return None
  *         return reduce(lambda x, y: x + y, self.sells)
@@ -9717,34 +9881,37 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_12average_
   __pyx_t_2 = (!__pyx_t_1);
   if (__pyx_t_2) {
 
-    /* "src/analysis/models/portfolio.pyx":233
- *     def average_exit(self) -> Action:
+    /* "src/analysis/models/portfolio.pyx":203
+ *     def average_exit(self) -> ActionInterface:
  *         if not self.sells:
  *             return None             # <<<<<<<<<<<<<<
  *         return reduce(lambda x, y: x + y, self.sells)
+ * 
  */
     __Pyx_XDECREF(__pyx_r);
     __pyx_r = Py_None; __Pyx_INCREF(Py_None);
     goto __pyx_L0;
 
-    /* "src/analysis/models/portfolio.pyx":232
+    /* "src/analysis/models/portfolio.pyx":202
  *     @property
- *     def average_exit(self) -> Action:
+ *     def average_exit(self) -> ActionInterface:
  *         if not self.sells:             # <<<<<<<<<<<<<<
  *             return None
  *         return reduce(lambda x, y: x + y, self.sells)
  */
   }
 
-  /* "src/analysis/models/portfolio.pyx":234
+  /* "src/analysis/models/portfolio.pyx":204
  *         if not self.sells:
  *             return None
  *         return reduce(lambda x, y: x + y, self.sells)             # <<<<<<<<<<<<<<
+ * 
+ *     def get_actions(self):
  */
   __Pyx_XDECREF(__pyx_r);
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_reduce); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 234, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_reduce); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 204, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_12average_exit_7__get___lambda1, 0, __pyx_n_s_Position___get___locals_lambda, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 234, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_12average_exit_7__get___lambda1, 0, __pyx_n_s_Position___get___locals_lambda, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, NULL); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 204, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
   __pyx_t_6 = NULL;
   __pyx_t_7 = 0;
@@ -9765,7 +9932,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_12average_
     __pyx_t_3 = __Pyx_PyObject_FastCall(__pyx_t_4, __pyx_callargs+1-__pyx_t_7, 2+__pyx_t_7);
     __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 234, __pyx_L1_error)
+    if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 204, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   }
@@ -9773,11 +9940,11 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_12average_
   __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "src/analysis/models/portfolio.pyx":230
+  /* "src/analysis/models/portfolio.pyx":200
  *         return reduce(lambda x, y: x + y, self.buys)
  * 
  *     @property             # <<<<<<<<<<<<<<
- *     def average_exit(self) -> Action:
+ *     def average_exit(self) -> ActionInterface:
  *         if not self.sells:
  */
 
@@ -9795,7 +9962,1450 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_12average_
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":149
+/* "src/analysis/models/portfolio.pyx":206
+ *         return reduce(lambda x, y: x + y, self.sells)
+ * 
+ *     def get_actions(self):             # <<<<<<<<<<<<<<
+ *         return sorted(self.buys + self.sells, key=lambda x: x.timestamp)
+ * 
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_5get_actions(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_8Position_5get_actions = {"get_actions", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_5get_actions, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_5get_actions(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+) {
+  #if !CYTHON_METH_FASTCALL
+  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
+  #endif
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("get_actions (wrapper)", 0);
+  #if !CYTHON_METH_FASTCALL
+  #if CYTHON_ASSUME_SAFE_MACROS
+  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
+  #else
+  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
+  #endif
+  #endif
+  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
+  if (unlikely(__pyx_nargs > 0)) {
+    __Pyx_RaiseArgtupleInvalid("get_actions", 1, 0, 0, __pyx_nargs); return NULL;}
+  if (unlikely(__pyx_kwds) && __Pyx_NumKwargs_FASTCALL(__pyx_kwds) && unlikely(!__Pyx_CheckKeywordStrings(__pyx_kwds, "get_actions", 0))) return NULL;
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_8Position_4get_actions(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":207
+ * 
+ *     def get_actions(self):
+ *         return sorted(self.buys + self.sells, key=lambda x: x.timestamp)             # <<<<<<<<<<<<<<
+ * 
+ *     cpdef void add_action(self, ActionInterface action):
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_11get_actions_lambda2(PyObject *__pyx_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_8Position_11get_actions_lambda2 = {"lambda2", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_11get_actions_lambda2, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_11get_actions_lambda2(PyObject *__pyx_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+) {
+  PyObject *__pyx_v_x = 0;
+  #if !CYTHON_METH_FASTCALL
+  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
+  #endif
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject* values[1] = {0};
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("lambda2 (wrapper)", 0);
+  #if !CYTHON_METH_FASTCALL
+  #if CYTHON_ASSUME_SAFE_MACROS
+  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
+  #else
+  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
+  #endif
+  #endif
+  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
+  {
+    PyObject **__pyx_pyargnames[] = {&__pyx_n_s_x,0};
+    if (__pyx_kwds) {
+      Py_ssize_t kw_args;
+      switch (__pyx_nargs) {
+        case  1: values[0] = __Pyx_Arg_FASTCALL(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = __Pyx_NumKwargs_FASTCALL(__pyx_kwds);
+      switch (__pyx_nargs) {
+        case  0:
+        if (likely((values[0] = __Pyx_GetKwValue_FASTCALL(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_x)) != 0)) {
+          (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
+          kw_args--;
+        }
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 207, __pyx_L3_error)
+        else goto __pyx_L5_argtuple_error;
+      }
+      if (unlikely(kw_args > 0)) {
+        const Py_ssize_t kwd_pos_args = __pyx_nargs;
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "lambda2") < 0)) __PYX_ERR(1, 207, __pyx_L3_error)
+      }
+    } else if (unlikely(__pyx_nargs != 1)) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = __Pyx_Arg_FASTCALL(__pyx_args, 0);
+    }
+    __pyx_v_x = values[0];
+  }
+  goto __pyx_L6_skip;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("lambda2", 1, 1, 1, __pyx_nargs); __PYX_ERR(1, 207, __pyx_L3_error)
+  __pyx_L6_skip:;
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L3_error:;
+  {
+    Py_ssize_t __pyx_temp;
+    for (__pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+      __Pyx_Arg_XDECREF_FASTCALL(values[__pyx_temp]);
+    }
+  }
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.get_actions.lambda2", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_lambda_funcdef_lambda2(__pyx_self, __pyx_v_x);
+
+  /* function exit code */
+  {
+    Py_ssize_t __pyx_temp;
+    for (__pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+      __Pyx_Arg_XDECREF_FASTCALL(values[__pyx_temp]);
+    }
+  }
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_lambda_funcdef_lambda2(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_x) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("lambda2", 1);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_v_x, __pyx_n_s_timestamp); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 207, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.get_actions.lambda2", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":206
+ *         return reduce(lambda x, y: x + y, self.sells)
+ * 
+ *     def get_actions(self):             # <<<<<<<<<<<<<<
+ *         return sorted(self.buys + self.sells, key=lambda x: x.timestamp)
+ * 
+ */
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_4get_actions(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("get_actions", 1);
+
+  /* "src/analysis/models/portfolio.pyx":207
+ * 
+ *     def get_actions(self):
+ *         return sorted(self.buys + self.sells, key=lambda x: x.timestamp)             # <<<<<<<<<<<<<<
+ * 
+ *     cpdef void add_action(self, ActionInterface action):
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = PyNumber_Add(__pyx_v_self->buys, __pyx_v_self->sells); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 207, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = PyTuple_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 207, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_GIVEREF(__pyx_t_1);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_1)) __PYX_ERR(1, 207, __pyx_L1_error);
+  __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 207, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_11get_actions_lambda2, 0, __pyx_n_s_get_actions_locals_lambda, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 207, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  if (PyDict_SetItem(__pyx_t_1, __pyx_n_s_key, __pyx_t_3) < 0) __PYX_ERR(1, 207, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_t_3 = __Pyx_PyObject_Call(__pyx_builtin_sorted, __pyx_t_2, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 207, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_r = __pyx_t_3;
+  __pyx_t_3 = 0;
+  goto __pyx_L0;
+
+  /* "src/analysis/models/portfolio.pyx":206
+ *         return reduce(lambda x, y: x + y, self.sells)
+ * 
+ *     def get_actions(self):             # <<<<<<<<<<<<<<
+ *         return sorted(self.buys + self.sells, key=lambda x: x.timestamp)
+ * 
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.get_actions", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":209
+ *         return sorted(self.buys + self.sells, key=lambda x: x.timestamp)
+ * 
+ *     cpdef void add_action(self, ActionInterface action):             # <<<<<<<<<<<<<<
+ *         """Adds a new buy or sell action to the position.
+ * 
+ */
+
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_7add_action(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+static void __pyx_f_3src_8analysis_6models_9portfolio_8Position_add_action(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_action, int __pyx_skip_dispatch) {
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  unsigned int __pyx_t_5;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("add_action", 1);
+  /* Check if called by wrapper */
+  if (unlikely(__pyx_skip_dispatch)) ;
+  /* Check if overridden in Python */
+  else if (unlikely((Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0) || __Pyx_PyType_HasFeature(Py_TYPE(((PyObject *)__pyx_v_self)), (Py_TPFLAGS_IS_ABSTRACT | Py_TPFLAGS_HEAPTYPE)))) {
+    #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+    static PY_UINT64_T __pyx_tp_dict_version = __PYX_DICT_VERSION_INIT, __pyx_obj_dict_version = __PYX_DICT_VERSION_INIT;
+    if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
+      PY_UINT64_T __pyx_typedict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
+      #endif
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_add_action); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 209, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      if (!__Pyx_IsSameCFunction(__pyx_t_1, (void*) __pyx_pw_3src_8analysis_6models_9portfolio_8Position_7add_action)) {
+        __Pyx_INCREF(__pyx_t_1);
+        __pyx_t_3 = __pyx_t_1; __pyx_t_4 = NULL;
+        __pyx_t_5 = 0;
+        #if CYTHON_UNPACK_METHODS
+        if (unlikely(PyMethod_Check(__pyx_t_3))) {
+          __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
+          if (likely(__pyx_t_4)) {
+            PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
+            __Pyx_INCREF(__pyx_t_4);
+            __Pyx_INCREF(function);
+            __Pyx_DECREF_SET(__pyx_t_3, function);
+            __pyx_t_5 = 1;
+          }
+        }
+        #endif
+        {
+          PyObject *__pyx_callargs[2] = {__pyx_t_4, ((PyObject *)__pyx_v_action)};
+          __pyx_t_2 = __Pyx_PyObject_FastCall(__pyx_t_3, __pyx_callargs+1-__pyx_t_5, 1+__pyx_t_5);
+          __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+          if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 209, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_2);
+          __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+        }
+        __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+        goto __pyx_L0;
+      }
+      #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+      __pyx_tp_dict_version = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
+      __pyx_obj_dict_version = __Pyx_get_object_dict_version(((PyObject *)__pyx_v_self));
+      if (unlikely(__pyx_typedict_guard != __pyx_tp_dict_version)) {
+        __pyx_tp_dict_version = __pyx_obj_dict_version = __PYX_DICT_VERSION_INIT;
+      }
+      #endif
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+    }
+    #endif
+  }
+
+  /* "src/analysis/models/portfolio.pyx":215
+ *         _add_action method for pure cythonic access.
+ *         """
+ *         self._add_action(action)             # <<<<<<<<<<<<<<
+ * 
+ *     cpdef void close(self, np.int64_t timestamp, double price):
+ */
+  ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self->__pyx_vtab)->_add_action(__pyx_v_self, __pyx_v_action); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 215, __pyx_L1_error)
+
+  /* "src/analysis/models/portfolio.pyx":209
+ *         return sorted(self.buys + self.sells, key=lambda x: x.timestamp)
+ * 
+ *     cpdef void add_action(self, ActionInterface action):             # <<<<<<<<<<<<<<
+ *         """Adds a new buy or sell action to the position.
+ * 
+ */
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.add_action", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_7add_action(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+PyDoc_STRVAR(__pyx_doc_3src_8analysis_6models_9portfolio_8Position_6add_action, "Adds a new buy or sell action to the position.\n        \n        Python wrapper method which allows to define the actual \n        _add_action method for pure cythonic access.\n        ");
+static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_8Position_7add_action = {"add_action", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_7add_action, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_3src_8analysis_6models_9portfolio_8Position_6add_action};
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_7add_action(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+) {
+  struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_action = 0;
+  #if !CYTHON_METH_FASTCALL
+  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
+  #endif
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject* values[1] = {0};
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("add_action (wrapper)", 0);
+  #if !CYTHON_METH_FASTCALL
+  #if CYTHON_ASSUME_SAFE_MACROS
+  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
+  #else
+  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
+  #endif
+  #endif
+  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
+  {
+    PyObject **__pyx_pyargnames[] = {&__pyx_n_s_action,0};
+    if (__pyx_kwds) {
+      Py_ssize_t kw_args;
+      switch (__pyx_nargs) {
+        case  1: values[0] = __Pyx_Arg_FASTCALL(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = __Pyx_NumKwargs_FASTCALL(__pyx_kwds);
+      switch (__pyx_nargs) {
+        case  0:
+        if (likely((values[0] = __Pyx_GetKwValue_FASTCALL(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_action)) != 0)) {
+          (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
+          kw_args--;
+        }
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 209, __pyx_L3_error)
+        else goto __pyx_L5_argtuple_error;
+      }
+      if (unlikely(kw_args > 0)) {
+        const Py_ssize_t kwd_pos_args = __pyx_nargs;
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "add_action") < 0)) __PYX_ERR(1, 209, __pyx_L3_error)
+      }
+    } else if (unlikely(__pyx_nargs != 1)) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = __Pyx_Arg_FASTCALL(__pyx_args, 0);
+    }
+    __pyx_v_action = ((struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *)values[0]);
+  }
+  goto __pyx_L6_skip;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("add_action", 1, 1, 1, __pyx_nargs); __PYX_ERR(1, 209, __pyx_L3_error)
+  __pyx_L6_skip:;
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L3_error:;
+  {
+    Py_ssize_t __pyx_temp;
+    for (__pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+      __Pyx_Arg_XDECREF_FASTCALL(values[__pyx_temp]);
+    }
+  }
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.add_action", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_action), __pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface, 1, "action", 0))) __PYX_ERR(1, 209, __pyx_L1_error)
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_8Position_6add_action(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self), __pyx_v_action);
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __pyx_r = NULL;
+  __pyx_L0:;
+  {
+    Py_ssize_t __pyx_temp;
+    for (__pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+      __Pyx_Arg_XDECREF_FASTCALL(values[__pyx_temp]);
+    }
+  }
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_6add_action(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_action) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("add_action", 1);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_f_3src_8analysis_6models_9portfolio_8Position_add_action(__pyx_v_self, __pyx_v_action, 1); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 209, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_void_to_None(NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 209, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.add_action", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":217
+ *         self._add_action(action)
+ * 
+ *     cpdef void close(self, np.int64_t timestamp, double price):             # <<<<<<<<<<<<<<
+ *         """Adds a new buy or sell action to the position.
+ * 
+ */
+
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_9close(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+static void __pyx_f_3src_8analysis_6models_9portfolio_8Position_close(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_price, int __pyx_skip_dispatch) {
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  PyObject *__pyx_t_6 = NULL;
+  unsigned int __pyx_t_7;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("close", 1);
+  /* Check if called by wrapper */
+  if (unlikely(__pyx_skip_dispatch)) ;
+  /* Check if overridden in Python */
+  else if (unlikely((Py_TYPE(((PyObject *)__pyx_v_self))->tp_dictoffset != 0) || __Pyx_PyType_HasFeature(Py_TYPE(((PyObject *)__pyx_v_self)), (Py_TPFLAGS_IS_ABSTRACT | Py_TPFLAGS_HEAPTYPE)))) {
+    #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+    static PY_UINT64_T __pyx_tp_dict_version = __PYX_DICT_VERSION_INIT, __pyx_obj_dict_version = __PYX_DICT_VERSION_INIT;
+    if (unlikely(!__Pyx_object_dict_version_matches(((PyObject *)__pyx_v_self), __pyx_tp_dict_version, __pyx_obj_dict_version))) {
+      PY_UINT64_T __pyx_typedict_guard = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
+      #endif
+      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_close); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 217, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      if (!__Pyx_IsSameCFunction(__pyx_t_1, (void*) __pyx_pw_3src_8analysis_6models_9portfolio_8Position_9close)) {
+        __pyx_t_3 = __Pyx_PyInt_From_npy_int64(__pyx_v_timestamp); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 217, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_3);
+        __pyx_t_4 = PyFloat_FromDouble(__pyx_v_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 217, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_4);
+        __Pyx_INCREF(__pyx_t_1);
+        __pyx_t_5 = __pyx_t_1; __pyx_t_6 = NULL;
+        __pyx_t_7 = 0;
+        #if CYTHON_UNPACK_METHODS
+        if (unlikely(PyMethod_Check(__pyx_t_5))) {
+          __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_5);
+          if (likely(__pyx_t_6)) {
+            PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_5);
+            __Pyx_INCREF(__pyx_t_6);
+            __Pyx_INCREF(function);
+            __Pyx_DECREF_SET(__pyx_t_5, function);
+            __pyx_t_7 = 1;
+          }
+        }
+        #endif
+        {
+          PyObject *__pyx_callargs[3] = {__pyx_t_6, __pyx_t_3, __pyx_t_4};
+          __pyx_t_2 = __Pyx_PyObject_FastCall(__pyx_t_5, __pyx_callargs+1-__pyx_t_7, 2+__pyx_t_7);
+          __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+          __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+          __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+          if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 217, __pyx_L1_error)
+          __Pyx_GOTREF(__pyx_t_2);
+          __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+        }
+        __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+        __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+        goto __pyx_L0;
+      }
+      #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+      __pyx_tp_dict_version = __Pyx_get_tp_dict_version(((PyObject *)__pyx_v_self));
+      __pyx_obj_dict_version = __Pyx_get_object_dict_version(((PyObject *)__pyx_v_self));
+      if (unlikely(__pyx_typedict_guard != __pyx_tp_dict_version)) {
+        __pyx_tp_dict_version = __pyx_obj_dict_version = __PYX_DICT_VERSION_INIT;
+      }
+      #endif
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      #if CYTHON_USE_DICT_VERSIONS && CYTHON_USE_PYTYPE_LOOKUP && CYTHON_USE_TYPE_SLOTS
+    }
+    #endif
+  }
+
+  /* "src/analysis/models/portfolio.pyx":223
+ *         _add_action method for pure cythonic access.
+ *         """
+ *         self._close(timestamp, price)             # <<<<<<<<<<<<<<
+ * 
+ *     cdef void _add_action(self, ActionInterface action):
+ */
+  ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self->__pyx_vtab)->_close(__pyx_v_self, __pyx_v_timestamp, __pyx_v_price); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 223, __pyx_L1_error)
+
+  /* "src/analysis/models/portfolio.pyx":217
+ *         self._add_action(action)
+ * 
+ *     cpdef void close(self, np.int64_t timestamp, double price):             # <<<<<<<<<<<<<<
+ *         """Adds a new buy or sell action to the position.
+ * 
+ */
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.close", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+}
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_9close(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+); /*proto*/
+PyDoc_STRVAR(__pyx_doc_3src_8analysis_6models_9portfolio_8Position_8close, "Adds a new buy or sell action to the position.\n        \n        Python wrapper method which allows to define the actual \n        _add_action method for pure cythonic access.\n        ");
+static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_8Position_9close = {"close", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_9close, __Pyx_METH_FASTCALL|METH_KEYWORDS, __pyx_doc_3src_8analysis_6models_9portfolio_8Position_8close};
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_9close(PyObject *__pyx_v_self, 
+#if CYTHON_METH_FASTCALL
+PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
+#else
+PyObject *__pyx_args, PyObject *__pyx_kwds
+#endif
+) {
+  __pyx_t_5numpy_int64_t __pyx_v_timestamp;
+  double __pyx_v_price;
+  #if !CYTHON_METH_FASTCALL
+  CYTHON_UNUSED Py_ssize_t __pyx_nargs;
+  #endif
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject* values[2] = {0,0};
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("close (wrapper)", 0);
+  #if !CYTHON_METH_FASTCALL
+  #if CYTHON_ASSUME_SAFE_MACROS
+  __pyx_nargs = PyTuple_GET_SIZE(__pyx_args);
+  #else
+  __pyx_nargs = PyTuple_Size(__pyx_args); if (unlikely(__pyx_nargs < 0)) return NULL;
+  #endif
+  #endif
+  __pyx_kwvalues = __Pyx_KwValues_FASTCALL(__pyx_args, __pyx_nargs);
+  {
+    PyObject **__pyx_pyargnames[] = {&__pyx_n_s_timestamp,&__pyx_n_s_price,0};
+    if (__pyx_kwds) {
+      Py_ssize_t kw_args;
+      switch (__pyx_nargs) {
+        case  2: values[1] = __Pyx_Arg_FASTCALL(__pyx_args, 1);
+        CYTHON_FALLTHROUGH;
+        case  1: values[0] = __Pyx_Arg_FASTCALL(__pyx_args, 0);
+        CYTHON_FALLTHROUGH;
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = __Pyx_NumKwargs_FASTCALL(__pyx_kwds);
+      switch (__pyx_nargs) {
+        case  0:
+        if (likely((values[0] = __Pyx_GetKwValue_FASTCALL(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_timestamp)) != 0)) {
+          (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
+          kw_args--;
+        }
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 217, __pyx_L3_error)
+        else goto __pyx_L5_argtuple_error;
+        CYTHON_FALLTHROUGH;
+        case  1:
+        if (likely((values[1] = __Pyx_GetKwValue_FASTCALL(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_price)) != 0)) {
+          (void)__Pyx_Arg_NewRef_FASTCALL(values[1]);
+          kw_args--;
+        }
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 217, __pyx_L3_error)
+        else {
+          __Pyx_RaiseArgtupleInvalid("close", 1, 2, 2, 1); __PYX_ERR(1, 217, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        const Py_ssize_t kwd_pos_args = __pyx_nargs;
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "close") < 0)) __PYX_ERR(1, 217, __pyx_L3_error)
+      }
+    } else if (unlikely(__pyx_nargs != 2)) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = __Pyx_Arg_FASTCALL(__pyx_args, 0);
+      values[1] = __Pyx_Arg_FASTCALL(__pyx_args, 1);
+    }
+    __pyx_v_timestamp = __Pyx_PyInt_As_npy_int64(values[0]); if (unlikely((__pyx_v_timestamp == ((npy_int64)-1)) && PyErr_Occurred())) __PYX_ERR(1, 217, __pyx_L3_error)
+    __pyx_v_price = __pyx_PyFloat_AsDouble(values[1]); if (unlikely((__pyx_v_price == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 217, __pyx_L3_error)
+  }
+  goto __pyx_L6_skip;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("close", 1, 2, 2, __pyx_nargs); __PYX_ERR(1, 217, __pyx_L3_error)
+  __pyx_L6_skip:;
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L3_error:;
+  {
+    Py_ssize_t __pyx_temp;
+    for (__pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+      __Pyx_Arg_XDECREF_FASTCALL(values[__pyx_temp]);
+    }
+  }
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.close", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_8Position_8close(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self), __pyx_v_timestamp, __pyx_v_price);
+
+  /* function exit code */
+  {
+    Py_ssize_t __pyx_temp;
+    for (__pyx_temp=0; __pyx_temp < (Py_ssize_t)(sizeof(values)/sizeof(values[0])); ++__pyx_temp) {
+      __Pyx_Arg_XDECREF_FASTCALL(values[__pyx_temp]);
+    }
+  }
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_8close(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_price) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("close", 1);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_f_3src_8analysis_6models_9portfolio_8Position_close(__pyx_v_self, __pyx_v_timestamp, __pyx_v_price, 1); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 217, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_void_to_None(NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 217, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Position.close", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/portfolio.pyx":225
+ *         self._close(timestamp, price)
+ * 
+ *     cdef void _add_action(self, ActionInterface action):             # <<<<<<<<<<<<<<
+ *         if isinstance(action, Buy):
+ *             self.buys.append(action)
+ */
+
+static void __pyx_f_3src_8analysis_6models_9portfolio_8Position__add_action(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_action) {
+  int __pyx_t_1;
+  int __pyx_t_2;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+
+  /* "src/analysis/models/portfolio.pyx":226
+ * 
+ *     cdef void _add_action(self, ActionInterface action):
+ *         if isinstance(action, Buy):             # <<<<<<<<<<<<<<
+ *             self.buys.append(action)
+ *         elif isinstance(action, Sell):
+ */
+  __pyx_t_1 = __Pyx_TypeCheck(((PyObject *)__pyx_v_action), __pyx_ptype_3src_8analysis_6models_9portfolio_Buy); 
+  if (__pyx_t_1) {
+
+    /* "src/analysis/models/portfolio.pyx":227
+ *     cdef void _add_action(self, ActionInterface action):
+ *         if isinstance(action, Buy):
+ *             self.buys.append(action)             # <<<<<<<<<<<<<<
+ *         elif isinstance(action, Sell):
+ *             self.sells.append(action)
+ */
+    if (unlikely(__pyx_v_self->buys == Py_None)) {
+      PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "append");
+      __PYX_ERR(1, 227, __pyx_L1_error)
+    }
+    __pyx_t_2 = __Pyx_PyList_Append(__pyx_v_self->buys, ((PyObject *)__pyx_v_action)); if (unlikely(__pyx_t_2 == ((int)-1))) __PYX_ERR(1, 227, __pyx_L1_error)
+
+    /* "src/analysis/models/portfolio.pyx":226
+ * 
+ *     cdef void _add_action(self, ActionInterface action):
+ *         if isinstance(action, Buy):             # <<<<<<<<<<<<<<
+ *             self.buys.append(action)
+ *         elif isinstance(action, Sell):
+ */
+    goto __pyx_L3;
+  }
+
+  /* "src/analysis/models/portfolio.pyx":228
+ *         if isinstance(action, Buy):
+ *             self.buys.append(action)
+ *         elif isinstance(action, Sell):             # <<<<<<<<<<<<<<
+ *             self.sells.append(action)
+ *         self._update_position(action)
+ */
+  __pyx_t_1 = __Pyx_TypeCheck(((PyObject *)__pyx_v_action), __pyx_ptype_3src_8analysis_6models_9portfolio_Sell); 
+  if (__pyx_t_1) {
+
+    /* "src/analysis/models/portfolio.pyx":229
+ *             self.buys.append(action)
+ *         elif isinstance(action, Sell):
+ *             self.sells.append(action)             # <<<<<<<<<<<<<<
+ *         self._update_position(action)
+ * 
+ */
+    if (unlikely(__pyx_v_self->sells == Py_None)) {
+      PyErr_Format(PyExc_AttributeError, "'NoneType' object has no attribute '%.30s'", "append");
+      __PYX_ERR(1, 229, __pyx_L1_error)
+    }
+    __pyx_t_2 = __Pyx_PyList_Append(__pyx_v_self->sells, ((PyObject *)__pyx_v_action)); if (unlikely(__pyx_t_2 == ((int)-1))) __PYX_ERR(1, 229, __pyx_L1_error)
+
+    /* "src/analysis/models/portfolio.pyx":228
+ *         if isinstance(action, Buy):
+ *             self.buys.append(action)
+ *         elif isinstance(action, Sell):             # <<<<<<<<<<<<<<
+ *             self.sells.append(action)
+ *         self._update_position(action)
+ */
+  }
+  __pyx_L3:;
+
+  /* "src/analysis/models/portfolio.pyx":230
+ *         elif isinstance(action, Sell):
+ *             self.sells.append(action)
+ *         self._update_position(action)             # <<<<<<<<<<<<<<
+ * 
+ *     cdef void _close(self, np.int64_t timestamp, double price):
+ */
+  ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self->__pyx_vtab)->_update_position(__pyx_v_self, __pyx_v_action); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 230, __pyx_L1_error)
+
+  /* "src/analysis/models/portfolio.pyx":225
+ *         self._close(timestamp, price)
+ * 
+ *     cdef void _add_action(self, ActionInterface action):             # <<<<<<<<<<<<<<
+ *         if isinstance(action, Buy):
+ *             self.buys.append(action)
+ */
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Position._add_action", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_L0:;
+}
+
+/* "src/analysis/models/portfolio.pyx":232
+ *         self._update_position(action)
+ * 
+ *     cdef void _close(self, np.int64_t timestamp, double price):             # <<<<<<<<<<<<<<
+ *         if self.current_qty > 0:
+ *             self.add_action(Sell(timestamp, self.current_qty, price))
+ */
+
+static void __pyx_f_3src_8analysis_6models_9portfolio_8Position__close(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, __pyx_t_5numpy_int64_t __pyx_v_timestamp, double __pyx_v_price) {
+  __Pyx_RefNannyDeclarations
+  int __pyx_t_1;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("_close", 1);
+
+  /* "src/analysis/models/portfolio.pyx":233
+ * 
+ *     cdef void _close(self, np.int64_t timestamp, double price):
+ *         if self.current_qty > 0:             # <<<<<<<<<<<<<<
+ *             self.add_action(Sell(timestamp, self.current_qty, price))
+ *         if self.current_qty < 0:
+ */
+  __pyx_t_1 = (__pyx_v_self->current_qty > 0.0);
+  if (__pyx_t_1) {
+
+    /* "src/analysis/models/portfolio.pyx":234
+ *     cdef void _close(self, np.int64_t timestamp, double price):
+ *         if self.current_qty > 0:
+ *             self.add_action(Sell(timestamp, self.current_qty, price))             # <<<<<<<<<<<<<<
+ *         if self.current_qty < 0:
+ *             self.add_action(Buy(timestamp, self.current_qty, price))
+ */
+    __pyx_t_2 = __Pyx_PyInt_From_npy_int64(__pyx_v_timestamp); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 234, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __pyx_t_3 = PyFloat_FromDouble(__pyx_v_self->current_qty); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 234, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    __pyx_t_4 = PyFloat_FromDouble(__pyx_v_price); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 234, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_5 = PyTuple_New(3); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 234, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __Pyx_GIVEREF(__pyx_t_2);
+    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_2)) __PYX_ERR(1, 234, __pyx_L1_error);
+    __Pyx_GIVEREF(__pyx_t_3);
+    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_t_3)) __PYX_ERR(1, 234, __pyx_L1_error);
+    __Pyx_GIVEREF(__pyx_t_4);
+    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_5, 2, __pyx_t_4)) __PYX_ERR(1, 234, __pyx_L1_error);
+    __pyx_t_2 = 0;
+    __pyx_t_3 = 0;
+    __pyx_t_4 = 0;
+    __pyx_t_4 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Sell), __pyx_t_5, NULL); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 234, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self->__pyx_vtab)->add_action(__pyx_v_self, ((struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *)__pyx_t_4), 0); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 234, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+    /* "src/analysis/models/portfolio.pyx":233
+ * 
+ *     cdef void _close(self, np.int64_t timestamp, double price):
+ *         if self.current_qty > 0:             # <<<<<<<<<<<<<<
+ *             self.add_action(Sell(timestamp, self.current_qty, price))
+ *         if self.current_qty < 0:
+ */
+  }
+
+  /* "src/analysis/models/portfolio.pyx":235
+ *         if self.current_qty > 0:
+ *             self.add_action(Sell(timestamp, self.current_qty, price))
+ *         if self.current_qty < 0:             # <<<<<<<<<<<<<<
+ *             self.add_action(Buy(timestamp, self.current_qty, price))
+ * 
+ */
+  __pyx_t_1 = (__pyx_v_self->current_qty < 0.0);
+  if (__pyx_t_1) {
+
+    /* "src/analysis/models/portfolio.pyx":236
+ *             self.add_action(Sell(timestamp, self.current_qty, price))
+ *         if self.current_qty < 0:
+ *             self.add_action(Buy(timestamp, self.current_qty, price))             # <<<<<<<<<<<<<<
+ * 
+ *     cdef void _update_position(self, ActionInterface action) except *:
+ */
+    __pyx_t_4 = __Pyx_PyInt_From_npy_int64(__pyx_v_timestamp); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 236, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_5 = PyFloat_FromDouble(__pyx_v_self->current_qty); if (unlikely(!__pyx_t_5)) __PYX_ERR(1, 236, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_5);
+    __pyx_t_3 = PyFloat_FromDouble(__pyx_v_price); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 236, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    __pyx_t_2 = PyTuple_New(3); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 236, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_2);
+    __Pyx_GIVEREF(__pyx_t_4);
+    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 0, __pyx_t_4)) __PYX_ERR(1, 236, __pyx_L1_error);
+    __Pyx_GIVEREF(__pyx_t_5);
+    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 1, __pyx_t_5)) __PYX_ERR(1, 236, __pyx_L1_error);
+    __Pyx_GIVEREF(__pyx_t_3);
+    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_2, 2, __pyx_t_3)) __PYX_ERR(1, 236, __pyx_L1_error);
+    __pyx_t_4 = 0;
+    __pyx_t_5 = 0;
+    __pyx_t_3 = 0;
+    __pyx_t_3 = __Pyx_PyObject_Call(((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Buy), __pyx_t_2, NULL); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 236, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+    ((struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self->__pyx_vtab)->add_action(__pyx_v_self, ((struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *)__pyx_t_3), 0); if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 236, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+
+    /* "src/analysis/models/portfolio.pyx":235
+ *         if self.current_qty > 0:
+ *             self.add_action(Sell(timestamp, self.current_qty, price))
+ *         if self.current_qty < 0:             # <<<<<<<<<<<<<<
+ *             self.add_action(Buy(timestamp, self.current_qty, price))
+ * 
+ */
+  }
+
+  /* "src/analysis/models/portfolio.pyx":232
+ *         self._update_position(action)
+ * 
+ *     cdef void _close(self, np.int64_t timestamp, double price):             # <<<<<<<<<<<<<<
+ *         if self.current_qty > 0:
+ *             self.add_action(Sell(timestamp, self.current_qty, price))
+ */
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Position._close", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+}
+
+/* "src/analysis/models/portfolio.pyx":238
+ *             self.add_action(Buy(timestamp, self.current_qty, price))
+ * 
+ *     cdef void _update_position(self, ActionInterface action) except *:             # <<<<<<<<<<<<<<
+ *         cdef double old_qty = self.current_qty
+ *         cdef double old_value = old_qty * self.average_entry_price
+ */
+
+static void __pyx_f_3src_8analysis_6models_9portfolio_8Position__update_position(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *__pyx_v_action) {
+  double __pyx_v_old_qty;
+  double __pyx_v_old_value;
+  double __pyx_v_new_qty;
+  PyObject *__pyx_v_new_value = NULL;
+  __Pyx_RefNannyDeclarations
+  double __pyx_t_1;
+  int __pyx_t_2;
+  int __pyx_t_3;
+  PyObject *__pyx_t_4 = NULL;
+  Py_ssize_t __pyx_t_5;
+  Py_UCS4 __pyx_t_6;
+  PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
+  PyObject *__pyx_t_9 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("_update_position", 1);
+
+  /* "src/analysis/models/portfolio.pyx":239
+ * 
+ *     cdef void _update_position(self, ActionInterface action) except *:
+ *         cdef double old_qty = self.current_qty             # <<<<<<<<<<<<<<
+ *         cdef double old_value = old_qty * self.average_entry_price
+ * 
+ */
+  __pyx_t_1 = __pyx_v_self->current_qty;
+  __pyx_v_old_qty = __pyx_t_1;
+
+  /* "src/analysis/models/portfolio.pyx":240
+ *     cdef void _update_position(self, ActionInterface action) except *:
+ *         cdef double old_qty = self.current_qty
+ *         cdef double old_value = old_qty * self.average_entry_price             # <<<<<<<<<<<<<<
+ * 
+ *         if isinstance(action, Buy):
+ */
+  __pyx_v_old_value = (__pyx_v_old_qty * __pyx_v_self->average_entry_price);
+
+  /* "src/analysis/models/portfolio.pyx":242
+ *         cdef double old_value = old_qty * self.average_entry_price
+ * 
+ *         if isinstance(action, Buy):             # <<<<<<<<<<<<<<
+ *             new_qty = self.current_qty + action.data.qty
+ * 
+ */
+  __pyx_t_2 = __Pyx_TypeCheck(((PyObject *)__pyx_v_action), __pyx_ptype_3src_8analysis_6models_9portfolio_Buy); 
+  if (__pyx_t_2) {
+
+    /* "src/analysis/models/portfolio.pyx":243
+ * 
+ *         if isinstance(action, Buy):
+ *             new_qty = self.current_qty + action.data.qty             # <<<<<<<<<<<<<<
+ * 
+ *             if old_qty < 0 and new_qty > 0:
+ */
+    __pyx_v_new_qty = (__pyx_v_self->current_qty + __pyx_v_action->data.qty);
+
+    /* "src/analysis/models/portfolio.pyx":245
+ *             new_qty = self.current_qty + action.data.qty
+ * 
+ *             if old_qty < 0 and new_qty > 0:             # <<<<<<<<<<<<<<
+ *                 raise ValueError(
+ *                     f"Buying {action.data.qty} would change this short position to a "
+ */
+    __pyx_t_3 = (__pyx_v_old_qty < 0.0);
+    if (__pyx_t_3) {
+    } else {
+      __pyx_t_2 = __pyx_t_3;
+      goto __pyx_L5_bool_binop_done;
+    }
+    __pyx_t_3 = (__pyx_v_new_qty > 0.0);
+    __pyx_t_2 = __pyx_t_3;
+    __pyx_L5_bool_binop_done:;
+    if (unlikely(__pyx_t_2)) {
+
+      /* "src/analysis/models/portfolio.pyx":247
+ *             if old_qty < 0 and new_qty > 0:
+ *                 raise ValueError(
+ *                     f"Buying {action.data.qty} would change this short position to a "             # <<<<<<<<<<<<<<
+ *                     f"long position. Use .close() method before opening a new long "
+ *                     f"position, or buy a max amount of {abs(self.current_qty)}."
+ */
+      __pyx_t_4 = PyTuple_New(5); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 247, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_4);
+      __pyx_t_5 = 0;
+      __pyx_t_6 = 127;
+      __Pyx_INCREF(__pyx_kp_u_Buying);
+      __pyx_t_5 += 7;
+      __Pyx_GIVEREF(__pyx_kp_u_Buying);
+      PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_kp_u_Buying);
+      __pyx_t_7 = PyFloat_FromDouble(__pyx_v_action->data.qty); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 247, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
+      __pyx_t_8 = __Pyx_PyObject_FormatSimple(__pyx_t_7, __pyx_empty_unicode); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 247, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+      __pyx_t_6 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_8) > __pyx_t_6) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_8) : __pyx_t_6;
+      __pyx_t_5 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_8);
+      __Pyx_GIVEREF(__pyx_t_8);
+      PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_8);
+      __pyx_t_8 = 0;
+      __Pyx_INCREF(__pyx_kp_u_would_change_this_short_positio);
+      __pyx_t_5 += 133;
+      __Pyx_GIVEREF(__pyx_kp_u_would_change_this_short_positio);
+      PyTuple_SET_ITEM(__pyx_t_4, 2, __pyx_kp_u_would_change_this_short_positio);
+
+      /* "src/analysis/models/portfolio.pyx":249
+ *                     f"Buying {action.data.qty} would change this short position to a "
+ *                     f"long position. Use .close() method before opening a new long "
+ *                     f"position, or buy a max amount of {abs(self.current_qty)}."             # <<<<<<<<<<<<<<
+ *                 )
+ * 
+ */
+      __pyx_t_8 = PyFloat_FromDouble(fabs(__pyx_v_self->current_qty)); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 249, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_8);
+      __pyx_t_7 = __Pyx_PyObject_FormatSimple(__pyx_t_8, __pyx_empty_unicode); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 249, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+      __pyx_t_6 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_7) > __pyx_t_6) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_7) : __pyx_t_6;
+      __pyx_t_5 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_7);
+      __Pyx_GIVEREF(__pyx_t_7);
+      PyTuple_SET_ITEM(__pyx_t_4, 3, __pyx_t_7);
+      __pyx_t_7 = 0;
+      __Pyx_INCREF(__pyx_kp_u__10);
+      __pyx_t_5 += 1;
+      __Pyx_GIVEREF(__pyx_kp_u__10);
+      PyTuple_SET_ITEM(__pyx_t_4, 4, __pyx_kp_u__10);
+
+      /* "src/analysis/models/portfolio.pyx":247
+ *             if old_qty < 0 and new_qty > 0:
+ *                 raise ValueError(
+ *                     f"Buying {action.data.qty} would change this short position to a "             # <<<<<<<<<<<<<<
+ *                     f"long position. Use .close() method before opening a new long "
+ *                     f"position, or buy a max amount of {abs(self.current_qty)}."
+ */
+      __pyx_t_7 = __Pyx_PyUnicode_Join(__pyx_t_4, 5, __pyx_t_5, __pyx_t_6); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 247, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+      /* "src/analysis/models/portfolio.pyx":246
+ * 
+ *             if old_qty < 0 and new_qty > 0:
+ *                 raise ValueError(             # <<<<<<<<<<<<<<
+ *                     f"Buying {action.data.qty} would change this short position to a "
+ *                     f"long position. Use .close() method before opening a new long "
+ */
+      __pyx_t_4 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_7); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 246, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_4);
+      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+      __Pyx_Raise(__pyx_t_4, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      __PYX_ERR(1, 246, __pyx_L1_error)
+
+      /* "src/analysis/models/portfolio.pyx":245
+ *             new_qty = self.current_qty + action.data.qty
+ * 
+ *             if old_qty < 0 and new_qty > 0:             # <<<<<<<<<<<<<<
+ *                 raise ValueError(
+ *                     f"Buying {action.data.qty} would change this short position to a "
+ */
+    }
+
+    /* "src/analysis/models/portfolio.pyx":252
+ *                 )
+ * 
+ *             self.current_qty = new_qty             # <<<<<<<<<<<<<<
+ *             new_value = old_value + action.qty * action.data.price
+ *             self.average_entry_price = new_value / self.current_qty
+ */
+    __pyx_v_self->current_qty = __pyx_v_new_qty;
+
+    /* "src/analysis/models/portfolio.pyx":253
+ * 
+ *             self.current_qty = new_qty
+ *             new_value = old_value + action.qty * action.data.price             # <<<<<<<<<<<<<<
+ *             self.average_entry_price = new_value / self.current_qty
+ * 
+ */
+    __pyx_t_4 = PyFloat_FromDouble(__pyx_v_old_value); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 253, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_7 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_action), __pyx_n_s_qty); if (unlikely(!__pyx_t_7)) __PYX_ERR(1, 253, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    __pyx_t_8 = PyFloat_FromDouble(__pyx_v_action->data.price); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 253, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_8);
+    __pyx_t_9 = PyNumber_Multiply(__pyx_t_7, __pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 253, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_9);
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __pyx_t_8 = PyNumber_Add(__pyx_t_4, __pyx_t_9); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 253, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_8);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __pyx_v_new_value = __pyx_t_8;
+    __pyx_t_8 = 0;
+
+    /* "src/analysis/models/portfolio.pyx":254
+ *             self.current_qty = new_qty
+ *             new_value = old_value + action.qty * action.data.price
+ *             self.average_entry_price = new_value / self.current_qty             # <<<<<<<<<<<<<<
+ * 
+ *         elif isinstance(action, Sell):
+ */
+    __pyx_t_8 = PyFloat_FromDouble(__pyx_v_self->current_qty); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 254, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_8);
+    __pyx_t_9 = __Pyx_PyNumber_Divide(__pyx_v_new_value, __pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 254, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_9);
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_t_9); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 254, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __pyx_v_self->average_entry_price = __pyx_t_1;
+
+    /* "src/analysis/models/portfolio.pyx":242
+ *         cdef double old_value = old_qty * self.average_entry_price
+ * 
+ *         if isinstance(action, Buy):             # <<<<<<<<<<<<<<
+ *             new_qty = self.current_qty + action.data.qty
+ * 
+ */
+    goto __pyx_L3;
+  }
+
+  /* "src/analysis/models/portfolio.pyx":256
+ *             self.average_entry_price = new_value / self.current_qty
+ * 
+ *         elif isinstance(action, Sell):             # <<<<<<<<<<<<<<
+ *             new_qty = self.current_qty - action.data.qty
+ * 
+ */
+  __pyx_t_2 = __Pyx_TypeCheck(((PyObject *)__pyx_v_action), __pyx_ptype_3src_8analysis_6models_9portfolio_Sell); 
+  if (__pyx_t_2) {
+
+    /* "src/analysis/models/portfolio.pyx":257
+ * 
+ *         elif isinstance(action, Sell):
+ *             new_qty = self.current_qty - action.data.qty             # <<<<<<<<<<<<<<
+ * 
+ *             if old_qty > 0 and new_qty < 0:
+ */
+    __pyx_v_new_qty = (__pyx_v_self->current_qty - __pyx_v_action->data.qty);
+
+    /* "src/analysis/models/portfolio.pyx":259
+ *             new_qty = self.current_qty - action.data.qty
+ * 
+ *             if old_qty > 0 and new_qty < 0:             # <<<<<<<<<<<<<<
+ *                 raise ValueError(
+ *                     f"Selling {action.data.qty} would change this long position to a "
+ */
+    __pyx_t_3 = (__pyx_v_old_qty > 0.0);
+    if (__pyx_t_3) {
+    } else {
+      __pyx_t_2 = __pyx_t_3;
+      goto __pyx_L8_bool_binop_done;
+    }
+    __pyx_t_3 = (__pyx_v_new_qty < 0.0);
+    __pyx_t_2 = __pyx_t_3;
+    __pyx_L8_bool_binop_done:;
+    if (unlikely(__pyx_t_2)) {
+
+      /* "src/analysis/models/portfolio.pyx":261
+ *             if old_qty > 0 and new_qty < 0:
+ *                 raise ValueError(
+ *                     f"Selling {action.data.qty} would change this long position to a "             # <<<<<<<<<<<<<<
+ *                     f"short position. Use .close() method before opening a new short "
+ *                     f"position, or sell a max amount of {self.current_qty}."
+ */
+      __pyx_t_9 = PyTuple_New(5); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 261, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_9);
+      __pyx_t_5 = 0;
+      __pyx_t_6 = 127;
+      __Pyx_INCREF(__pyx_kp_u_Selling);
+      __pyx_t_5 += 8;
+      __Pyx_GIVEREF(__pyx_kp_u_Selling);
+      PyTuple_SET_ITEM(__pyx_t_9, 0, __pyx_kp_u_Selling);
+      __pyx_t_8 = PyFloat_FromDouble(__pyx_v_action->data.qty); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 261, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_8);
+      __pyx_t_4 = __Pyx_PyObject_FormatSimple(__pyx_t_8, __pyx_empty_unicode); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 261, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_4);
+      __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+      __pyx_t_6 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) > __pyx_t_6) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_4) : __pyx_t_6;
+      __pyx_t_5 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_4);
+      __Pyx_GIVEREF(__pyx_t_4);
+      PyTuple_SET_ITEM(__pyx_t_9, 1, __pyx_t_4);
+      __pyx_t_4 = 0;
+      __Pyx_INCREF(__pyx_kp_u_would_change_this_long_position);
+      __pyx_t_5 += 135;
+      __Pyx_GIVEREF(__pyx_kp_u_would_change_this_long_position);
+      PyTuple_SET_ITEM(__pyx_t_9, 2, __pyx_kp_u_would_change_this_long_position);
+
+      /* "src/analysis/models/portfolio.pyx":263
+ *                     f"Selling {action.data.qty} would change this long position to a "
+ *                     f"short position. Use .close() method before opening a new short "
+ *                     f"position, or sell a max amount of {self.current_qty}."             # <<<<<<<<<<<<<<
+ *                 )
+ * 
+ */
+      __pyx_t_4 = PyFloat_FromDouble(__pyx_v_self->current_qty); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 263, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_4);
+      __pyx_t_8 = __Pyx_PyObject_FormatSimple(__pyx_t_4, __pyx_empty_unicode); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 263, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+      __pyx_t_6 = (__Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_8) > __pyx_t_6) ? __Pyx_PyUnicode_MAX_CHAR_VALUE(__pyx_t_8) : __pyx_t_6;
+      __pyx_t_5 += __Pyx_PyUnicode_GET_LENGTH(__pyx_t_8);
+      __Pyx_GIVEREF(__pyx_t_8);
+      PyTuple_SET_ITEM(__pyx_t_9, 3, __pyx_t_8);
+      __pyx_t_8 = 0;
+      __Pyx_INCREF(__pyx_kp_u__10);
+      __pyx_t_5 += 1;
+      __Pyx_GIVEREF(__pyx_kp_u__10);
+      PyTuple_SET_ITEM(__pyx_t_9, 4, __pyx_kp_u__10);
+
+      /* "src/analysis/models/portfolio.pyx":261
+ *             if old_qty > 0 and new_qty < 0:
+ *                 raise ValueError(
+ *                     f"Selling {action.data.qty} would change this long position to a "             # <<<<<<<<<<<<<<
+ *                     f"short position. Use .close() method before opening a new short "
+ *                     f"position, or sell a max amount of {self.current_qty}."
+ */
+      __pyx_t_8 = __Pyx_PyUnicode_Join(__pyx_t_9, 5, __pyx_t_5, __pyx_t_6); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 261, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_8);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+
+      /* "src/analysis/models/portfolio.pyx":260
+ * 
+ *             if old_qty > 0 and new_qty < 0:
+ *                 raise ValueError(             # <<<<<<<<<<<<<<
+ *                     f"Selling {action.data.qty} would change this long position to a "
+ *                     f"short position. Use .close() method before opening a new short "
+ */
+      __pyx_t_9 = __Pyx_PyObject_CallOneArg(__pyx_builtin_ValueError, __pyx_t_8); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 260, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_9);
+      __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+      __Pyx_Raise(__pyx_t_9, 0, 0, 0);
+      __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+      __PYX_ERR(1, 260, __pyx_L1_error)
+
+      /* "src/analysis/models/portfolio.pyx":259
+ *             new_qty = self.current_qty - action.data.qty
+ * 
+ *             if old_qty > 0 and new_qty < 0:             # <<<<<<<<<<<<<<
+ *                 raise ValueError(
+ *                     f"Selling {action.data.qty} would change this long position to a "
+ */
+    }
+
+    /* "src/analysis/models/portfolio.pyx":266
+ *                 )
+ * 
+ *             self.current_qty = new_qty             # <<<<<<<<<<<<<<
+ * 
+ *         # calculate the PNL if the position is closed now
+ */
+    __pyx_v_self->current_qty = __pyx_v_new_qty;
+
+    /* "src/analysis/models/portfolio.pyx":256
+ *             self.average_entry_price = new_value / self.current_qty
+ * 
+ *         elif isinstance(action, Sell):             # <<<<<<<<<<<<<<
+ *             new_qty = self.current_qty - action.data.qty
+ * 
+ */
+  }
+  __pyx_L3:;
+
+  /* "src/analysis/models/portfolio.pyx":269
+ * 
+ *         # calculate the PNL if the position is closed now
+ *         if self.current_qty == 0:             # <<<<<<<<<<<<<<
+ *             self.realized_pnl = abs(
+ *                 self.average_entry_price - self.average_exit_price
+ */
+  __pyx_t_2 = (__pyx_v_self->current_qty == 0.0);
+  if (__pyx_t_2) {
+
+    /* "src/analysis/models/portfolio.pyx":271
+ *         if self.current_qty == 0:
+ *             self.realized_pnl = abs(
+ *                 self.average_entry_price - self.average_exit_price             # <<<<<<<<<<<<<<
+ *             ) * old_qty
+ */
+    __pyx_t_9 = PyFloat_FromDouble(__pyx_v_self->average_entry_price); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 271, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_9);
+    __pyx_t_8 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_average_exit_price); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 271, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_8);
+    __pyx_t_4 = PyNumber_Subtract(__pyx_t_9, __pyx_t_8); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 271, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+    /* "src/analysis/models/portfolio.pyx":270
+ *         # calculate the PNL if the position is closed now
+ *         if self.current_qty == 0:
+ *             self.realized_pnl = abs(             # <<<<<<<<<<<<<<
+ *                 self.average_entry_price - self.average_exit_price
+ *             ) * old_qty
+ */
+    __pyx_t_8 = __Pyx_PyNumber_Absolute(__pyx_t_4); if (unlikely(!__pyx_t_8)) __PYX_ERR(1, 270, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_8);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+    /* "src/analysis/models/portfolio.pyx":272
+ *             self.realized_pnl = abs(
+ *                 self.average_entry_price - self.average_exit_price
+ *             ) * old_qty             # <<<<<<<<<<<<<<
+ */
+    __pyx_t_4 = PyFloat_FromDouble(__pyx_v_old_qty); if (unlikely(!__pyx_t_4)) __PYX_ERR(1, 272, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __pyx_t_9 = PyNumber_Multiply(__pyx_t_8, __pyx_t_4); if (unlikely(!__pyx_t_9)) __PYX_ERR(1, 272, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_9);
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __pyx_t_1 = __pyx_PyFloat_AsDouble(__pyx_t_9); if (unlikely((__pyx_t_1 == (double)-1) && PyErr_Occurred())) __PYX_ERR(1, 272, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+
+    /* "src/analysis/models/portfolio.pyx":270
+ *         # calculate the PNL if the position is closed now
+ *         if self.current_qty == 0:
+ *             self.realized_pnl = abs(             # <<<<<<<<<<<<<<
+ *                 self.average_entry_price - self.average_exit_price
+ *             ) * old_qty
+ */
+    __pyx_v_self->realized_pnl = __pyx_t_1;
+
+    /* "src/analysis/models/portfolio.pyx":269
+ * 
+ *         # calculate the PNL if the position is closed now
+ *         if self.current_qty == 0:             # <<<<<<<<<<<<<<
+ *             self.realized_pnl = abs(
+ *                 self.average_entry_price - self.average_exit_price
+ */
+  }
+
+  /* "src/analysis/models/portfolio.pyx":238
+ *             self.add_action(Buy(timestamp, self.current_qty, price))
+ * 
+ *     cdef void _update_position(self, ActionInterface action) except *:             # <<<<<<<<<<<<<<
+ *         cdef double old_qty = self.current_qty
+ *         cdef double old_value = old_qty * self.average_entry_price
+ */
+
+  /* function exit code */
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
+  __Pyx_XDECREF(__pyx_t_9);
+  __Pyx_AddTraceback("src.analysis.models.portfolio.Position._update_position", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_new_value);
+  __Pyx_RefNannyFinishContext();
+}
+
+/* "src/analysis/models/portfolio.pyx":173
  *         list buys
  *         list sells
  *         readonly str symbol             # <<<<<<<<<<<<<<
@@ -9834,7 +11444,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_6symbol___
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":150
+/* "src/analysis/models/portfolio.pyx":174
  *         list sells
  *         readonly str symbol
  *         readonly double current_qty             # <<<<<<<<<<<<<<
@@ -9866,7 +11476,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_11current_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->current_qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 150, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->current_qty); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 174, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -9883,7 +11493,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_11current_
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":151
+/* "src/analysis/models/portfolio.pyx":175
  *         readonly str symbol
  *         readonly double current_qty
  *         readonly double average_entry_price             # <<<<<<<<<<<<<<
@@ -9915,7 +11525,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_19average_
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->average_entry_price); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 151, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->average_entry_price); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 175, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -9932,7 +11542,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_19average_
   return __pyx_r;
 }
 
-/* "src/analysis/models/portfolio.pyx":152
+/* "src/analysis/models/portfolio.pyx":176
  *         readonly double current_qty
  *         readonly double average_entry_price
  *         readonly double realized_pnl             # <<<<<<<<<<<<<<
@@ -9964,7 +11574,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_12realized
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->realized_pnl); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 152, __pyx_L1_error)
+  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_self->realized_pnl); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 176, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -9988,15 +11598,15 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_12realized
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_9__reduce_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_11__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_8Position_9__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_9__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_9__reduce_cython__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_8Position_11__reduce_cython__ = {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_11__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_11__reduce_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -10021,14 +11631,14 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   if (unlikely(__pyx_nargs > 0)) {
     __Pyx_RaiseArgtupleInvalid("__reduce_cython__", 1, 0, 0, __pyx_nargs); return NULL;}
   if (unlikely(__pyx_kwds) && __Pyx_NumKwargs_FASTCALL(__pyx_kwds) && unlikely(!__Pyx_CheckKeywordStrings(__pyx_kwds, "__reduce_cython__", 0))) return NULL;
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_8Position_8__reduce_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self));
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_8Position_10__reduce_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self));
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_8__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self) {
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_10__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -10043,7 +11653,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_8__reduce_
  *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
   __Pyx_Raise(__pyx_builtin_TypeError, __pyx_kp_s_no_default___reduce___due_to_non, 0, 0);
-  __PYX_ERR(2, 2, __pyx_L1_error)
+  __PYX_ERR(0, 2, __pyx_L1_error)
 
   /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
@@ -10068,15 +11678,15 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_8__reduce_
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_11__setstate_cython__(PyObject *__pyx_v_self, 
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_13__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
 PyObject *__pyx_args, PyObject *__pyx_kwds
 #endif
 ); /*proto*/
-static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_8Position_11__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_11__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_11__setstate_cython__(PyObject *__pyx_v_self, 
+static PyMethodDef __pyx_mdef_3src_8analysis_6models_9portfolio_8Position_13__setstate_cython__ = {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_13__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_3src_8analysis_6models_9portfolio_8Position_13__setstate_cython__(PyObject *__pyx_v_self, 
 #if CYTHON_METH_FASTCALL
 PyObject *const *__pyx_args, Py_ssize_t __pyx_nargs, PyObject *__pyx_kwds
 #else
@@ -10120,12 +11730,12 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
           (void)__Pyx_Arg_NewRef_FASTCALL(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(2, 3, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 3, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__setstate_cython__") < 0)) __PYX_ERR(2, 3, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__setstate_cython__") < 0)) __PYX_ERR(0, 3, __pyx_L3_error)
       }
     } else if (unlikely(__pyx_nargs != 1)) {
       goto __pyx_L5_argtuple_error;
@@ -10136,7 +11746,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__setstate_cython__", 1, 1, 1, __pyx_nargs); __PYX_ERR(2, 3, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__setstate_cython__", 1, 1, 1, __pyx_nargs); __PYX_ERR(0, 3, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -10150,7 +11760,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_8Position_10__setstate_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self), __pyx_v___pyx_state);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_9portfolio_8Position_12__setstate_cython__(((struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *)__pyx_v_self), __pyx_v___pyx_state);
 
   /* function exit code */
   {
@@ -10163,7 +11773,7 @@ PyObject *__pyx_args, PyObject *__pyx_kwds
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_10__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
+static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_12__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state) {
   PyObject *__pyx_r = NULL;
   __Pyx_RefNannyDeclarations
   int __pyx_lineno = 0;
@@ -10177,7 +11787,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_10__setsta
  *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"             # <<<<<<<<<<<<<<
  */
   __Pyx_Raise(__pyx_builtin_TypeError, __pyx_kp_s_no_default___reduce___due_to_non, 0, 0);
-  __PYX_ERR(2, 4, __pyx_L1_error)
+  __PYX_ERR(0, 4, __pyx_L1_error)
 
   /* "(tree fragment)":3
  * def __reduce_cython__(self):
@@ -10195,8 +11805,8 @@ static PyObject *__pyx_pf_3src_8analysis_6models_9portfolio_8Position_10__setsta
   return __pyx_r;
 }
 
-static PyObject *__pyx_tp_new_3src_8analysis_6models_9portfolio_Action(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
-  struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *p;
+static PyObject *__pyx_tp_new_3src_8analysis_6models_9portfolio_ActionInterface(PyTypeObject *t, CYTHON_UNUSED PyObject *a, CYTHON_UNUSED PyObject *k) {
+  struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *p;
   PyObject *o;
   #if CYTHON_COMPILING_IN_LIMITED_API
   allocfunc alloc_func = (allocfunc)PyType_GetSlot(t, Py_tp_alloc);
@@ -10209,16 +11819,16 @@ static PyObject *__pyx_tp_new_3src_8analysis_6models_9portfolio_Action(PyTypeObj
   }
   if (unlikely(!o)) return 0;
   #endif
-  p = ((struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)o);
+  p = ((struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *)o);
   new((void*)&(p->data)) struct __pyx_t_3src_8analysis_6models_9portfolio_ActionData();
   return o;
 }
 
-static void __pyx_tp_dealloc_3src_8analysis_6models_9portfolio_Action(PyObject *o) {
-  struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *p = (struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *)o;
+static void __pyx_tp_dealloc_3src_8analysis_6models_9portfolio_ActionInterface(PyObject *o) {
+  struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *p = (struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *)o;
   #if CYTHON_USE_TP_FINALIZE
   if (unlikely((PY_VERSION_HEX >= 0x03080000 || __Pyx_PyType_HasFeature(Py_TYPE(o), Py_TPFLAGS_HAVE_FINALIZE)) && __Pyx_PyObject_GetSlot(o, tp_finalize, destructor)) && (!PyType_IS_GC(Py_TYPE(o)) || !__Pyx_PyObject_GC_IsFinalized(o))) {
-    if (__Pyx_PyObject_GetSlot(o, tp_dealloc, destructor) == __pyx_tp_dealloc_3src_8analysis_6models_9portfolio_Action) {
+    if (__Pyx_PyObject_GetSlot(o, tp_dealloc, destructor) == __pyx_tp_dealloc_3src_8analysis_6models_9portfolio_ActionInterface) {
       if (PyObject_CallFinalizerFromDealloc(o)) return;
     }
   }
@@ -10234,7 +11844,147 @@ static void __pyx_tp_dealloc_3src_8analysis_6models_9portfolio_Action(PyObject *
   #endif
 }
 
-static CYTHON_INLINE PyObject *__pyx_nb_add_3src_8analysis_6models_9portfolio_Action_maybe_call_slot(PyTypeObject* type, PyObject *left, PyObject *right ) {
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_15ActionInterface_data(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_4data_1__get__(o);
+}
+
+static int __pyx_setprop_3src_8analysis_6models_9portfolio_15ActionInterface_data(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_4data_3__set__(o, v);
+  }
+  else {
+    PyErr_SetString(PyExc_NotImplementedError, "__del__");
+    return -1;
+  }
+}
+
+static PyMethodDef __pyx_methods_3src_8analysis_6models_9portfolio_ActionInterface[] = {
+  {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_1__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_15ActionInterface_3__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {0, 0, 0, 0}
+};
+
+static struct PyGetSetDef __pyx_getsets_3src_8analysis_6models_9portfolio_ActionInterface[] = {
+  {(char *)"data", __pyx_getprop_3src_8analysis_6models_9portfolio_15ActionInterface_data, __pyx_setprop_3src_8analysis_6models_9portfolio_15ActionInterface_data, (char *)0, 0},
+  {0, 0, 0, 0, 0}
+};
+#if CYTHON_USE_TYPE_SPECS
+static PyType_Slot __pyx_type_3src_8analysis_6models_9portfolio_ActionInterface_slots[] = {
+  {Py_tp_dealloc, (void *)__pyx_tp_dealloc_3src_8analysis_6models_9portfolio_ActionInterface},
+  {Py_tp_methods, (void *)__pyx_methods_3src_8analysis_6models_9portfolio_ActionInterface},
+  {Py_tp_getset, (void *)__pyx_getsets_3src_8analysis_6models_9portfolio_ActionInterface},
+  {Py_tp_new, (void *)__pyx_tp_new_3src_8analysis_6models_9portfolio_ActionInterface},
+  {0, 0},
+};
+static PyType_Spec __pyx_type_3src_8analysis_6models_9portfolio_ActionInterface_spec = {
+  "src.analysis.models.portfolio.ActionInterface",
+  sizeof(struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface),
+  0,
+  Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE,
+  __pyx_type_3src_8analysis_6models_9portfolio_ActionInterface_slots,
+};
+#else
+
+static PyTypeObject __pyx_type_3src_8analysis_6models_9portfolio_ActionInterface = {
+  PyVarObject_HEAD_INIT(0, 0)
+  "src.analysis.models.portfolio.""ActionInterface", /*tp_name*/
+  sizeof(struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface), /*tp_basicsize*/
+  0, /*tp_itemsize*/
+  __pyx_tp_dealloc_3src_8analysis_6models_9portfolio_ActionInterface, /*tp_dealloc*/
+  #if PY_VERSION_HEX < 0x030800b4
+  0, /*tp_print*/
+  #endif
+  #if PY_VERSION_HEX >= 0x030800b4
+  0, /*tp_vectorcall_offset*/
+  #endif
+  0, /*tp_getattr*/
+  0, /*tp_setattr*/
+  #if PY_MAJOR_VERSION < 3
+  0, /*tp_compare*/
+  #endif
+  #if PY_MAJOR_VERSION >= 3
+  0, /*tp_as_async*/
+  #endif
+  0, /*tp_repr*/
+  0, /*tp_as_number*/
+  0, /*tp_as_sequence*/
+  0, /*tp_as_mapping*/
+  0, /*tp_hash*/
+  0, /*tp_call*/
+  0, /*tp_str*/
+  0, /*tp_getattro*/
+  0, /*tp_setattro*/
+  0, /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE, /*tp_flags*/
+  0, /*tp_doc*/
+  0, /*tp_traverse*/
+  0, /*tp_clear*/
+  0, /*tp_richcompare*/
+  0, /*tp_weaklistoffset*/
+  0, /*tp_iter*/
+  0, /*tp_iternext*/
+  __pyx_methods_3src_8analysis_6models_9portfolio_ActionInterface, /*tp_methods*/
+  0, /*tp_members*/
+  __pyx_getsets_3src_8analysis_6models_9portfolio_ActionInterface, /*tp_getset*/
+  0, /*tp_base*/
+  0, /*tp_dict*/
+  0, /*tp_descr_get*/
+  0, /*tp_descr_set*/
+  #if !CYTHON_USE_TYPE_SPECS
+  0, /*tp_dictoffset*/
+  #endif
+  0, /*tp_init*/
+  0, /*tp_alloc*/
+  __pyx_tp_new_3src_8analysis_6models_9portfolio_ActionInterface, /*tp_new*/
+  0, /*tp_free*/
+  0, /*tp_is_gc*/
+  0, /*tp_bases*/
+  0, /*tp_mro*/
+  0, /*tp_cache*/
+  0, /*tp_subclasses*/
+  0, /*tp_weaklist*/
+  0, /*tp_del*/
+  0, /*tp_version_tag*/
+  #if PY_VERSION_HEX >= 0x030400a1
+  #if CYTHON_USE_TP_FINALIZE
+  0, /*tp_finalize*/
+  #else
+  NULL, /*tp_finalize*/
+  #endif
+  #endif
+  #if PY_VERSION_HEX >= 0x030800b1 && (!CYTHON_COMPILING_IN_PYPY || PYPY_VERSION_NUM >= 0x07030800)
+  0, /*tp_vectorcall*/
+  #endif
+  #if __PYX_NEED_TP_PRINT_SLOT == 1
+  0, /*tp_print*/
+  #endif
+  #if PY_VERSION_HEX >= 0x030C0000
+  0, /*tp_watched*/
+  #endif
+  #if PY_VERSION_HEX >= 0x030d00A4
+  0, /*tp_versions_used*/
+  #endif
+  #if CYTHON_COMPILING_IN_PYPY && PY_VERSION_HEX >= 0x03090000 && PY_VERSION_HEX < 0x030a0000
+  0, /*tp_pypy_flags*/
+  #endif
+};
+#endif
+static struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Buy __pyx_vtable_3src_8analysis_6models_9portfolio_Buy;
+
+static PyObject *__pyx_tp_new_3src_8analysis_6models_9portfolio_Buy(PyTypeObject *t, PyObject *a, PyObject *k) {
+  struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *p;
+  PyObject *o = __pyx_tp_new_3src_8analysis_6models_9portfolio_ActionInterface(t, a, k);
+  if (unlikely(!o)) return 0;
+  p = ((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)o);
+  p->__pyx_vtab = __pyx_vtabptr_3src_8analysis_6models_9portfolio_Buy;
+  if (unlikely(__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__cinit__(o, a, k) < 0)) goto bad;
+  return o;
+  bad:
+  Py_DECREF(o); o = 0;
+  return NULL;
+}
+
+static CYTHON_INLINE PyObject *__pyx_nb_add_3src_8analysis_6models_9portfolio_Buy_maybe_call_slot(PyTypeObject* type, PyObject *left, PyObject *right ) {
     binaryfunc slot;
 #if CYTHON_USE_TYPE_SLOTS || PY_MAJOR_VERSION < 3 || CYTHON_COMPILING_IN_PYPY
     slot = type->tp_as_number ? type->tp_as_number->nb_add : NULL;
@@ -10243,55 +11993,59 @@ static CYTHON_INLINE PyObject *__pyx_nb_add_3src_8analysis_6models_9portfolio_Ac
 #endif
     return slot ? slot(left, right ) : __Pyx_NewRef(Py_NotImplemented);
 }
-static PyObject *__pyx_nb_add_3src_8analysis_6models_9portfolio_Action(PyObject *left, PyObject *right ) {
+static PyObject *__pyx_nb_add_3src_8analysis_6models_9portfolio_Buy(PyObject *left, PyObject *right ) {
     int maybe_self_is_left, maybe_self_is_right = 0;
     maybe_self_is_left = Py_TYPE(left) == Py_TYPE(right)
 #if CYTHON_USE_TYPE_SLOTS
-            || (Py_TYPE(left)->tp_as_number && Py_TYPE(left)->tp_as_number->nb_add == &__pyx_nb_add_3src_8analysis_6models_9portfolio_Action)
+            || (Py_TYPE(left)->tp_as_number && Py_TYPE(left)->tp_as_number->nb_add == &__pyx_nb_add_3src_8analysis_6models_9portfolio_Buy)
 #endif
-            || __Pyx_TypeCheck(left, __pyx_ptype_3src_8analysis_6models_9portfolio_Action);
+            || __Pyx_TypeCheck(left, __pyx_ptype_3src_8analysis_6models_9portfolio_Buy);
     if (maybe_self_is_left) {
         PyObject *res;
-        res = __pyx_pw_3src_8analysis_6models_9portfolio_6Action_3__add__(left, right);
+        res = __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_5__add__(left, right);
         if (res != Py_NotImplemented) return res;
         Py_DECREF(res);
     }
     maybe_self_is_right = Py_TYPE(left) == Py_TYPE(right)
 #if CYTHON_USE_TYPE_SLOTS
-            || (Py_TYPE(right)->tp_as_number && Py_TYPE(right)->tp_as_number->nb_add == &__pyx_nb_add_3src_8analysis_6models_9portfolio_Action)
+            || (Py_TYPE(right)->tp_as_number && Py_TYPE(right)->tp_as_number->nb_add == &__pyx_nb_add_3src_8analysis_6models_9portfolio_Buy)
 #endif
-            || PyType_IsSubtype(Py_TYPE(right), __pyx_ptype_3src_8analysis_6models_9portfolio_Action);
+            || PyType_IsSubtype(Py_TYPE(right), __pyx_ptype_3src_8analysis_6models_9portfolio_Buy);
     if (maybe_self_is_right) {
-        return __pyx_nb_add_3src_8analysis_6models_9portfolio_Action_maybe_call_slot(__Pyx_PyType_GetSlot(__pyx_ptype_3src_8analysis_6models_9portfolio_Action, tp_base, PyTypeObject*), left, right );
+        return __pyx_nb_add_3src_8analysis_6models_9portfolio_Buy_maybe_call_slot(__Pyx_PyType_GetSlot(__pyx_ptype_3src_8analysis_6models_9portfolio_Buy, tp_base, PyTypeObject*), left, right );
     }
     return __Pyx_NewRef(Py_NotImplemented);
 }
 
 
 
-static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_6Action_timestamp(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_3src_8analysis_6models_9portfolio_6Action_9timestamp_1__get__(o);
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_type(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_4type_1__get__(o);
 }
 
-static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_6Action_qty(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_3src_8analysis_6models_9portfolio_6Action_3qty_1__get__(o);
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_timestamp(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_9timestamp_1__get__(o);
 }
 
-static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_6Action_price(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_3src_8analysis_6models_9portfolio_6Action_5price_1__get__(o);
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_qty(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3qty_1__get__(o);
 }
 
-static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_6Action_quote_qty(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_3src_8analysis_6models_9portfolio_6Action_9quote_qty_1__get__(o);
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_price(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_5price_1__get__(o);
 }
 
-static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_6Action_fee(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_3src_8analysis_6models_9portfolio_6Action_3fee_1__get__(o);
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_quote_qty(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_9quote_qty_1__get__(o);
 }
 
-static int __pyx_setprop_3src_8analysis_6models_9portfolio_6Action_fee(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_fee(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3fee_1__get__(o);
+}
+
+static int __pyx_setprop_3src_8analysis_6models_9portfolio_3Buy_fee(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
   if (v) {
-    return __pyx_pw_3src_8analysis_6models_9portfolio_6Action_3fee_3__set__(o, v);
+    return __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3fee_3__set__(o, v);
   }
   else {
     PyErr_SetString(PyExc_NotImplementedError, "__del__");
@@ -10299,13 +12053,13 @@ static int __pyx_setprop_3src_8analysis_6models_9portfolio_6Action_fee(PyObject 
   }
 }
 
-static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_6Action_slippage(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_3src_8analysis_6models_9portfolio_6Action_8slippage_1__get__(o);
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_slippage(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_8slippage_1__get__(o);
 }
 
-static int __pyx_setprop_3src_8analysis_6models_9portfolio_6Action_slippage(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+static int __pyx_setprop_3src_8analysis_6models_9portfolio_3Buy_slippage(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
   if (v) {
-    return __pyx_pw_3src_8analysis_6models_9portfolio_6Action_8slippage_3__set__(o, v);
+    return __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_8slippage_3__set__(o, v);
   }
   else {
     PyErr_SetString(PyExc_NotImplementedError, "__del__");
@@ -10313,42 +12067,47 @@ static int __pyx_setprop_3src_8analysis_6models_9portfolio_6Action_slippage(PyOb
   }
 }
 
-static PyMethodDef __pyx_methods_3src_8analysis_6models_9portfolio_Action[] = {
-  {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_6Action_5__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_6Action_7__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+static PyObject *__pyx_specialmethod___pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3__repr__(PyObject *self, CYTHON_UNUSED PyObject *arg) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3__repr__(self);
+}
+
+static PyMethodDef __pyx_methods_3src_8analysis_6models_9portfolio_Buy[] = {
+  {"__repr__", (PyCFunction)__pyx_specialmethod___pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3__repr__, METH_NOARGS|METH_COEXIST, 0},
+  {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_7__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_9__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 
-static struct PyGetSetDef __pyx_getsets_3src_8analysis_6models_9portfolio_Action[] = {
-  {(char *)"timestamp", __pyx_getprop_3src_8analysis_6models_9portfolio_6Action_timestamp, 0, (char *)0, 0},
-  {(char *)"qty", __pyx_getprop_3src_8analysis_6models_9portfolio_6Action_qty, 0, (char *)0, 0},
-  {(char *)"price", __pyx_getprop_3src_8analysis_6models_9portfolio_6Action_price, 0, (char *)0, 0},
-  {(char *)"quote_qty", __pyx_getprop_3src_8analysis_6models_9portfolio_6Action_quote_qty, 0, (char *)0, 0},
-  {(char *)"fee", __pyx_getprop_3src_8analysis_6models_9portfolio_6Action_fee, __pyx_setprop_3src_8analysis_6models_9portfolio_6Action_fee, (char *)0, 0},
-  {(char *)"slippage", __pyx_getprop_3src_8analysis_6models_9portfolio_6Action_slippage, __pyx_setprop_3src_8analysis_6models_9portfolio_6Action_slippage, (char *)0, 0},
+static struct PyGetSetDef __pyx_getsets_3src_8analysis_6models_9portfolio_Buy[] = {
+  {(char *)"type", __pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_type, 0, (char *)0, 0},
+  {(char *)"timestamp", __pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_timestamp, 0, (char *)0, 0},
+  {(char *)"qty", __pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_qty, 0, (char *)0, 0},
+  {(char *)"price", __pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_price, 0, (char *)0, 0},
+  {(char *)"quote_qty", __pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_quote_qty, 0, (char *)0, 0},
+  {(char *)"fee", __pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_fee, __pyx_setprop_3src_8analysis_6models_9portfolio_3Buy_fee, (char *)0, 0},
+  {(char *)"slippage", __pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_slippage, __pyx_setprop_3src_8analysis_6models_9portfolio_3Buy_slippage, (char *)0, 0},
   {0, 0, 0, 0, 0}
 };
 #if CYTHON_USE_TYPE_SPECS
-static PyType_Slot __pyx_type_3src_8analysis_6models_9portfolio_Action_slots[] = {
-  {Py_tp_dealloc, (void *)__pyx_tp_dealloc_3src_8analysis_6models_9portfolio_Action},
-  {Py_nb_add, (void *)__pyx_nb_add_3src_8analysis_6models_9portfolio_Action},
-  {Py_tp_methods, (void *)__pyx_methods_3src_8analysis_6models_9portfolio_Action},
-  {Py_tp_getset, (void *)__pyx_getsets_3src_8analysis_6models_9portfolio_Action},
-  {Py_tp_init, (void *)__pyx_pw_3src_8analysis_6models_9portfolio_6Action_1__init__},
-  {Py_tp_new, (void *)__pyx_tp_new_3src_8analysis_6models_9portfolio_Action},
+static PyType_Slot __pyx_type_3src_8analysis_6models_9portfolio_Buy_slots[] = {
+  {Py_tp_repr, (void *)__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3__repr__},
+  {Py_nb_add, (void *)__pyx_nb_add_3src_8analysis_6models_9portfolio_Buy},
+  {Py_tp_methods, (void *)__pyx_methods_3src_8analysis_6models_9portfolio_Buy},
+  {Py_tp_getset, (void *)__pyx_getsets_3src_8analysis_6models_9portfolio_Buy},
+  {Py_tp_new, (void *)__pyx_tp_new_3src_8analysis_6models_9portfolio_Buy},
   {0, 0},
 };
-static PyType_Spec __pyx_type_3src_8analysis_6models_9portfolio_Action_spec = {
-  "src.analysis.models.portfolio.Action",
-  sizeof(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action),
+static PyType_Spec __pyx_type_3src_8analysis_6models_9portfolio_Buy_spec = {
+  "src.analysis.models.portfolio.Buy",
+  sizeof(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy),
   0,
   Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE,
-  __pyx_type_3src_8analysis_6models_9portfolio_Action_slots,
+  __pyx_type_3src_8analysis_6models_9portfolio_Buy_slots,
 };
 #else
 
-static PyNumberMethods __pyx_tp_as_number_Action = {
-  __pyx_nb_add_3src_8analysis_6models_9portfolio_Action, /*nb_add*/
+static PyNumberMethods __pyx_tp_as_number_Buy = {
+  __pyx_nb_add_3src_8analysis_6models_9portfolio_Buy, /*nb_add*/
   0, /*nb_subtract*/
   0, /*nb_multiply*/
   #if PY_MAJOR_VERSION < 3 || (CYTHON_COMPILING_IN_PYPY && PY_VERSION_HEX < 0x03050000)
@@ -10409,12 +12168,12 @@ static PyNumberMethods __pyx_tp_as_number_Action = {
   #endif
 };
 
-static PyTypeObject __pyx_type_3src_8analysis_6models_9portfolio_Action = {
+static PyTypeObject __pyx_type_3src_8analysis_6models_9portfolio_Buy = {
   PyVarObject_HEAD_INIT(0, 0)
-  "src.analysis.models.portfolio.""Action", /*tp_name*/
-  sizeof(struct __pyx_obj_3src_8analysis_6models_9portfolio_Action), /*tp_basicsize*/
+  "src.analysis.models.portfolio.""Buy", /*tp_name*/
+  sizeof(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy), /*tp_basicsize*/
   0, /*tp_itemsize*/
-  __pyx_tp_dealloc_3src_8analysis_6models_9portfolio_Action, /*tp_dealloc*/
+  __pyx_tp_dealloc_3src_8analysis_6models_9portfolio_ActionInterface, /*tp_dealloc*/
   #if PY_VERSION_HEX < 0x030800b4
   0, /*tp_print*/
   #endif
@@ -10429,8 +12188,8 @@ static PyTypeObject __pyx_type_3src_8analysis_6models_9portfolio_Action = {
   #if PY_MAJOR_VERSION >= 3
   0, /*tp_as_async*/
   #endif
-  0, /*tp_repr*/
-  &__pyx_tp_as_number_Action, /*tp_as_number*/
+  __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3__repr__, /*tp_repr*/
+  &__pyx_tp_as_number_Buy, /*tp_as_number*/
   0, /*tp_as_sequence*/
   0, /*tp_as_mapping*/
   0, /*tp_hash*/
@@ -10447,139 +12206,6 @@ static PyTypeObject __pyx_type_3src_8analysis_6models_9portfolio_Action = {
   0, /*tp_weaklistoffset*/
   0, /*tp_iter*/
   0, /*tp_iternext*/
-  __pyx_methods_3src_8analysis_6models_9portfolio_Action, /*tp_methods*/
-  0, /*tp_members*/
-  __pyx_getsets_3src_8analysis_6models_9portfolio_Action, /*tp_getset*/
-  0, /*tp_base*/
-  0, /*tp_dict*/
-  0, /*tp_descr_get*/
-  0, /*tp_descr_set*/
-  #if !CYTHON_USE_TYPE_SPECS
-  0, /*tp_dictoffset*/
-  #endif
-  __pyx_pw_3src_8analysis_6models_9portfolio_6Action_1__init__, /*tp_init*/
-  0, /*tp_alloc*/
-  __pyx_tp_new_3src_8analysis_6models_9portfolio_Action, /*tp_new*/
-  0, /*tp_free*/
-  0, /*tp_is_gc*/
-  0, /*tp_bases*/
-  0, /*tp_mro*/
-  0, /*tp_cache*/
-  0, /*tp_subclasses*/
-  0, /*tp_weaklist*/
-  0, /*tp_del*/
-  0, /*tp_version_tag*/
-  #if PY_VERSION_HEX >= 0x030400a1
-  #if CYTHON_USE_TP_FINALIZE
-  0, /*tp_finalize*/
-  #else
-  NULL, /*tp_finalize*/
-  #endif
-  #endif
-  #if PY_VERSION_HEX >= 0x030800b1 && (!CYTHON_COMPILING_IN_PYPY || PYPY_VERSION_NUM >= 0x07030800)
-  0, /*tp_vectorcall*/
-  #endif
-  #if __PYX_NEED_TP_PRINT_SLOT == 1
-  0, /*tp_print*/
-  #endif
-  #if PY_VERSION_HEX >= 0x030C0000
-  0, /*tp_watched*/
-  #endif
-  #if PY_VERSION_HEX >= 0x030d00A4
-  0, /*tp_versions_used*/
-  #endif
-  #if CYTHON_COMPILING_IN_PYPY && PY_VERSION_HEX >= 0x03090000 && PY_VERSION_HEX < 0x030a0000
-  0, /*tp_pypy_flags*/
-  #endif
-};
-#endif
-static struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Buy __pyx_vtable_3src_8analysis_6models_9portfolio_Buy;
-
-static PyObject *__pyx_tp_new_3src_8analysis_6models_9portfolio_Buy(PyTypeObject *t, PyObject *a, PyObject *k) {
-  struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *p;
-  PyObject *o = __pyx_tp_new_3src_8analysis_6models_9portfolio_Action(t, a, k);
-  if (unlikely(!o)) return 0;
-  p = ((struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *)o);
-  p->__pyx_vtab = __pyx_vtabptr_3src_8analysis_6models_9portfolio_Buy;
-  return o;
-}
-
-static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_type(PyObject *o, CYTHON_UNUSED void *x) {
-  return __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_4type_1__get__(o);
-}
-
-static PyObject *__pyx_specialmethod___pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3__repr__(PyObject *self, CYTHON_UNUSED PyObject *arg) {
-  return __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3__repr__(self);
-}
-
-static PyMethodDef __pyx_methods_3src_8analysis_6models_9portfolio_Buy[] = {
-  {"__repr__", (PyCFunction)__pyx_specialmethod___pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3__repr__, METH_NOARGS|METH_COEXIST, 0},
-  {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_5__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_7__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {0, 0, 0, 0}
-};
-
-static struct PyGetSetDef __pyx_getsets_3src_8analysis_6models_9portfolio_Buy[] = {
-  {(char *)"type", __pyx_getprop_3src_8analysis_6models_9portfolio_3Buy_type, 0, (char *)0, 0},
-  {0, 0, 0, 0, 0}
-};
-#if CYTHON_USE_TYPE_SPECS
-static PyType_Slot __pyx_type_3src_8analysis_6models_9portfolio_Buy_slots[] = {
-  {Py_tp_repr, (void *)__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3__repr__},
-  {Py_tp_doc, (void *)PyDoc_STR("A class to represent a buy action.")},
-  {Py_tp_methods, (void *)__pyx_methods_3src_8analysis_6models_9portfolio_Buy},
-  {Py_tp_getset, (void *)__pyx_getsets_3src_8analysis_6models_9portfolio_Buy},
-  {Py_tp_init, (void *)__pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__init__},
-  {Py_tp_new, (void *)__pyx_tp_new_3src_8analysis_6models_9portfolio_Buy},
-  {0, 0},
-};
-static PyType_Spec __pyx_type_3src_8analysis_6models_9portfolio_Buy_spec = {
-  "src.analysis.models.portfolio.Buy",
-  sizeof(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy),
-  0,
-  Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE,
-  __pyx_type_3src_8analysis_6models_9portfolio_Buy_slots,
-};
-#else
-
-static PyTypeObject __pyx_type_3src_8analysis_6models_9portfolio_Buy = {
-  PyVarObject_HEAD_INIT(0, 0)
-  "src.analysis.models.portfolio.""Buy", /*tp_name*/
-  sizeof(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy), /*tp_basicsize*/
-  0, /*tp_itemsize*/
-  __pyx_tp_dealloc_3src_8analysis_6models_9portfolio_Action, /*tp_dealloc*/
-  #if PY_VERSION_HEX < 0x030800b4
-  0, /*tp_print*/
-  #endif
-  #if PY_VERSION_HEX >= 0x030800b4
-  0, /*tp_vectorcall_offset*/
-  #endif
-  0, /*tp_getattr*/
-  0, /*tp_setattr*/
-  #if PY_MAJOR_VERSION < 3
-  0, /*tp_compare*/
-  #endif
-  #if PY_MAJOR_VERSION >= 3
-  0, /*tp_as_async*/
-  #endif
-  __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_3__repr__, /*tp_repr*/
-  0, /*tp_as_number*/
-  0, /*tp_as_sequence*/
-  0, /*tp_as_mapping*/
-  0, /*tp_hash*/
-  0, /*tp_call*/
-  0, /*tp_str*/
-  0, /*tp_getattro*/
-  0, /*tp_setattro*/
-  0, /*tp_as_buffer*/
-  Py_TPFLAGS_DEFAULT|Py_TPFLAGS_HAVE_VERSION_TAG|Py_TPFLAGS_CHECKTYPES|Py_TPFLAGS_HAVE_NEWBUFFER|Py_TPFLAGS_BASETYPE, /*tp_flags*/
-  PyDoc_STR("A class to represent a buy action."), /*tp_doc*/
-  0, /*tp_traverse*/
-  0, /*tp_clear*/
-  0, /*tp_richcompare*/
-  0, /*tp_weaklistoffset*/
-  0, /*tp_iter*/
-  0, /*tp_iternext*/
   __pyx_methods_3src_8analysis_6models_9portfolio_Buy, /*tp_methods*/
   0, /*tp_members*/
   __pyx_getsets_3src_8analysis_6models_9portfolio_Buy, /*tp_getset*/
@@ -10590,7 +12216,7 @@ static PyTypeObject __pyx_type_3src_8analysis_6models_9portfolio_Buy = {
   #if !CYTHON_USE_TYPE_SPECS
   0, /*tp_dictoffset*/
   #endif
-  __pyx_pw_3src_8analysis_6models_9portfolio_3Buy_1__init__, /*tp_init*/
+  0, /*tp_init*/
   0, /*tp_alloc*/
   __pyx_tp_new_3src_8analysis_6models_9portfolio_Buy, /*tp_new*/
   0, /*tp_free*/
@@ -10630,15 +12256,98 @@ static struct __pyx_vtabstruct_3src_8analysis_6models_9portfolio_Sell __pyx_vtab
 
 static PyObject *__pyx_tp_new_3src_8analysis_6models_9portfolio_Sell(PyTypeObject *t, PyObject *a, PyObject *k) {
   struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *p;
-  PyObject *o = __pyx_tp_new_3src_8analysis_6models_9portfolio_Action(t, a, k);
+  PyObject *o = __pyx_tp_new_3src_8analysis_6models_9portfolio_ActionInterface(t, a, k);
   if (unlikely(!o)) return 0;
   p = ((struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *)o);
   p->__pyx_vtab = __pyx_vtabptr_3src_8analysis_6models_9portfolio_Sell;
+  if (unlikely(__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__cinit__(o, a, k) < 0)) goto bad;
   return o;
+  bad:
+  Py_DECREF(o); o = 0;
+  return NULL;
 }
+
+static CYTHON_INLINE PyObject *__pyx_nb_add_3src_8analysis_6models_9portfolio_Sell_maybe_call_slot(PyTypeObject* type, PyObject *left, PyObject *right ) {
+    binaryfunc slot;
+#if CYTHON_USE_TYPE_SLOTS || PY_MAJOR_VERSION < 3 || CYTHON_COMPILING_IN_PYPY
+    slot = type->tp_as_number ? type->tp_as_number->nb_add : NULL;
+#else
+    slot = (binaryfunc) PyType_GetSlot(type, Py_nb_add);
+#endif
+    return slot ? slot(left, right ) : __Pyx_NewRef(Py_NotImplemented);
+}
+static PyObject *__pyx_nb_add_3src_8analysis_6models_9portfolio_Sell(PyObject *left, PyObject *right ) {
+    int maybe_self_is_left, maybe_self_is_right = 0;
+    maybe_self_is_left = Py_TYPE(left) == Py_TYPE(right)
+#if CYTHON_USE_TYPE_SLOTS
+            || (Py_TYPE(left)->tp_as_number && Py_TYPE(left)->tp_as_number->nb_add == &__pyx_nb_add_3src_8analysis_6models_9portfolio_Sell)
+#endif
+            || __Pyx_TypeCheck(left, __pyx_ptype_3src_8analysis_6models_9portfolio_Sell);
+    if (maybe_self_is_left) {
+        PyObject *res;
+        res = __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_5__add__(left, right);
+        if (res != Py_NotImplemented) return res;
+        Py_DECREF(res);
+    }
+    maybe_self_is_right = Py_TYPE(left) == Py_TYPE(right)
+#if CYTHON_USE_TYPE_SLOTS
+            || (Py_TYPE(right)->tp_as_number && Py_TYPE(right)->tp_as_number->nb_add == &__pyx_nb_add_3src_8analysis_6models_9portfolio_Sell)
+#endif
+            || PyType_IsSubtype(Py_TYPE(right), __pyx_ptype_3src_8analysis_6models_9portfolio_Sell);
+    if (maybe_self_is_right) {
+        return __pyx_nb_add_3src_8analysis_6models_9portfolio_Sell_maybe_call_slot(__Pyx_PyType_GetSlot(__pyx_ptype_3src_8analysis_6models_9portfolio_Sell, tp_base, PyTypeObject*), left, right );
+    }
+    return __Pyx_NewRef(Py_NotImplemented);
+}
+
+
 
 static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_type(PyObject *o, CYTHON_UNUSED void *x) {
   return __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_4type_1__get__(o);
+}
+
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_timestamp(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_9timestamp_1__get__(o);
+}
+
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_qty(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3qty_1__get__(o);
+}
+
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_price(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_5price_1__get__(o);
+}
+
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_quote_qty(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_9quote_qty_1__get__(o);
+}
+
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_fee(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3fee_1__get__(o);
+}
+
+static int __pyx_setprop_3src_8analysis_6models_9portfolio_4Sell_fee(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3fee_3__set__(o, v);
+  }
+  else {
+    PyErr_SetString(PyExc_NotImplementedError, "__del__");
+    return -1;
+  }
+}
+
+static PyObject *__pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_slippage(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_8slippage_1__get__(o);
+}
+
+static int __pyx_setprop_3src_8analysis_6models_9portfolio_4Sell_slippage(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_8slippage_3__set__(o, v);
+  }
+  else {
+    PyErr_SetString(PyExc_NotImplementedError, "__del__");
+    return -1;
+  }
 }
 
 static PyObject *__pyx_specialmethod___pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3__repr__(PyObject *self, CYTHON_UNUSED PyObject *arg) {
@@ -10647,21 +12356,27 @@ static PyObject *__pyx_specialmethod___pyx_pw_3src_8analysis_6models_9portfolio_
 
 static PyMethodDef __pyx_methods_3src_8analysis_6models_9portfolio_Sell[] = {
   {"__repr__", (PyCFunction)__pyx_specialmethod___pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3__repr__, METH_NOARGS|METH_COEXIST, 0},
-  {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_5__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_7__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_7__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_9__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 
 static struct PyGetSetDef __pyx_getsets_3src_8analysis_6models_9portfolio_Sell[] = {
   {(char *)"type", __pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_type, 0, (char *)0, 0},
+  {(char *)"timestamp", __pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_timestamp, 0, (char *)0, 0},
+  {(char *)"qty", __pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_qty, 0, (char *)0, 0},
+  {(char *)"price", __pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_price, 0, (char *)0, 0},
+  {(char *)"quote_qty", __pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_quote_qty, 0, (char *)0, 0},
+  {(char *)"fee", __pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_fee, __pyx_setprop_3src_8analysis_6models_9portfolio_4Sell_fee, (char *)0, 0},
+  {(char *)"slippage", __pyx_getprop_3src_8analysis_6models_9portfolio_4Sell_slippage, __pyx_setprop_3src_8analysis_6models_9portfolio_4Sell_slippage, (char *)0, 0},
   {0, 0, 0, 0, 0}
 };
 #if CYTHON_USE_TYPE_SPECS
 static PyType_Slot __pyx_type_3src_8analysis_6models_9portfolio_Sell_slots[] = {
   {Py_tp_repr, (void *)__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3__repr__},
+  {Py_nb_add, (void *)__pyx_nb_add_3src_8analysis_6models_9portfolio_Sell},
   {Py_tp_methods, (void *)__pyx_methods_3src_8analysis_6models_9portfolio_Sell},
   {Py_tp_getset, (void *)__pyx_getsets_3src_8analysis_6models_9portfolio_Sell},
-  {Py_tp_init, (void *)__pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__init__},
   {Py_tp_new, (void *)__pyx_tp_new_3src_8analysis_6models_9portfolio_Sell},
   {0, 0},
 };
@@ -10674,12 +12389,74 @@ static PyType_Spec __pyx_type_3src_8analysis_6models_9portfolio_Sell_spec = {
 };
 #else
 
+static PyNumberMethods __pyx_tp_as_number_Sell = {
+  __pyx_nb_add_3src_8analysis_6models_9portfolio_Sell, /*nb_add*/
+  0, /*nb_subtract*/
+  0, /*nb_multiply*/
+  #if PY_MAJOR_VERSION < 3 || (CYTHON_COMPILING_IN_PYPY && PY_VERSION_HEX < 0x03050000)
+  0, /*nb_divide*/
+  #endif
+  0, /*nb_remainder*/
+  0, /*nb_divmod*/
+  0, /*nb_power*/
+  0, /*nb_negative*/
+  0, /*nb_positive*/
+  0, /*nb_absolute*/
+  0, /*nb_bool*/
+  0, /*nb_invert*/
+  0, /*nb_lshift*/
+  0, /*nb_rshift*/
+  0, /*nb_and*/
+  0, /*nb_xor*/
+  0, /*nb_or*/
+  #if PY_MAJOR_VERSION < 3 || (CYTHON_COMPILING_IN_PYPY && PY_VERSION_HEX < 0x03050000)
+  0, /*nb_coerce*/
+  #endif
+  0, /*nb_int*/
+  #if PY_MAJOR_VERSION < 3
+  0, /*nb_long*/
+  #else
+  0, /*reserved*/
+  #endif
+  0, /*nb_float*/
+  #if PY_MAJOR_VERSION < 3 || (CYTHON_COMPILING_IN_PYPY && PY_VERSION_HEX < 0x03050000)
+  0, /*nb_oct*/
+  #endif
+  #if PY_MAJOR_VERSION < 3 || (CYTHON_COMPILING_IN_PYPY && PY_VERSION_HEX < 0x03050000)
+  0, /*nb_hex*/
+  #endif
+  0, /*nb_inplace_add*/
+  0, /*nb_inplace_subtract*/
+  0, /*nb_inplace_multiply*/
+  #if PY_MAJOR_VERSION < 3 || (CYTHON_COMPILING_IN_PYPY && PY_VERSION_HEX < 0x03050000)
+  0, /*nb_inplace_divide*/
+  #endif
+  0, /*nb_inplace_remainder*/
+  0, /*nb_inplace_power*/
+  0, /*nb_inplace_lshift*/
+  0, /*nb_inplace_rshift*/
+  0, /*nb_inplace_and*/
+  0, /*nb_inplace_xor*/
+  0, /*nb_inplace_or*/
+  0, /*nb_floor_divide*/
+  0, /*nb_true_divide*/
+  0, /*nb_inplace_floor_divide*/
+  0, /*nb_inplace_true_divide*/
+  0, /*nb_index*/
+  #if PY_VERSION_HEX >= 0x03050000
+  0, /*nb_matrix_multiply*/
+  #endif
+  #if PY_VERSION_HEX >= 0x03050000
+  0, /*nb_inplace_matrix_multiply*/
+  #endif
+};
+
 static PyTypeObject __pyx_type_3src_8analysis_6models_9portfolio_Sell = {
   PyVarObject_HEAD_INIT(0, 0)
   "src.analysis.models.portfolio.""Sell", /*tp_name*/
   sizeof(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell), /*tp_basicsize*/
   0, /*tp_itemsize*/
-  __pyx_tp_dealloc_3src_8analysis_6models_9portfolio_Action, /*tp_dealloc*/
+  __pyx_tp_dealloc_3src_8analysis_6models_9portfolio_ActionInterface, /*tp_dealloc*/
   #if PY_VERSION_HEX < 0x030800b4
   0, /*tp_print*/
   #endif
@@ -10695,7 +12472,7 @@ static PyTypeObject __pyx_type_3src_8analysis_6models_9portfolio_Sell = {
   0, /*tp_as_async*/
   #endif
   __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_3__repr__, /*tp_repr*/
-  0, /*tp_as_number*/
+  &__pyx_tp_as_number_Sell, /*tp_as_number*/
   0, /*tp_as_sequence*/
   0, /*tp_as_mapping*/
   0, /*tp_hash*/
@@ -10722,7 +12499,7 @@ static PyTypeObject __pyx_type_3src_8analysis_6models_9portfolio_Sell = {
   #if !CYTHON_USE_TYPE_SPECS
   0, /*tp_dictoffset*/
   #endif
-  __pyx_pw_3src_8analysis_6models_9portfolio_4Sell_1__init__, /*tp_init*/
+  0, /*tp_init*/
   0, /*tp_alloc*/
   __pyx_tp_new_3src_8analysis_6models_9portfolio_Sell, /*tp_new*/
   0, /*tp_free*/
@@ -10863,9 +12640,9 @@ static PyObject *__pyx_specialmethod___pyx_pw_3src_8analysis_6models_9portfolio_
 
 static PyMethodDef __pyx_methods_3src_8analysis_6models_9portfolio_Position[] = {
   {"__repr__", (PyCFunction)__pyx_specialmethod___pyx_pw_3src_8analysis_6models_9portfolio_8Position_3__repr__, METH_NOARGS|METH_COEXIST, 0},
-  {"get_actions", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_7get_actions, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_9__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
-  {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_11__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"get_actions", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_5get_actions, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_11__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
+  {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_9portfolio_8Position_13__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
   {0, 0, 0, 0}
 };
 
@@ -11001,17 +12778,23 @@ static PyMethodDef __pyx_methods[] = {
 static int __Pyx_CreateStringTabAndInitStrings(void) {
   __Pyx_StringTabEntry __pyx_string_tab[] = {
     {&__pyx_kp_u_2f, __pyx_k_2f, sizeof(__pyx_k_2f), 0, 1, 0, 0},
-    {&__pyx_n_s_Action, __pyx_k_Action, sizeof(__pyx_k_Action), 0, 0, 1, 1},
-    {&__pyx_n_s_Action___reduce_cython, __pyx_k_Action___reduce_cython, sizeof(__pyx_k_Action___reduce_cython), 0, 0, 1, 1},
-    {&__pyx_n_s_Action___setstate_cython, __pyx_k_Action___setstate_cython, sizeof(__pyx_k_Action___setstate_cython), 0, 0, 1, 1},
+    {&__pyx_n_s_ActionInterface, __pyx_k_ActionInterface, sizeof(__pyx_k_ActionInterface), 0, 0, 1, 1},
+    {&__pyx_n_s_ActionInterface___reduce_cython, __pyx_k_ActionInterface___reduce_cython, sizeof(__pyx_k_ActionInterface___reduce_cython), 0, 0, 1, 1},
+    {&__pyx_n_s_ActionInterface___setstate_cytho, __pyx_k_ActionInterface___setstate_cytho, sizeof(__pyx_k_ActionInterface___setstate_cytho), 0, 0, 1, 1},
     {&__pyx_n_u_BUY, __pyx_k_BUY, sizeof(__pyx_k_BUY), 0, 1, 0, 1},
     {&__pyx_n_s_Buy, __pyx_k_Buy, sizeof(__pyx_k_Buy), 0, 0, 1, 1},
     {&__pyx_n_s_Buy___reduce_cython, __pyx_k_Buy___reduce_cython, sizeof(__pyx_k_Buy___reduce_cython), 0, 0, 1, 1},
     {&__pyx_n_s_Buy___setstate_cython, __pyx_k_Buy___setstate_cython, sizeof(__pyx_k_Buy___setstate_cython), 0, 0, 1, 1},
     {&__pyx_kp_u_Buy_timestamp, __pyx_k_Buy_timestamp, sizeof(__pyx_k_Buy_timestamp), 0, 1, 0, 0},
     {&__pyx_kp_u_Buying, __pyx_k_Buying, sizeof(__pyx_k_Buying), 0, 1, 0, 0},
-    {&__pyx_kp_u_Can_only_add_actions_of_the_same, __pyx_k_Can_only_add_actions_of_the_same, sizeof(__pyx_k_Can_only_add_actions_of_the_same), 0, 1, 0, 0},
     {&__pyx_n_s_ImportError, __pyx_k_ImportError, sizeof(__pyx_k_ImportError), 0, 0, 1, 1},
+    {&__pyx_n_s_KeyError, __pyx_k_KeyError, sizeof(__pyx_k_KeyError), 0, 0, 1, 1},
+    {&__pyx_kp_s_No_value_specified_for_struct_at, __pyx_k_No_value_specified_for_struct_at, sizeof(__pyx_k_No_value_specified_for_struct_at), 0, 0, 1, 0},
+    {&__pyx_kp_s_No_value_specified_for_struct_at_2, __pyx_k_No_value_specified_for_struct_at_2, sizeof(__pyx_k_No_value_specified_for_struct_at_2), 0, 0, 1, 0},
+    {&__pyx_kp_s_No_value_specified_for_struct_at_3, __pyx_k_No_value_specified_for_struct_at_3, sizeof(__pyx_k_No_value_specified_for_struct_at_3), 0, 0, 1, 0},
+    {&__pyx_kp_s_No_value_specified_for_struct_at_4, __pyx_k_No_value_specified_for_struct_at_4, sizeof(__pyx_k_No_value_specified_for_struct_at_4), 0, 0, 1, 0},
+    {&__pyx_kp_s_No_value_specified_for_struct_at_5, __pyx_k_No_value_specified_for_struct_at_5, sizeof(__pyx_k_No_value_specified_for_struct_at_5), 0, 0, 1, 0},
+    {&__pyx_kp_s_No_value_specified_for_struct_at_6, __pyx_k_No_value_specified_for_struct_at_6, sizeof(__pyx_k_No_value_specified_for_struct_at_6), 0, 0, 1, 0},
     {&__pyx_kp_u_None, __pyx_k_None, sizeof(__pyx_k_None), 0, 1, 0, 0},
     {&__pyx_kp_s_Pickling_of_struct_members_such, __pyx_k_Pickling_of_struct_members_such, sizeof(__pyx_k_Pickling_of_struct_members_such), 0, 0, 1, 0},
     {&__pyx_n_s_Position, __pyx_k_Position, sizeof(__pyx_k_Position), 0, 0, 1, 1},
@@ -11019,9 +12802,9 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
     {&__pyx_n_s_Position___reduce_cython, __pyx_k_Position___reduce_cython, sizeof(__pyx_k_Position___reduce_cython), 0, 0, 1, 1},
     {&__pyx_n_s_Position___setstate_cython, __pyx_k_Position___setstate_cython, sizeof(__pyx_k_Position___setstate_cython), 0, 0, 1, 1},
     {&__pyx_n_s_Position_add_action, __pyx_k_Position_add_action, sizeof(__pyx_k_Position_add_action), 0, 0, 1, 1},
+    {&__pyx_n_s_Position_close, __pyx_k_Position_close, sizeof(__pyx_k_Position_close), 0, 0, 1, 1},
     {&__pyx_n_s_Position_get_actions, __pyx_k_Position_get_actions, sizeof(__pyx_k_Position_get_actions), 0, 0, 1, 1},
     {&__pyx_kp_u_Position_symbol, __pyx_k_Position_symbol, sizeof(__pyx_k_Position_symbol), 0, 1, 0, 0},
-    {&__pyx_n_u_SELL, __pyx_k_SELL, sizeof(__pyx_k_SELL), 0, 1, 0, 1},
     {&__pyx_n_s_Sell, __pyx_k_Sell, sizeof(__pyx_k_Sell), 0, 0, 1, 1},
     {&__pyx_n_s_Sell___reduce_cython, __pyx_k_Sell___reduce_cython, sizeof(__pyx_k_Sell___reduce_cython), 0, 0, 1, 1},
     {&__pyx_n_s_Sell___setstate_cython, __pyx_k_Sell___setstate_cython, sizeof(__pyx_k_Sell___setstate_cython), 0, 0, 1, 1},
@@ -11029,29 +12812,33 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
     {&__pyx_kp_u_Selling, __pyx_k_Selling, sizeof(__pyx_k_Selling), 0, 1, 0, 0},
     {&__pyx_n_s_TypeError, __pyx_k_TypeError, sizeof(__pyx_k_TypeError), 0, 0, 1, 1},
     {&__pyx_n_s_ValueError, __pyx_k_ValueError, sizeof(__pyx_k_ValueError), 0, 0, 1, 1},
-    {&__pyx_n_s__20, __pyx_k__20, sizeof(__pyx_k__20), 0, 0, 1, 1},
-    {&__pyx_kp_u__4, __pyx_k__4, sizeof(__pyx_k__4), 0, 1, 0, 0},
-    {&__pyx_kp_u__5, __pyx_k__5, sizeof(__pyx_k__5), 0, 1, 0, 0},
-    {&__pyx_n_s__6, __pyx_k__6, sizeof(__pyx_k__6), 0, 0, 1, 1},
+    {&__pyx_kp_u__10, __pyx_k__10, sizeof(__pyx_k__10), 0, 1, 0, 0},
+    {&__pyx_n_s__11, __pyx_k__11, sizeof(__pyx_k__11), 0, 0, 1, 1},
+    {&__pyx_n_s__27, __pyx_k__27, sizeof(__pyx_k__27), 0, 0, 1, 1},
+    {&__pyx_kp_u__9, __pyx_k__9, sizeof(__pyx_k__9), 0, 1, 0, 0},
     {&__pyx_n_s_action, __pyx_k_action, sizeof(__pyx_k_action), 0, 0, 1, 1},
     {&__pyx_n_s_add_action, __pyx_k_add_action, sizeof(__pyx_k_add_action), 0, 0, 1, 1},
     {&__pyx_n_s_amount, __pyx_k_amount, sizeof(__pyx_k_amount), 0, 0, 1, 1},
     {&__pyx_kp_u_amount_2, __pyx_k_amount_2, sizeof(__pyx_k_amount_2), 0, 1, 0, 0},
     {&__pyx_n_s_asyncio_coroutines, __pyx_k_asyncio_coroutines, sizeof(__pyx_k_asyncio_coroutines), 0, 0, 1, 1},
     {&__pyx_kp_u_average_entry_price, __pyx_k_average_entry_price, sizeof(__pyx_k_average_entry_price), 0, 1, 0, 0},
+    {&__pyx_n_s_average_exit_price, __pyx_k_average_exit_price, sizeof(__pyx_k_average_exit_price), 0, 0, 1, 1},
     {&__pyx_n_s_cline_in_traceback, __pyx_k_cline_in_traceback, sizeof(__pyx_k_cline_in_traceback), 0, 0, 1, 1},
+    {&__pyx_n_s_close, __pyx_k_close, sizeof(__pyx_k_close), 0, 0, 1, 1},
     {&__pyx_kp_u_current_qty, __pyx_k_current_qty, sizeof(__pyx_k_current_qty), 0, 1, 0, 0},
     {&__pyx_kp_u_disable, __pyx_k_disable, sizeof(__pyx_k_disable), 0, 1, 0, 0},
     {&__pyx_kp_u_enable, __pyx_k_enable, sizeof(__pyx_k_enable), 0, 1, 0, 0},
+    {&__pyx_n_s_fee, __pyx_k_fee, sizeof(__pyx_k_fee), 0, 0, 1, 1},
     {&__pyx_n_s_functools, __pyx_k_functools, sizeof(__pyx_k_functools), 0, 0, 1, 1},
     {&__pyx_kp_u_gc, __pyx_k_gc, sizeof(__pyx_k_gc), 0, 1, 0, 0},
     {&__pyx_n_s_get_actions, __pyx_k_get_actions, sizeof(__pyx_k_get_actions), 0, 0, 1, 1},
+    {&__pyx_n_s_get_actions_locals_lambda, __pyx_k_get_actions_locals_lambda, sizeof(__pyx_k_get_actions_locals_lambda), 0, 0, 1, 1},
     {&__pyx_n_s_getstate, __pyx_k_getstate, sizeof(__pyx_k_getstate), 0, 0, 1, 1},
     {&__pyx_n_s_import, __pyx_k_import, sizeof(__pyx_k_import), 0, 0, 1, 1},
-    {&__pyx_n_s_init, __pyx_k_init, sizeof(__pyx_k_init), 0, 0, 1, 1},
     {&__pyx_n_s_initializing, __pyx_k_initializing, sizeof(__pyx_k_initializing), 0, 0, 1, 1},
     {&__pyx_n_s_is_coroutine, __pyx_k_is_coroutine, sizeof(__pyx_k_is_coroutine), 0, 0, 1, 1},
     {&__pyx_kp_u_isenabled, __pyx_k_isenabled, sizeof(__pyx_k_isenabled), 0, 1, 0, 0},
+    {&__pyx_n_s_key, __pyx_k_key, sizeof(__pyx_k_key), 0, 0, 1, 1},
     {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
     {&__pyx_n_s_name, __pyx_k_name, sizeof(__pyx_k_name), 0, 0, 1, 1},
     {&__pyx_kp_s_no_default___reduce___due_to_non, __pyx_k_no_default___reduce___due_to_non, sizeof(__pyx_k_no_default___reduce___due_to_non), 0, 0, 1, 0},
@@ -11073,15 +12860,15 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
     {&__pyx_n_s_self, __pyx_k_self, sizeof(__pyx_k_self), 0, 0, 1, 1},
     {&__pyx_n_s_setstate, __pyx_k_setstate, sizeof(__pyx_k_setstate), 0, 0, 1, 1},
     {&__pyx_n_s_setstate_cython, __pyx_k_setstate_cython, sizeof(__pyx_k_setstate_cython), 0, 0, 1, 1},
+    {&__pyx_n_s_slippage, __pyx_k_slippage, sizeof(__pyx_k_slippage), 0, 0, 1, 1},
+    {&__pyx_n_s_sorted, __pyx_k_sorted, sizeof(__pyx_k_sorted), 0, 0, 1, 1},
     {&__pyx_n_s_spec, __pyx_k_spec, sizeof(__pyx_k_spec), 0, 0, 1, 1},
     {&__pyx_n_s_src_analysis_models_portfolio, __pyx_k_src_analysis_models_portfolio, sizeof(__pyx_k_src_analysis_models_portfolio), 0, 0, 1, 1},
     {&__pyx_kp_s_src_analysis_models_portfolio_py, __pyx_k_src_analysis_models_portfolio_py, sizeof(__pyx_k_src_analysis_models_portfolio_py), 0, 0, 1, 0},
     {&__pyx_kp_s_stringsource, __pyx_k_stringsource, sizeof(__pyx_k_stringsource), 0, 0, 1, 0},
-    {&__pyx_n_s_super, __pyx_k_super, sizeof(__pyx_k_super), 0, 0, 1, 1},
     {&__pyx_n_s_symbol, __pyx_k_symbol, sizeof(__pyx_k_symbol), 0, 0, 1, 1},
     {&__pyx_n_s_test, __pyx_k_test, sizeof(__pyx_k_test), 0, 0, 1, 1},
     {&__pyx_n_s_timestamp, __pyx_k_timestamp, sizeof(__pyx_k_timestamp), 0, 0, 1, 1},
-    {&__pyx_n_s_type, __pyx_k_type, sizeof(__pyx_k_type), 0, 0, 1, 1},
     {&__pyx_kp_u_would_change_this_long_position, __pyx_k_would_change_this_long_position, sizeof(__pyx_k_would_change_this_long_position), 0, 1, 0, 0},
     {&__pyx_kp_u_would_change_this_short_positio, __pyx_k_would_change_this_short_positio, sizeof(__pyx_k_would_change_this_short_positio), 0, 1, 0, 0},
     {&__pyx_n_s_x, __pyx_k_x, sizeof(__pyx_k_x), 0, 0, 1, 1},
@@ -11092,10 +12879,11 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
 }
 /* #### Code section: cached_builtins ### */
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(0, 34, __pyx_L1_error)
-  __pyx_builtin_super = __Pyx_GetBuiltinName(__pyx_n_s_super); if (!__pyx_builtin_super) __PYX_ERR(0, 98, __pyx_L1_error)
-  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(0, 195, __pyx_L1_error)
-  __pyx_builtin_ImportError = __Pyx_GetBuiltinName(__pyx_n_s_ImportError); if (!__pyx_builtin_ImportError) __PYX_ERR(1, 1026, __pyx_L1_error)
+  __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(0, 2, __pyx_L1_error)
+  __pyx_builtin_sorted = __Pyx_GetBuiltinName(__pyx_n_s_sorted); if (!__pyx_builtin_sorted) __PYX_ERR(1, 207, __pyx_L1_error)
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(1, 246, __pyx_L1_error)
+  __pyx_builtin_KeyError = __Pyx_GetBuiltinName(__pyx_n_s_KeyError); if (!__pyx_builtin_KeyError) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_builtin_ImportError = __Pyx_GetBuiltinName(__pyx_n_s_ImportError); if (!__pyx_builtin_ImportError) __PYX_ERR(2, 1026, __pyx_L1_error)
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -11106,6 +12894,72 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_RefNannyDeclarations
   __Pyx_RefNannySetupContext("__Pyx_InitCachedConstants", 0);
 
+  /* "FromPyStructUtility":20
+ *         value = obj['timestamp']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'timestamp'")             # <<<<<<<<<<<<<<
+ *     result.timestamp = value
+ *     try:
+ */
+  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at); if (unlikely(!__pyx_tuple_)) __PYX_ERR(0, 20, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple_);
+  __Pyx_GIVEREF(__pyx_tuple_);
+
+  /* "FromPyStructUtility":25
+ *         value = obj['price']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'price'")             # <<<<<<<<<<<<<<
+ *     result.price = value
+ *     try:
+ */
+  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_2); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(0, 25, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__2);
+  __Pyx_GIVEREF(__pyx_tuple__2);
+
+  /* "FromPyStructUtility":30
+ *         value = obj['qty']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'qty'")             # <<<<<<<<<<<<<<
+ *     result.qty = value
+ *     try:
+ */
+  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_3); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 30, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__3);
+  __Pyx_GIVEREF(__pyx_tuple__3);
+
+  /* "FromPyStructUtility":35
+ *         value = obj['quote_qty']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'quote_qty'")             # <<<<<<<<<<<<<<
+ *     result.quote_qty = value
+ *     try:
+ */
+  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_4); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__4);
+  __Pyx_GIVEREF(__pyx_tuple__4);
+
+  /* "FromPyStructUtility":40
+ *         value = obj['fee']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'fee'")             # <<<<<<<<<<<<<<
+ *     result.fee = value
+ *     try:
+ */
+  __pyx_tuple__5 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_5); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 40, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__5);
+  __Pyx_GIVEREF(__pyx_tuple__5);
+
+  /* "FromPyStructUtility":45
+ *         value = obj['slippage']
+ *     except KeyError:
+ *         raise ValueError("No value specified for struct attribute 'slippage'")             # <<<<<<<<<<<<<<
+ *     result.slippage = value
+ *     return result
+ */
+  __pyx_tuple__6 = PyTuple_Pack(1, __pyx_kp_s_No_value_specified_for_struct_at_6); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(0, 45, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__6);
+  __Pyx_GIVEREF(__pyx_tuple__6);
+
   /* "../../../../miniconda3/envs/hb01/lib/python3.12/site-packages/numpy/__init__.cython-30.pxd":1026
  *         __pyx_import_array()
  *     except Exception:
@@ -11113,9 +12967,9 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * cdef inline int import_umath() except -1:
  */
-  __pyx_tuple_ = PyTuple_Pack(1, __pyx_kp_u_numpy__core_multiarray_failed_to); if (unlikely(!__pyx_tuple_)) __PYX_ERR(1, 1026, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple_);
-  __Pyx_GIVEREF(__pyx_tuple_);
+  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_kp_u_numpy__core_multiarray_failed_to); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(2, 1026, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__7);
+  __Pyx_GIVEREF(__pyx_tuple__7);
 
   /* "../../../../miniconda3/envs/hb01/lib/python3.12/site-packages/numpy/__init__.cython-30.pxd":1032
  *         _import_umath()
@@ -11124,30 +12978,19 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * 
  * cdef inline int import_ufunc() except -1:
  */
-  __pyx_tuple__2 = PyTuple_Pack(1, __pyx_kp_u_numpy__core_umath_failed_to_impo); if (unlikely(!__pyx_tuple__2)) __PYX_ERR(1, 1032, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__2);
-  __Pyx_GIVEREF(__pyx_tuple__2);
-
-  /* "src/analysis/models/portfolio.pyx":34
- *     def __add__(self, Action other):
- *         if type(self) != type(other):
- *             raise TypeError("Can only add actions of the same type")             # <<<<<<<<<<<<<<
- * 
- *         new_qty = self.qty + other.qty
- */
-  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_u_Can_only_add_actions_of_the_same); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 34, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__3);
-  __Pyx_GIVEREF(__pyx_tuple__3);
+  __pyx_tuple__8 = PyTuple_Pack(1, __pyx_kp_u_numpy__core_umath_failed_to_impo); if (unlikely(!__pyx_tuple__8)) __PYX_ERR(2, 1032, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__8);
+  __Pyx_GIVEREF(__pyx_tuple__8);
 
   /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
  *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
  * def __setstate_cython__(self, __pyx_state):
  */
-  __pyx_tuple__7 = PyTuple_Pack(1, __pyx_n_s_self); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(2, 1, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__7);
-  __Pyx_GIVEREF(__pyx_tuple__7);
-  __pyx_codeobj__8 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__7, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_reduce_cython, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__8)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __pyx_tuple__12 = PyTuple_Pack(1, __pyx_n_s_self); if (unlikely(!__pyx_tuple__12)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__12);
+  __Pyx_GIVEREF(__pyx_tuple__12);
+  __pyx_codeobj__13 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__12, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_reduce_cython, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__13)) __PYX_ERR(0, 1, __pyx_L1_error)
 
   /* "(tree fragment)":3
  * def __reduce_cython__(self):
@@ -11155,68 +12998,80 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
  *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
  */
-  __pyx_tuple__9 = PyTuple_Pack(2, __pyx_n_s_self, __pyx_n_s_pyx_state); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(2, 3, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__9);
-  __Pyx_GIVEREF(__pyx_tuple__9);
-  __pyx_codeobj__10 = (PyObject*)__Pyx_PyCode_New(2, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__9, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_setstate_cython, 3, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__10)) __PYX_ERR(2, 3, __pyx_L1_error)
+  __pyx_tuple__14 = PyTuple_Pack(2, __pyx_n_s_self, __pyx_n_s_pyx_state); if (unlikely(!__pyx_tuple__14)) __PYX_ERR(0, 3, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__14);
+  __Pyx_GIVEREF(__pyx_tuple__14);
+  __pyx_codeobj__15 = (PyObject*)__Pyx_PyCode_New(2, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__14, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_setstate_cython, 3, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__15)) __PYX_ERR(0, 3, __pyx_L1_error)
 
   /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
  */
-  __pyx_codeobj__11 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__7, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_reduce_cython, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__11)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __pyx_codeobj__16 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__12, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_reduce_cython, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__16)) __PYX_ERR(0, 1, __pyx_L1_error)
 
   /* "(tree fragment)":3
  * def __reduce_cython__(self):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
-  __pyx_codeobj__12 = (PyObject*)__Pyx_PyCode_New(2, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__9, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_setstate_cython, 3, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__12)) __PYX_ERR(2, 3, __pyx_L1_error)
+  __pyx_codeobj__17 = (PyObject*)__Pyx_PyCode_New(2, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__14, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_setstate_cython, 3, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__17)) __PYX_ERR(0, 3, __pyx_L1_error)
 
   /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
  */
-  __pyx_codeobj__13 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__7, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_reduce_cython, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__13)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __pyx_codeobj__18 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__12, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_reduce_cython, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__18)) __PYX_ERR(0, 1, __pyx_L1_error)
 
   /* "(tree fragment)":3
  * def __reduce_cython__(self):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
-  __pyx_codeobj__14 = (PyObject*)__Pyx_PyCode_New(2, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__9, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_setstate_cython, 3, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__14)) __PYX_ERR(2, 3, __pyx_L1_error)
+  __pyx_codeobj__19 = (PyObject*)__Pyx_PyCode_New(2, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__14, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_setstate_cython, 3, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__19)) __PYX_ERR(0, 3, __pyx_L1_error)
 
-  /* "src/analysis/models/portfolio.pyx":170
- *         )
- * 
- *     cpdef void add_action(self, Action action):             # <<<<<<<<<<<<<<
- *         self._add_action(action)
- * 
- */
-  __pyx_tuple__15 = PyTuple_Pack(2, __pyx_n_s_self, __pyx_n_s_action); if (unlikely(!__pyx_tuple__15)) __PYX_ERR(0, 170, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__15);
-  __Pyx_GIVEREF(__pyx_tuple__15);
-  __pyx_codeobj__16 = (PyObject*)__Pyx_PyCode_New(2, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__15, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_analysis_models_portfolio_py, __pyx_n_s_add_action, 170, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__16)) __PYX_ERR(0, 170, __pyx_L1_error)
-
-  /* "src/analysis/models/portfolio.pyx":221
- *                 self.average_entry_price = action.price
+  /* "src/analysis/models/portfolio.pyx":206
+ *         return reduce(lambda x, y: x + y, self.sells)
  * 
  *     def get_actions(self):             # <<<<<<<<<<<<<<
- *         return self.buys + self.sells
+ *         return sorted(self.buys + self.sells, key=lambda x: x.timestamp)
  * 
  */
-  __pyx_codeobj__17 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__7, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_analysis_models_portfolio_py, __pyx_n_s_get_actions, 221, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__17)) __PYX_ERR(0, 221, __pyx_L1_error)
+  __pyx_codeobj__20 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__12, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_analysis_models_portfolio_py, __pyx_n_s_get_actions, 206, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__20)) __PYX_ERR(1, 206, __pyx_L1_error)
+
+  /* "src/analysis/models/portfolio.pyx":209
+ *         return sorted(self.buys + self.sells, key=lambda x: x.timestamp)
+ * 
+ *     cpdef void add_action(self, ActionInterface action):             # <<<<<<<<<<<<<<
+ *         """Adds a new buy or sell action to the position.
+ * 
+ */
+  __pyx_tuple__21 = PyTuple_Pack(2, __pyx_n_s_self, __pyx_n_s_action); if (unlikely(!__pyx_tuple__21)) __PYX_ERR(1, 209, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__21);
+  __Pyx_GIVEREF(__pyx_tuple__21);
+  __pyx_codeobj__22 = (PyObject*)__Pyx_PyCode_New(2, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__21, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_analysis_models_portfolio_py, __pyx_n_s_add_action, 209, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__22)) __PYX_ERR(1, 209, __pyx_L1_error)
+
+  /* "src/analysis/models/portfolio.pyx":217
+ *         self._add_action(action)
+ * 
+ *     cpdef void close(self, np.int64_t timestamp, double price):             # <<<<<<<<<<<<<<
+ *         """Adds a new buy or sell action to the position.
+ * 
+ */
+  __pyx_tuple__23 = PyTuple_Pack(3, __pyx_n_s_self, __pyx_n_s_timestamp, __pyx_n_s_price); if (unlikely(!__pyx_tuple__23)) __PYX_ERR(1, 217, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__23);
+  __Pyx_GIVEREF(__pyx_tuple__23);
+  __pyx_codeobj__24 = (PyObject*)__Pyx_PyCode_New(3, 0, 0, 3, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__23, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_src_analysis_models_portfolio_py, __pyx_n_s_close, 217, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__24)) __PYX_ERR(1, 217, __pyx_L1_error)
 
   /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
  *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
  */
-  __pyx_codeobj__18 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__7, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_reduce_cython, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__18)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __pyx_codeobj__25 = (PyObject*)__Pyx_PyCode_New(1, 0, 0, 1, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__12, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_reduce_cython, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__25)) __PYX_ERR(0, 1, __pyx_L1_error)
 
   /* "(tree fragment)":3
  * def __reduce_cython__(self):
@@ -11224,7 +13079,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
  *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
-  __pyx_codeobj__19 = (PyObject*)__Pyx_PyCode_New(2, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__9, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_setstate_cython, 3, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__19)) __PYX_ERR(2, 3, __pyx_L1_error)
+  __pyx_codeobj__26 = (PyObject*)__Pyx_PyCode_New(2, 0, 0, 2, 0, CO_OPTIMIZED|CO_NEWLOCALS, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__14, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_stringsource, __pyx_n_s_setstate_cython, 3, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__26)) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -11234,7 +13089,7 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
 /* #### Code section: init_constants ### */
 
 static CYTHON_SMALL_CODE int __Pyx_InitConstants(void) {
-  if (__Pyx_CreateStringTabAndInitStrings() < 0) __PYX_ERR(0, 1, __pyx_L1_error);
+  if (__Pyx_CreateStringTabAndInitStrings() < 0) __PYX_ERR(1, 1, __pyx_L1_error);
   return 0;
   __pyx_L1_error:;
   return -1;
@@ -11259,7 +13114,7 @@ if (unlikely(_import_array() == -1)) {
 #endif
 #endif
 
-if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 1, __pyx_L1_error)
+if (unlikely(PyErr_Occurred())) __PYX_ERR(1, 1, __pyx_L1_error)
 
   return 0;
   __pyx_L1_error:;
@@ -11308,45 +13163,45 @@ static int __Pyx_modinit_type_init_code(void) {
   __Pyx_RefNannySetupContext("__Pyx_modinit_type_init_code", 0);
   /*--- Type init code ---*/
   #if CYTHON_USE_TYPE_SPECS
-  __pyx_ptype_3src_8analysis_6models_9portfolio_Action = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_3src_8analysis_6models_9portfolio_Action_spec, NULL); if (unlikely(!__pyx_ptype_3src_8analysis_6models_9portfolio_Action)) __PYX_ERR(0, 25, __pyx_L1_error)
-  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_3src_8analysis_6models_9portfolio_Action_spec, __pyx_ptype_3src_8analysis_6models_9portfolio_Action) < 0) __PYX_ERR(0, 25, __pyx_L1_error)
+  __pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_3src_8analysis_6models_9portfolio_ActionInterface_spec, NULL); if (unlikely(!__pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface)) __PYX_ERR(1, 26, __pyx_L1_error)
+  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_3src_8analysis_6models_9portfolio_ActionInterface_spec, __pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface) < 0) __PYX_ERR(1, 26, __pyx_L1_error)
   #else
-  __pyx_ptype_3src_8analysis_6models_9portfolio_Action = &__pyx_type_3src_8analysis_6models_9portfolio_Action;
+  __pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface = &__pyx_type_3src_8analysis_6models_9portfolio_ActionInterface;
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
   #endif
   #if !CYTHON_USE_TYPE_SPECS
-  if (__Pyx_PyType_Ready(__pyx_ptype_3src_8analysis_6models_9portfolio_Action) < 0) __PYX_ERR(0, 25, __pyx_L1_error)
+  if (__Pyx_PyType_Ready(__pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface) < 0) __PYX_ERR(1, 26, __pyx_L1_error)
   #endif
   #if PY_MAJOR_VERSION < 3
-  __pyx_ptype_3src_8analysis_6models_9portfolio_Action->tp_print = 0;
+  __pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface->tp_print = 0;
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_ptype_3src_8analysis_6models_9portfolio_Action->tp_dictoffset && __pyx_ptype_3src_8analysis_6models_9portfolio_Action->tp_getattro == PyObject_GenericGetAttr)) {
-    __pyx_ptype_3src_8analysis_6models_9portfolio_Action->tp_getattro = __Pyx_PyObject_GenericGetAttr;
+  if ((CYTHON_USE_TYPE_SLOTS && CYTHON_USE_PYTYPE_LOOKUP) && likely(!__pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface->tp_dictoffset && __pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface->tp_getattro == PyObject_GenericGetAttr)) {
+    __pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface->tp_getattro = __Pyx_PyObject_GenericGetAttr;
   }
   #endif
-  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_Action, (PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Action) < 0) __PYX_ERR(0, 25, __pyx_L1_error)
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_ActionInterface, (PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface) < 0) __PYX_ERR(1, 26, __pyx_L1_error)
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if (__Pyx_setup_reduce((PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Action) < 0) __PYX_ERR(0, 25, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface) < 0) __PYX_ERR(1, 26, __pyx_L1_error)
   #endif
   __pyx_vtabptr_3src_8analysis_6models_9portfolio_Buy = &__pyx_vtable_3src_8analysis_6models_9portfolio_Buy;
   __pyx_vtable_3src_8analysis_6models_9portfolio_Buy._calculate = (void (*)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Buy *, double))__pyx_f_3src_8analysis_6models_9portfolio_3Buy__calculate;
   #if CYTHON_USE_TYPE_SPECS
-  __pyx_t_1 = PyTuple_Pack(1, (PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Action); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 83, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_Pack(1, (PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 30, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_ptype_3src_8analysis_6models_9portfolio_Buy = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_3src_8analysis_6models_9portfolio_Buy_spec, __pyx_t_1);
   __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (unlikely(!__pyx_ptype_3src_8analysis_6models_9portfolio_Buy)) __PYX_ERR(0, 83, __pyx_L1_error)
-  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_3src_8analysis_6models_9portfolio_Buy_spec, __pyx_ptype_3src_8analysis_6models_9portfolio_Buy) < 0) __PYX_ERR(0, 83, __pyx_L1_error)
+  if (unlikely(!__pyx_ptype_3src_8analysis_6models_9portfolio_Buy)) __PYX_ERR(1, 30, __pyx_L1_error)
+  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_3src_8analysis_6models_9portfolio_Buy_spec, __pyx_ptype_3src_8analysis_6models_9portfolio_Buy) < 0) __PYX_ERR(1, 30, __pyx_L1_error)
   #else
   __pyx_ptype_3src_8analysis_6models_9portfolio_Buy = &__pyx_type_3src_8analysis_6models_9portfolio_Buy;
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  __pyx_ptype_3src_8analysis_6models_9portfolio_Buy->tp_base = __pyx_ptype_3src_8analysis_6models_9portfolio_Action;
+  __pyx_ptype_3src_8analysis_6models_9portfolio_Buy->tp_base = __pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface;
   #endif
   #if !CYTHON_USE_TYPE_SPECS
-  if (__Pyx_PyType_Ready(__pyx_ptype_3src_8analysis_6models_9portfolio_Buy) < 0) __PYX_ERR(0, 83, __pyx_L1_error)
+  if (__Pyx_PyType_Ready(__pyx_ptype_3src_8analysis_6models_9portfolio_Buy) < 0) __PYX_ERR(1, 30, __pyx_L1_error)
   #endif
   #if PY_MAJOR_VERSION < 3
   __pyx_ptype_3src_8analysis_6models_9portfolio_Buy->tp_print = 0;
@@ -11356,41 +13211,31 @@ static int __Pyx_modinit_type_init_code(void) {
     __pyx_ptype_3src_8analysis_6models_9portfolio_Buy->tp_getattro = __Pyx_PyObject_GenericGetAttr;
   }
   #endif
-  #if CYTHON_UPDATE_DESCRIPTOR_DOC
-  {
-    PyObject *wrapper = PyObject_GetAttrString((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Buy, "__init__"); if (unlikely(!wrapper)) __PYX_ERR(0, 83, __pyx_L1_error)
-    if (__Pyx_IS_TYPE(wrapper, &PyWrapperDescr_Type)) {
-      __pyx_wrapperbase_3src_8analysis_6models_9portfolio_3Buy___init__ = *((PyWrapperDescrObject *)wrapper)->d_base;
-      __pyx_wrapperbase_3src_8analysis_6models_9portfolio_3Buy___init__.doc = __pyx_doc_3src_8analysis_6models_9portfolio_3Buy___init__;
-      ((PyWrapperDescrObject *)wrapper)->d_base = &__pyx_wrapperbase_3src_8analysis_6models_9portfolio_3Buy___init__;
-    }
-  }
-  #endif
-  if (__Pyx_SetVtable(__pyx_ptype_3src_8analysis_6models_9portfolio_Buy, __pyx_vtabptr_3src_8analysis_6models_9portfolio_Buy) < 0) __PYX_ERR(0, 83, __pyx_L1_error)
+  if (__Pyx_SetVtable(__pyx_ptype_3src_8analysis_6models_9portfolio_Buy, __pyx_vtabptr_3src_8analysis_6models_9portfolio_Buy) < 0) __PYX_ERR(1, 30, __pyx_L1_error)
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if (__Pyx_MergeVtables(__pyx_ptype_3src_8analysis_6models_9portfolio_Buy) < 0) __PYX_ERR(0, 83, __pyx_L1_error)
+  if (__Pyx_MergeVtables(__pyx_ptype_3src_8analysis_6models_9portfolio_Buy) < 0) __PYX_ERR(1, 30, __pyx_L1_error)
   #endif
-  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_Buy, (PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Buy) < 0) __PYX_ERR(0, 83, __pyx_L1_error)
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_Buy, (PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Buy) < 0) __PYX_ERR(1, 30, __pyx_L1_error)
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if (__Pyx_setup_reduce((PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Buy) < 0) __PYX_ERR(0, 83, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Buy) < 0) __PYX_ERR(1, 30, __pyx_L1_error)
   #endif
   __pyx_vtabptr_3src_8analysis_6models_9portfolio_Sell = &__pyx_vtable_3src_8analysis_6models_9portfolio_Sell;
   __pyx_vtable_3src_8analysis_6models_9portfolio_Sell._calculate = (void (*)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Sell *, double))__pyx_f_3src_8analysis_6models_9portfolio_4Sell__calculate;
   #if CYTHON_USE_TYPE_SPECS
-  __pyx_t_1 = PyTuple_Pack(1, (PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Action); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 119, __pyx_L1_error)
+  __pyx_t_1 = PyTuple_Pack(1, (PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 98, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_ptype_3src_8analysis_6models_9portfolio_Sell = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_3src_8analysis_6models_9portfolio_Sell_spec, __pyx_t_1);
   __Pyx_XDECREF(__pyx_t_1); __pyx_t_1 = 0;
-  if (unlikely(!__pyx_ptype_3src_8analysis_6models_9portfolio_Sell)) __PYX_ERR(0, 119, __pyx_L1_error)
-  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_3src_8analysis_6models_9portfolio_Sell_spec, __pyx_ptype_3src_8analysis_6models_9portfolio_Sell) < 0) __PYX_ERR(0, 119, __pyx_L1_error)
+  if (unlikely(!__pyx_ptype_3src_8analysis_6models_9portfolio_Sell)) __PYX_ERR(1, 98, __pyx_L1_error)
+  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_3src_8analysis_6models_9portfolio_Sell_spec, __pyx_ptype_3src_8analysis_6models_9portfolio_Sell) < 0) __PYX_ERR(1, 98, __pyx_L1_error)
   #else
   __pyx_ptype_3src_8analysis_6models_9portfolio_Sell = &__pyx_type_3src_8analysis_6models_9portfolio_Sell;
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  __pyx_ptype_3src_8analysis_6models_9portfolio_Sell->tp_base = __pyx_ptype_3src_8analysis_6models_9portfolio_Action;
+  __pyx_ptype_3src_8analysis_6models_9portfolio_Sell->tp_base = __pyx_ptype_3src_8analysis_6models_9portfolio_ActionInterface;
   #endif
   #if !CYTHON_USE_TYPE_SPECS
-  if (__Pyx_PyType_Ready(__pyx_ptype_3src_8analysis_6models_9portfolio_Sell) < 0) __PYX_ERR(0, 119, __pyx_L1_error)
+  if (__Pyx_PyType_Ready(__pyx_ptype_3src_8analysis_6models_9portfolio_Sell) < 0) __PYX_ERR(1, 98, __pyx_L1_error)
   #endif
   #if PY_MAJOR_VERSION < 3
   __pyx_ptype_3src_8analysis_6models_9portfolio_Sell->tp_print = 0;
@@ -11400,29 +13245,30 @@ static int __Pyx_modinit_type_init_code(void) {
     __pyx_ptype_3src_8analysis_6models_9portfolio_Sell->tp_getattro = __Pyx_PyObject_GenericGetAttr;
   }
   #endif
-  if (__Pyx_SetVtable(__pyx_ptype_3src_8analysis_6models_9portfolio_Sell, __pyx_vtabptr_3src_8analysis_6models_9portfolio_Sell) < 0) __PYX_ERR(0, 119, __pyx_L1_error)
+  if (__Pyx_SetVtable(__pyx_ptype_3src_8analysis_6models_9portfolio_Sell, __pyx_vtabptr_3src_8analysis_6models_9portfolio_Sell) < 0) __PYX_ERR(1, 98, __pyx_L1_error)
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if (__Pyx_MergeVtables(__pyx_ptype_3src_8analysis_6models_9portfolio_Sell) < 0) __PYX_ERR(0, 119, __pyx_L1_error)
+  if (__Pyx_MergeVtables(__pyx_ptype_3src_8analysis_6models_9portfolio_Sell) < 0) __PYX_ERR(1, 98, __pyx_L1_error)
   #endif
-  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_Sell, (PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Sell) < 0) __PYX_ERR(0, 119, __pyx_L1_error)
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_Sell, (PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Sell) < 0) __PYX_ERR(1, 98, __pyx_L1_error)
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if (__Pyx_setup_reduce((PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Sell) < 0) __PYX_ERR(0, 119, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Sell) < 0) __PYX_ERR(1, 98, __pyx_L1_error)
   #endif
   __pyx_vtabptr_3src_8analysis_6models_9portfolio_Position = &__pyx_vtable_3src_8analysis_6models_9portfolio_Position;
-  __pyx_vtable_3src_8analysis_6models_9portfolio_Position.add_action = (void (*)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *, int __pyx_skip_dispatch))__pyx_f_3src_8analysis_6models_9portfolio_8Position_add_action;
-  __pyx_vtable_3src_8analysis_6models_9portfolio_Position._add_action = (void (*)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *))__pyx_f_3src_8analysis_6models_9portfolio_8Position__add_action;
-  __pyx_vtable_3src_8analysis_6models_9portfolio_Position.close = (void (*)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, __pyx_t_5numpy_int64_t, double))__pyx_f_3src_8analysis_6models_9portfolio_8Position_close;
-  __pyx_vtable_3src_8analysis_6models_9portfolio_Position._update_position = (void (*)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, struct __pyx_obj_3src_8analysis_6models_9portfolio_Action *))__pyx_f_3src_8analysis_6models_9portfolio_8Position__update_position;
+  __pyx_vtable_3src_8analysis_6models_9portfolio_Position.add_action = (void (*)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *, int __pyx_skip_dispatch))__pyx_f_3src_8analysis_6models_9portfolio_8Position_add_action;
+  __pyx_vtable_3src_8analysis_6models_9portfolio_Position.close = (void (*)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, __pyx_t_5numpy_int64_t, double, int __pyx_skip_dispatch))__pyx_f_3src_8analysis_6models_9portfolio_8Position_close;
+  __pyx_vtable_3src_8analysis_6models_9portfolio_Position._add_action = (void (*)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *))__pyx_f_3src_8analysis_6models_9portfolio_8Position__add_action;
+  __pyx_vtable_3src_8analysis_6models_9portfolio_Position._close = (void (*)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, __pyx_t_5numpy_int64_t, double))__pyx_f_3src_8analysis_6models_9portfolio_8Position__close;
+  __pyx_vtable_3src_8analysis_6models_9portfolio_Position._update_position = (void (*)(struct __pyx_obj_3src_8analysis_6models_9portfolio_Position *, struct __pyx_obj_3src_8analysis_6models_9portfolio_ActionInterface *))__pyx_f_3src_8analysis_6models_9portfolio_8Position__update_position;
   #if CYTHON_USE_TYPE_SPECS
-  __pyx_ptype_3src_8analysis_6models_9portfolio_Position = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_3src_8analysis_6models_9portfolio_Position_spec, NULL); if (unlikely(!__pyx_ptype_3src_8analysis_6models_9portfolio_Position)) __PYX_ERR(0, 143, __pyx_L1_error)
-  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_3src_8analysis_6models_9portfolio_Position_spec, __pyx_ptype_3src_8analysis_6models_9portfolio_Position) < 0) __PYX_ERR(0, 143, __pyx_L1_error)
+  __pyx_ptype_3src_8analysis_6models_9portfolio_Position = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_3src_8analysis_6models_9portfolio_Position_spec, NULL); if (unlikely(!__pyx_ptype_3src_8analysis_6models_9portfolio_Position)) __PYX_ERR(1, 167, __pyx_L1_error)
+  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_3src_8analysis_6models_9portfolio_Position_spec, __pyx_ptype_3src_8analysis_6models_9portfolio_Position) < 0) __PYX_ERR(1, 167, __pyx_L1_error)
   #else
   __pyx_ptype_3src_8analysis_6models_9portfolio_Position = &__pyx_type_3src_8analysis_6models_9portfolio_Position;
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
   #endif
   #if !CYTHON_USE_TYPE_SPECS
-  if (__Pyx_PyType_Ready(__pyx_ptype_3src_8analysis_6models_9portfolio_Position) < 0) __PYX_ERR(0, 143, __pyx_L1_error)
+  if (__Pyx_PyType_Ready(__pyx_ptype_3src_8analysis_6models_9portfolio_Position) < 0) __PYX_ERR(1, 167, __pyx_L1_error)
   #endif
   #if PY_MAJOR_VERSION < 3
   __pyx_ptype_3src_8analysis_6models_9portfolio_Position->tp_print = 0;
@@ -11432,13 +13278,13 @@ static int __Pyx_modinit_type_init_code(void) {
     __pyx_ptype_3src_8analysis_6models_9portfolio_Position->tp_getattro = __Pyx_PyObject_GenericGetAttr;
   }
   #endif
-  if (__Pyx_SetVtable(__pyx_ptype_3src_8analysis_6models_9portfolio_Position, __pyx_vtabptr_3src_8analysis_6models_9portfolio_Position) < 0) __PYX_ERR(0, 143, __pyx_L1_error)
+  if (__Pyx_SetVtable(__pyx_ptype_3src_8analysis_6models_9portfolio_Position, __pyx_vtabptr_3src_8analysis_6models_9portfolio_Position) < 0) __PYX_ERR(1, 167, __pyx_L1_error)
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if (__Pyx_MergeVtables(__pyx_ptype_3src_8analysis_6models_9portfolio_Position) < 0) __PYX_ERR(0, 143, __pyx_L1_error)
+  if (__Pyx_MergeVtables(__pyx_ptype_3src_8analysis_6models_9portfolio_Position) < 0) __PYX_ERR(1, 167, __pyx_L1_error)
   #endif
-  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_Position, (PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Position) < 0) __PYX_ERR(0, 143, __pyx_L1_error)
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_Position, (PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Position) < 0) __PYX_ERR(1, 167, __pyx_L1_error)
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if (__Pyx_setup_reduce((PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Position) < 0) __PYX_ERR(0, 143, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject *) __pyx_ptype_3src_8analysis_6models_9portfolio_Position) < 0) __PYX_ERR(1, 167, __pyx_L1_error)
   #endif
   __Pyx_RefNannyFinishContext();
   return 0;
@@ -11468,23 +13314,23 @@ static int __Pyx_modinit_type_import_code(void) {
   #endif
   __Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_7cpython_4type_type) __PYX_ERR(3, 9, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyImport_ImportModule("numpy"); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 271, __pyx_L1_error)
+  __pyx_t_1 = PyImport_ImportModule("numpy"); if (unlikely(!__pyx_t_1)) __PYX_ERR(2, 271, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_ptype_5numpy_dtype = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "dtype", sizeof(PyArray_Descr), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyArray_Descr),__Pyx_ImportType_CheckSize_Ignore_3_0_11); if (!__pyx_ptype_5numpy_dtype) __PYX_ERR(1, 271, __pyx_L1_error)
-  __pyx_ptype_5numpy_flatiter = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "flatiter", sizeof(PyArrayIterObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyArrayIterObject),__Pyx_ImportType_CheckSize_Ignore_3_0_11); if (!__pyx_ptype_5numpy_flatiter) __PYX_ERR(1, 316, __pyx_L1_error)
-  __pyx_ptype_5numpy_broadcast = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "broadcast", sizeof(PyArrayMultiIterObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyArrayMultiIterObject),__Pyx_ImportType_CheckSize_Ignore_3_0_11); if (!__pyx_ptype_5numpy_broadcast) __PYX_ERR(1, 320, __pyx_L1_error)
-  __pyx_ptype_5numpy_ndarray = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "ndarray", sizeof(PyArrayObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyArrayObject),__Pyx_ImportType_CheckSize_Ignore_3_0_11); if (!__pyx_ptype_5numpy_ndarray) __PYX_ERR(1, 359, __pyx_L1_error)
-  __pyx_ptype_5numpy_generic = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "generic", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_generic) __PYX_ERR(1, 848, __pyx_L1_error)
-  __pyx_ptype_5numpy_number = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "number", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_number) __PYX_ERR(1, 850, __pyx_L1_error)
-  __pyx_ptype_5numpy_integer = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "integer", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_integer) __PYX_ERR(1, 852, __pyx_L1_error)
-  __pyx_ptype_5numpy_signedinteger = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "signedinteger", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_signedinteger) __PYX_ERR(1, 854, __pyx_L1_error)
-  __pyx_ptype_5numpy_unsignedinteger = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "unsignedinteger", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_unsignedinteger) __PYX_ERR(1, 856, __pyx_L1_error)
-  __pyx_ptype_5numpy_inexact = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "inexact", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_inexact) __PYX_ERR(1, 858, __pyx_L1_error)
-  __pyx_ptype_5numpy_floating = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "floating", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_floating) __PYX_ERR(1, 860, __pyx_L1_error)
-  __pyx_ptype_5numpy_complexfloating = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "complexfloating", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_complexfloating) __PYX_ERR(1, 862, __pyx_L1_error)
-  __pyx_ptype_5numpy_flexible = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "flexible", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_flexible) __PYX_ERR(1, 864, __pyx_L1_error)
-  __pyx_ptype_5numpy_character = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "character", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_character) __PYX_ERR(1, 866, __pyx_L1_error)
-  __pyx_ptype_5numpy_ufunc = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "ufunc", sizeof(PyUFuncObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyUFuncObject),__Pyx_ImportType_CheckSize_Ignore_3_0_11); if (!__pyx_ptype_5numpy_ufunc) __PYX_ERR(1, 930, __pyx_L1_error)
+  __pyx_ptype_5numpy_dtype = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "dtype", sizeof(PyArray_Descr), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyArray_Descr),__Pyx_ImportType_CheckSize_Ignore_3_0_11); if (!__pyx_ptype_5numpy_dtype) __PYX_ERR(2, 271, __pyx_L1_error)
+  __pyx_ptype_5numpy_flatiter = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "flatiter", sizeof(PyArrayIterObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyArrayIterObject),__Pyx_ImportType_CheckSize_Ignore_3_0_11); if (!__pyx_ptype_5numpy_flatiter) __PYX_ERR(2, 316, __pyx_L1_error)
+  __pyx_ptype_5numpy_broadcast = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "broadcast", sizeof(PyArrayMultiIterObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyArrayMultiIterObject),__Pyx_ImportType_CheckSize_Ignore_3_0_11); if (!__pyx_ptype_5numpy_broadcast) __PYX_ERR(2, 320, __pyx_L1_error)
+  __pyx_ptype_5numpy_ndarray = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "ndarray", sizeof(PyArrayObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyArrayObject),__Pyx_ImportType_CheckSize_Ignore_3_0_11); if (!__pyx_ptype_5numpy_ndarray) __PYX_ERR(2, 359, __pyx_L1_error)
+  __pyx_ptype_5numpy_generic = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "generic", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_generic) __PYX_ERR(2, 848, __pyx_L1_error)
+  __pyx_ptype_5numpy_number = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "number", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_number) __PYX_ERR(2, 850, __pyx_L1_error)
+  __pyx_ptype_5numpy_integer = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "integer", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_integer) __PYX_ERR(2, 852, __pyx_L1_error)
+  __pyx_ptype_5numpy_signedinteger = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "signedinteger", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_signedinteger) __PYX_ERR(2, 854, __pyx_L1_error)
+  __pyx_ptype_5numpy_unsignedinteger = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "unsignedinteger", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_unsignedinteger) __PYX_ERR(2, 856, __pyx_L1_error)
+  __pyx_ptype_5numpy_inexact = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "inexact", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_inexact) __PYX_ERR(2, 858, __pyx_L1_error)
+  __pyx_ptype_5numpy_floating = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "floating", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_floating) __PYX_ERR(2, 860, __pyx_L1_error)
+  __pyx_ptype_5numpy_complexfloating = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "complexfloating", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_complexfloating) __PYX_ERR(2, 862, __pyx_L1_error)
+  __pyx_ptype_5numpy_flexible = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "flexible", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_flexible) __PYX_ERR(2, 864, __pyx_L1_error)
+  __pyx_ptype_5numpy_character = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "character", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_character) __PYX_ERR(2, 866, __pyx_L1_error)
+  __pyx_ptype_5numpy_ufunc = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "ufunc", sizeof(PyUFuncObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyUFuncObject),__Pyx_ImportType_CheckSize_Ignore_3_0_11); if (!__pyx_ptype_5numpy_ufunc) __PYX_ERR(2, 930, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_RefNannyFinishContext();
   return 0;
@@ -11694,26 +13540,26 @@ static CYTHON_SMALL_CODE int __pyx_pymod_exec_portfolio(PyObject *__pyx_pyinit_m
   #else
   #if PY_MAJOR_VERSION < 3
   __pyx_m = Py_InitModule4("portfolio", __pyx_methods, 0, 0, PYTHON_API_VERSION); Py_XINCREF(__pyx_m);
-  if (unlikely(!__pyx_m)) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (unlikely(!__pyx_m)) __PYX_ERR(1, 1, __pyx_L1_error)
   #elif CYTHON_USE_MODULE_STATE
-  __pyx_t_1 = PyModule_Create(&__pyx_moduledef); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_t_1 = PyModule_Create(&__pyx_moduledef); if (unlikely(!__pyx_t_1)) __PYX_ERR(1, 1, __pyx_L1_error)
   {
     int add_module_result = PyState_AddModule(__pyx_t_1, &__pyx_moduledef);
     __pyx_t_1 = 0; /* transfer ownership from __pyx_t_1 to "portfolio" pseudovariable */
-    if (unlikely((add_module_result < 0))) __PYX_ERR(0, 1, __pyx_L1_error)
+    if (unlikely((add_module_result < 0))) __PYX_ERR(1, 1, __pyx_L1_error)
     pystate_addmodule_run = 1;
   }
   #else
   __pyx_m = PyModule_Create(&__pyx_moduledef);
-  if (unlikely(!__pyx_m)) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (unlikely(!__pyx_m)) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   #endif
   CYTHON_UNUSED_VAR(__pyx_t_1);
-  __pyx_d = PyModule_GetDict(__pyx_m); if (unlikely(!__pyx_d)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_d = PyModule_GetDict(__pyx_m); if (unlikely(!__pyx_d)) __PYX_ERR(1, 1, __pyx_L1_error)
   Py_INCREF(__pyx_d);
-  __pyx_b = __Pyx_PyImport_AddModuleRef(__Pyx_BUILTIN_MODULE_NAME); if (unlikely(!__pyx_b)) __PYX_ERR(0, 1, __pyx_L1_error)
-  __pyx_cython_runtime = __Pyx_PyImport_AddModuleRef((const char *) "cython_runtime"); if (unlikely(!__pyx_cython_runtime)) __PYX_ERR(0, 1, __pyx_L1_error)
-  if (PyObject_SetAttrString(__pyx_m, "__builtins__", __pyx_b) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_b = __Pyx_PyImport_AddModuleRef(__Pyx_BUILTIN_MODULE_NAME); if (unlikely(!__pyx_b)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __pyx_cython_runtime = __Pyx_PyImport_AddModuleRef((const char *) "cython_runtime"); if (unlikely(!__pyx_cython_runtime)) __PYX_ERR(1, 1, __pyx_L1_error)
+  if (PyObject_SetAttrString(__pyx_m, "__builtins__", __pyx_b) < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #if CYTHON_REFNANNY
 __Pyx_RefNanny = __Pyx_RefNannyImportAPI("refnanny");
 if (!__Pyx_RefNanny) {
@@ -11724,30 +13570,30 @@ if (!__Pyx_RefNanny) {
 }
 #endif
   __Pyx_RefNannySetupContext("__Pyx_PyMODINIT_FUNC PyInit_portfolio(void)", 0);
-  if (__Pyx_check_binary_version(__PYX_LIMITED_VERSION_HEX, __Pyx_get_runtime_version(), CYTHON_COMPILING_IN_LIMITED_API) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_check_binary_version(__PYX_LIMITED_VERSION_HEX, __Pyx_get_runtime_version(), CYTHON_COMPILING_IN_LIMITED_API) < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #ifdef __Pxy_PyFrame_Initialize_Offsets
   __Pxy_PyFrame_Initialize_Offsets();
   #endif
-  __pyx_empty_tuple = PyTuple_New(0); if (unlikely(!__pyx_empty_tuple)) __PYX_ERR(0, 1, __pyx_L1_error)
-  __pyx_empty_bytes = PyBytes_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_bytes)) __PYX_ERR(0, 1, __pyx_L1_error)
-  __pyx_empty_unicode = PyUnicode_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_unicode)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_empty_tuple = PyTuple_New(0); if (unlikely(!__pyx_empty_tuple)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __pyx_empty_bytes = PyBytes_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_bytes)) __PYX_ERR(1, 1, __pyx_L1_error)
+  __pyx_empty_unicode = PyUnicode_FromStringAndSize("", 0); if (unlikely(!__pyx_empty_unicode)) __PYX_ERR(1, 1, __pyx_L1_error)
   #ifdef __Pyx_CyFunction_USED
-  if (__pyx_CyFunction_init(__pyx_m) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_CyFunction_init(__pyx_m) < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   #ifdef __Pyx_FusedFunction_USED
-  if (__pyx_FusedFunction_init(__pyx_m) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_FusedFunction_init(__pyx_m) < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   #ifdef __Pyx_Coroutine_USED
-  if (__pyx_Coroutine_init(__pyx_m) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_Coroutine_init(__pyx_m) < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   #ifdef __Pyx_Generator_USED
-  if (__pyx_Generator_init(__pyx_m) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_Generator_init(__pyx_m) < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   #ifdef __Pyx_AsyncGen_USED
-  if (__pyx_AsyncGen_init(__pyx_m) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_AsyncGen_init(__pyx_m) < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   #ifdef __Pyx_StopAsyncIteration_USED
-  if (__pyx_StopAsyncIteration_init(__pyx_m) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__pyx_StopAsyncIteration_init(__pyx_m) < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   /*--- Library function declarations ---*/
   /*--- Threads initialization code ---*/
@@ -11755,75 +13601,75 @@ if (!__Pyx_RefNanny) {
   PyEval_InitThreads();
   #endif
   /*--- Initialize various global constants etc. ---*/
-  if (__Pyx_InitConstants() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_InitConstants() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   stringtab_initialized = 1;
-  if (__Pyx_InitGlobals() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_InitGlobals() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #if PY_MAJOR_VERSION < 3 && (__PYX_DEFAULT_STRING_ENCODING_IS_ASCII || __PYX_DEFAULT_STRING_ENCODING_IS_DEFAULT)
-  if (__Pyx_init_sys_getdefaultencoding_params() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_init_sys_getdefaultencoding_params() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
   if (__pyx_module_is_main_src__analysis__models__portfolio) {
-    if (PyObject_SetAttr(__pyx_m, __pyx_n_s_name, __pyx_n_s_main) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+    if (PyObject_SetAttr(__pyx_m, __pyx_n_s_name, __pyx_n_s_main) < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   }
   #if PY_MAJOR_VERSION >= 3
   {
-    PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) __PYX_ERR(0, 1, __pyx_L1_error)
+    PyObject *modules = PyImport_GetModuleDict(); if (unlikely(!modules)) __PYX_ERR(1, 1, __pyx_L1_error)
     if (!PyDict_GetItemString(modules, "src.analysis.models.portfolio")) {
-      if (unlikely((PyDict_SetItemString(modules, "src.analysis.models.portfolio", __pyx_m) < 0))) __PYX_ERR(0, 1, __pyx_L1_error)
+      if (unlikely((PyDict_SetItemString(modules, "src.analysis.models.portfolio", __pyx_m) < 0))) __PYX_ERR(1, 1, __pyx_L1_error)
     }
   }
   #endif
   /*--- Builtin init code ---*/
-  if (__Pyx_InitCachedBuiltins() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_InitCachedBuiltins() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   /*--- Constants init code ---*/
-  if (__Pyx_InitCachedConstants() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_InitCachedConstants() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   /*--- Global type/function init code ---*/
   (void)__Pyx_modinit_global_init_code();
   (void)__Pyx_modinit_variable_export_code();
   (void)__Pyx_modinit_function_export_code();
-  if (unlikely((__Pyx_modinit_type_init_code() < 0))) __PYX_ERR(0, 1, __pyx_L1_error)
-  if (unlikely((__Pyx_modinit_type_import_code() < 0))) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (unlikely((__Pyx_modinit_type_init_code() < 0))) __PYX_ERR(1, 1, __pyx_L1_error)
+  if (unlikely((__Pyx_modinit_type_import_code() < 0))) __PYX_ERR(1, 1, __pyx_L1_error)
   (void)__Pyx_modinit_variable_import_code();
   (void)__Pyx_modinit_function_import_code();
   /*--- Execution code ---*/
   #if defined(__Pyx_Generator_USED) || defined(__Pyx_Coroutine_USED)
-  if (__Pyx_patch_abc() < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (__Pyx_patch_abc() < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   #endif
 
   /* "src/analysis/models/portfolio.pyx":8
  * 
  * cimport numpy as np
  * import numpy as np             # <<<<<<<<<<<<<<
+ * from cython cimport fused_type
  * from functools import reduce
- * from libcpp.vector cimport vector
  */
-  __pyx_t_2 = __Pyx_ImportDottedModule(__pyx_n_s_numpy, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 8, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_ImportDottedModule(__pyx_n_s_numpy, NULL); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 8, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_np, __pyx_t_2) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_np, __pyx_t_2) < 0) __PYX_ERR(1, 8, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "src/analysis/models/portfolio.pyx":9
- * cimport numpy as np
+  /* "src/analysis/models/portfolio.pyx":10
  * import numpy as np
+ * from cython cimport fused_type
  * from functools import reduce             # <<<<<<<<<<<<<<
- * from libcpp.vector cimport vector
  * 
+ * cdef double fee_rate = 0.001
  */
-  __pyx_t_2 = PyList_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 9, __pyx_L1_error)
+  __pyx_t_2 = PyList_New(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 10, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_INCREF(__pyx_n_s_reduce);
   __Pyx_GIVEREF(__pyx_n_s_reduce);
-  if (__Pyx_PyList_SET_ITEM(__pyx_t_2, 0, __pyx_n_s_reduce)) __PYX_ERR(0, 9, __pyx_L1_error);
-  __pyx_t_3 = __Pyx_Import(__pyx_n_s_functools, __pyx_t_2, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 9, __pyx_L1_error)
+  if (__Pyx_PyList_SET_ITEM(__pyx_t_2, 0, __pyx_n_s_reduce)) __PYX_ERR(1, 10, __pyx_L1_error);
+  __pyx_t_3 = __Pyx_Import(__pyx_n_s_functools, __pyx_t_2, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 10, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_ImportFrom(__pyx_t_3, __pyx_n_s_reduce); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 9, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_ImportFrom(__pyx_t_3, __pyx_n_s_reduce); if (unlikely(!__pyx_t_2)) __PYX_ERR(1, 10, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_reduce, __pyx_t_2) < 0) __PYX_ERR(0, 9, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_reduce, __pyx_t_2) < 0) __PYX_ERR(1, 10, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
   /* "src/analysis/models/portfolio.pyx":12
- * from libcpp.vector cimport vector
+ * from functools import reduce
  * 
  * cdef double fee_rate = 0.001             # <<<<<<<<<<<<<<
  * cdef double slippage_rate = 0.001
@@ -11845,9 +13691,9 @@ if (!__Pyx_RefNanny) {
  *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
  * def __setstate_cython__(self, __pyx_state):
  */
-  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_6Action_5__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Action___reduce_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__8)); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_15ActionInterface_1__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_ActionInterface___reduce_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__13)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_reduce_cython, __pyx_t_3) < 0) __PYX_ERR(2, 1, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_reduce_cython, __pyx_t_3) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
   /* "(tree fragment)":3
@@ -11856,76 +13702,89 @@ if (!__Pyx_RefNanny) {
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
  *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
  */
-  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_6Action_7__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Action___setstate_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__10)); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 3, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_15ActionInterface_3__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_ActionInterface___setstate_cytho, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__15)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setstate_cython, __pyx_t_3) < 0) __PYX_ERR(2, 3, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setstate_cython, __pyx_t_3) < 0) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
   /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
  */
-  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_3Buy_5__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Buy___reduce_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__11)); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_3Buy_7__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Buy___reduce_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__16)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_reduce_cython, __pyx_t_3) < 0) __PYX_ERR(2, 1, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_reduce_cython, __pyx_t_3) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
   /* "(tree fragment)":3
  * def __reduce_cython__(self):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
-  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_3Buy_7__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Buy___setstate_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__12)); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 3, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_3Buy_9__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Buy___setstate_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__17)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setstate_cython, __pyx_t_3) < 0) __PYX_ERR(2, 3, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setstate_cython, __pyx_t_3) < 0) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
   /* "(tree fragment)":1
  * def __reduce_cython__(self):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
  */
-  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_4Sell_5__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Sell___reduce_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__13)); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_4Sell_7__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Sell___reduce_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__18)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_reduce_cython, __pyx_t_3) < 0) __PYX_ERR(2, 1, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_reduce_cython, __pyx_t_3) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
   /* "(tree fragment)":3
  * def __reduce_cython__(self):
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
- *     raise TypeError, "Pickling of struct members such as self.data must be explicitly requested with @auto_pickle(True)"
+ *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
-  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_4Sell_7__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Sell___setstate_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__14)); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 3, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_4Sell_9__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Sell___setstate_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__19)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setstate_cython, __pyx_t_3) < 0) __PYX_ERR(2, 3, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setstate_cython, __pyx_t_3) < 0) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-  /* "src/analysis/models/portfolio.pyx":170
- *         )
- * 
- *     cpdef void add_action(self, Action action):             # <<<<<<<<<<<<<<
- *         self._add_action(action)
- * 
- */
-  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_5add_action, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Position_add_action, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__16)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 170, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  if (__Pyx_SetItemOnTypeDict((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Position, __pyx_n_s_add_action, __pyx_t_3) < 0) __PYX_ERR(0, 170, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  PyType_Modified(__pyx_ptype_3src_8analysis_6models_9portfolio_Position);
-
-  /* "src/analysis/models/portfolio.pyx":221
- *                 self.average_entry_price = action.price
+  /* "src/analysis/models/portfolio.pyx":206
+ *         return reduce(lambda x, y: x + y, self.sells)
  * 
  *     def get_actions(self):             # <<<<<<<<<<<<<<
- *         return self.buys + self.sells
+ *         return sorted(self.buys + self.sells, key=lambda x: x.timestamp)
  * 
  */
-  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_7get_actions, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Position_get_actions, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__17)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 221, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_5get_actions, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Position_get_actions, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__20)); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 206, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (__Pyx_SetItemOnTypeDict((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Position, __pyx_n_s_get_actions, __pyx_t_3) < 0) __PYX_ERR(0, 221, __pyx_L1_error)
+  if (__Pyx_SetItemOnTypeDict((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Position, __pyx_n_s_get_actions, __pyx_t_3) < 0) __PYX_ERR(1, 206, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  PyType_Modified(__pyx_ptype_3src_8analysis_6models_9portfolio_Position);
+
+  /* "src/analysis/models/portfolio.pyx":209
+ *         return sorted(self.buys + self.sells, key=lambda x: x.timestamp)
+ * 
+ *     cpdef void add_action(self, ActionInterface action):             # <<<<<<<<<<<<<<
+ *         """Adds a new buy or sell action to the position.
+ * 
+ */
+  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_7add_action, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Position_add_action, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__22)); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 209, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  if (__Pyx_SetItemOnTypeDict((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Position, __pyx_n_s_add_action, __pyx_t_3) < 0) __PYX_ERR(1, 209, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  PyType_Modified(__pyx_ptype_3src_8analysis_6models_9portfolio_Position);
+
+  /* "src/analysis/models/portfolio.pyx":217
+ *         self._add_action(action)
+ * 
+ *     cpdef void close(self, np.int64_t timestamp, double price):             # <<<<<<<<<<<<<<
+ *         """Adds a new buy or sell action to the position.
+ * 
+ */
+  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_9close, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Position_close, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__24)); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 217, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  if (__Pyx_SetItemOnTypeDict((PyObject *)__pyx_ptype_3src_8analysis_6models_9portfolio_Position, __pyx_n_s_close, __pyx_t_3) < 0) __PYX_ERR(1, 217, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   PyType_Modified(__pyx_ptype_3src_8analysis_6models_9portfolio_Position);
 
@@ -11934,9 +13793,9 @@ if (!__Pyx_RefNanny) {
  *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  * def __setstate_cython__(self, __pyx_state):
  */
-  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_9__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Position___reduce_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__18)); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 1, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_11__reduce_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Position___reduce_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__25)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_reduce_cython, __pyx_t_3) < 0) __PYX_ERR(2, 1, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_reduce_cython, __pyx_t_3) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
   /* "(tree fragment)":3
@@ -11945,9 +13804,9 @@ if (!__Pyx_RefNanny) {
  * def __setstate_cython__(self, __pyx_state):             # <<<<<<<<<<<<<<
  *     raise TypeError, "no default __reduce__ due to non-trivial __cinit__"
  */
-  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_11__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Position___setstate_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__19)); if (unlikely(!__pyx_t_3)) __PYX_ERR(2, 3, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_CyFunction_New(&__pyx_mdef_3src_8analysis_6models_9portfolio_8Position_13__setstate_cython__, __Pyx_CYFUNCTION_CCLASS, __pyx_n_s_Position___setstate_cython, NULL, __pyx_n_s_src_analysis_models_portfolio, __pyx_d, ((PyObject *)__pyx_codeobj__26)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setstate_cython, __pyx_t_3) < 0) __PYX_ERR(2, 3, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_setstate_cython, __pyx_t_3) < 0) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
   /* "src/analysis/models/portfolio.pyx":1
@@ -11955,9 +13814,9 @@ if (!__Pyx_RefNanny) {
  * # distutils: language = c++
  * 
  */
-  __pyx_t_3 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyDict_NewPresized(0); if (unlikely(!__pyx_t_3)) __PYX_ERR(1, 1, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_test, __pyx_t_3) < 0) __PYX_ERR(0, 1, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_test, __pyx_t_3) < 0) __PYX_ERR(1, 1, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
   /*--- Wrapped vars code ---*/
@@ -12187,6 +14046,30 @@ static PyObject *__Pyx_GetBuiltinName(PyObject *name) {
     }
     return result;
 }
+
+/* DictGetItem */
+#if PY_MAJOR_VERSION >= 3 && !CYTHON_COMPILING_IN_PYPY
+static PyObject *__Pyx_PyDict_GetItem(PyObject *d, PyObject* key) {
+    PyObject *value;
+    value = PyDict_GetItemWithError(d, key);
+    if (unlikely(!value)) {
+        if (!PyErr_Occurred()) {
+            if (unlikely(PyTuple_Check(key))) {
+                PyObject* args = PyTuple_Pack(1, key);
+                if (likely(args)) {
+                    PyErr_SetObject(PyExc_KeyError, args);
+                    Py_DECREF(args);
+                }
+            } else {
+                PyErr_SetObject(PyExc_KeyError, key);
+            }
+        }
+        return NULL;
+    }
+    Py_INCREF(value);
+    return value;
+}
+#endif
 
 /* GetTopmostException */
 #if CYTHON_USE_EXC_INFO_STACK && CYTHON_FAST_THREAD_STATE
@@ -12802,6 +14685,80 @@ static void __Pyx_RaiseArgtupleInvalid(
                  (num_expected == 1) ? "" : "s", num_found);
 }
 
+/* KeywordStringCheck */
+static int __Pyx_CheckKeywordStrings(
+    PyObject *kw,
+    const char* function_name,
+    int kw_allowed)
+{
+    PyObject* key = 0;
+    Py_ssize_t pos = 0;
+#if CYTHON_COMPILING_IN_PYPY
+    if (!kw_allowed && PyDict_Next(kw, &pos, &key, 0))
+        goto invalid_keyword;
+    return 1;
+#else
+    if (CYTHON_METH_FASTCALL && likely(PyTuple_Check(kw))) {
+        Py_ssize_t kwsize;
+#if CYTHON_ASSUME_SAFE_MACROS
+        kwsize = PyTuple_GET_SIZE(kw);
+#else
+        kwsize = PyTuple_Size(kw);
+        if (kwsize < 0) return 0;
+#endif
+        if (unlikely(kwsize == 0))
+            return 1;
+        if (!kw_allowed) {
+#if CYTHON_ASSUME_SAFE_MACROS
+            key = PyTuple_GET_ITEM(kw, 0);
+#else
+            key = PyTuple_GetItem(kw, pos);
+            if (!key) return 0;
+#endif
+            goto invalid_keyword;
+        }
+#if PY_VERSION_HEX < 0x03090000
+        for (pos = 0; pos < kwsize; pos++) {
+#if CYTHON_ASSUME_SAFE_MACROS
+            key = PyTuple_GET_ITEM(kw, pos);
+#else
+            key = PyTuple_GetItem(kw, pos);
+            if (!key) return 0;
+#endif
+            if (unlikely(!PyUnicode_Check(key)))
+                goto invalid_keyword_type;
+        }
+#endif
+        return 1;
+    }
+    while (PyDict_Next(kw, &pos, &key, 0)) {
+        #if PY_MAJOR_VERSION < 3
+        if (unlikely(!PyString_Check(key)))
+        #endif
+            if (unlikely(!PyUnicode_Check(key)))
+                goto invalid_keyword_type;
+    }
+    if (!kw_allowed && unlikely(key))
+        goto invalid_keyword;
+    return 1;
+invalid_keyword_type:
+    PyErr_Format(PyExc_TypeError,
+        "%.200s() keywords must be strings", function_name);
+    return 0;
+#endif
+invalid_keyword:
+    #if PY_MAJOR_VERSION < 3
+    PyErr_Format(PyExc_TypeError,
+        "%.200s() got an unexpected keyword argument '%.200s'",
+        function_name, PyString_AsString(key));
+    #else
+    PyErr_Format(PyExc_TypeError,
+        "%s() got an unexpected keyword argument '%U'",
+        function_name, key);
+    #endif
+    return 0;
+}
+
 /* RaiseDoubleKeywords */
 static void __Pyx_RaiseDoubleKeywordsError(
     const char* func_name,
@@ -12972,333 +14929,6 @@ bad:
     return -1;
 }
 
-/* ArgTypeTest */
-static int __Pyx__ArgTypeTest(PyObject *obj, PyTypeObject *type, const char *name, int exact)
-{
-    __Pyx_TypeName type_name;
-    __Pyx_TypeName obj_type_name;
-    if (unlikely(!type)) {
-        PyErr_SetString(PyExc_SystemError, "Missing type object");
-        return 0;
-    }
-    else if (exact) {
-        #if PY_MAJOR_VERSION == 2
-        if ((type == &PyBaseString_Type) && likely(__Pyx_PyBaseString_CheckExact(obj))) return 1;
-        #endif
-    }
-    else {
-        if (likely(__Pyx_TypeCheck(obj, type))) return 1;
-    }
-    type_name = __Pyx_PyType_GetName(type);
-    obj_type_name = __Pyx_PyType_GetName(Py_TYPE(obj));
-    PyErr_Format(PyExc_TypeError,
-        "Argument '%.200s' has incorrect type (expected " __Pyx_FMT_TYPENAME
-        ", got " __Pyx_FMT_TYPENAME ")", name, type_name, obj_type_name);
-    __Pyx_DECREF_TypeName(type_name);
-    __Pyx_DECREF_TypeName(obj_type_name);
-    return 0;
-}
-
-/* KeywordStringCheck */
-static int __Pyx_CheckKeywordStrings(
-    PyObject *kw,
-    const char* function_name,
-    int kw_allowed)
-{
-    PyObject* key = 0;
-    Py_ssize_t pos = 0;
-#if CYTHON_COMPILING_IN_PYPY
-    if (!kw_allowed && PyDict_Next(kw, &pos, &key, 0))
-        goto invalid_keyword;
-    return 1;
-#else
-    if (CYTHON_METH_FASTCALL && likely(PyTuple_Check(kw))) {
-        Py_ssize_t kwsize;
-#if CYTHON_ASSUME_SAFE_MACROS
-        kwsize = PyTuple_GET_SIZE(kw);
-#else
-        kwsize = PyTuple_Size(kw);
-        if (kwsize < 0) return 0;
-#endif
-        if (unlikely(kwsize == 0))
-            return 1;
-        if (!kw_allowed) {
-#if CYTHON_ASSUME_SAFE_MACROS
-            key = PyTuple_GET_ITEM(kw, 0);
-#else
-            key = PyTuple_GetItem(kw, pos);
-            if (!key) return 0;
-#endif
-            goto invalid_keyword;
-        }
-#if PY_VERSION_HEX < 0x03090000
-        for (pos = 0; pos < kwsize; pos++) {
-#if CYTHON_ASSUME_SAFE_MACROS
-            key = PyTuple_GET_ITEM(kw, pos);
-#else
-            key = PyTuple_GetItem(kw, pos);
-            if (!key) return 0;
-#endif
-            if (unlikely(!PyUnicode_Check(key)))
-                goto invalid_keyword_type;
-        }
-#endif
-        return 1;
-    }
-    while (PyDict_Next(kw, &pos, &key, 0)) {
-        #if PY_MAJOR_VERSION < 3
-        if (unlikely(!PyString_Check(key)))
-        #endif
-            if (unlikely(!PyUnicode_Check(key)))
-                goto invalid_keyword_type;
-    }
-    if (!kw_allowed && unlikely(key))
-        goto invalid_keyword;
-    return 1;
-invalid_keyword_type:
-    PyErr_Format(PyExc_TypeError,
-        "%.200s() keywords must be strings", function_name);
-    return 0;
-#endif
-invalid_keyword:
-    #if PY_MAJOR_VERSION < 3
-    PyErr_Format(PyExc_TypeError,
-        "%.200s() got an unexpected keyword argument '%.200s'",
-        function_name, PyString_AsString(key));
-    #else
-    PyErr_Format(PyExc_TypeError,
-        "%s() got an unexpected keyword argument '%U'",
-        function_name, key);
-    #endif
-    return 0;
-}
-
-/* PyFunctionFastCall */
-#if CYTHON_FAST_PYCALL && !CYTHON_VECTORCALL
-static PyObject* __Pyx_PyFunction_FastCallNoKw(PyCodeObject *co, PyObject **args, Py_ssize_t na,
-                                               PyObject *globals) {
-    PyFrameObject *f;
-    PyThreadState *tstate = __Pyx_PyThreadState_Current;
-    PyObject **fastlocals;
-    Py_ssize_t i;
-    PyObject *result;
-    assert(globals != NULL);
-    /* XXX Perhaps we should create a specialized
-       PyFrame_New() that doesn't take locals, but does
-       take builtins without sanity checking them.
-       */
-    assert(tstate != NULL);
-    f = PyFrame_New(tstate, co, globals, NULL);
-    if (f == NULL) {
-        return NULL;
-    }
-    fastlocals = __Pyx_PyFrame_GetLocalsplus(f);
-    for (i = 0; i < na; i++) {
-        Py_INCREF(*args);
-        fastlocals[i] = *args++;
-    }
-    result = PyEval_EvalFrameEx(f,0);
-    ++tstate->recursion_depth;
-    Py_DECREF(f);
-    --tstate->recursion_depth;
-    return result;
-}
-static PyObject *__Pyx_PyFunction_FastCallDict(PyObject *func, PyObject **args, Py_ssize_t nargs, PyObject *kwargs) {
-    PyCodeObject *co = (PyCodeObject *)PyFunction_GET_CODE(func);
-    PyObject *globals = PyFunction_GET_GLOBALS(func);
-    PyObject *argdefs = PyFunction_GET_DEFAULTS(func);
-    PyObject *closure;
-#if PY_MAJOR_VERSION >= 3
-    PyObject *kwdefs;
-#endif
-    PyObject *kwtuple, **k;
-    PyObject **d;
-    Py_ssize_t nd;
-    Py_ssize_t nk;
-    PyObject *result;
-    assert(kwargs == NULL || PyDict_Check(kwargs));
-    nk = kwargs ? PyDict_Size(kwargs) : 0;
-    #if PY_MAJOR_VERSION < 3
-    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object"))) {
-        return NULL;
-    }
-    #else
-    if (unlikely(Py_EnterRecursiveCall(" while calling a Python object"))) {
-        return NULL;
-    }
-    #endif
-    if (
-#if PY_MAJOR_VERSION >= 3
-            co->co_kwonlyargcount == 0 &&
-#endif
-            likely(kwargs == NULL || nk == 0) &&
-            co->co_flags == (CO_OPTIMIZED | CO_NEWLOCALS | CO_NOFREE)) {
-        if (argdefs == NULL && co->co_argcount == nargs) {
-            result = __Pyx_PyFunction_FastCallNoKw(co, args, nargs, globals);
-            goto done;
-        }
-        else if (nargs == 0 && argdefs != NULL
-                 && co->co_argcount == Py_SIZE(argdefs)) {
-            /* function called with no arguments, but all parameters have
-               a default value: use default values as arguments .*/
-            args = &PyTuple_GET_ITEM(argdefs, 0);
-            result =__Pyx_PyFunction_FastCallNoKw(co, args, Py_SIZE(argdefs), globals);
-            goto done;
-        }
-    }
-    if (kwargs != NULL) {
-        Py_ssize_t pos, i;
-        kwtuple = PyTuple_New(2 * nk);
-        if (kwtuple == NULL) {
-            result = NULL;
-            goto done;
-        }
-        k = &PyTuple_GET_ITEM(kwtuple, 0);
-        pos = i = 0;
-        while (PyDict_Next(kwargs, &pos, &k[i], &k[i+1])) {
-            Py_INCREF(k[i]);
-            Py_INCREF(k[i+1]);
-            i += 2;
-        }
-        nk = i / 2;
-    }
-    else {
-        kwtuple = NULL;
-        k = NULL;
-    }
-    closure = PyFunction_GET_CLOSURE(func);
-#if PY_MAJOR_VERSION >= 3
-    kwdefs = PyFunction_GET_KW_DEFAULTS(func);
-#endif
-    if (argdefs != NULL) {
-        d = &PyTuple_GET_ITEM(argdefs, 0);
-        nd = Py_SIZE(argdefs);
-    }
-    else {
-        d = NULL;
-        nd = 0;
-    }
-#if PY_MAJOR_VERSION >= 3
-    result = PyEval_EvalCodeEx((PyObject*)co, globals, (PyObject *)NULL,
-                               args, (int)nargs,
-                               k, (int)nk,
-                               d, (int)nd, kwdefs, closure);
-#else
-    result = PyEval_EvalCodeEx(co, globals, (PyObject *)NULL,
-                               args, (int)nargs,
-                               k, (int)nk,
-                               d, (int)nd, closure);
-#endif
-    Py_XDECREF(kwtuple);
-done:
-    Py_LeaveRecursiveCall();
-    return result;
-}
-#endif
-
-/* PyObjectCallMethO */
-#if CYTHON_COMPILING_IN_CPYTHON
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg) {
-    PyObject *self, *result;
-    PyCFunction cfunc;
-    cfunc = __Pyx_CyOrPyCFunction_GET_FUNCTION(func);
-    self = __Pyx_CyOrPyCFunction_GET_SELF(func);
-    #if PY_MAJOR_VERSION < 3
-    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
-        return NULL;
-    #else
-    if (unlikely(Py_EnterRecursiveCall(" while calling a Python object")))
-        return NULL;
-    #endif
-    result = cfunc(self, arg);
-    Py_LeaveRecursiveCall();
-    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
-        PyErr_SetString(
-            PyExc_SystemError,
-            "NULL result without error in PyObject_Call");
-    }
-    return result;
-}
-#endif
-
-/* PyObjectFastCall */
-#if PY_VERSION_HEX < 0x03090000 || CYTHON_COMPILING_IN_LIMITED_API
-static PyObject* __Pyx_PyObject_FastCall_fallback(PyObject *func, PyObject **args, size_t nargs, PyObject *kwargs) {
-    PyObject *argstuple;
-    PyObject *result = 0;
-    size_t i;
-    argstuple = PyTuple_New((Py_ssize_t)nargs);
-    if (unlikely(!argstuple)) return NULL;
-    for (i = 0; i < nargs; i++) {
-        Py_INCREF(args[i]);
-        if (__Pyx_PyTuple_SET_ITEM(argstuple, (Py_ssize_t)i, args[i]) < 0) goto bad;
-    }
-    result = __Pyx_PyObject_Call(func, argstuple, kwargs);
-  bad:
-    Py_DECREF(argstuple);
-    return result;
-}
-#endif
-static CYTHON_INLINE PyObject* __Pyx_PyObject_FastCallDict(PyObject *func, PyObject **args, size_t _nargs, PyObject *kwargs) {
-    Py_ssize_t nargs = __Pyx_PyVectorcall_NARGS(_nargs);
-#if CYTHON_COMPILING_IN_CPYTHON
-    if (nargs == 0 && kwargs == NULL) {
-        if (__Pyx_CyOrPyCFunction_Check(func) && likely( __Pyx_CyOrPyCFunction_GET_FLAGS(func) & METH_NOARGS))
-            return __Pyx_PyObject_CallMethO(func, NULL);
-    }
-    else if (nargs == 1 && kwargs == NULL) {
-        if (__Pyx_CyOrPyCFunction_Check(func) && likely( __Pyx_CyOrPyCFunction_GET_FLAGS(func) & METH_O))
-            return __Pyx_PyObject_CallMethO(func, args[0]);
-    }
-#endif
-    #if PY_VERSION_HEX < 0x030800B1
-    #if CYTHON_FAST_PYCCALL
-    if (PyCFunction_Check(func)) {
-        if (kwargs) {
-            return _PyCFunction_FastCallDict(func, args, nargs, kwargs);
-        } else {
-            return _PyCFunction_FastCallKeywords(func, args, nargs, NULL);
-        }
-    }
-    #if PY_VERSION_HEX >= 0x030700A1
-    if (!kwargs && __Pyx_IS_TYPE(func, &PyMethodDescr_Type)) {
-        return _PyMethodDescr_FastCallKeywords(func, args, nargs, NULL);
-    }
-    #endif
-    #endif
-    #if CYTHON_FAST_PYCALL
-    if (PyFunction_Check(func)) {
-        return __Pyx_PyFunction_FastCallDict(func, args, nargs, kwargs);
-    }
-    #endif
-    #endif
-    if (kwargs == NULL) {
-        #if CYTHON_VECTORCALL
-        #if PY_VERSION_HEX < 0x03090000
-        vectorcallfunc f = _PyVectorcall_Function(func);
-        #else
-        vectorcallfunc f = PyVectorcall_Function(func);
-        #endif
-        if (f) {
-            return f(func, args, (size_t)nargs, NULL);
-        }
-        #elif defined(__Pyx_CyFunction_USED) && CYTHON_BACKPORT_VECTORCALL
-        if (__Pyx_CyFunction_CheckExact(func)) {
-            __pyx_vectorcallfunc f = __Pyx_CyFunction_func_vectorcall(func);
-            if (f) return f(func, args, (size_t)nargs, NULL);
-        }
-        #endif
-    }
-    if (nargs == 0) {
-        return __Pyx_PyObject_Call(func, __pyx_empty_tuple, kwargs);
-    }
-    #if PY_VERSION_HEX >= 0x03090000 && !CYTHON_COMPILING_IN_LIMITED_API
-    return PyObject_VectorcallDict(func, args, (size_t)nargs, kwargs);
-    #else
-    return __Pyx_PyObject_FastCall_fallback(func, args, (size_t)nargs, kwargs);
-    #endif
-}
-
 /* JoinPyUnicode */
 static PyObject* __Pyx_PyUnicode_Join(PyObject* value_tuple, Py_ssize_t value_count, Py_ssize_t result_ulength,
                                       Py_UCS4 max_char) {
@@ -13366,6 +14996,33 @@ bad:
     CYTHON_UNUSED_VAR(value_count);
     return PyUnicode_Join(__pyx_empty_unicode, value_tuple);
 #endif
+}
+
+/* ArgTypeTest */
+static int __Pyx__ArgTypeTest(PyObject *obj, PyTypeObject *type, const char *name, int exact)
+{
+    __Pyx_TypeName type_name;
+    __Pyx_TypeName obj_type_name;
+    if (unlikely(!type)) {
+        PyErr_SetString(PyExc_SystemError, "Missing type object");
+        return 0;
+    }
+    else if (exact) {
+        #if PY_MAJOR_VERSION == 2
+        if ((type == &PyBaseString_Type) && likely(__Pyx_PyBaseString_CheckExact(obj))) return 1;
+        #endif
+    }
+    else {
+        if (likely(__Pyx_TypeCheck(obj, type))) return 1;
+    }
+    type_name = __Pyx_PyType_GetName(type);
+    obj_type_name = __Pyx_PyType_GetName(Py_TYPE(obj));
+    PyErr_Format(PyExc_TypeError,
+        "Argument '%.200s' has incorrect type (expected " __Pyx_FMT_TYPENAME
+        ", got " __Pyx_FMT_TYPENAME ")", name, type_name, obj_type_name);
+    __Pyx_DECREF_TypeName(type_name);
+    __Pyx_DECREF_TypeName(obj_type_name);
+    return 0;
 }
 
 /* PyUnicode_Unicode */
@@ -13436,12 +15093,6 @@ static CYTHON_INLINE int __Pyx_object_dict_version_matches(PyObject* obj, PY_UIN
     return obj_dict_version == __Pyx_get_object_dict_version(obj);
 }
 #endif
-
-/* PyObjectCallOneArg */
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
-    PyObject *args[2] = {NULL, arg};
-    return __Pyx_PyObject_FastCall(func, args+1, 1 | __Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET);
-}
 
 /* GetModuleGlobalName */
 #if CYTHON_USE_DICT_VERSIONS
@@ -14739,6 +16390,268 @@ static PyObject *__Pyx_CyFunction_New(PyMethodDef *ml, int flags, PyObject* qual
     return op;
 }
 
+/* PyFunctionFastCall */
+#if CYTHON_FAST_PYCALL && !CYTHON_VECTORCALL
+static PyObject* __Pyx_PyFunction_FastCallNoKw(PyCodeObject *co, PyObject **args, Py_ssize_t na,
+                                               PyObject *globals) {
+    PyFrameObject *f;
+    PyThreadState *tstate = __Pyx_PyThreadState_Current;
+    PyObject **fastlocals;
+    Py_ssize_t i;
+    PyObject *result;
+    assert(globals != NULL);
+    /* XXX Perhaps we should create a specialized
+       PyFrame_New() that doesn't take locals, but does
+       take builtins without sanity checking them.
+       */
+    assert(tstate != NULL);
+    f = PyFrame_New(tstate, co, globals, NULL);
+    if (f == NULL) {
+        return NULL;
+    }
+    fastlocals = __Pyx_PyFrame_GetLocalsplus(f);
+    for (i = 0; i < na; i++) {
+        Py_INCREF(*args);
+        fastlocals[i] = *args++;
+    }
+    result = PyEval_EvalFrameEx(f,0);
+    ++tstate->recursion_depth;
+    Py_DECREF(f);
+    --tstate->recursion_depth;
+    return result;
+}
+static PyObject *__Pyx_PyFunction_FastCallDict(PyObject *func, PyObject **args, Py_ssize_t nargs, PyObject *kwargs) {
+    PyCodeObject *co = (PyCodeObject *)PyFunction_GET_CODE(func);
+    PyObject *globals = PyFunction_GET_GLOBALS(func);
+    PyObject *argdefs = PyFunction_GET_DEFAULTS(func);
+    PyObject *closure;
+#if PY_MAJOR_VERSION >= 3
+    PyObject *kwdefs;
+#endif
+    PyObject *kwtuple, **k;
+    PyObject **d;
+    Py_ssize_t nd;
+    Py_ssize_t nk;
+    PyObject *result;
+    assert(kwargs == NULL || PyDict_Check(kwargs));
+    nk = kwargs ? PyDict_Size(kwargs) : 0;
+    #if PY_MAJOR_VERSION < 3
+    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object"))) {
+        return NULL;
+    }
+    #else
+    if (unlikely(Py_EnterRecursiveCall(" while calling a Python object"))) {
+        return NULL;
+    }
+    #endif
+    if (
+#if PY_MAJOR_VERSION >= 3
+            co->co_kwonlyargcount == 0 &&
+#endif
+            likely(kwargs == NULL || nk == 0) &&
+            co->co_flags == (CO_OPTIMIZED | CO_NEWLOCALS | CO_NOFREE)) {
+        if (argdefs == NULL && co->co_argcount == nargs) {
+            result = __Pyx_PyFunction_FastCallNoKw(co, args, nargs, globals);
+            goto done;
+        }
+        else if (nargs == 0 && argdefs != NULL
+                 && co->co_argcount == Py_SIZE(argdefs)) {
+            /* function called with no arguments, but all parameters have
+               a default value: use default values as arguments .*/
+            args = &PyTuple_GET_ITEM(argdefs, 0);
+            result =__Pyx_PyFunction_FastCallNoKw(co, args, Py_SIZE(argdefs), globals);
+            goto done;
+        }
+    }
+    if (kwargs != NULL) {
+        Py_ssize_t pos, i;
+        kwtuple = PyTuple_New(2 * nk);
+        if (kwtuple == NULL) {
+            result = NULL;
+            goto done;
+        }
+        k = &PyTuple_GET_ITEM(kwtuple, 0);
+        pos = i = 0;
+        while (PyDict_Next(kwargs, &pos, &k[i], &k[i+1])) {
+            Py_INCREF(k[i]);
+            Py_INCREF(k[i+1]);
+            i += 2;
+        }
+        nk = i / 2;
+    }
+    else {
+        kwtuple = NULL;
+        k = NULL;
+    }
+    closure = PyFunction_GET_CLOSURE(func);
+#if PY_MAJOR_VERSION >= 3
+    kwdefs = PyFunction_GET_KW_DEFAULTS(func);
+#endif
+    if (argdefs != NULL) {
+        d = &PyTuple_GET_ITEM(argdefs, 0);
+        nd = Py_SIZE(argdefs);
+    }
+    else {
+        d = NULL;
+        nd = 0;
+    }
+#if PY_MAJOR_VERSION >= 3
+    result = PyEval_EvalCodeEx((PyObject*)co, globals, (PyObject *)NULL,
+                               args, (int)nargs,
+                               k, (int)nk,
+                               d, (int)nd, kwdefs, closure);
+#else
+    result = PyEval_EvalCodeEx(co, globals, (PyObject *)NULL,
+                               args, (int)nargs,
+                               k, (int)nk,
+                               d, (int)nd, closure);
+#endif
+    Py_XDECREF(kwtuple);
+done:
+    Py_LeaveRecursiveCall();
+    return result;
+}
+#endif
+
+/* PyObjectCallMethO */
+#if CYTHON_COMPILING_IN_CPYTHON
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallMethO(PyObject *func, PyObject *arg) {
+    PyObject *self, *result;
+    PyCFunction cfunc;
+    cfunc = __Pyx_CyOrPyCFunction_GET_FUNCTION(func);
+    self = __Pyx_CyOrPyCFunction_GET_SELF(func);
+    #if PY_MAJOR_VERSION < 3
+    if (unlikely(Py_EnterRecursiveCall((char*)" while calling a Python object")))
+        return NULL;
+    #else
+    if (unlikely(Py_EnterRecursiveCall(" while calling a Python object")))
+        return NULL;
+    #endif
+    result = cfunc(self, arg);
+    Py_LeaveRecursiveCall();
+    if (unlikely(!result) && unlikely(!PyErr_Occurred())) {
+        PyErr_SetString(
+            PyExc_SystemError,
+            "NULL result without error in PyObject_Call");
+    }
+    return result;
+}
+#endif
+
+/* PyObjectFastCall */
+#if PY_VERSION_HEX < 0x03090000 || CYTHON_COMPILING_IN_LIMITED_API
+static PyObject* __Pyx_PyObject_FastCall_fallback(PyObject *func, PyObject **args, size_t nargs, PyObject *kwargs) {
+    PyObject *argstuple;
+    PyObject *result = 0;
+    size_t i;
+    argstuple = PyTuple_New((Py_ssize_t)nargs);
+    if (unlikely(!argstuple)) return NULL;
+    for (i = 0; i < nargs; i++) {
+        Py_INCREF(args[i]);
+        if (__Pyx_PyTuple_SET_ITEM(argstuple, (Py_ssize_t)i, args[i]) < 0) goto bad;
+    }
+    result = __Pyx_PyObject_Call(func, argstuple, kwargs);
+  bad:
+    Py_DECREF(argstuple);
+    return result;
+}
+#endif
+static CYTHON_INLINE PyObject* __Pyx_PyObject_FastCallDict(PyObject *func, PyObject **args, size_t _nargs, PyObject *kwargs) {
+    Py_ssize_t nargs = __Pyx_PyVectorcall_NARGS(_nargs);
+#if CYTHON_COMPILING_IN_CPYTHON
+    if (nargs == 0 && kwargs == NULL) {
+        if (__Pyx_CyOrPyCFunction_Check(func) && likely( __Pyx_CyOrPyCFunction_GET_FLAGS(func) & METH_NOARGS))
+            return __Pyx_PyObject_CallMethO(func, NULL);
+    }
+    else if (nargs == 1 && kwargs == NULL) {
+        if (__Pyx_CyOrPyCFunction_Check(func) && likely( __Pyx_CyOrPyCFunction_GET_FLAGS(func) & METH_O))
+            return __Pyx_PyObject_CallMethO(func, args[0]);
+    }
+#endif
+    #if PY_VERSION_HEX < 0x030800B1
+    #if CYTHON_FAST_PYCCALL
+    if (PyCFunction_Check(func)) {
+        if (kwargs) {
+            return _PyCFunction_FastCallDict(func, args, nargs, kwargs);
+        } else {
+            return _PyCFunction_FastCallKeywords(func, args, nargs, NULL);
+        }
+    }
+    #if PY_VERSION_HEX >= 0x030700A1
+    if (!kwargs && __Pyx_IS_TYPE(func, &PyMethodDescr_Type)) {
+        return _PyMethodDescr_FastCallKeywords(func, args, nargs, NULL);
+    }
+    #endif
+    #endif
+    #if CYTHON_FAST_PYCALL
+    if (PyFunction_Check(func)) {
+        return __Pyx_PyFunction_FastCallDict(func, args, nargs, kwargs);
+    }
+    #endif
+    #endif
+    if (kwargs == NULL) {
+        #if CYTHON_VECTORCALL
+        #if PY_VERSION_HEX < 0x03090000
+        vectorcallfunc f = _PyVectorcall_Function(func);
+        #else
+        vectorcallfunc f = PyVectorcall_Function(func);
+        #endif
+        if (f) {
+            return f(func, args, (size_t)nargs, NULL);
+        }
+        #elif defined(__Pyx_CyFunction_USED) && CYTHON_BACKPORT_VECTORCALL
+        if (__Pyx_CyFunction_CheckExact(func)) {
+            __pyx_vectorcallfunc f = __Pyx_CyFunction_func_vectorcall(func);
+            if (f) return f(func, args, (size_t)nargs, NULL);
+        }
+        #endif
+    }
+    if (nargs == 0) {
+        return __Pyx_PyObject_Call(func, __pyx_empty_tuple, kwargs);
+    }
+    #if PY_VERSION_HEX >= 0x03090000 && !CYTHON_COMPILING_IN_LIMITED_API
+    return PyObject_VectorcallDict(func, args, (size_t)nargs, kwargs);
+    #else
+    return __Pyx_PyObject_FastCall_fallback(func, args, (size_t)nargs, kwargs);
+    #endif
+}
+
+/* PyObjectCallOneArg */
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallOneArg(PyObject *func, PyObject *arg) {
+    PyObject *args[2] = {NULL, arg};
+    return __Pyx_PyObject_FastCall(func, args+1, 1 | __Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET);
+}
+
+/* py_abs */
+#if CYTHON_USE_PYLONG_INTERNALS
+static PyObject *__Pyx_PyLong_AbsNeg(PyObject *n) {
+#if PY_VERSION_HEX >= 0x030C00A7
+    if (likely(__Pyx_PyLong_IsCompact(n))) {
+        return PyLong_FromSize_t(__Pyx_PyLong_CompactValueUnsigned(n));
+    }
+#else
+    if (likely(Py_SIZE(n) == -1)) {
+        return PyLong_FromUnsignedLong(__Pyx_PyLong_Digits(n)[0]);
+    }
+#endif
+#if CYTHON_COMPILING_IN_CPYTHON && PY_VERSION_HEX < 0x030d0000
+    {
+        PyObject *copy = _PyLong_Copy((PyLongObject*)n);
+        if (likely(copy)) {
+            #if PY_VERSION_HEX >= 0x030C00A7
+            ((PyLongObject*)copy)->long_value.lv_tag = ((PyLongObject*)copy)->long_value.lv_tag & ~_PyLong_SIGN_MASK;
+            #else
+            __Pyx_SET_SIZE(copy, -Py_SIZE(copy));
+            #endif
+        }
+        return copy;
+    }
+#else
+    return PyNumber_Negative(n);
+#endif
+}
+#endif
+
 /* PyObjectCallNoArg */
 static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func) {
     PyObject *arg[2] = {NULL, NULL};
@@ -15499,7 +17412,7 @@ static PyObject *__Pyx_ImportDottedModule_WalkParts(PyObject *module, PyObject *
 #endif
 static PyObject *__Pyx__ImportDottedModule(PyObject *name, PyObject *parts_tuple) {
 #if PY_MAJOR_VERSION < 3
-    PyObject *module, *from_list, *star = __pyx_n_s__6;
+    PyObject *module, *from_list, *star = __pyx_n_s__11;
     CYTHON_UNUSED_VAR(parts_tuple);
     from_list = PyList_New(1);
     if (unlikely(!from_list))
@@ -15562,7 +17475,7 @@ static PyObject* __Pyx_ImportFrom(PyObject* module, PyObject* name) {
         if (unlikely(!module_name_str)) { goto modbad; }
         module_name = PyUnicode_FromString(module_name_str);
         if (unlikely(!module_name)) { goto modbad; }
-        module_dot = PyUnicode_Concat(module_name, __pyx_kp_u__5);
+        module_dot = PyUnicode_Concat(module_name, __pyx_kp_u__10);
         if (unlikely(!module_dot)) { goto modbad; }
         full_name = PyUnicode_Concat(module_dot, name);
         if (unlikely(!full_name)) { goto modbad; }
@@ -15930,6 +17843,45 @@ bad:
         }\
         return (target_type) value;\
     }
+
+static PyObject* __pyx_convert__to_py_struct____pyx_t_3src_8analysis_6models_9portfolio_ActionData(struct __pyx_t_3src_8analysis_6models_9portfolio_ActionData s) {
+  PyObject* res;
+  PyObject* member;
+  res = __Pyx_PyDict_NewPresized(6); if (unlikely(!res)) return NULL;
+  member = __Pyx_PyInt_From_npy_int64(s.timestamp); if (unlikely(!member)) goto bad;
+  if (unlikely(PyDict_SetItem(res, __pyx_n_s_timestamp, member) < 0)) goto bad;
+  Py_DECREF(member);
+  member = PyFloat_FromDouble(s.price); if (unlikely(!member)) goto bad;
+  if (unlikely(PyDict_SetItem(res, __pyx_n_s_price, member) < 0)) goto bad;
+  Py_DECREF(member);
+  member = PyFloat_FromDouble(s.qty); if (unlikely(!member)) goto bad;
+  if (unlikely(PyDict_SetItem(res, __pyx_n_s_qty, member) < 0)) goto bad;
+  Py_DECREF(member);
+  member = PyFloat_FromDouble(s.quote_qty); if (unlikely(!member)) goto bad;
+  if (unlikely(PyDict_SetItem(res, __pyx_n_s_quote_qty, member) < 0)) goto bad;
+  Py_DECREF(member);
+  member = PyFloat_FromDouble(s.fee); if (unlikely(!member)) goto bad;
+  if (unlikely(PyDict_SetItem(res, __pyx_n_s_fee, member) < 0)) goto bad;
+  Py_DECREF(member);
+  member = PyFloat_FromDouble(s.slippage); if (unlikely(!member)) goto bad;
+  if (unlikely(PyDict_SetItem(res, __pyx_n_s_slippage, member) < 0)) goto bad;
+  Py_DECREF(member);
+  return res;
+  bad:
+  Py_XDECREF(member);
+  Py_DECREF(res);
+  return NULL;
+}
+/* RaiseUnexpectedTypeError */
+static int
+__Pyx_RaiseUnexpectedTypeError(const char *expected, PyObject *obj)
+{
+    __Pyx_TypeName obj_type_name = __Pyx_PyType_GetName(Py_TYPE(obj));
+    PyErr_Format(PyExc_TypeError, "Expected %s, got " __Pyx_FMT_TYPENAME,
+                 expected, obj_type_name);
+    __Pyx_DECREF_TypeName(obj_type_name);
+    return 0;
+}
 
 /* Declarations */
 #if CYTHON_CCOMPLEX && (1) && (!0 || __cplusplus)
@@ -16741,7 +18693,7 @@ __Pyx_PyType_GetName(PyTypeObject* tp)
     if (unlikely(name == NULL) || unlikely(!PyUnicode_Check(name))) {
         PyErr_Clear();
         Py_XDECREF(name);
-        name = __Pyx_NewRef(__pyx_n_s__20);
+        name = __Pyx_NewRef(__pyx_n_s__27);
     }
     return name;
 }
