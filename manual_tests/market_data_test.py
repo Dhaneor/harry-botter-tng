@@ -6,7 +6,6 @@ Created on Thu Feb 11 01:28:53 2021
 @author: dhaneor
 """
 import numpy as np
-import matplotlib.pyplot as plt
 
 from analysis.models.market_data import MarketData, MarketDataStore
 from staff.hermes import Hermes

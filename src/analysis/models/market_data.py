@@ -50,16 +50,7 @@ class MarketDataStore:
         close: npt.ArrayLike,
         volume: npt.ArrayLike,
         lookback: int = 20
-    ):
-        
-        # print(timestamp.shape)
-        # print(open_.shape)
-        # print(high.shape)
-        # print(low.shape)
-        # print(close.shape)
-        # print(volume.shape)
-        # print("*" * 120)
-        
+    ):  
         self.timestamp = timestamp
         self.open_ = open_
         self.high = high

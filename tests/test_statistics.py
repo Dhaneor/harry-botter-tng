@@ -10,7 +10,7 @@ Created on Tue Jan 28 17:33:23 2025
 
 import pytest
 import numpy as np
-from analysis.statistics.statistics import Statistics
+from analysis.statistics.cython_statistics import Statistics
 
 
 @pytest.fixture

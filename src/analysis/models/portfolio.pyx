@@ -6,14 +6,33 @@
 
 cimport numpy as np
 import numpy as np
-from cython cimport fused_type
 from functools import reduce
+from libc.stdlib cimport malloc, free
 
 cdef double fee_rate = 0.001
 cdef double slippage_rate = 0.001
 
 
-# ............................... Trade Action classes .................................
+cdef extern from *:
+    ctypedef struct MarketData:
+        double** open
+        double** high
+        double** low
+        double** close
+        double** volume
+        double** atr
+        double** volatility
+
+    ctypedef struct BacktestData:
+        MarketData market_data
+        double** leverage
+        double** cash_balance
+        double** equity
+        double*** asset_balances
+        double** effective_leverage_per_asset
+        double* effective_leverage_global
+
+
 cdef struct ActionData:
     np.int64_t timestamp
     double price
@@ -23,6 +42,29 @@ cdef struct ActionData:
     double slippage
 
 
+""""
+cdef class StopOrder:
+    cdef:
+        BacktestData* data
+        int asset_index
+
+# Example of a concrete StopOrder implementation
+cdef class TrailingStopOrder(StopOrder):
+    cdef:
+        double trail_percent
+
+    def __cinit__(self, BacktestData* data, int asset_index, double trail_percent):
+        self.data = data
+        self.asset_index = asset_index
+        self.trail_percent = trail_percent
+
+    cdef double apply(self, int period):
+        # Implementation using self.data and self.asset_index
+        pass
+"""
+
+
+# ............................... Trade Action classes .................................
 cdef class ActionInterface:
     cdef public ActionData data
 
@@ -173,7 +215,9 @@ cdef class Position:
         readonly str symbol
         readonly double current_qty
         readonly double average_entry_price
+        readonly double last_price
         readonly double realized_pnl
+
 
     def __cinit__(self, str symbol):
         self.buys = []
@@ -182,6 +226,7 @@ cdef class Position:
         self.symbol = symbol
         self.current_qty = 0.0
         self.average_entry_price = 0.0
+        self.last_price = 0.0
         self.realized_pnl = 0.0
 
     def __repr__(self):
@@ -210,7 +255,8 @@ cdef class Position:
         """Adds a new buy or sell action to the position.
         
         Python wrapper method which allows to define the actual 
-        _add_action method for pure cythonic access.
+        _add_action method for pure cythonic access. This method
+        is mainly intended to be used for tests.
         """
         self._add_action(action)
 
@@ -270,3 +316,70 @@ cdef class Position:
             self.realized_pnl = abs(
                 self.average_entry_price - self.average_exit_price
             ) * old_qty
+
+
+# ................................. Portfolio class ....................................
+cdef class Portfolio:
+
+    cdef BacktestData* data
+
+    def __cinit__(self, BacktestData* data):
+        self.data = data
+
+    # cdef void process_period(
+    #     self, np.int64_ timestamp, np.ndarray open_price, double close_price
+    # ):
+    #     pass
+
+
+# ................................ The BackTestEngine ...................................
+"""
+cdef class BacktestEngine:
+    cdef:
+        BacktestData* data
+        Portfolio portfolio
+        list positions
+        int num_periods
+        int num_assets
+
+    def __cinit__(self, int num_periods, int num_assets):
+        self.num_periods = num_periods
+        self.num_assets = num_assets
+        
+        # Allocate memory for BacktestData
+        self.data = <BacktestData*>malloc(sizeof(BacktestData))
+        if not self.data:
+            raise MemoryError()
+
+        # Initialize arrays
+        self.data.market_data.open = np.zeros((num_periods, num_assets), dtype=np.float64)
+        self.data.market_data.high = np.zeros((num_periods, num_assets), dtype=np.float64)
+        self.data.market_data.low = np.zeros((num_periods, num_assets), dtype=np.float64)
+        self.data.market_data.close = np.zeros((num_periods, num_assets), dtype=np.float64)
+        self.data.market_data.volume = np.zeros((num_periods, num_assets), dtype=np.float64)
+        self.data.market_data.atr = np.zeros((num_periods, num_assets), dtype=np.float64)
+        self.data.market_data.volatility = np.zeros((num_periods, num_assets), dtype=np.float64)
+
+        self.data.leverage = np.zeros((num_periods, num_assets), dtype=np.float64)
+        self.data.cash_balance = np.zeros((num_periods, 1), dtype=np.float64)
+        self.data.equity = np.zeros((num_periods, 1), dtype=np.float64)
+        self.data.asset_balances = np.zeros((num_periods, num_assets, 1), dtype=np.float64)
+        self.data.effective_leverage_per_asset = np.zeros((num_periods, num_assets), dtype=np.float64)
+        self.data.effective_leverage_global = np.zeros(num_periods, dtype=np.float64)
+
+        # Initialize Portfolio and Positions
+        self.portfolio = Portfolio(self.data)
+        self.positions = [Position(self.data, i) for i in range(num_assets)]
+
+    def __dealloc__(self):
+        if self.data:
+            free(self.data)
+
+    def run_backtest(self):
+        # Backtest logic here
+        pass
+"""
+
+# Usage
+# cdef BacktestEngine engine = BacktestEngine(1000, 5)  # 1000 periods, 5 assets
+# engine.run_backtest()
