@@ -11,12 +11,12 @@ extensions = [
         language="c++",
         extra_compile_args=["-O3"],
     ),
-    # Extension(
-    #     "src.analysis.models.market_data_store",
-    #     ["src/analysis/models/market_data_store.pyx"],
-    #     include_dirs=[np.get_include()],
-    #     language="c++"
-    # ),
+    Extension(
+        "src.analysis.models.market_data_store",
+        ["src/analysis/models/market_data_store.pyx"],
+        include_dirs=[np.get_include()],
+        language="c++"
+    ),
     # Extension(
     #     "src.analysis.models.portfolio",
     #     ["src/analysis/models/portfolio.pyx"],

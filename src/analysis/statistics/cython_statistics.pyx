@@ -1,9 +1,9 @@
 # cython: language_level=3
 # define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION" [-W#warnings]
 """
-Provides a statistics JIT class for often needed calculations.
+Provides a (Cython) Statistics class for often needed calculations. 
 
-Created on Tue Jan 28 17:33:23 2025
+Created on Tue Feb 06 01:33:23 2025
 
 @author dhaneor
 """
@@ -16,11 +16,6 @@ cnp.import_array()
 
 
 cdef class Statistics:
-
-    cdef: 
-        double _epsilon
-        long periods_per_year
-        double risk_free_rate
 
     def __cinit__(self, long periods_per_year = 365, double risk_free_rate = 0.0):
         self._epsilon = 1e-8  # Small value to avoid division by zero
@@ -76,52 +71,52 @@ cdef class Statistics:
         return self._apply_to_columns(arr, func, period)
 
     # ................................. Simple Stats ...................................
-    cpdef mean(self, arr: np.ndarray, period: int = 0):
+    cpdef mean(self, cnp.ndarray arr, int period=0):
         return self.compute(arr, np.mean, period)
 
-    cpdef std(self, arr: np.ndarray, period: int = 0):
+    cpdef std(self, cnp.ndarray arr, int period=0):
         return self.compute(arr, np.std, period)
 
-    cpdef var(self, arr: np.ndarray, period: int = 0):
+    cpdef var(self, cnp.ndarray arr, int period=0):
         return self.compute(arr, np.var, period)
 
-    cpdef min(self, arr: np.ndarray, period: int = 0):
+    cpdef min(self, cnp.ndarray arr, int period=0):
         return self.compute(arr, np.min, period)
 
-    cpdef max(self, arr: np.ndarray, period: int = 0):
+    cpdef max(self, cnp.ndarray arr, int period=0):
         return self.compute(arr, np.max, period)
 
-    cpdef sum(self, arr: np.ndarray, period: int = 0):
+    cpdef sum(self, cnp.ndarray arr, int period=0):
         return self.compute(arr, np.sum, period)
 
     # ................................. Returns and Volatility .........................
-    cpdef returns(self, arr: np.ndarray, period: int = 0):
+    cpdef returns(self, cnp.ndarray arr, int period=0):
         return np.diff(arr) / arr[:-1]
 
-    cpdef log_returns(self, arr: np.ndarray, period: int = 0):
+    cpdef log_returns(self, cnp.ndarray arr, int period=0):
         return self.compute(arr, self._log_returns_fn, period)
 
-    cpdef volatility(self, arr: np.ndarray, period: int = 0):
+    cpdef volatility(self, cnp.ndarray arr, int period=0):
         return self.compute(arr, np.std, period)
 
-    cpdef sharpe_ratio(self, arr: np.ndarray, period: int = 0):
+    cpdef sharpe_ratio(self, cnp.ndarray arr, int period=0):
         return self.compute(arr, self._sharpe_ratio_fn, period)
 
     # ......................... Annualized Returns and Volatility ......................
     cpdef annualized_returns(
-        self, arr: np.ndarray, periods_per_year: int, period: int = 0
+        self, cnp.ndarray arr, int periods_per_year, int period=0
     ):
         self.periods_per_year = periods_per_year
         return self.compute(arr, self._annualized_returns_fn, period)
 
     cpdef annualized_volatility(
-        self, arr: np.ndarray, periods_per_year: int, period: int = 0
+        self, cnp.ndarray arr, int periods_per_year, int period=0
     ):
         self.periods_per_year = periods_per_year
         return self.compute(arr, self._annualized_vol_fn, period)
 
     cpdef annualized_sharpe_ratio(
-        self, arr: np.ndarray, periods_per_year: int, period: int = 0
+        self, cnp.ndarray arr, int periods_per_year, int period=0
     ):
         self.periods_per_year = periods_per_year
         return self.compute(arr, self._annualized_sharpe_ratio_fn, period)
@@ -142,14 +137,20 @@ cdef class Statistics:
         for i in range(n - 1):
             returns[i] = (arr[i + 1] / arr[i]) - 1
 
-        return (np.sum(returns) / len(returns)) / np.std(returns)
+        return np.mean(returns) / np.std(returns)
 
     cdef double _annualized_returns_fn(self, double[:] arr):
         total_return = arr[-1] / arr[0] - 1
         return (1 + total_return) ** (self.periods_per_year / len(arr)) - 1
 
-    cdef double _annualized_vol_fn(self, arr):
-        cdef double[:] log_returns = np.log(arr[1:] / arr[:-1])
+    cdef double _annualized_vol_fn(self, double[:] arr):
+        cdef double[:] ratios = np.empty(len(arr) - 1)
+        cdef int i
+        for i in range(len(arr) - 1):
+            ratios[i] = arr[i+1] / arr[i]
+        
+        cdef double[:] log_returns = np.log(ratios)
+        
         return np.std(log_returns) * np.sqrt(self.periods_per_year)
 
     cdef double _annualized_sharpe_ratio_fn(self, double[:] arr):
@@ -159,25 +160,24 @@ cdef class Statistics:
             return 0.0
 
         returns = np.subtract(np.divide(arr[1:], arr[:-1]), 1)
-        print(returns)
-        annualized_return = np.mean(returns) * self.periods_per_year
-        annualized_volatility = np.std(returns) * np.sqrt(self.periods_per_year)
+        rf_per_period = (1 + self.risk_free_rate) ** (1/self.periods_per_year) - 1
+        returns = returns - rf_per_period
 
-        return (
-            (annualized_return - self.risk_free_rate) 
-            / (annualized_volatility + self._epsilon)
-        )
+        annualized_return = np.mean(returns) * self.periods_per_year
+        annualized_volatility = np.std(returns, ddof=1) * np.sqrt(self.periods_per_year)
+
+        return (annualized_return / (annualized_volatility + self._epsilon))
 
     # ...............................ATR calculation .................................
-    cdef true_range(
-        self, high: np.ndarray, low: np.ndarray, close: np.ndarray):
+    cdef true_range(self, cnp.ndarray high, cnp.ndarray low, cnp.ndarray close):
         def tr_func(h, l, c):
             return np.maximum(h - l, np.maximum(np.abs(h - c), np.abs(l - c)))
 
         return self.compute(np.stack((high, low, close), axis=-1), tr_func, 0)
 
-    def atr(
-        self, high: np.ndarray, low: np.ndarray, close: np.ndarray, period: int = 14
-    ) -> np.ndarray:
+    cpdef atr(
+        self, cnp.ndarray high, cnp.ndarray low, cnp.ndarray close, 
+        int period = 14
+    ):
         tr = self.true_range(high, low, close)
         return self.mean(tr, period)

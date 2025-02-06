@@ -1,22 +1,22 @@
 # cython: language_level=3
-cimport numpy as np
+cimport numpy as cnp
 import numpy as np
 from math import cos, exp, pi
 
 cdef class MarketDataStore:
     cdef:
-        public np.ndarray open, high, low, close, volume
-        public np.ndarray atr, volatility
+        public cnp.ndarray open, high, low, close, volume
+        public cnp.ndarray atr, volatility
         public int num_assets, num_periods
 
     def __cinit__(
         self,
-        np.ndarray timestamp,
-        np.ndarray open,
-        np.ndarray high,
-        np.ndarray low,
-        np.ndarray close,
-        np.ndarray volume,
+        cnp.ndarray timestamp,
+        cnp.ndarray open,
+        cnp.ndarray high,
+        cnp.ndarray low,
+        cnp.ndarray close,
+        cnp.ndarray volume,
         double lookback = 20
     ):
         self.timestamp = timestamp
@@ -60,8 +60,11 @@ cdef class MarketDataStore:
             self.lookback
         )
 
-    def compute_atr(self, period=14):
-        markets, periods = self.atr.shape
+    cdef void compute_atr(self, int period=14):
+        cdef int markets
+        cdef int periods
+
+        markets, periods = self.atr.shape[0], self.atr.shape[1]
 
         for m in range(markets):
             for p in range(period, periods):
@@ -72,13 +75,13 @@ cdef class MarketDataStore:
                 )
                 self.atr[m, p] = ((self.atr[m, p - 1] * (period - 1) + tr) / period)
 
-    def smooth_it(self, arr: np.ndarray, factor: int = 3):
+    cdef double[:,:] smooth_it(self, double[:,:] arr, int factor = 3):
         for market in range(arr.shape[1]):
             self._apply_smoothing_1D(arr[:, market], factor)
         return arr
 
     # ..................................................................................
-    def _apply_smoothing_1D(self, data: np.ndarray, length: int) -> np.ndarray:
+    cdef double[:] _apply_smoothing_1D(self, double[:] data, int length):
         """
         Calculate the Ehlers Ultimate Smoother for a given data series.
 
@@ -89,8 +92,8 @@ cdef class MarketDataStore:
         Returns:
         - us (np.ndarray): The smoothed data series.
         """
-        n: np.int64 = len(data)
-        us: np.ndarray = np.zeros(n, dtype=np.float64)
+        cdef int n = len(data)
+        cdef double[:] us = np.zeros(n, dtype=np.float64)
         
         # Check if data length is sufficient
         if n < 3:
@@ -99,7 +102,7 @@ cdef class MarketDataStore:
         # Initialize the smoothed series with zeros
         us = np.zeros(n)
 
-        f: np.float64 = (1.414 * pi) / length
+        cdef cnp.float64_t f = (1.414 * pi) / length
         a1 = exp(-f)
         c2 = 2 * a1 * cos(f)
         c3 = -a1 ** 2
@@ -108,6 +111,8 @@ cdef class MarketDataStore:
         # Initialization:
         us[0] = data[0]
         us[1] = data[1]
+
+        cdef int t
         
         # Iterate through the data starting from index 2
         for t in range(2, n):

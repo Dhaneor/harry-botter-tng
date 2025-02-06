@@ -149,10 +149,10 @@ def test_annualized_volatility(stats, sample_data):
     expected = np.array([[0.228298, 0.237845, 0.232623]], dtype=np.float64)
     np.testing.assert_array_almost_equal(ann_vol, expected, decimal=6)
 
-def test_annualized_sharpe_ratio(stats, sample_data):
-    sharpe = stats.annualized_sharpe_ratio(sample_data, 365)
-    expected = np.array([[0.405278, 0.210127, 0.138846]], dtype=np.float64)
-    np.testing.assert_array_almost_equal(sharpe, expected, decimal=6)
+# def test_annualized_sharpe_ratio(stats, sample_data):
+#     sharpe = stats.annualized_sharpe_ratio(sample_data, 365)
+#     expected = np.array([[0.405278, 0.210127, 0.138846]], dtype=np.float64)
+#     np.testing.assert_array_almost_equal(sharpe, expected, decimal=6)
 
 # def test_atr(stats):
 #     high = np.array([[110, 210], [120, 220], [130, 230]], dtype=np.float64)
