@@ -3,11 +3,17 @@ cimport numpy as cnp
 import numpy as np
 from math import cos, exp, pi
 
+from analysis.statistics.cython_statistics cimport Statistics
+
 cdef class MarketDataStore:
     cdef:
-        public cnp.ndarray open, high, low, close, volume
+        public cnp.ndarray timestamp, open, high, low, close, volume
+        public cnp.ndarray annual_vol
+        public cnp.ndarray annual_sr
+        public cnp.ndarray signal_scale_factor
         public cnp.ndarray atr, volatility
-        public int num_assets, num_periods
+        public int lookback, num_assets, num_periods
+        public Statistics stats
 
     def __cinit__(
         self,
@@ -17,16 +23,64 @@ cdef class MarketDataStore:
         cnp.ndarray low,
         cnp.ndarray close,
         cnp.ndarray volume,
-        double lookback = 20
+        int lookback = 20
     ):
         self.timestamp = timestamp
-        self.open_ = open
+        self.open = open
         self.high = high
         self.low = low
         self.close = close
         self.volume = volume
 
-        self.lookback = lookback      
+        self.lookback = lookback     
+
+        self.stats = Statistics() 
+
+        rows, cols = close.shape[0], close.shape[1]
+
+        self.atr = np.full_like(close, np.nan)
+        self.annual_vol = np.zeros((rows, cols), dtype=np.float64)
+        self.annual_sr = np.ones((rows, cols), dtype=np.float64)
+        self.signal_scale_factor = np.ones((rows, cols), dtype=np.float64)
+
+        self.compute_atr()
+        self.compute_annualized_volatility()
+
+        self.annual_sr = self.stats.annualized_sharpe_ratio(
+            self.close.astype(np.float64),
+            self.periods_per_year,
+            self.lookback
+        )
+
+        # scale_factor = np.abs(
+        #     self.stats.sharpe_ratio(
+        #         self.close.astype(np.float64), 
+        #         self.lookback
+        #     )
+        # )
+
+        scale_factor = self.stats.sharpe_ratio(
+            self.close.astype(np.float64), 
+            self.lookback
+        ) + 1
+
+        # scale_factor = np.abs(
+        #     self.stats.annualized_sharpe_ratio(
+        #         self.close.astype(np.float64),
+        #         self.periods_per_year,
+        #         self.lookback
+        #     )
+        # )
+
+        # scale_factor = 1 + self.stats.annualized_volatility(
+        #     self.close.astype(np.float64),
+        #     self.periods_per_year, 
+        #     self.lookback
+        # )
+
+        self.signal_scale_factor = np.asarray(
+            self.smooth_it(scale_factor, 40)
+        )
 
     # ..................................................................................
     @property
@@ -70,8 +124,8 @@ cdef class MarketDataStore:
             for p in range(period, periods):
                 tr = max(
                     self.high[m, p] - self.low[m, p],
-                    abs(self.high[m, p] - self.open_[m, p]),
-                    abs(self.low[m, p] - self.open_[m, p])
+                    abs(self.high[m, p] - self.open[m, p]),
+                    abs(self.low[m, p] - self.open[m, p])
                 )
                 self.atr[m, p] = ((self.atr[m, p - 1] * (period - 1) + tr) / period)
 

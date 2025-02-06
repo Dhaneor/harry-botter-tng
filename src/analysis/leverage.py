@@ -13,7 +13,7 @@ from numba import int8, float32
 from numba.experimental import jitclass
 from sys import getsizeof
 
-from analysis.models.market_data import MarketData, MarketDataStore
+from analysis.models.market_data import MarketData, MarketDataStoreJIT as MarketDataStore
 from analysis.diversification_multiplier import Multiplier
 
 logger = logging.getLogger("main.leverage")

@@ -16,6 +16,7 @@ from numba import int64, float64
 from numba.experimental import jitclass
 from typing import Sequence
 
+from .market_data_store import MarketDataStore
 from analysis.statistics.statistics import Statistics
 from analysis.chart.plot_definition import SubPlot, Candlestick, Line
 from misc.mixins import PlottingMixin
@@ -38,7 +39,7 @@ spec = [
 ]
 
 @jitclass(spec)
-class MarketDataStore:
+class MarketDataStoreJIT:
     """A class to store raw market data for multiple symbols as 2d arrays."""
 
     def __init__(
@@ -50,9 +51,9 @@ class MarketDataStore:
         close: npt.ArrayLike,
         volume: npt.ArrayLike,
         lookback: int = 20
-    ):  
+    ):
         self.timestamp = timestamp
-        self.open_ = open_
+        self.open = open_
         self.high = high
         self.low = low
         self.close = close
@@ -146,8 +147,8 @@ class MarketDataStore:
             for p in range(period, periods):
                 tr = max(
                     self.high[m, p] - self.low[m, p],
-                    abs(self.high[m, p] - self.open_[m, p]),
-                    abs(self.low[m, p] - self.open_[m, p])
+                    abs(self.high[m, p] - self.open[m, p]),
+                    abs(self.low[m, p] - self.open[m, p])
                 )
                 self.atr[m, p] = ((self.atr[m, p - 1] * (period - 1) + tr) / period)
 
@@ -312,7 +313,7 @@ class MarketData(PlottingMixin):
 
         # Fill data_matrix by column
         for sym_idx, sym in enumerate(self.symbols):
-            c_open = mds.open_[:, sym_idx]
+            c_open = mds.open[:, sym_idx]
             c_high = mds.high[:, sym_idx]
             c_low = mds.low[:, sym_idx]
             c_close = mds.close[:, sym_idx]
@@ -348,7 +349,7 @@ class MarketData(PlottingMixin):
         Returns:
             np.ndarray: 2D array of open prices for all symbols.
         """
-        return self.mds.open_
+        return self.mds.open
 
     @property
     def high(self) -> np.ndarray:
@@ -474,7 +475,7 @@ class MarketData(PlottingMixin):
             case "close":
                 arr_2d = self.mds.close
             case "open":
-                arr_2d = self.mds.open_
+                arr_2d = self.mds.open
             case "high":
                 arr_2d = self.mds.high
             case "low":
@@ -503,7 +504,7 @@ class MarketData(PlottingMixin):
         """
         return {
             "open time": self.mds.timestamp[:, 0].reshape(-1),
-            "open": self.mds.open_[:, 0].reshape(-1),
+            "open": self.mds.open[:, 0].reshape(-1),
             "high": self.mds.high[:, 0].reshape(-1),
             "low": self.mds.low[:, 0].reshape(-1),
             "close": self.mds.close[:, 0].reshape(-1),
@@ -609,12 +610,12 @@ class MarketData(PlottingMixin):
 
         # Create MarketDataStore
         mds = MarketDataStore(
-            open_=open_prices,
+            timestamp=timestamps,
+            open=open_prices,
             high=high_prices,
             low=low_prices,
             close=close_prices,
             volume=volumes,
-            timestamp=timestamps,
         )
     
         return cls(mds, symbols)
@@ -632,7 +633,7 @@ class MarketData(PlottingMixin):
         # For convenience, define a small dictionary to map field_name -> actual array
         mds = self.mds
         field_arrays = {
-            "open": mds.open_[:, col],
+            "open": mds.open[:, col],
             "high": mds.high[:, col],
             "low": mds.low[:, col],
             "close": mds.close[:, col],
@@ -668,7 +669,7 @@ class MarketData(PlottingMixin):
         data_matrix = np.zeros((rows, len(self.symbols)), dtype=np.float64)
 
         field_arrays = {
-            "open": mds.open_,
+            "open": mds.open,
             "high": mds.high,
             "low": mds.low,
             "close": mds.close,

@@ -1540,6 +1540,7 @@ static const char *__pyx_f[] = {
   "<stringsource>",
   "__init__.cython-30.pxd",
   "type.pxd",
+  "src/analysis/statistics/cython_statistics.pxd",
 };
 /* #### Code section: utility_code_proto_before_types ### */
 /* ForceInitThreads.proto */
@@ -1877,6 +1878,7 @@ static CYTHON_INLINE __pyx_t_long_double_complex __pyx_t_long_double_complex_fro
 /* #### Code section: type_declarations ### */
 
 /*--- Type declarations ---*/
+struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics;
 struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore;
 struct __pyx_array_obj;
 struct __pyx_MemviewEnum_obj;
@@ -1900,10 +1902,190 @@ typedef int (*__pyx_t_5numpy_NpyIter_IterNextFunc)(NpyIter *);
  * cdef extern from "numpy/arrayobject.h":
  */
 typedef void (*__pyx_t_5numpy_NpyIter_GetMultiIndexFunc)(NpyIter *, npy_intp *);
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_mean;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_std;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_var;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_min;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_max;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_sum;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_returns;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_log_returns;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_volatility;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_sharpe_ratio;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_annualized_returns;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_annualized_volatility;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_annualized_sharpe_ratio;
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_atr;
+
+/* "analysis/statistics/cython_statistics.pxd":14
+ *     cdef compute(self, cnp.ndarray arr, func, int period)
+ * 
+ *     cpdef mean(self, cnp.ndarray arr, int period=*)             # <<<<<<<<<<<<<<
+ *     cpdef std(self, cnp.ndarray arr, int period=*)
+ *     cpdef var(self, cnp.ndarray arr, int period=*)
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_mean {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":15
+ * 
+ *     cpdef mean(self, cnp.ndarray arr, int period=*)
+ *     cpdef std(self, cnp.ndarray arr, int period=*)             # <<<<<<<<<<<<<<
+ *     cpdef var(self, cnp.ndarray arr, int period=*)
+ *     cpdef min(self, cnp.ndarray arr, int period=*)
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_std {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":16
+ *     cpdef mean(self, cnp.ndarray arr, int period=*)
+ *     cpdef std(self, cnp.ndarray arr, int period=*)
+ *     cpdef var(self, cnp.ndarray arr, int period=*)             # <<<<<<<<<<<<<<
+ *     cpdef min(self, cnp.ndarray arr, int period=*)
+ *     cpdef max(self, cnp.ndarray arr, int period=*)
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_var {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":17
+ *     cpdef std(self, cnp.ndarray arr, int period=*)
+ *     cpdef var(self, cnp.ndarray arr, int period=*)
+ *     cpdef min(self, cnp.ndarray arr, int period=*)             # <<<<<<<<<<<<<<
+ *     cpdef max(self, cnp.ndarray arr, int period=*)
+ *     cpdef sum(self, cnp.ndarray arr, int period=*)
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_min {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":18
+ *     cpdef var(self, cnp.ndarray arr, int period=*)
+ *     cpdef min(self, cnp.ndarray arr, int period=*)
+ *     cpdef max(self, cnp.ndarray arr, int period=*)             # <<<<<<<<<<<<<<
+ *     cpdef sum(self, cnp.ndarray arr, int period=*)
+ * 
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_max {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":19
+ *     cpdef min(self, cnp.ndarray arr, int period=*)
+ *     cpdef max(self, cnp.ndarray arr, int period=*)
+ *     cpdef sum(self, cnp.ndarray arr, int period=*)             # <<<<<<<<<<<<<<
+ * 
+ *     cpdef returns(self, cnp.ndarray arr, int period=*)
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_sum {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":21
+ *     cpdef sum(self, cnp.ndarray arr, int period=*)
+ * 
+ *     cpdef returns(self, cnp.ndarray arr, int period=*)             # <<<<<<<<<<<<<<
+ *     cpdef log_returns(self, cnp.ndarray arr, int period=*)
+ *     cpdef volatility(self, cnp.ndarray arr, int period=*)
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_returns {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":22
+ * 
+ *     cpdef returns(self, cnp.ndarray arr, int period=*)
+ *     cpdef log_returns(self, cnp.ndarray arr, int period=*)             # <<<<<<<<<<<<<<
+ *     cpdef volatility(self, cnp.ndarray arr, int period=*)
+ *     cpdef sharpe_ratio(self, cnp.ndarray arr, int period=*)
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_log_returns {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":23
+ *     cpdef returns(self, cnp.ndarray arr, int period=*)
+ *     cpdef log_returns(self, cnp.ndarray arr, int period=*)
+ *     cpdef volatility(self, cnp.ndarray arr, int period=*)             # <<<<<<<<<<<<<<
+ *     cpdef sharpe_ratio(self, cnp.ndarray arr, int period=*)
+ * 
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_volatility {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":24
+ *     cpdef log_returns(self, cnp.ndarray arr, int period=*)
+ *     cpdef volatility(self, cnp.ndarray arr, int period=*)
+ *     cpdef sharpe_ratio(self, cnp.ndarray arr, int period=*)             # <<<<<<<<<<<<<<
+ * 
+ *     cpdef annualized_returns(self, cnp.ndarray arr, int periods_per_year, int period=*)
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_sharpe_ratio {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":26
+ *     cpdef sharpe_ratio(self, cnp.ndarray arr, int period=*)
+ * 
+ *     cpdef annualized_returns(self, cnp.ndarray arr, int periods_per_year, int period=*)             # <<<<<<<<<<<<<<
+ *     cpdef annualized_volatility(self, cnp.ndarray arr, int periods_per_year, int period=*)
+ *     cpdef annualized_sharpe_ratio(self, cnp.ndarray arr, int periods_per_year, int period=*)
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_annualized_returns {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":27
+ * 
+ *     cpdef annualized_returns(self, cnp.ndarray arr, int periods_per_year, int period=*)
+ *     cpdef annualized_volatility(self, cnp.ndarray arr, int periods_per_year, int period=*)             # <<<<<<<<<<<<<<
+ *     cpdef annualized_sharpe_ratio(self, cnp.ndarray arr, int periods_per_year, int period=*)
+ * 
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_annualized_volatility {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":28
+ *     cpdef annualized_returns(self, cnp.ndarray arr, int periods_per_year, int period=*)
+ *     cpdef annualized_volatility(self, cnp.ndarray arr, int periods_per_year, int period=*)
+ *     cpdef annualized_sharpe_ratio(self, cnp.ndarray arr, int periods_per_year, int period=*)             # <<<<<<<<<<<<<<
+ * 
+ *     cdef double[:] _returns_fn(self, double[:] arr)
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_annualized_sharpe_ratio {
+  int __pyx_n;
+  int period;
+};
+
+/* "analysis/statistics/cython_statistics.pxd":38
+ * 
+ *     cdef true_range(self, cnp.ndarray high, cnp.ndarray low, cnp.ndarray close)
+ *     cpdef atr(self, cnp.ndarray high, cnp.ndarray low, cnp.ndarray close, int period=*)             # <<<<<<<<<<<<<<
+ */
+struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_atr {
+  int __pyx_n;
+  int period;
+};
 struct __pyx_opt_args_3src_8analysis_6models_17market_data_store_15MarketDataStore_compute_atr;
 struct __pyx_opt_args_3src_8analysis_6models_17market_data_store_15MarketDataStore_smooth_it;
 
-/* "src/analysis/models/market_data_store.pyx":63
+/* "src/analysis/models/market_data_store.pyx":117
  *         )
  * 
  *     cdef void compute_atr(self, int period=14):             # <<<<<<<<<<<<<<
@@ -1915,7 +2097,7 @@ struct __pyx_opt_args_3src_8analysis_6models_17market_data_store_15MarketDataSto
   int period;
 };
 
-/* "src/analysis/models/market_data_store.pyx":78
+/* "src/analysis/models/market_data_store.pyx":132
  *                 self.atr[m, p] = ((self.atr[m, p - 1] * (period - 1) + tr) / period)
  * 
  *     cdef double[:,:] smooth_it(self, double[:,:] arr, int factor = 3):             # <<<<<<<<<<<<<<
@@ -1927,25 +2109,47 @@ struct __pyx_opt_args_3src_8analysis_6models_17market_data_store_15MarketDataSto
   int factor;
 };
 
-/* "src/analysis/models/market_data_store.pyx":6
- * from math import cos, exp, pi
+/* "analysis/statistics/cython_statistics.pxd":4
+ * cimport numpy as cnp
+ * 
+ * cdef class Statistics:             # <<<<<<<<<<<<<<
+ *     cdef:
+ *         double _epsilon
+ */
+struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics {
+  PyObject_HEAD
+  struct __pyx_vtabstruct_8analysis_10statistics_17cython_statistics_Statistics *__pyx_vtab;
+  double _epsilon;
+  long periods_per_year;
+  double risk_free_rate;
+};
+
+
+/* "src/analysis/models/market_data_store.pyx":8
+ * from analysis.statistics.cython_statistics cimport Statistics
  * 
  * cdef class MarketDataStore:             # <<<<<<<<<<<<<<
  *     cdef:
- *         public cnp.ndarray open, high, low, close, volume
+ *         public cnp.ndarray timestamp, open, high, low, close, volume
  */
 struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore {
   PyObject_HEAD
   struct __pyx_vtabstruct_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_vtab;
+  PyArrayObject *timestamp;
   PyArrayObject *open;
   PyArrayObject *high;
   PyArrayObject *low;
   PyArrayObject *close;
   PyArrayObject *volume;
+  PyArrayObject *annual_vol;
+  PyArrayObject *annual_sr;
+  PyArrayObject *signal_scale_factor;
   PyArrayObject *atr;
   PyArrayObject *volatility;
+  int lookback;
   int num_assets;
   int num_periods;
+  struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *stats;
 };
 
 
@@ -2026,12 +2230,49 @@ struct __pyx_memoryviewslice_obj {
 
 
 
-/* "src/analysis/models/market_data_store.pyx":6
- * from math import cos, exp, pi
+/* "analysis/statistics/cython_statistics.pxd":4
+ * cimport numpy as cnp
+ * 
+ * cdef class Statistics:             # <<<<<<<<<<<<<<
+ *     cdef:
+ *         double _epsilon
+ */
+
+struct __pyx_vtabstruct_8analysis_10statistics_17cython_statistics_Statistics {
+  PyObject *(*_apply_to_columns)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, PyObject *, int);
+  __Pyx_memviewslice (*_apply_rolling)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, __Pyx_memviewslice, PyObject *, int);
+  PyObject *(*compute)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, PyObject *, int);
+  PyObject *(*mean)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_mean *__pyx_optional_args);
+  PyObject *(*std)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_std *__pyx_optional_args);
+  PyObject *(*var)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_var *__pyx_optional_args);
+  PyObject *(*min)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_min *__pyx_optional_args);
+  PyObject *(*max)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_max *__pyx_optional_args);
+  PyObject *(*sum)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_sum *__pyx_optional_args);
+  PyObject *(*returns)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_returns *__pyx_optional_args);
+  PyObject *(*log_returns)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_log_returns *__pyx_optional_args);
+  PyObject *(*volatility)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_volatility *__pyx_optional_args);
+  PyObject *(*sharpe_ratio)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_sharpe_ratio *__pyx_optional_args);
+  PyObject *(*annualized_returns)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_annualized_returns *__pyx_optional_args);
+  PyObject *(*annualized_volatility)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_annualized_volatility *__pyx_optional_args);
+  PyObject *(*annualized_sharpe_ratio)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, int, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_annualized_sharpe_ratio *__pyx_optional_args);
+  __Pyx_memviewslice (*_returns_fn)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, __Pyx_memviewslice);
+  __Pyx_memviewslice (*_log_returns_fn)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, __Pyx_memviewslice);
+  double (*_sharpe_ratio_fn)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, __Pyx_memviewslice);
+  double (*_annualized_returns_fn)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, __Pyx_memviewslice);
+  double (*_annualized_vol_fn)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, __Pyx_memviewslice);
+  double (*_annualized_sharpe_ratio_fn)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, __Pyx_memviewslice);
+  PyObject *(*true_range)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, PyArrayObject *, PyArrayObject *);
+  PyObject *(*atr)(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *, PyArrayObject *, PyArrayObject *, PyArrayObject *, int __pyx_skip_dispatch, struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_atr *__pyx_optional_args);
+};
+static struct __pyx_vtabstruct_8analysis_10statistics_17cython_statistics_Statistics *__pyx_vtabptr_8analysis_10statistics_17cython_statistics_Statistics;
+
+
+/* "src/analysis/models/market_data_store.pyx":8
+ * from analysis.statistics.cython_statistics cimport Statistics
  * 
  * cdef class MarketDataStore:             # <<<<<<<<<<<<<<
  *     cdef:
- *         public cnp.ndarray open, high, low, close, volume
+ *         public cnp.ndarray timestamp, open, high, low, close, volume
  */
 
 struct __pyx_vtabstruct_3src_8analysis_6models_17market_data_store_MarketDataStore {
@@ -2676,13 +2917,15 @@ static PyObject* __Pyx_ImportFrom(PyObject* module, PyObject* name);
 /* HasAttr.proto */
 static CYTHON_INLINE int __Pyx_HasAttr(PyObject *, PyObject *);
 
-/* PyObjectSetAttrStr.proto */
-#if CYTHON_USE_TYPE_SLOTS
-#define __Pyx_PyObject_DelAttrStr(o,n) __Pyx_PyObject_SetAttrStr(o, n, NULL)
-static CYTHON_INLINE int __Pyx_PyObject_SetAttrStr(PyObject* obj, PyObject* attr_name, PyObject* value);
+/* PyObjectCallNoArg.proto */
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func);
+
+/* PyIntBinop.proto */
+#if !CYTHON_COMPILING_IN_PYPY
+static PyObject* __Pyx_PyInt_AddObjC(PyObject *op1, PyObject *op2, long intval, int inplace, int zerodivision_check);
 #else
-#define __Pyx_PyObject_DelAttrStr(o,n)   PyObject_DelAttr(o,n)
-#define __Pyx_PyObject_SetAttrStr(o,n,v) PyObject_SetAttr(o,n,v)
+#define __Pyx_PyInt_AddObjC(op1, op2, intval, inplace, zerodivision_check)\
+    (inplace ? PyNumber_InPlaceAdd(op1, op2) : PyNumber_Add(op1, op2))
 #endif
 
 /* PyIntCompare.proto */
@@ -2763,9 +3006,6 @@ static PyObject* __Pyx_PyObject_GenericGetAttr(PyObject* obj, PyObject* attr_nam
 #if CYTHON_USE_TYPE_SPECS
 static int __Pyx_fix_up_extension_type_from_spec(PyType_Spec *spec, PyTypeObject *type);
 #endif
-
-/* PyObjectCallNoArg.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func);
 
 /* PyObjectGetMethod.proto */
 static int __Pyx_PyObject_GetMethod(PyObject *obj, PyObject *name, PyObject **method);
@@ -3015,10 +3255,6 @@ static int __pyx_slices_overlap(__Pyx_memviewslice *slice1,
                                 __Pyx_memviewslice *slice2,
                                 int ndim, size_t itemsize);
 
-/* MemviewDtypeToObject.proto */
-static CYTHON_INLINE PyObject *__pyx_memview_get_double(const char *itemp);
-static CYTHON_INLINE int __pyx_memview_set_double(const char *itemp, PyObject *obj);
-
 /* IsLittleEndian.proto */
 static CYTHON_INLINE int __Pyx_Is_Little_Endian(void);
 
@@ -3041,6 +3277,13 @@ static int __Pyx_ValidateAndInit_memviewslice(
                 __Pyx_BufFmt_StackElem stack[],
                 __Pyx_memviewslice *memviewslice,
                 PyObject *original_obj);
+
+/* ObjectToMemviewSlice.proto */
+static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_dsds_double(PyObject *, int writable_flag);
+
+/* MemviewDtypeToObject.proto */
+static CYTHON_INLINE PyObject *__pyx_memview_get_double(const char *itemp);
+static CYTHON_INLINE int __pyx_memview_set_double(const char *itemp, PyObject *obj);
 
 /* ObjectToMemviewSlice.proto */
 static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_ds_double(PyObject *, int writable_flag);
@@ -3213,8 +3456,8 @@ static CYTHON_INLINE int __pyx_sub_acquisition_count_locked(
 static CYTHON_INLINE void __Pyx_INC_MEMVIEW(__Pyx_memviewslice *, int, int);
 static CYTHON_INLINE void __Pyx_XCLEAR_MEMVIEW(__Pyx_memviewslice *, int, int);
 
-/* CIntToPy.proto */
-static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
+/* CIntFromPy.proto */
+static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *);
 
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_npy_intp(npy_intp value);
@@ -3222,8 +3465,8 @@ static CYTHON_INLINE PyObject* __Pyx_PyInt_From_npy_intp(npy_intp value);
 /* CIntToPy.proto */
 static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value);
 
-/* CIntFromPy.proto */
-static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *);
+/* CIntToPy.proto */
+static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value);
 
 /* None.proto */
 #include <new>
@@ -3309,6 +3552,8 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
 
 /* Module declarations from "numpy" */
 
+/* Module declarations from "analysis.statistics.cython_statistics" */
+
 /* Module declarations from "src.analysis.models.market_data_store" */
 static PyObject *__pyx_collections_abc_Sequence = 0;
 static PyObject *generic = 0;
@@ -3391,6 +3636,7 @@ static const char __pyx_k_cos[] = "cos";
 static const char __pyx_k_exp[] = "exp";
 static const char __pyx_k_got[] = " (got ";
 static const char __pyx_k_low[] = "low";
+static const char __pyx_k_nan[] = "nan";
 static const char __pyx_k_new[] = "__new__";
 static const char __pyx_k_obj[] = "obj";
 static const char __pyx_k_sys[] = "sys";
@@ -3403,6 +3649,7 @@ static const char __pyx_k_math[] = "math";
 static const char __pyx_k_mode[] = "mode";
 static const char __pyx_k_name[] = "name";
 static const char __pyx_k_ndim[] = "ndim";
+static const char __pyx_k_ones[] = "ones";
 static const char __pyx_k_open[] = "open";
 static const char __pyx_k_pack[] = "pack";
 static const char __pyx_k_self[] = "self";
@@ -3423,7 +3670,6 @@ static const char __pyx_k_numpy[] = "numpy";
 static const char __pyx_k_range[] = "range";
 static const char __pyx_k_shape[] = "shape";
 static const char __pyx_k_start[] = "start";
-static const char __pyx_k_stats[] = "stats";
 static const char __pyx_k_zeros[] = "zeros";
 static const char __pyx_k_astype[] = "astype";
 static const char __pyx_k_enable[] = "enable";
@@ -3432,13 +3678,13 @@ static const char __pyx_k_format[] = "format";
 static const char __pyx_k_import[] = "__import__";
 static const char __pyx_k_median[] = "median";
 static const char __pyx_k_name_2[] = "__name__";
-static const char __pyx_k_open_2[] = "open_";
 static const char __pyx_k_pickle[] = "pickle";
 static const char __pyx_k_reduce[] = "__reduce__";
 static const char __pyx_k_struct[] = "struct";
 static const char __pyx_k_unpack[] = "unpack";
 static const char __pyx_k_update[] = "update";
 static const char __pyx_k_volume[] = "volume";
+static const char __pyx_k_asarray[] = "asarray";
 static const char __pyx_k_disable[] = "disable";
 static const char __pyx_k_float64[] = "float64";
 static const char __pyx_k_fortran[] = "fortran";
@@ -3454,13 +3700,13 @@ static const char __pyx_k_register[] = "register";
 static const char __pyx_k_setstate[] = "__setstate__";
 static const char __pyx_k_TypeError[] = "TypeError";
 static const char __pyx_k_enumerate[] = "enumerate";
+static const char __pyx_k_full_like[] = "full_like";
 static const char __pyx_k_isenabled[] = "isenabled";
 static const char __pyx_k_pyx_state[] = "__pyx_state";
 static const char __pyx_k_reduce_ex[] = "__reduce_ex__";
 static const char __pyx_k_timestamp[] = "timestamp";
 static const char __pyx_k_IndexError[] = "IndexError";
 static const char __pyx_k_ValueError[] = "ValueError";
-static const char __pyx_k_annual_vol[] = "annual_vol";
 static const char __pyx_k_pyx_result[] = "__pyx_result";
 static const char __pyx_k_pyx_vtable[] = "__pyx_vtable__";
 static const char __pyx_k_ImportError[] = "ImportError";
@@ -3489,7 +3735,6 @@ static const char __pyx_k_cline_in_traceback[] = "cline_in_traceback";
 static const char __pyx_k_strided_and_direct[] = "<strided and direct>";
 static const char __pyx_k_strided_and_indirect[] = "<strided and indirect>";
 static const char __pyx_k_Invalid_shape_in_axis[] = "Invalid shape in axis ";
-static const char __pyx_k_annualized_volatility[] = "annualized_volatility";
 static const char __pyx_k_contiguous_and_direct[] = "<contiguous and direct>";
 static const char __pyx_k_Cannot_index_with_type[] = "Cannot index with type '";
 static const char __pyx_k_MemoryView_of_r_object[] = "<MemoryView of %r object>";
@@ -3564,10 +3809,13 @@ static void __pyx_memoryviewslice___pyx_pf_15View_dot_MemoryView_16_memoryviewsl
 static PyObject *__pyx_pf___pyx_memoryviewslice___reduce_cython__(CYTHON_UNUSED struct __pyx_memoryviewslice_obj *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf___pyx_memoryviewslice_2__setstate_cython__(CYTHON_UNUSED struct __pyx_memoryviewslice_obj *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_pf_15View_dot_MemoryView___pyx_unpickle_Enum(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v___pyx_type, long __pyx_v___pyx_checksum, PyObject *__pyx_v___pyx_state); /* proto */
-static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore___cinit__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyArrayObject *__pyx_v_timestamp, PyArrayObject *__pyx_v_open, PyArrayObject *__pyx_v_high, PyArrayObject *__pyx_v_low, PyArrayObject *__pyx_v_close, PyArrayObject *__pyx_v_volume, double __pyx_v_lookback); /* proto */
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore___cinit__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyArrayObject *__pyx_v_timestamp, PyArrayObject *__pyx_v_open, PyArrayObject *__pyx_v_high, PyArrayObject *__pyx_v_low, PyArrayObject *__pyx_v_close, PyArrayObject *__pyx_v_volume, int __pyx_v_lookback); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_16periods_per_year___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_7periods___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_7symbols___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_4open___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_4open_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_4open_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
@@ -3583,16 +3831,30 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
 static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_6volume___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_6volume_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_6volume_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_3atr___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_3atr_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_3atr_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10volatility___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10volatility_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10volatility_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_8lookback___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_8lookback_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10num_assets___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10num_assets_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_11num_periods___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_11num_periods_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value); /* proto */
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_2__reduce_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self); /* proto */
 static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_4__setstate_cython__(CYTHON_UNUSED struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, CYTHON_UNUSED PyObject *__pyx_v___pyx_state); /* proto */
 static PyObject *__pyx_tp_new_3src_8analysis_6models_17market_data_store_MarketDataStore(PyTypeObject *t, PyObject *a, PyObject *k); /*proto*/
@@ -3662,6 +3924,9 @@ typedef struct {
   PyTypeObject *__pyx_ptype_5numpy_character;
   PyTypeObject *__pyx_ptype_5numpy_ufunc;
   #if CYTHON_USE_MODULE_STATE
+  #endif
+  PyTypeObject *__pyx_ptype_8analysis_10statistics_17cython_statistics_Statistics;
+  #if CYTHON_USE_MODULE_STATE
   PyObject *__pyx_type_3src_8analysis_6models_17market_data_store_MarketDataStore;
   PyObject *__pyx_type___pyx_array;
   PyObject *__pyx_type___pyx_MemviewEnum;
@@ -3717,8 +3982,7 @@ typedef struct {
   PyObject *__pyx_n_s_abc;
   PyObject *__pyx_n_s_allocate_buffer;
   PyObject *__pyx_kp_u_and;
-  PyObject *__pyx_n_s_annual_vol;
-  PyObject *__pyx_n_s_annualized_volatility;
+  PyObject *__pyx_n_s_asarray;
   PyObject *__pyx_n_s_astype;
   PyObject *__pyx_n_s_asyncio_coroutines;
   PyObject *__pyx_n_s_base;
@@ -3749,6 +4013,7 @@ typedef struct {
   PyObject *__pyx_n_s_format;
   PyObject *__pyx_n_s_fortran;
   PyObject *__pyx_n_u_fortran;
+  PyObject *__pyx_n_s_full_like;
   PyObject *__pyx_kp_u_gc;
   PyObject *__pyx_n_s_getstate;
   PyObject *__pyx_kp_u_got;
@@ -3771,6 +4036,7 @@ typedef struct {
   PyObject *__pyx_n_s_mode;
   PyObject *__pyx_n_s_name;
   PyObject *__pyx_n_s_name_2;
+  PyObject *__pyx_n_s_nan;
   PyObject *__pyx_n_s_ndim;
   PyObject *__pyx_n_s_new;
   PyObject *__pyx_kp_s_no_default___reduce___due_to_non;
@@ -3779,8 +4045,8 @@ typedef struct {
   PyObject *__pyx_kp_u_numpy__core_multiarray_failed_to;
   PyObject *__pyx_kp_u_numpy__core_umath_failed_to_impo;
   PyObject *__pyx_n_s_obj;
+  PyObject *__pyx_n_s_ones;
   PyObject *__pyx_n_s_open;
-  PyObject *__pyx_n_s_open_2;
   PyObject *__pyx_n_s_pack;
   PyObject *__pyx_n_s_periods_per_year;
   PyObject *__pyx_n_s_pi;
@@ -3806,7 +4072,6 @@ typedef struct {
   PyObject *__pyx_n_s_spec;
   PyObject *__pyx_n_s_src_analysis_models_market_data;
   PyObject *__pyx_n_s_start;
-  PyObject *__pyx_n_s_stats;
   PyObject *__pyx_n_s_step;
   PyObject *__pyx_n_s_stop;
   PyObject *__pyx_kp_s_strided_and_direct;
@@ -3914,6 +4179,7 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_ptype_5numpy_flexible);
   Py_CLEAR(clear_module_state->__pyx_ptype_5numpy_character);
   Py_CLEAR(clear_module_state->__pyx_ptype_5numpy_ufunc);
+  Py_CLEAR(clear_module_state->__pyx_ptype_8analysis_10statistics_17cython_statistics_Statistics);
   Py_CLEAR(clear_module_state->__pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore);
   Py_CLEAR(clear_module_state->__pyx_type_3src_8analysis_6models_17market_data_store_MarketDataStore);
   Py_CLEAR(clear_module_state->__pyx_array_type);
@@ -3968,8 +4234,7 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_n_s_abc);
   Py_CLEAR(clear_module_state->__pyx_n_s_allocate_buffer);
   Py_CLEAR(clear_module_state->__pyx_kp_u_and);
-  Py_CLEAR(clear_module_state->__pyx_n_s_annual_vol);
-  Py_CLEAR(clear_module_state->__pyx_n_s_annualized_volatility);
+  Py_CLEAR(clear_module_state->__pyx_n_s_asarray);
   Py_CLEAR(clear_module_state->__pyx_n_s_astype);
   Py_CLEAR(clear_module_state->__pyx_n_s_asyncio_coroutines);
   Py_CLEAR(clear_module_state->__pyx_n_s_base);
@@ -4000,6 +4265,7 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_n_s_format);
   Py_CLEAR(clear_module_state->__pyx_n_s_fortran);
   Py_CLEAR(clear_module_state->__pyx_n_u_fortran);
+  Py_CLEAR(clear_module_state->__pyx_n_s_full_like);
   Py_CLEAR(clear_module_state->__pyx_kp_u_gc);
   Py_CLEAR(clear_module_state->__pyx_n_s_getstate);
   Py_CLEAR(clear_module_state->__pyx_kp_u_got);
@@ -4022,6 +4288,7 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_n_s_mode);
   Py_CLEAR(clear_module_state->__pyx_n_s_name);
   Py_CLEAR(clear_module_state->__pyx_n_s_name_2);
+  Py_CLEAR(clear_module_state->__pyx_n_s_nan);
   Py_CLEAR(clear_module_state->__pyx_n_s_ndim);
   Py_CLEAR(clear_module_state->__pyx_n_s_new);
   Py_CLEAR(clear_module_state->__pyx_kp_s_no_default___reduce___due_to_non);
@@ -4030,8 +4297,8 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_kp_u_numpy__core_multiarray_failed_to);
   Py_CLEAR(clear_module_state->__pyx_kp_u_numpy__core_umath_failed_to_impo);
   Py_CLEAR(clear_module_state->__pyx_n_s_obj);
+  Py_CLEAR(clear_module_state->__pyx_n_s_ones);
   Py_CLEAR(clear_module_state->__pyx_n_s_open);
-  Py_CLEAR(clear_module_state->__pyx_n_s_open_2);
   Py_CLEAR(clear_module_state->__pyx_n_s_pack);
   Py_CLEAR(clear_module_state->__pyx_n_s_periods_per_year);
   Py_CLEAR(clear_module_state->__pyx_n_s_pi);
@@ -4057,7 +4324,6 @@ static int __pyx_m_clear(PyObject *m) {
   Py_CLEAR(clear_module_state->__pyx_n_s_spec);
   Py_CLEAR(clear_module_state->__pyx_n_s_src_analysis_models_market_data);
   Py_CLEAR(clear_module_state->__pyx_n_s_start);
-  Py_CLEAR(clear_module_state->__pyx_n_s_stats);
   Py_CLEAR(clear_module_state->__pyx_n_s_step);
   Py_CLEAR(clear_module_state->__pyx_n_s_stop);
   Py_CLEAR(clear_module_state->__pyx_kp_s_strided_and_direct);
@@ -4143,6 +4409,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_ptype_5numpy_flexible);
   Py_VISIT(traverse_module_state->__pyx_ptype_5numpy_character);
   Py_VISIT(traverse_module_state->__pyx_ptype_5numpy_ufunc);
+  Py_VISIT(traverse_module_state->__pyx_ptype_8analysis_10statistics_17cython_statistics_Statistics);
   Py_VISIT(traverse_module_state->__pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore);
   Py_VISIT(traverse_module_state->__pyx_type_3src_8analysis_6models_17market_data_store_MarketDataStore);
   Py_VISIT(traverse_module_state->__pyx_array_type);
@@ -4197,8 +4464,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_n_s_abc);
   Py_VISIT(traverse_module_state->__pyx_n_s_allocate_buffer);
   Py_VISIT(traverse_module_state->__pyx_kp_u_and);
-  Py_VISIT(traverse_module_state->__pyx_n_s_annual_vol);
-  Py_VISIT(traverse_module_state->__pyx_n_s_annualized_volatility);
+  Py_VISIT(traverse_module_state->__pyx_n_s_asarray);
   Py_VISIT(traverse_module_state->__pyx_n_s_astype);
   Py_VISIT(traverse_module_state->__pyx_n_s_asyncio_coroutines);
   Py_VISIT(traverse_module_state->__pyx_n_s_base);
@@ -4229,6 +4495,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_n_s_format);
   Py_VISIT(traverse_module_state->__pyx_n_s_fortran);
   Py_VISIT(traverse_module_state->__pyx_n_u_fortran);
+  Py_VISIT(traverse_module_state->__pyx_n_s_full_like);
   Py_VISIT(traverse_module_state->__pyx_kp_u_gc);
   Py_VISIT(traverse_module_state->__pyx_n_s_getstate);
   Py_VISIT(traverse_module_state->__pyx_kp_u_got);
@@ -4251,6 +4518,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_n_s_mode);
   Py_VISIT(traverse_module_state->__pyx_n_s_name);
   Py_VISIT(traverse_module_state->__pyx_n_s_name_2);
+  Py_VISIT(traverse_module_state->__pyx_n_s_nan);
   Py_VISIT(traverse_module_state->__pyx_n_s_ndim);
   Py_VISIT(traverse_module_state->__pyx_n_s_new);
   Py_VISIT(traverse_module_state->__pyx_kp_s_no_default___reduce___due_to_non);
@@ -4259,8 +4527,8 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_kp_u_numpy__core_multiarray_failed_to);
   Py_VISIT(traverse_module_state->__pyx_kp_u_numpy__core_umath_failed_to_impo);
   Py_VISIT(traverse_module_state->__pyx_n_s_obj);
+  Py_VISIT(traverse_module_state->__pyx_n_s_ones);
   Py_VISIT(traverse_module_state->__pyx_n_s_open);
-  Py_VISIT(traverse_module_state->__pyx_n_s_open_2);
   Py_VISIT(traverse_module_state->__pyx_n_s_pack);
   Py_VISIT(traverse_module_state->__pyx_n_s_periods_per_year);
   Py_VISIT(traverse_module_state->__pyx_n_s_pi);
@@ -4286,7 +4554,6 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
   Py_VISIT(traverse_module_state->__pyx_n_s_spec);
   Py_VISIT(traverse_module_state->__pyx_n_s_src_analysis_models_market_data);
   Py_VISIT(traverse_module_state->__pyx_n_s_start);
-  Py_VISIT(traverse_module_state->__pyx_n_s_stats);
   Py_VISIT(traverse_module_state->__pyx_n_s_step);
   Py_VISIT(traverse_module_state->__pyx_n_s_stop);
   Py_VISIT(traverse_module_state->__pyx_kp_s_strided_and_direct);
@@ -4399,6 +4666,9 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_ptype_5numpy_character __pyx_mstate_global->__pyx_ptype_5numpy_character
 #define __pyx_ptype_5numpy_ufunc __pyx_mstate_global->__pyx_ptype_5numpy_ufunc
 #if CYTHON_USE_MODULE_STATE
+#endif
+#define __pyx_ptype_8analysis_10statistics_17cython_statistics_Statistics __pyx_mstate_global->__pyx_ptype_8analysis_10statistics_17cython_statistics_Statistics
+#if CYTHON_USE_MODULE_STATE
 #define __pyx_type_3src_8analysis_6models_17market_data_store_MarketDataStore __pyx_mstate_global->__pyx_type_3src_8analysis_6models_17market_data_store_MarketDataStore
 #define __pyx_type___pyx_array __pyx_mstate_global->__pyx_type___pyx_array
 #define __pyx_type___pyx_MemviewEnum __pyx_mstate_global->__pyx_type___pyx_MemviewEnum
@@ -4454,8 +4724,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_n_s_abc __pyx_mstate_global->__pyx_n_s_abc
 #define __pyx_n_s_allocate_buffer __pyx_mstate_global->__pyx_n_s_allocate_buffer
 #define __pyx_kp_u_and __pyx_mstate_global->__pyx_kp_u_and
-#define __pyx_n_s_annual_vol __pyx_mstate_global->__pyx_n_s_annual_vol
-#define __pyx_n_s_annualized_volatility __pyx_mstate_global->__pyx_n_s_annualized_volatility
+#define __pyx_n_s_asarray __pyx_mstate_global->__pyx_n_s_asarray
 #define __pyx_n_s_astype __pyx_mstate_global->__pyx_n_s_astype
 #define __pyx_n_s_asyncio_coroutines __pyx_mstate_global->__pyx_n_s_asyncio_coroutines
 #define __pyx_n_s_base __pyx_mstate_global->__pyx_n_s_base
@@ -4486,6 +4755,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_n_s_format __pyx_mstate_global->__pyx_n_s_format
 #define __pyx_n_s_fortran __pyx_mstate_global->__pyx_n_s_fortran
 #define __pyx_n_u_fortran __pyx_mstate_global->__pyx_n_u_fortran
+#define __pyx_n_s_full_like __pyx_mstate_global->__pyx_n_s_full_like
 #define __pyx_kp_u_gc __pyx_mstate_global->__pyx_kp_u_gc
 #define __pyx_n_s_getstate __pyx_mstate_global->__pyx_n_s_getstate
 #define __pyx_kp_u_got __pyx_mstate_global->__pyx_kp_u_got
@@ -4508,6 +4778,7 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_n_s_mode __pyx_mstate_global->__pyx_n_s_mode
 #define __pyx_n_s_name __pyx_mstate_global->__pyx_n_s_name
 #define __pyx_n_s_name_2 __pyx_mstate_global->__pyx_n_s_name_2
+#define __pyx_n_s_nan __pyx_mstate_global->__pyx_n_s_nan
 #define __pyx_n_s_ndim __pyx_mstate_global->__pyx_n_s_ndim
 #define __pyx_n_s_new __pyx_mstate_global->__pyx_n_s_new
 #define __pyx_kp_s_no_default___reduce___due_to_non __pyx_mstate_global->__pyx_kp_s_no_default___reduce___due_to_non
@@ -4516,8 +4787,8 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_kp_u_numpy__core_multiarray_failed_to __pyx_mstate_global->__pyx_kp_u_numpy__core_multiarray_failed_to
 #define __pyx_kp_u_numpy__core_umath_failed_to_impo __pyx_mstate_global->__pyx_kp_u_numpy__core_umath_failed_to_impo
 #define __pyx_n_s_obj __pyx_mstate_global->__pyx_n_s_obj
+#define __pyx_n_s_ones __pyx_mstate_global->__pyx_n_s_ones
 #define __pyx_n_s_open __pyx_mstate_global->__pyx_n_s_open
-#define __pyx_n_s_open_2 __pyx_mstate_global->__pyx_n_s_open_2
 #define __pyx_n_s_pack __pyx_mstate_global->__pyx_n_s_pack
 #define __pyx_n_s_periods_per_year __pyx_mstate_global->__pyx_n_s_periods_per_year
 #define __pyx_n_s_pi __pyx_mstate_global->__pyx_n_s_pi
@@ -4543,7 +4814,6 @@ static int __pyx_m_traverse(PyObject *m, visitproc visit, void *arg) {
 #define __pyx_n_s_spec __pyx_mstate_global->__pyx_n_s_spec
 #define __pyx_n_s_src_analysis_models_market_data __pyx_mstate_global->__pyx_n_s_src_analysis_models_market_data
 #define __pyx_n_s_start __pyx_mstate_global->__pyx_n_s_start
-#define __pyx_n_s_stats __pyx_mstate_global->__pyx_n_s_stats
 #define __pyx_n_s_step __pyx_mstate_global->__pyx_n_s_step
 #define __pyx_n_s_stop __pyx_mstate_global->__pyx_n_s_stop
 #define __pyx_kp_s_strided_and_direct __pyx_mstate_global->__pyx_kp_s_strided_and_direct
@@ -19913,8 +20183,8 @@ static CYTHON_INLINE NPY_DATETIMEUNIT __pyx_f_5numpy_get_datetime64_unit(PyObjec
   return __pyx_r;
 }
 
-/* "src/analysis/models/market_data_store.pyx":12
- *         public int num_assets, num_periods
+/* "src/analysis/models/market_data_store.pyx":18
+ *         public Statistics stats
  * 
  *     def __cinit__(             # <<<<<<<<<<<<<<
  *         self,
@@ -19930,7 +20200,7 @@ static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore
   PyArrayObject *__pyx_v_low = 0;
   PyArrayObject *__pyx_v_close = 0;
   PyArrayObject *__pyx_v_volume = 0;
-  double __pyx_v_lookback;
+  int __pyx_v_lookback;
   CYTHON_UNUSED Py_ssize_t __pyx_nargs;
   CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
   PyObject* values[7] = {0,0,0,0,0,0,0};
@@ -19975,7 +20245,7 @@ static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore
           (void)__Pyx_Arg_NewRef_VARARGS(values[0]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 12, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 18, __pyx_L3_error)
         else goto __pyx_L5_argtuple_error;
         CYTHON_FALLTHROUGH;
         case  1:
@@ -19983,9 +20253,9 @@ static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore
           (void)__Pyx_Arg_NewRef_VARARGS(values[1]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 12, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 18, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 6, 7, 1); __PYX_ERR(0, 12, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 6, 7, 1); __PYX_ERR(0, 18, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  2:
@@ -19993,9 +20263,9 @@ static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore
           (void)__Pyx_Arg_NewRef_VARARGS(values[2]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 12, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 18, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 6, 7, 2); __PYX_ERR(0, 12, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 6, 7, 2); __PYX_ERR(0, 18, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  3:
@@ -20003,9 +20273,9 @@ static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore
           (void)__Pyx_Arg_NewRef_VARARGS(values[3]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 12, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 18, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 6, 7, 3); __PYX_ERR(0, 12, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 6, 7, 3); __PYX_ERR(0, 18, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  4:
@@ -20013,9 +20283,9 @@ static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore
           (void)__Pyx_Arg_NewRef_VARARGS(values[4]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 12, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 18, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 6, 7, 4); __PYX_ERR(0, 12, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 6, 7, 4); __PYX_ERR(0, 18, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  5:
@@ -20023,21 +20293,21 @@ static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore
           (void)__Pyx_Arg_NewRef_VARARGS(values[5]);
           kw_args--;
         }
-        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 12, __pyx_L3_error)
+        else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 18, __pyx_L3_error)
         else {
-          __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 6, 7, 5); __PYX_ERR(0, 12, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 6, 7, 5); __PYX_ERR(0, 18, __pyx_L3_error)
         }
         CYTHON_FALLTHROUGH;
         case  6:
         if (kw_args > 0) {
           PyObject* value = __Pyx_GetKwValue_VARARGS(__pyx_kwds, __pyx_kwvalues, __pyx_n_s_lookback);
           if (value) { values[6] = __Pyx_Arg_NewRef_VARARGS(value); kw_args--; }
-          else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 12, __pyx_L3_error)
+          else if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 18, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
         const Py_ssize_t kwd_pos_args = __pyx_nargs;
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__cinit__") < 0)) __PYX_ERR(0, 12, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_kwvalues, __pyx_pyargnames, 0, values + 0, kwd_pos_args, "__cinit__") < 0)) __PYX_ERR(0, 18, __pyx_L3_error)
       }
     } else {
       switch (__pyx_nargs) {
@@ -20060,14 +20330,14 @@ static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore
     __pyx_v_close = ((PyArrayObject *)values[4]);
     __pyx_v_volume = ((PyArrayObject *)values[5]);
     if (values[6]) {
-      __pyx_v_lookback = __pyx_PyFloat_AsDouble(values[6]); if (unlikely((__pyx_v_lookback == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 20, __pyx_L3_error)
+      __pyx_v_lookback = __Pyx_PyInt_As_int(values[6]); if (unlikely((__pyx_v_lookback == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 26, __pyx_L3_error)
     } else {
-      __pyx_v_lookback = ((double)20.0);
+      __pyx_v_lookback = ((int)20);
     }
   }
   goto __pyx_L6_skip;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 6, 7, __pyx_nargs); __PYX_ERR(0, 12, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("__cinit__", 0, 6, 7, __pyx_nargs); __PYX_ERR(0, 18, __pyx_L3_error)
   __pyx_L6_skip:;
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L3_error:;
@@ -20081,12 +20351,12 @@ static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore
   __Pyx_RefNannyFinishContext();
   return -1;
   __pyx_L4_argument_unpacking_done:;
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_timestamp), __pyx_ptype_5numpy_ndarray, 1, "timestamp", 0))) __PYX_ERR(0, 14, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_open), __pyx_ptype_5numpy_ndarray, 1, "open", 0))) __PYX_ERR(0, 15, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_high), __pyx_ptype_5numpy_ndarray, 1, "high", 0))) __PYX_ERR(0, 16, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_low), __pyx_ptype_5numpy_ndarray, 1, "low", 0))) __PYX_ERR(0, 17, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_close), __pyx_ptype_5numpy_ndarray, 1, "close", 0))) __PYX_ERR(0, 18, __pyx_L1_error)
-  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_volume), __pyx_ptype_5numpy_ndarray, 1, "volume", 0))) __PYX_ERR(0, 19, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_timestamp), __pyx_ptype_5numpy_ndarray, 1, "timestamp", 0))) __PYX_ERR(0, 20, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_open), __pyx_ptype_5numpy_ndarray, 1, "open", 0))) __PYX_ERR(0, 21, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_high), __pyx_ptype_5numpy_ndarray, 1, "high", 0))) __PYX_ERR(0, 22, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_low), __pyx_ptype_5numpy_ndarray, 1, "low", 0))) __PYX_ERR(0, 23, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_close), __pyx_ptype_5numpy_ndarray, 1, "close", 0))) __PYX_ERR(0, 24, __pyx_L1_error)
+  if (unlikely(!__Pyx_ArgTypeTest(((PyObject *)__pyx_v_volume), __pyx_ptype_5numpy_ndarray, 1, "volume", 0))) __PYX_ERR(0, 25, __pyx_L1_error)
   __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore___cinit__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self), __pyx_v_timestamp, __pyx_v_open, __pyx_v_high, __pyx_v_low, __pyx_v_close, __pyx_v_volume, __pyx_v_lookback);
 
   /* function exit code */
@@ -20104,36 +20374,60 @@ static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore
   return __pyx_r;
 }
 
-static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore___cinit__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyArrayObject *__pyx_v_timestamp, PyArrayObject *__pyx_v_open, PyArrayObject *__pyx_v_high, PyArrayObject *__pyx_v_low, PyArrayObject *__pyx_v_close, PyArrayObject *__pyx_v_volume, double __pyx_v_lookback) {
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore___cinit__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyArrayObject *__pyx_v_timestamp, PyArrayObject *__pyx_v_open, PyArrayObject *__pyx_v_high, PyArrayObject *__pyx_v_low, PyArrayObject *__pyx_v_close, PyArrayObject *__pyx_v_volume, int __pyx_v_lookback) {
+  npy_intp __pyx_v_rows;
+  npy_intp __pyx_v_cols;
+  PyObject *__pyx_v_scale_factor = NULL;
   int __pyx_r;
   __Pyx_RefNannyDeclarations
   PyObject *__pyx_t_1 = NULL;
+  npy_intp __pyx_t_2;
+  npy_intp __pyx_t_3;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  PyObject *__pyx_t_6 = NULL;
+  unsigned int __pyx_t_7;
+  PyObject *__pyx_t_8 = NULL;
+  int __pyx_t_9;
+  struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_annualized_sharpe_ratio __pyx_t_10;
+  struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_sharpe_ratio __pyx_t_11;
+  __Pyx_memviewslice __pyx_t_12 = { 0, 0, { 0 }, { 0 }, { 0 } };
+  __Pyx_memviewslice __pyx_t_13 = { 0, 0, { 0 }, { 0 }, { 0 } };
+  struct __pyx_opt_args_3src_8analysis_6models_17market_data_store_15MarketDataStore_smooth_it __pyx_t_14;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__cinit__", 1);
 
-  /* "src/analysis/models/market_data_store.pyx":22
- *         double lookback = 20
+  /* "src/analysis/models/market_data_store.pyx":28
+ *         int lookback = 20
  *     ):
  *         self.timestamp = timestamp             # <<<<<<<<<<<<<<
- *         self.open_ = open
+ *         self.open = open
  *         self.high = high
  */
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_timestamp, ((PyObject *)__pyx_v_timestamp)) < 0) __PYX_ERR(0, 22, __pyx_L1_error)
+  __Pyx_INCREF((PyObject *)__pyx_v_timestamp);
+  __Pyx_GIVEREF((PyObject *)__pyx_v_timestamp);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->timestamp);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->timestamp);
+  __pyx_v_self->timestamp = __pyx_v_timestamp;
 
-  /* "src/analysis/models/market_data_store.pyx":23
+  /* "src/analysis/models/market_data_store.pyx":29
  *     ):
  *         self.timestamp = timestamp
- *         self.open_ = open             # <<<<<<<<<<<<<<
+ *         self.open = open             # <<<<<<<<<<<<<<
  *         self.high = high
  *         self.low = low
  */
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_open_2, ((PyObject *)__pyx_v_open)) < 0) __PYX_ERR(0, 23, __pyx_L1_error)
+  __Pyx_INCREF((PyObject *)__pyx_v_open);
+  __Pyx_GIVEREF((PyObject *)__pyx_v_open);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->open);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->open);
+  __pyx_v_self->open = __pyx_v_open;
 
-  /* "src/analysis/models/market_data_store.pyx":24
+  /* "src/analysis/models/market_data_store.pyx":30
  *         self.timestamp = timestamp
- *         self.open_ = open
+ *         self.open = open
  *         self.high = high             # <<<<<<<<<<<<<<
  *         self.low = low
  *         self.close = close
@@ -20144,8 +20438,8 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   __Pyx_DECREF((PyObject *)__pyx_v_self->high);
   __pyx_v_self->high = __pyx_v_high;
 
-  /* "src/analysis/models/market_data_store.pyx":25
- *         self.open_ = open
+  /* "src/analysis/models/market_data_store.pyx":31
+ *         self.open = open
  *         self.high = high
  *         self.low = low             # <<<<<<<<<<<<<<
  *         self.close = close
@@ -20157,7 +20451,7 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   __Pyx_DECREF((PyObject *)__pyx_v_self->low);
   __pyx_v_self->low = __pyx_v_low;
 
-  /* "src/analysis/models/market_data_store.pyx":26
+  /* "src/analysis/models/market_data_store.pyx":32
  *         self.high = high
  *         self.low = low
  *         self.close = close             # <<<<<<<<<<<<<<
@@ -20170,7 +20464,7 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   __Pyx_DECREF((PyObject *)__pyx_v_self->close);
   __pyx_v_self->close = __pyx_v_close;
 
-  /* "src/analysis/models/market_data_store.pyx":27
+  /* "src/analysis/models/market_data_store.pyx":33
  *         self.low = low
  *         self.close = close
  *         self.volume = volume             # <<<<<<<<<<<<<<
@@ -20183,20 +20477,464 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   __Pyx_DECREF((PyObject *)__pyx_v_self->volume);
   __pyx_v_self->volume = __pyx_v_volume;
 
-  /* "src/analysis/models/market_data_store.pyx":29
+  /* "src/analysis/models/market_data_store.pyx":35
  *         self.volume = volume
  * 
  *         self.lookback = lookback             # <<<<<<<<<<<<<<
  * 
- *     # ..................................................................................
+ *         self.stats = Statistics()
  */
-  __pyx_t_1 = PyFloat_FromDouble(__pyx_v_lookback); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 29, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_lookback, __pyx_t_1) < 0) __PYX_ERR(0, 29, __pyx_L1_error)
-  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_self->lookback = __pyx_v_lookback;
 
-  /* "src/analysis/models/market_data_store.pyx":12
- *         public int num_assets, num_periods
+  /* "src/analysis/models/market_data_store.pyx":37
+ *         self.lookback = lookback
+ * 
+ *         self.stats = Statistics()             # <<<<<<<<<<<<<<
+ * 
+ *         rows, cols = close.shape[0], close.shape[1]
+ */
+  __pyx_t_1 = __Pyx_PyObject_CallNoArg(((PyObject *)__pyx_ptype_8analysis_10statistics_17cython_statistics_Statistics)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 37, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->stats);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->stats);
+  __pyx_v_self->stats = ((struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* "src/analysis/models/market_data_store.pyx":39
+ *         self.stats = Statistics()
+ * 
+ *         rows, cols = close.shape[0], close.shape[1]             # <<<<<<<<<<<<<<
+ * 
+ *         self.atr = np.full_like(close, np.nan)
+ */
+  __pyx_t_2 = (__pyx_f_5numpy_7ndarray_5shape_shape(__pyx_v_close)[0]);
+  __pyx_t_3 = (__pyx_f_5numpy_7ndarray_5shape_shape(__pyx_v_close)[1]);
+  __pyx_v_rows = __pyx_t_2;
+  __pyx_v_cols = __pyx_t_3;
+
+  /* "src/analysis/models/market_data_store.pyx":41
+ *         rows, cols = close.shape[0], close.shape[1]
+ * 
+ *         self.atr = np.full_like(close, np.nan)             # <<<<<<<<<<<<<<
+ *         self.annual_vol = np.zeros((rows, cols), dtype=np.float64)
+ *         self.annual_sr = np.ones((rows, cols), dtype=np.float64)
+ */
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 41, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_full_like); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 41, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 41, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_nan); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 41, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_t_4 = NULL;
+  __pyx_t_7 = 0;
+  #if CYTHON_UNPACK_METHODS
+  if (unlikely(PyMethod_Check(__pyx_t_5))) {
+    __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_5);
+    if (likely(__pyx_t_4)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_5);
+      __Pyx_INCREF(__pyx_t_4);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_5, function);
+      __pyx_t_7 = 1;
+    }
+  }
+  #endif
+  {
+    PyObject *__pyx_callargs[3] = {__pyx_t_4, ((PyObject *)__pyx_v_close), __pyx_t_6};
+    __pyx_t_1 = __Pyx_PyObject_FastCall(__pyx_t_5, __pyx_callargs+1-__pyx_t_7, 2+__pyx_t_7);
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 41, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  }
+  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 41, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->atr);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->atr);
+  __pyx_v_self->atr = ((PyArrayObject *)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* "src/analysis/models/market_data_store.pyx":42
+ * 
+ *         self.atr = np.full_like(close, np.nan)
+ *         self.annual_vol = np.zeros((rows, cols), dtype=np.float64)             # <<<<<<<<<<<<<<
+ *         self.annual_sr = np.ones((rows, cols), dtype=np.float64)
+ *         self.signal_scale_factor = np.ones((rows, cols), dtype=np.float64)
+ */
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_zeros); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyInt_From_npy_intp(__pyx_v_rows); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_6 = __Pyx_PyInt_From_npy_intp(__pyx_v_cols); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_1);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error);
+  __Pyx_GIVEREF(__pyx_t_6);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_6)) __PYX_ERR(0, 42, __pyx_L1_error);
+  __pyx_t_1 = 0;
+  __pyx_t_6 = 0;
+  __pyx_t_6 = PyTuple_New(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __Pyx_GIVEREF(__pyx_t_4);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_4)) __PYX_ERR(0, 42, __pyx_L1_error);
+  __pyx_t_4 = 0;
+  __pyx_t_4 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_float64); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_dtype, __pyx_t_8) < 0) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __pyx_t_8 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_6, __pyx_t_4); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  if (!(likely(((__pyx_t_8) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_8, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 42, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_8);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->annual_vol);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->annual_vol);
+  __pyx_v_self->annual_vol = ((PyArrayObject *)__pyx_t_8);
+  __pyx_t_8 = 0;
+
+  /* "src/analysis/models/market_data_store.pyx":43
+ *         self.atr = np.full_like(close, np.nan)
+ *         self.annual_vol = np.zeros((rows, cols), dtype=np.float64)
+ *         self.annual_sr = np.ones((rows, cols), dtype=np.float64)             # <<<<<<<<<<<<<<
+ *         self.signal_scale_factor = np.ones((rows, cols), dtype=np.float64)
+ * 
+ */
+  __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_n_s_np); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_n_s_ones); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __pyx_t_8 = __Pyx_PyInt_From_npy_intp(__pyx_v_rows); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __pyx_t_6 = __Pyx_PyInt_From_npy_intp(__pyx_v_cols); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __pyx_t_5 = PyTuple_New(2); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_GIVEREF(__pyx_t_8);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_5, 0, __pyx_t_8)) __PYX_ERR(0, 43, __pyx_L1_error);
+  __Pyx_GIVEREF(__pyx_t_6);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_5, 1, __pyx_t_6)) __PYX_ERR(0, 43, __pyx_L1_error);
+  __pyx_t_8 = 0;
+  __pyx_t_6 = 0;
+  __pyx_t_6 = PyTuple_New(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __Pyx_GIVEREF(__pyx_t_5);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_5)) __PYX_ERR(0, 43, __pyx_L1_error);
+  __pyx_t_5 = 0;
+  __pyx_t_5 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_n_s_np); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_n_s_float64); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  if (PyDict_SetItem(__pyx_t_5, __pyx_n_s_dtype, __pyx_t_1) < 0) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_4, __pyx_t_6, __pyx_t_5); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->annual_sr);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->annual_sr);
+  __pyx_v_self->annual_sr = ((PyArrayObject *)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* "src/analysis/models/market_data_store.pyx":44
+ *         self.annual_vol = np.zeros((rows, cols), dtype=np.float64)
+ *         self.annual_sr = np.ones((rows, cols), dtype=np.float64)
+ *         self.signal_scale_factor = np.ones((rows, cols), dtype=np.float64)             # <<<<<<<<<<<<<<
+ * 
+ *         self.compute_atr()
+ */
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_ones); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyInt_From_npy_intp(__pyx_v_rows); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_6 = __Pyx_PyInt_From_npy_intp(__pyx_v_cols); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __pyx_t_4 = PyTuple_New(2); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_GIVEREF(__pyx_t_1);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_1)) __PYX_ERR(0, 44, __pyx_L1_error);
+  __Pyx_GIVEREF(__pyx_t_6);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 1, __pyx_t_6)) __PYX_ERR(0, 44, __pyx_L1_error);
+  __pyx_t_1 = 0;
+  __pyx_t_6 = 0;
+  __pyx_t_6 = PyTuple_New(1); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __Pyx_GIVEREF(__pyx_t_4);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_6, 0, __pyx_t_4)) __PYX_ERR(0, 44, __pyx_L1_error);
+  __pyx_t_4 = 0;
+  __pyx_t_4 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_GetModuleGlobalName(__pyx_t_1, __pyx_n_s_np); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_float64); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  if (PyDict_SetItem(__pyx_t_4, __pyx_n_s_dtype, __pyx_t_8) < 0) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __pyx_t_8 = __Pyx_PyObject_Call(__pyx_t_5, __pyx_t_6, __pyx_t_4); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  if (!(likely(((__pyx_t_8) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_8, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_8);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->signal_scale_factor);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->signal_scale_factor);
+  __pyx_v_self->signal_scale_factor = ((PyArrayObject *)__pyx_t_8);
+  __pyx_t_8 = 0;
+
+  /* "src/analysis/models/market_data_store.pyx":46
+ *         self.signal_scale_factor = np.ones((rows, cols), dtype=np.float64)
+ * 
+ *         self.compute_atr()             # <<<<<<<<<<<<<<
+ *         self.compute_annualized_volatility()
+ * 
+ */
+  ((struct __pyx_vtabstruct_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self->__pyx_vtab)->compute_atr(__pyx_v_self, NULL); if (unlikely(PyErr_Occurred())) __PYX_ERR(0, 46, __pyx_L1_error)
+
+  /* "src/analysis/models/market_data_store.pyx":47
+ * 
+ *         self.compute_atr()
+ *         self.compute_annualized_volatility()             # <<<<<<<<<<<<<<
+ * 
+ *         self.annual_sr = self.stats.annualized_sharpe_ratio(
+ */
+  __pyx_t_8 = ((struct __pyx_vtabstruct_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self->__pyx_vtab)->compute_annualized_volatility(__pyx_v_self); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 47, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+  /* "src/analysis/models/market_data_store.pyx":50
+ * 
+ *         self.annual_sr = self.stats.annualized_sharpe_ratio(
+ *             self.close.astype(np.float64),             # <<<<<<<<<<<<<<
+ *             self.periods_per_year,
+ *             self.lookback
+ */
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self->close), __pyx_n_s_astype); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 50, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_np); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 50, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_6, __pyx_n_s_float64); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 50, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
+  __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+  __pyx_t_6 = NULL;
+  __pyx_t_7 = 0;
+  #if CYTHON_UNPACK_METHODS
+  if (likely(PyMethod_Check(__pyx_t_4))) {
+    __pyx_t_6 = PyMethod_GET_SELF(__pyx_t_4);
+    if (likely(__pyx_t_6)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+      __Pyx_INCREF(__pyx_t_6);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_4, function);
+      __pyx_t_7 = 1;
+    }
+  }
+  #endif
+  {
+    PyObject *__pyx_callargs[2] = {__pyx_t_6, __pyx_t_5};
+    __pyx_t_8 = __Pyx_PyObject_FastCall(__pyx_t_4, __pyx_callargs+1-__pyx_t_7, 1+__pyx_t_7);
+    __Pyx_XDECREF(__pyx_t_6); __pyx_t_6 = 0;
+    __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+    if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 50, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_8);
+    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  }
+  if (!(likely(((__pyx_t_8) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_8, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 50, __pyx_L1_error)
+
+  /* "src/analysis/models/market_data_store.pyx":51
+ *         self.annual_sr = self.stats.annualized_sharpe_ratio(
+ *             self.close.astype(np.float64),
+ *             self.periods_per_year,             # <<<<<<<<<<<<<<
+ *             self.lookback
+ *         )
+ */
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_periods_per_year); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 51, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_9 = __Pyx_PyInt_As_int(__pyx_t_4); if (unlikely((__pyx_t_9 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 51, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+  /* "src/analysis/models/market_data_store.pyx":49
+ *         self.compute_annualized_volatility()
+ * 
+ *         self.annual_sr = self.stats.annualized_sharpe_ratio(             # <<<<<<<<<<<<<<
+ *             self.close.astype(np.float64),
+ *             self.periods_per_year,
+ */
+  __pyx_t_10.__pyx_n = 1;
+  __pyx_t_10.period = __pyx_v_self->lookback;
+  __pyx_t_4 = ((struct __pyx_vtabstruct_8analysis_10statistics_17cython_statistics_Statistics *)__pyx_v_self->stats->__pyx_vtab)->annualized_sharpe_ratio(__pyx_v_self->stats, ((PyArrayObject *)__pyx_t_8), __pyx_t_9, 0, &__pyx_t_10); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 49, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  if (!(likely(((__pyx_t_4) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_4, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 49, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_4);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->annual_sr);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->annual_sr);
+  __pyx_v_self->annual_sr = ((PyArrayObject *)__pyx_t_4);
+  __pyx_t_4 = 0;
+
+  /* "src/analysis/models/market_data_store.pyx":63
+ * 
+ *         scale_factor = self.stats.sharpe_ratio(
+ *             self.close.astype(np.float64),             # <<<<<<<<<<<<<<
+ *             self.lookback
+ *         ) + 1
+ */
+  __pyx_t_8 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self->close), __pyx_n_s_astype); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 63, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 63, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_5);
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_float64); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 63, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
+  __pyx_t_5 = NULL;
+  __pyx_t_7 = 0;
+  #if CYTHON_UNPACK_METHODS
+  if (likely(PyMethod_Check(__pyx_t_8))) {
+    __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_8);
+    if (likely(__pyx_t_5)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_8);
+      __Pyx_INCREF(__pyx_t_5);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_8, function);
+      __pyx_t_7 = 1;
+    }
+  }
+  #endif
+  {
+    PyObject *__pyx_callargs[2] = {__pyx_t_5, __pyx_t_6};
+    __pyx_t_4 = __Pyx_PyObject_FastCall(__pyx_t_8, __pyx_callargs+1-__pyx_t_7, 1+__pyx_t_7);
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+    if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 63, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  }
+  if (!(likely(((__pyx_t_4) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_4, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 63, __pyx_L1_error)
+
+  /* "src/analysis/models/market_data_store.pyx":62
+ *         # )
+ * 
+ *         scale_factor = self.stats.sharpe_ratio(             # <<<<<<<<<<<<<<
+ *             self.close.astype(np.float64),
+ *             self.lookback
+ */
+  __pyx_t_11.__pyx_n = 1;
+  __pyx_t_11.period = __pyx_v_self->lookback;
+  __pyx_t_8 = ((struct __pyx_vtabstruct_8analysis_10statistics_17cython_statistics_Statistics *)__pyx_v_self->stats->__pyx_vtab)->sharpe_ratio(__pyx_v_self->stats, ((PyArrayObject *)__pyx_t_4), 0, &__pyx_t_11); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 62, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+
+  /* "src/analysis/models/market_data_store.pyx":65
+ *             self.close.astype(np.float64),
+ *             self.lookback
+ *         ) + 1             # <<<<<<<<<<<<<<
+ * 
+ *         # scale_factor = np.abs(
+ */
+  __pyx_t_4 = __Pyx_PyInt_AddObjC(__pyx_t_8, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 65, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_4);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __pyx_v_scale_factor = __pyx_t_4;
+  __pyx_t_4 = 0;
+
+  /* "src/analysis/models/market_data_store.pyx":81
+ *         # )
+ * 
+ *         self.signal_scale_factor = np.asarray(             # <<<<<<<<<<<<<<
+ *             self.smooth_it(scale_factor, 40)
+ *         )
+ */
+  __Pyx_GetModuleGlobalName(__pyx_t_8, __pyx_n_s_np); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 81, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_8, __pyx_n_s_asarray); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 81, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_6);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+
+  /* "src/analysis/models/market_data_store.pyx":82
+ * 
+ *         self.signal_scale_factor = np.asarray(
+ *             self.smooth_it(scale_factor, 40)             # <<<<<<<<<<<<<<
+ *         )
+ * 
+ */
+  __pyx_t_12 = __Pyx_PyObject_to_MemoryviewSlice_dsds_double(__pyx_v_scale_factor, PyBUF_WRITABLE); if (unlikely(!__pyx_t_12.memview)) __PYX_ERR(0, 82, __pyx_L1_error)
+  __pyx_t_14.__pyx_n = 1;
+  __pyx_t_14.factor = 40;
+  __pyx_t_13 = ((struct __pyx_vtabstruct_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self->__pyx_vtab)->smooth_it(__pyx_v_self, __pyx_t_12, &__pyx_t_14); if (unlikely(!__pyx_t_13.memview)) __PYX_ERR(0, 82, __pyx_L1_error)
+  __PYX_XCLEAR_MEMVIEW(&__pyx_t_12, 1);
+  __pyx_t_12.memview = NULL; __pyx_t_12.data = NULL;
+  __pyx_t_8 = __pyx_memoryview_fromslice(__pyx_t_13, 2, (PyObject *(*)(char *)) __pyx_memview_get_double, (int (*)(char *, PyObject *)) __pyx_memview_set_double, 0);; if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 82, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __PYX_XCLEAR_MEMVIEW(&__pyx_t_13, 1);
+  __pyx_t_13.memview = NULL; __pyx_t_13.data = NULL;
+  __pyx_t_5 = NULL;
+  __pyx_t_7 = 0;
+  #if CYTHON_UNPACK_METHODS
+  if (unlikely(PyMethod_Check(__pyx_t_6))) {
+    __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_6);
+    if (likely(__pyx_t_5)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_6);
+      __Pyx_INCREF(__pyx_t_5);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_6, function);
+      __pyx_t_7 = 1;
+    }
+  }
+  #endif
+  {
+    PyObject *__pyx_callargs[2] = {__pyx_t_5, __pyx_t_8};
+    __pyx_t_4 = __Pyx_PyObject_FastCall(__pyx_t_6, __pyx_callargs+1-__pyx_t_7, 1+__pyx_t_7);
+    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
+    __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+    if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 81, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_4);
+    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
+  }
+
+  /* "src/analysis/models/market_data_store.pyx":81
+ *         # )
+ * 
+ *         self.signal_scale_factor = np.asarray(             # <<<<<<<<<<<<<<
+ *             self.smooth_it(scale_factor, 40)
+ *         )
+ */
+  if (!(likely(((__pyx_t_4) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_4, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 81, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_4);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->signal_scale_factor);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->signal_scale_factor);
+  __pyx_v_self->signal_scale_factor = ((PyArrayObject *)__pyx_t_4);
+  __pyx_t_4 = 0;
+
+  /* "src/analysis/models/market_data_store.pyx":18
+ *         public Statistics stats
  * 
  *     def __cinit__(             # <<<<<<<<<<<<<<
  *         self,
@@ -20208,14 +20946,21 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   goto __pyx_L0;
   __pyx_L1_error:;
   __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_XDECREF(__pyx_t_8);
+  __PYX_XCLEAR_MEMVIEW(&__pyx_t_12, 1);
+  __PYX_XCLEAR_MEMVIEW(&__pyx_t_13, 1);
   __Pyx_AddTraceback("src.analysis.models.market_data_store.MarketDataStore.__cinit__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = -1;
   __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_scale_factor);
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-/* "src/analysis/models/market_data_store.pyx":32
+/* "src/analysis/models/market_data_store.pyx":86
  * 
  *     # ..................................................................................
  *     @property             # <<<<<<<<<<<<<<
@@ -20257,94 +21002,91 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "src/analysis/models/market_data_store.pyx":34
+  /* "src/analysis/models/market_data_store.pyx":88
  *     @property
  *     def periods_per_year(self) -> int:
  *         ts = self.timestamp.astype(np.float64).reshape(-1,)             # <<<<<<<<<<<<<<
  *         timestamp_diffs = np.diff(ts)
  *         mask = timestamp_diffs != 0
  */
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_timestamp); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 34, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self->timestamp), __pyx_n_s_astype); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 88, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_astype); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 34, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 88, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 34, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_float64); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 34, __pyx_L1_error)
+  __pyx_t_5 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_float64); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 88, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = NULL;
+  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+  __pyx_t_4 = NULL;
   __pyx_t_6 = 0;
   #if CYTHON_UNPACK_METHODS
-  if (likely(PyMethod_Check(__pyx_t_4))) {
-    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_4);
-    if (likely(__pyx_t_3)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
-      __Pyx_INCREF(__pyx_t_3);
+  if (likely(PyMethod_Check(__pyx_t_3))) {
+    __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_3);
+    if (likely(__pyx_t_4)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
+      __Pyx_INCREF(__pyx_t_4);
       __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_4, function);
+      __Pyx_DECREF_SET(__pyx_t_3, function);
       __pyx_t_6 = 1;
     }
   }
   #endif
   {
-    PyObject *__pyx_callargs[2] = {__pyx_t_3, __pyx_t_5};
-    __pyx_t_2 = __Pyx_PyObject_FastCall(__pyx_t_4, __pyx_callargs+1-__pyx_t_6, 1+__pyx_t_6);
-    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    PyObject *__pyx_callargs[2] = {__pyx_t_4, __pyx_t_5};
+    __pyx_t_2 = __Pyx_PyObject_FastCall(__pyx_t_3, __pyx_callargs+1-__pyx_t_6, 1+__pyx_t_6);
+    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 34, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 88, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   }
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_reshape); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 34, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_reshape); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 88, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_t_2 = NULL;
   __pyx_t_6 = 0;
   #if CYTHON_UNPACK_METHODS
-  if (likely(PyMethod_Check(__pyx_t_4))) {
-    __pyx_t_2 = PyMethod_GET_SELF(__pyx_t_4);
+  if (likely(PyMethod_Check(__pyx_t_3))) {
+    __pyx_t_2 = PyMethod_GET_SELF(__pyx_t_3);
     if (likely(__pyx_t_2)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
       __Pyx_INCREF(__pyx_t_2);
       __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_4, function);
+      __Pyx_DECREF_SET(__pyx_t_3, function);
       __pyx_t_6 = 1;
     }
   }
   #endif
   {
     PyObject *__pyx_callargs[2] = {__pyx_t_2, __pyx_int_neg_1};
-    __pyx_t_1 = __Pyx_PyObject_FastCall(__pyx_t_4, __pyx_callargs+1-__pyx_t_6, 1+__pyx_t_6);
+    __pyx_t_1 = __Pyx_PyObject_FastCall(__pyx_t_3, __pyx_callargs+1-__pyx_t_6, 1+__pyx_t_6);
     __Pyx_XDECREF(__pyx_t_2); __pyx_t_2 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 34, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 88, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   }
   __pyx_v_ts = __pyx_t_1;
   __pyx_t_1 = 0;
 
-  /* "src/analysis/models/market_data_store.pyx":35
+  /* "src/analysis/models/market_data_store.pyx":89
  *     def periods_per_year(self) -> int:
  *         ts = self.timestamp.astype(np.float64).reshape(-1,)
  *         timestamp_diffs = np.diff(ts)             # <<<<<<<<<<<<<<
  *         mask = timestamp_diffs != 0
  *         typical_diff = np.median(timestamp_diffs[mask])
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_np); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 35, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_4, __pyx_n_s_diff); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 35, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 89, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_diff); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 89, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-  __pyx_t_4 = NULL;
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_t_3 = NULL;
   __pyx_t_6 = 0;
   #if CYTHON_UNPACK_METHODS
   if (unlikely(PyMethod_Check(__pyx_t_2))) {
-    __pyx_t_4 = PyMethod_GET_SELF(__pyx_t_2);
-    if (likely(__pyx_t_4)) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
       PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
-      __Pyx_INCREF(__pyx_t_4);
+      __Pyx_INCREF(__pyx_t_3);
       __Pyx_INCREF(function);
       __Pyx_DECREF_SET(__pyx_t_2, function);
       __pyx_t_6 = 1;
@@ -20352,69 +21094,69 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
   }
   #endif
   {
-    PyObject *__pyx_callargs[2] = {__pyx_t_4, __pyx_v_ts};
+    PyObject *__pyx_callargs[2] = {__pyx_t_3, __pyx_v_ts};
     __pyx_t_1 = __Pyx_PyObject_FastCall(__pyx_t_2, __pyx_callargs+1-__pyx_t_6, 1+__pyx_t_6);
-    __Pyx_XDECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 35, __pyx_L1_error)
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 89, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   }
   __pyx_v_timestamp_diffs = __pyx_t_1;
   __pyx_t_1 = 0;
 
-  /* "src/analysis/models/market_data_store.pyx":36
+  /* "src/analysis/models/market_data_store.pyx":90
  *         ts = self.timestamp.astype(np.float64).reshape(-1,)
  *         timestamp_diffs = np.diff(ts)
  *         mask = timestamp_diffs != 0             # <<<<<<<<<<<<<<
  *         typical_diff = np.median(timestamp_diffs[mask])
  *         ms_per_year = 356 * 24 * 60 * 60 * 1000
  */
-  __pyx_t_1 = __Pyx_PyInt_NeObjC(__pyx_v_timestamp_diffs, __pyx_int_0, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 36, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_NeObjC(__pyx_v_timestamp_diffs, __pyx_int_0, 0, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 90, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_v_mask = __pyx_t_1;
   __pyx_t_1 = 0;
 
-  /* "src/analysis/models/market_data_store.pyx":37
+  /* "src/analysis/models/market_data_store.pyx":91
  *         timestamp_diffs = np.diff(ts)
  *         mask = timestamp_diffs != 0
  *         typical_diff = np.median(timestamp_diffs[mask])             # <<<<<<<<<<<<<<
  *         ms_per_year = 356 * 24 * 60 * 60 * 1000
  *         return int(ms_per_year / typical_diff)
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 37, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 91, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_median); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 37, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_median); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 91, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_v_timestamp_diffs, __pyx_v_mask); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 37, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetItem(__pyx_v_timestamp_diffs, __pyx_v_mask); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 91, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_5 = NULL;
   __pyx_t_6 = 0;
   #if CYTHON_UNPACK_METHODS
-  if (unlikely(PyMethod_Check(__pyx_t_4))) {
-    __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_4);
+  if (unlikely(PyMethod_Check(__pyx_t_3))) {
+    __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_3);
     if (likely(__pyx_t_5)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
       __Pyx_INCREF(__pyx_t_5);
       __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_4, function);
+      __Pyx_DECREF_SET(__pyx_t_3, function);
       __pyx_t_6 = 1;
     }
   }
   #endif
   {
     PyObject *__pyx_callargs[2] = {__pyx_t_5, __pyx_t_2};
-    __pyx_t_1 = __Pyx_PyObject_FastCall(__pyx_t_4, __pyx_callargs+1-__pyx_t_6, 1+__pyx_t_6);
+    __pyx_t_1 = __Pyx_PyObject_FastCall(__pyx_t_3, __pyx_callargs+1-__pyx_t_6, 1+__pyx_t_6);
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 37, __pyx_L1_error)
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 91, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   }
   __pyx_v_typical_diff = __pyx_t_1;
   __pyx_t_1 = 0;
 
-  /* "src/analysis/models/market_data_store.pyx":38
+  /* "src/analysis/models/market_data_store.pyx":92
  *         mask = timestamp_diffs != 0
  *         typical_diff = np.median(timestamp_diffs[mask])
  *         ms_per_year = 356 * 24 * 60 * 60 * 1000             # <<<<<<<<<<<<<<
@@ -20424,7 +21166,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
   __Pyx_INCREF(__pyx_int_30758400000);
   __pyx_v_ms_per_year = __pyx_int_30758400000;
 
-  /* "src/analysis/models/market_data_store.pyx":39
+  /* "src/analysis/models/market_data_store.pyx":93
  *         typical_diff = np.median(timestamp_diffs[mask])
  *         ms_per_year = 356 * 24 * 60 * 60 * 1000
  *         return int(ms_per_year / typical_diff)             # <<<<<<<<<<<<<<
@@ -20432,16 +21174,16 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
  *     @property
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyNumber_Divide(__pyx_v_ms_per_year, __pyx_v_typical_diff); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 39, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyNumber_Divide(__pyx_v_ms_per_year, __pyx_v_typical_diff); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 93, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_4 = __Pyx_PyNumber_Int(__pyx_t_1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 39, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_3 = __Pyx_PyNumber_Int(__pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 93, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_r = __pyx_t_4;
-  __pyx_t_4 = 0;
+  __pyx_r = __pyx_t_3;
+  __pyx_t_3 = 0;
   goto __pyx_L0;
 
-  /* "src/analysis/models/market_data_store.pyx":32
+  /* "src/analysis/models/market_data_store.pyx":86
  * 
  *     # ..................................................................................
  *     @property             # <<<<<<<<<<<<<<
@@ -20469,7 +21211,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
   return __pyx_r;
 }
 
-/* "src/analysis/models/market_data_store.pyx":41
+/* "src/analysis/models/market_data_store.pyx":95
  *         return int(ms_per_year / typical_diff)
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -20502,7 +21244,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "src/analysis/models/market_data_store.pyx":46
+  /* "src/analysis/models/market_data_store.pyx":100
  *         Return the number of periods in the data.
  *         """
  *         return self.timestamp.shape[0]             # <<<<<<<<<<<<<<
@@ -20510,19 +21252,16 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
  *     @property
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_timestamp); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 46, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_shape); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 46, __pyx_L1_error)
+  __pyx_t_1 = ((PyObject *)__pyx_v_self->timestamp);
+  __Pyx_INCREF(__pyx_t_1);
+  __pyx_t_2 = __Pyx_PyInt_From_npy_intp((__pyx_f_5numpy_7ndarray_5shape_shape(((PyArrayObject *)__pyx_t_1))[0])); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 100, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_GetItemInt(__pyx_t_2, 0, long, 1, __Pyx_PyInt_From_long, 0, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 46, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_1);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_r = __pyx_t_1;
-  __pyx_t_1 = 0;
+  __pyx_r = __pyx_t_2;
+  __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "src/analysis/models/market_data_store.pyx":41
+  /* "src/analysis/models/market_data_store.pyx":95
  *         return int(ms_per_year / typical_diff)
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -20542,7 +21281,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
   return __pyx_r;
 }
 
-/* "src/analysis/models/market_data_store.pyx":48
+/* "src/analysis/models/market_data_store.pyx":102
  *         return self.timestamp.shape[0]
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -20575,7 +21314,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
 
-  /* "src/analysis/models/market_data_store.pyx":53
+  /* "src/analysis/models/market_data_store.pyx":107
  *         Return the number of symbols in the data.
  *         """
  *         return self.close.shape[1]             # <<<<<<<<<<<<<<
@@ -20585,14 +21324,14 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_1 = ((PyObject *)__pyx_v_self->close);
   __Pyx_INCREF(__pyx_t_1);
-  __pyx_t_2 = __Pyx_PyInt_From_npy_intp((__pyx_f_5numpy_7ndarray_5shape_shape(((PyArrayObject *)__pyx_t_1))[1])); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 53, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_npy_intp((__pyx_f_5numpy_7ndarray_5shape_shape(((PyArrayObject *)__pyx_t_1))[1])); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_r = __pyx_t_2;
   __pyx_t_2 = 0;
   goto __pyx_L0;
 
-  /* "src/analysis/models/market_data_store.pyx":48
+  /* "src/analysis/models/market_data_store.pyx":102
  *         return self.timestamp.shape[0]
  * 
  *     @property             # <<<<<<<<<<<<<<
@@ -20612,7 +21351,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
   return __pyx_r;
 }
 
-/* "src/analysis/models/market_data_store.pyx":56
+/* "src/analysis/models/market_data_store.pyx":110
  * 
  *     # ..................................................................................
  *     cdef compute_annualized_volatility(self):             # <<<<<<<<<<<<<<
@@ -20627,121 +21366,85 @@ static PyObject *__pyx_f_3src_8analysis_6models_17market_data_store_15MarketData
   PyObject *__pyx_t_2 = NULL;
   PyObject *__pyx_t_3 = NULL;
   PyObject *__pyx_t_4 = NULL;
-  PyObject *__pyx_t_5 = NULL;
-  PyObject *__pyx_t_6 = NULL;
-  unsigned int __pyx_t_7;
+  unsigned int __pyx_t_5;
+  int __pyx_t_6;
+  struct __pyx_opt_args_8analysis_10statistics_17cython_statistics_10Statistics_annualized_volatility __pyx_t_7;
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("compute_annualized_volatility", 1);
 
-  /* "src/analysis/models/market_data_store.pyx":57
- *     # ..................................................................................
- *     cdef compute_annualized_volatility(self):
- *         self.annual_vol = self.stats.annualized_volatility(             # <<<<<<<<<<<<<<
- *             self.close.astype(np.float64),
- *             self.periods_per_year,
- */
-  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_stats); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 57, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_annualized_volatility); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 57, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_3);
-  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-
-  /* "src/analysis/models/market_data_store.pyx":58
+  /* "src/analysis/models/market_data_store.pyx":112
  *     cdef compute_annualized_volatility(self):
  *         self.annual_vol = self.stats.annualized_volatility(
  *             self.close.astype(np.float64),             # <<<<<<<<<<<<<<
  *             self.periods_per_year,
  *             self.lookback
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self->close), __pyx_n_s_astype); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 58, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self->close), __pyx_n_s_astype); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_GetModuleGlobalName(__pyx_t_3, __pyx_n_s_np); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 112, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_3, __pyx_n_s_float64); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 112, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 58, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_float64); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 58, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
-  __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  __pyx_t_5 = NULL;
-  __pyx_t_7 = 0;
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_t_3 = NULL;
+  __pyx_t_5 = 0;
   #if CYTHON_UNPACK_METHODS
-  if (likely(PyMethod_Check(__pyx_t_4))) {
-    __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_4);
-    if (likely(__pyx_t_5)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_4);
-      __Pyx_INCREF(__pyx_t_5);
+  if (likely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
       __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_4, function);
-      __pyx_t_7 = 1;
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+      __pyx_t_5 = 1;
     }
   }
   #endif
   {
-    PyObject *__pyx_callargs[2] = {__pyx_t_5, __pyx_t_6};
-    __pyx_t_2 = __Pyx_PyObject_FastCall(__pyx_t_4, __pyx_callargs+1-__pyx_t_7, 1+__pyx_t_7);
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 58, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_2);
+    PyObject *__pyx_callargs[2] = {__pyx_t_3, __pyx_t_4};
+    __pyx_t_1 = __Pyx_PyObject_FastCall(__pyx_t_2, __pyx_callargs+1-__pyx_t_5, 1+__pyx_t_5);
+    __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
+    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 112, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   }
+  if (!(likely(((__pyx_t_1) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_1, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 112, __pyx_L1_error)
 
-  /* "src/analysis/models/market_data_store.pyx":59
+  /* "src/analysis/models/market_data_store.pyx":113
  *         self.annual_vol = self.stats.annualized_volatility(
  *             self.close.astype(np.float64),
  *             self.periods_per_year,             # <<<<<<<<<<<<<<
  *             self.lookback
  *         )
  */
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_periods_per_year); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 59, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_4);
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_periods_per_year); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 113, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_6 = __Pyx_PyInt_As_int(__pyx_t_2); if (unlikely((__pyx_t_6 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 113, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
 
-  /* "src/analysis/models/market_data_store.pyx":60
- *             self.close.astype(np.float64),
- *             self.periods_per_year,
- *             self.lookback             # <<<<<<<<<<<<<<
- *         )
- * 
- */
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_lookback); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 60, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_5 = NULL;
-  __pyx_t_7 = 0;
-  #if CYTHON_UNPACK_METHODS
-  if (likely(PyMethod_Check(__pyx_t_3))) {
-    __pyx_t_5 = PyMethod_GET_SELF(__pyx_t_3);
-    if (likely(__pyx_t_5)) {
-      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_3);
-      __Pyx_INCREF(__pyx_t_5);
-      __Pyx_INCREF(function);
-      __Pyx_DECREF_SET(__pyx_t_3, function);
-      __pyx_t_7 = 1;
-    }
-  }
-  #endif
-  {
-    PyObject *__pyx_callargs[4] = {__pyx_t_5, __pyx_t_2, __pyx_t_4, __pyx_t_6};
-    __pyx_t_1 = __Pyx_PyObject_FastCall(__pyx_t_3, __pyx_callargs+1-__pyx_t_7, 3+__pyx_t_7);
-    __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
-    __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 57, __pyx_L1_error)
-    __Pyx_GOTREF(__pyx_t_1);
-    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  }
-
-  /* "src/analysis/models/market_data_store.pyx":57
+  /* "src/analysis/models/market_data_store.pyx":111
  *     # ..................................................................................
  *     cdef compute_annualized_volatility(self):
  *         self.annual_vol = self.stats.annualized_volatility(             # <<<<<<<<<<<<<<
  *             self.close.astype(np.float64),
  *             self.periods_per_year,
  */
-  if (__Pyx_PyObject_SetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_annual_vol, __pyx_t_1) < 0) __PYX_ERR(0, 57, __pyx_L1_error)
+  __pyx_t_7.__pyx_n = 1;
+  __pyx_t_7.period = __pyx_v_self->lookback;
+  __pyx_t_2 = ((struct __pyx_vtabstruct_8analysis_10statistics_17cython_statistics_Statistics *)__pyx_v_self->stats->__pyx_vtab)->annualized_volatility(__pyx_v_self->stats, ((PyArrayObject *)__pyx_t_1), __pyx_t_6, 0, &__pyx_t_7); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 111, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  if (!(likely(((__pyx_t_2) == Py_None) || likely(__Pyx_TypeTest(__pyx_t_2, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 111, __pyx_L1_error)
+  __Pyx_GIVEREF(__pyx_t_2);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->annual_vol);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->annual_vol);
+  __pyx_v_self->annual_vol = ((PyArrayObject *)__pyx_t_2);
+  __pyx_t_2 = 0;
 
-  /* "src/analysis/models/market_data_store.pyx":56
+  /* "src/analysis/models/market_data_store.pyx":110
  * 
  *     # ..................................................................................
  *     cdef compute_annualized_volatility(self):             # <<<<<<<<<<<<<<
@@ -20757,8 +21460,6 @@ static PyObject *__pyx_f_3src_8analysis_6models_17market_data_store_15MarketData
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_XDECREF(__pyx_t_4);
-  __Pyx_XDECREF(__pyx_t_5);
-  __Pyx_XDECREF(__pyx_t_6);
   __Pyx_AddTraceback("src.analysis.models.market_data_store.MarketDataStore.compute_annualized_volatility", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = 0;
   __pyx_L0:;
@@ -20767,7 +21468,7 @@ static PyObject *__pyx_f_3src_8analysis_6models_17market_data_store_15MarketData
   return __pyx_r;
 }
 
-/* "src/analysis/models/market_data_store.pyx":63
+/* "src/analysis/models/market_data_store.pyx":117
  *         )
  * 
  *     cdef void compute_atr(self, int period=14):             # <<<<<<<<<<<<<<
@@ -20807,7 +21508,7 @@ static void __pyx_f_3src_8analysis_6models_17market_data_store_15MarketDataStore
     }
   }
 
-  /* "src/analysis/models/market_data_store.pyx":67
+  /* "src/analysis/models/market_data_store.pyx":121
  *         cdef int periods
  * 
  *         markets, periods = self.atr.shape[0], self.atr.shape[1]             # <<<<<<<<<<<<<<
@@ -20825,7 +21526,7 @@ static void __pyx_f_3src_8analysis_6models_17market_data_store_15MarketDataStore
   __pyx_v_markets = __pyx_t_2;
   __pyx_v_periods = __pyx_t_3;
 
-  /* "src/analysis/models/market_data_store.pyx":69
+  /* "src/analysis/models/market_data_store.pyx":123
  *         markets, periods = self.atr.shape[0], self.atr.shape[1]
  * 
  *         for m in range(markets):             # <<<<<<<<<<<<<<
@@ -20837,26 +21538,26 @@ static void __pyx_f_3src_8analysis_6models_17market_data_store_15MarketDataStore
   for (__pyx_t_6 = 0; __pyx_t_6 < __pyx_t_5; __pyx_t_6+=1) {
     __pyx_v_m = __pyx_t_6;
 
-    /* "src/analysis/models/market_data_store.pyx":70
+    /* "src/analysis/models/market_data_store.pyx":124
  * 
  *         for m in range(markets):
  *             for p in range(period, periods):             # <<<<<<<<<<<<<<
  *                 tr = max(
  *                     self.high[m, p] - self.low[m, p],
  */
-    __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_period); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 70, __pyx_L1_error)
+    __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_period); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 124, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_periods); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 70, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_periods); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 124, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
-    __pyx_t_8 = PyTuple_New(2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 70, __pyx_L1_error)
+    __pyx_t_8 = PyTuple_New(2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 124, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_8);
     __Pyx_GIVEREF(__pyx_t_1);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_1)) __PYX_ERR(0, 70, __pyx_L1_error);
+    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_1)) __PYX_ERR(0, 124, __pyx_L1_error);
     __Pyx_GIVEREF(__pyx_t_7);
-    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 1, __pyx_t_7)) __PYX_ERR(0, 70, __pyx_L1_error);
+    if (__Pyx_PyTuple_SET_ITEM(__pyx_t_8, 1, __pyx_t_7)) __PYX_ERR(0, 124, __pyx_L1_error);
     __pyx_t_1 = 0;
     __pyx_t_7 = 0;
-    __pyx_t_7 = __Pyx_PyObject_Call(__pyx_builtin_range, __pyx_t_8, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 70, __pyx_L1_error)
+    __pyx_t_7 = __Pyx_PyObject_Call(__pyx_builtin_range, __pyx_t_8, NULL); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 124, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
     if (likely(PyList_CheckExact(__pyx_t_7)) || PyTuple_CheckExact(__pyx_t_7)) {
@@ -20864,9 +21565,9 @@ static void __pyx_f_3src_8analysis_6models_17market_data_store_15MarketDataStore
       __pyx_t_9 = 0;
       __pyx_t_10 = NULL;
     } else {
-      __pyx_t_9 = -1; __pyx_t_8 = PyObject_GetIter(__pyx_t_7); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 70, __pyx_L1_error)
+      __pyx_t_9 = -1; __pyx_t_8 = PyObject_GetIter(__pyx_t_7); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 124, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_8);
-      __pyx_t_10 = __Pyx_PyObject_GetIterNextFunc(__pyx_t_8); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 70, __pyx_L1_error)
+      __pyx_t_10 = __Pyx_PyObject_GetIterNextFunc(__pyx_t_8); if (unlikely(!__pyx_t_10)) __PYX_ERR(0, 124, __pyx_L1_error)
     }
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
     for (;;) {
@@ -20875,28 +21576,28 @@ static void __pyx_f_3src_8analysis_6models_17market_data_store_15MarketDataStore
           {
             Py_ssize_t __pyx_temp = __Pyx_PyList_GET_SIZE(__pyx_t_8);
             #if !CYTHON_ASSUME_SAFE_MACROS
-            if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 70, __pyx_L1_error)
+            if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 124, __pyx_L1_error)
             #endif
             if (__pyx_t_9 >= __pyx_temp) break;
           }
           #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-          __pyx_t_7 = PyList_GET_ITEM(__pyx_t_8, __pyx_t_9); __Pyx_INCREF(__pyx_t_7); __pyx_t_9++; if (unlikely((0 < 0))) __PYX_ERR(0, 70, __pyx_L1_error)
+          __pyx_t_7 = PyList_GET_ITEM(__pyx_t_8, __pyx_t_9); __Pyx_INCREF(__pyx_t_7); __pyx_t_9++; if (unlikely((0 < 0))) __PYX_ERR(0, 124, __pyx_L1_error)
           #else
-          __pyx_t_7 = __Pyx_PySequence_ITEM(__pyx_t_8, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 70, __pyx_L1_error)
+          __pyx_t_7 = __Pyx_PySequence_ITEM(__pyx_t_8, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 124, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_7);
           #endif
         } else {
           {
             Py_ssize_t __pyx_temp = __Pyx_PyTuple_GET_SIZE(__pyx_t_8);
             #if !CYTHON_ASSUME_SAFE_MACROS
-            if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 70, __pyx_L1_error)
+            if (unlikely((__pyx_temp < 0))) __PYX_ERR(0, 124, __pyx_L1_error)
             #endif
             if (__pyx_t_9 >= __pyx_temp) break;
           }
           #if CYTHON_ASSUME_SAFE_MACROS && !CYTHON_AVOID_BORROWED_REFS
-          __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_8, __pyx_t_9); __Pyx_INCREF(__pyx_t_7); __pyx_t_9++; if (unlikely((0 < 0))) __PYX_ERR(0, 70, __pyx_L1_error)
+          __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_8, __pyx_t_9); __Pyx_INCREF(__pyx_t_7); __pyx_t_9++; if (unlikely((0 < 0))) __PYX_ERR(0, 124, __pyx_L1_error)
           #else
-          __pyx_t_7 = __Pyx_PySequence_ITEM(__pyx_t_8, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 70, __pyx_L1_error)
+          __pyx_t_7 = __Pyx_PySequence_ITEM(__pyx_t_8, __pyx_t_9); __pyx_t_9++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 124, __pyx_L1_error)
           __Pyx_GOTREF(__pyx_t_7);
           #endif
         }
@@ -20906,7 +21607,7 @@ static void __pyx_f_3src_8analysis_6models_17market_data_store_15MarketDataStore
           PyObject* exc_type = PyErr_Occurred();
           if (exc_type) {
             if (likely(__Pyx_PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-            else __PYX_ERR(0, 70, __pyx_L1_error)
+            else __PYX_ERR(0, 124, __pyx_L1_error)
           }
           break;
         }
@@ -20915,232 +21616,226 @@ static void __pyx_f_3src_8analysis_6models_17market_data_store_15MarketDataStore
       __Pyx_XDECREF_SET(__pyx_v_p, __pyx_t_7);
       __pyx_t_7 = 0;
 
-      /* "src/analysis/models/market_data_store.pyx":73
+      /* "src/analysis/models/market_data_store.pyx":127
  *                 tr = max(
  *                     self.high[m, p] - self.low[m, p],
- *                     abs(self.high[m, p] - self.open_[m, p]),             # <<<<<<<<<<<<<<
- *                     abs(self.low[m, p] - self.open_[m, p])
+ *                     abs(self.high[m, p] - self.open[m, p]),             # <<<<<<<<<<<<<<
+ *                     abs(self.low[m, p] - self.open[m, p])
  *                 )
  */
-      __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 73, __pyx_L1_error)
+      __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 127, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 73, __pyx_L1_error)
+      __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 127, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_GIVEREF(__pyx_t_7);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_7)) __PYX_ERR(0, 73, __pyx_L1_error);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_7)) __PYX_ERR(0, 127, __pyx_L1_error);
       __Pyx_INCREF(__pyx_v_p);
       __Pyx_GIVEREF(__pyx_v_p);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_v_p)) __PYX_ERR(0, 73, __pyx_L1_error);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_v_p)) __PYX_ERR(0, 127, __pyx_L1_error);
       __pyx_t_7 = 0;
-      __pyx_t_7 = __Pyx_PyObject_GetItem(((PyObject *)__pyx_v_self->high), __pyx_t_1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 73, __pyx_L1_error)
+      __pyx_t_7 = __Pyx_PyObject_GetItem(((PyObject *)__pyx_v_self->high), __pyx_t_1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 127, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_7);
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __pyx_t_1 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_open_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 73, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 127, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      __pyx_t_11 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 73, __pyx_L1_error)
+      __pyx_t_11 = PyTuple_New(2); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 127, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_11);
-      __pyx_t_12 = PyTuple_New(2); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 73, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_12);
-      __Pyx_GIVEREF(__pyx_t_11);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_12, 0, __pyx_t_11)) __PYX_ERR(0, 73, __pyx_L1_error);
+      __Pyx_GIVEREF(__pyx_t_1);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_11, 0, __pyx_t_1)) __PYX_ERR(0, 127, __pyx_L1_error);
       __Pyx_INCREF(__pyx_v_p);
       __Pyx_GIVEREF(__pyx_v_p);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_12, 1, __pyx_v_p)) __PYX_ERR(0, 73, __pyx_L1_error);
-      __pyx_t_11 = 0;
-      __pyx_t_11 = __Pyx_PyObject_GetItem(__pyx_t_1, __pyx_t_12); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 73, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_11);
-      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
-      __pyx_t_12 = PyNumber_Subtract(__pyx_t_7, __pyx_t_11); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 73, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_12);
-      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_11, 1, __pyx_v_p)) __PYX_ERR(0, 127, __pyx_L1_error);
+      __pyx_t_1 = 0;
+      __pyx_t_1 = __Pyx_PyObject_GetItem(((PyObject *)__pyx_v_self->open), __pyx_t_11); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 127, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-      __pyx_t_11 = __Pyx_PyNumber_Absolute(__pyx_t_12); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 73, __pyx_L1_error)
+      __pyx_t_11 = PyNumber_Subtract(__pyx_t_7, __pyx_t_1); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 127, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_11);
-      __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
+      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      __pyx_t_1 = __Pyx_PyNumber_Absolute(__pyx_t_11); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 127, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
 
-      /* "src/analysis/models/market_data_store.pyx":74
+      /* "src/analysis/models/market_data_store.pyx":128
  *                     self.high[m, p] - self.low[m, p],
- *                     abs(self.high[m, p] - self.open_[m, p]),
- *                     abs(self.low[m, p] - self.open_[m, p])             # <<<<<<<<<<<<<<
+ *                     abs(self.high[m, p] - self.open[m, p]),
+ *                     abs(self.low[m, p] - self.open[m, p])             # <<<<<<<<<<<<<<
  *                 )
  *                 self.atr[m, p] = ((self.atr[m, p - 1] * (period - 1) + tr) / period)
  */
-      __pyx_t_12 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 74, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_12);
-      __pyx_t_7 = PyTuple_New(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 74, __pyx_L1_error)
+      __pyx_t_11 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 128, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_11);
+      __pyx_t_7 = PyTuple_New(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 128, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_7);
-      __Pyx_GIVEREF(__pyx_t_12);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_12)) __PYX_ERR(0, 74, __pyx_L1_error);
+      __Pyx_GIVEREF(__pyx_t_11);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_11)) __PYX_ERR(0, 128, __pyx_L1_error);
       __Pyx_INCREF(__pyx_v_p);
       __Pyx_GIVEREF(__pyx_v_p);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_v_p)) __PYX_ERR(0, 74, __pyx_L1_error);
-      __pyx_t_12 = 0;
-      __pyx_t_12 = __Pyx_PyObject_GetItem(((PyObject *)__pyx_v_self->low), __pyx_t_7); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 74, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_12);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_v_p)) __PYX_ERR(0, 128, __pyx_L1_error);
+      __pyx_t_11 = 0;
+      __pyx_t_11 = __Pyx_PyObject_GetItem(((PyObject *)__pyx_v_self->low), __pyx_t_7); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 128, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_11);
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __pyx_t_7 = __Pyx_PyObject_GetAttrStr(((PyObject *)__pyx_v_self), __pyx_n_s_open_2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 74, __pyx_L1_error)
+      __pyx_t_7 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 128, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_7);
-      __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 74, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_1);
-      __pyx_t_13 = PyTuple_New(2); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 74, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_13);
-      __Pyx_GIVEREF(__pyx_t_1);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_13, 0, __pyx_t_1)) __PYX_ERR(0, 74, __pyx_L1_error);
+      __pyx_t_12 = PyTuple_New(2); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 128, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_12);
+      __Pyx_GIVEREF(__pyx_t_7);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_12, 0, __pyx_t_7)) __PYX_ERR(0, 128, __pyx_L1_error);
       __Pyx_INCREF(__pyx_v_p);
       __Pyx_GIVEREF(__pyx_v_p);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_13, 1, __pyx_v_p)) __PYX_ERR(0, 74, __pyx_L1_error);
-      __pyx_t_1 = 0;
-      __pyx_t_1 = __Pyx_PyObject_GetItem(__pyx_t_7, __pyx_t_13); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 74, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_1);
-      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
-      __pyx_t_13 = PyNumber_Subtract(__pyx_t_12, __pyx_t_1); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 74, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_13);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_12, 1, __pyx_v_p)) __PYX_ERR(0, 128, __pyx_L1_error);
+      __pyx_t_7 = 0;
+      __pyx_t_7 = __Pyx_PyObject_GetItem(((PyObject *)__pyx_v_self->open), __pyx_t_12); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 128, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
       __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
-      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __pyx_t_1 = __Pyx_PyNumber_Absolute(__pyx_t_13); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 74, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_1);
-      __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
+      __pyx_t_12 = PyNumber_Subtract(__pyx_t_11, __pyx_t_7); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 128, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_12);
+      __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+      __pyx_t_7 = __Pyx_PyNumber_Absolute(__pyx_t_12); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 128, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
 
-      /* "src/analysis/models/market_data_store.pyx":72
+      /* "src/analysis/models/market_data_store.pyx":126
  *             for p in range(period, periods):
  *                 tr = max(
  *                     self.high[m, p] - self.low[m, p],             # <<<<<<<<<<<<<<
- *                     abs(self.high[m, p] - self.open_[m, p]),
- *                     abs(self.low[m, p] - self.open_[m, p])
+ *                     abs(self.high[m, p] - self.open[m, p]),
+ *                     abs(self.low[m, p] - self.open[m, p])
  */
-      __pyx_t_13 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 72, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_13);
-      __pyx_t_12 = PyTuple_New(2); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 72, __pyx_L1_error)
+      __pyx_t_12 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 126, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_12);
-      __Pyx_GIVEREF(__pyx_t_13);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_12, 0, __pyx_t_13)) __PYX_ERR(0, 72, __pyx_L1_error);
-      __Pyx_INCREF(__pyx_v_p);
-      __Pyx_GIVEREF(__pyx_v_p);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_12, 1, __pyx_v_p)) __PYX_ERR(0, 72, __pyx_L1_error);
-      __pyx_t_13 = 0;
-      __pyx_t_13 = __Pyx_PyObject_GetItem(((PyObject *)__pyx_v_self->high), __pyx_t_12); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 72, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_13);
-      __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
-      __pyx_t_12 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 72, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_12);
-      __pyx_t_7 = PyTuple_New(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 72, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_7);
+      __pyx_t_11 = PyTuple_New(2); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 126, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_11);
       __Pyx_GIVEREF(__pyx_t_12);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_12)) __PYX_ERR(0, 72, __pyx_L1_error);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_11, 0, __pyx_t_12)) __PYX_ERR(0, 126, __pyx_L1_error);
       __Pyx_INCREF(__pyx_v_p);
       __Pyx_GIVEREF(__pyx_v_p);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_v_p)) __PYX_ERR(0, 72, __pyx_L1_error);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_11, 1, __pyx_v_p)) __PYX_ERR(0, 126, __pyx_L1_error);
       __pyx_t_12 = 0;
-      __pyx_t_12 = __Pyx_PyObject_GetItem(((PyObject *)__pyx_v_self->low), __pyx_t_7); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 72, __pyx_L1_error)
+      __pyx_t_12 = __Pyx_PyObject_GetItem(((PyObject *)__pyx_v_self->high), __pyx_t_11); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 126, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_12);
-      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __pyx_t_7 = PyNumber_Subtract(__pyx_t_13, __pyx_t_12); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 72, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
+      __pyx_t_11 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 126, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_11);
+      __pyx_t_13 = PyTuple_New(2); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 126, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_13);
+      __Pyx_GIVEREF(__pyx_t_11);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_13, 0, __pyx_t_11)) __PYX_ERR(0, 126, __pyx_L1_error);
+      __Pyx_INCREF(__pyx_v_p);
+      __Pyx_GIVEREF(__pyx_v_p);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_13, 1, __pyx_v_p)) __PYX_ERR(0, 126, __pyx_L1_error);
+      __pyx_t_11 = 0;
+      __pyx_t_11 = __Pyx_PyObject_GetItem(((PyObject *)__pyx_v_self->low), __pyx_t_13); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 126, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_11);
       __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
+      __pyx_t_13 = PyNumber_Subtract(__pyx_t_12, __pyx_t_11); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 126, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_13);
       __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
+      __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
 
-      /* "src/analysis/models/market_data_store.pyx":73
+      /* "src/analysis/models/market_data_store.pyx":127
  *                 tr = max(
  *                     self.high[m, p] - self.low[m, p],
- *                     abs(self.high[m, p] - self.open_[m, p]),             # <<<<<<<<<<<<<<
- *                     abs(self.low[m, p] - self.open_[m, p])
+ *                     abs(self.high[m, p] - self.open[m, p]),             # <<<<<<<<<<<<<<
+ *                     abs(self.low[m, p] - self.open[m, p])
  *                 )
  */
-      __pyx_t_13 = PyObject_RichCompare(__pyx_t_11, __pyx_t_7, Py_GT); __Pyx_XGOTREF(__pyx_t_13); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 73, __pyx_L1_error)
-      __pyx_t_14 = __Pyx_PyObject_IsTrue(__pyx_t_13); if (unlikely((__pyx_t_14 < 0))) __PYX_ERR(0, 73, __pyx_L1_error)
-      __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
-      if (__pyx_t_14) {
-        __Pyx_INCREF(__pyx_t_11);
-        __pyx_t_12 = __pyx_t_11;
-      } else {
-        __Pyx_INCREF(__pyx_t_7);
-        __pyx_t_12 = __pyx_t_7;
-      }
-      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
-      __Pyx_INCREF(__pyx_t_12);
-      __pyx_t_7 = __pyx_t_12;
+      __pyx_t_12 = PyObject_RichCompare(__pyx_t_1, __pyx_t_13, Py_GT); __Pyx_XGOTREF(__pyx_t_12); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 127, __pyx_L1_error)
+      __pyx_t_14 = __Pyx_PyObject_IsTrue(__pyx_t_12); if (unlikely((__pyx_t_14 < 0))) __PYX_ERR(0, 127, __pyx_L1_error)
       __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
+      if (__pyx_t_14) {
+        __Pyx_INCREF(__pyx_t_1);
+        __pyx_t_11 = __pyx_t_1;
+      } else {
+        __Pyx_INCREF(__pyx_t_13);
+        __pyx_t_11 = __pyx_t_13;
+      }
+      __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
+      __Pyx_INCREF(__pyx_t_11);
+      __pyx_t_13 = __pyx_t_11;
+      __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
 
-      /* "src/analysis/models/market_data_store.pyx":74
+      /* "src/analysis/models/market_data_store.pyx":128
  *                     self.high[m, p] - self.low[m, p],
- *                     abs(self.high[m, p] - self.open_[m, p]),
- *                     abs(self.low[m, p] - self.open_[m, p])             # <<<<<<<<<<<<<<
+ *                     abs(self.high[m, p] - self.open[m, p]),
+ *                     abs(self.low[m, p] - self.open[m, p])             # <<<<<<<<<<<<<<
  *                 )
  *                 self.atr[m, p] = ((self.atr[m, p - 1] * (period - 1) + tr) / period)
  */
-      __pyx_t_13 = PyObject_RichCompare(__pyx_t_1, __pyx_t_7, Py_GT); __Pyx_XGOTREF(__pyx_t_13); if (unlikely(!__pyx_t_13)) __PYX_ERR(0, 74, __pyx_L1_error)
-      __pyx_t_14 = __Pyx_PyObject_IsTrue(__pyx_t_13); if (unlikely((__pyx_t_14 < 0))) __PYX_ERR(0, 74, __pyx_L1_error)
-      __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
+      __pyx_t_12 = PyObject_RichCompare(__pyx_t_7, __pyx_t_13, Py_GT); __Pyx_XGOTREF(__pyx_t_12); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 128, __pyx_L1_error)
+      __pyx_t_14 = __Pyx_PyObject_IsTrue(__pyx_t_12); if (unlikely((__pyx_t_14 < 0))) __PYX_ERR(0, 128, __pyx_L1_error)
+      __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
       if (__pyx_t_14) {
-        __Pyx_INCREF(__pyx_t_1);
-        __pyx_t_12 = __pyx_t_1;
-      } else {
         __Pyx_INCREF(__pyx_t_7);
-        __pyx_t_12 = __pyx_t_7;
+        __pyx_t_11 = __pyx_t_7;
+      } else {
+        __Pyx_INCREF(__pyx_t_13);
+        __pyx_t_11 = __pyx_t_13;
       }
+      __Pyx_DECREF(__pyx_t_13); __pyx_t_13 = 0;
       __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      __pyx_t_1 = __pyx_t_11;
+      __Pyx_INCREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-      __pyx_t_11 = __pyx_t_12;
-      __Pyx_INCREF(__pyx_t_11);
-      __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
-      __Pyx_XDECREF_SET(__pyx_v_tr, __pyx_t_11);
-      __pyx_t_11 = 0;
+      __Pyx_XDECREF_SET(__pyx_v_tr, __pyx_t_1);
+      __pyx_t_1 = 0;
 
-      /* "src/analysis/models/market_data_store.pyx":76
- *                     abs(self.low[m, p] - self.open_[m, p])
+      /* "src/analysis/models/market_data_store.pyx":130
+ *                     abs(self.low[m, p] - self.open[m, p])
  *                 )
  *                 self.atr[m, p] = ((self.atr[m, p - 1] * (period - 1) + tr) / period)             # <<<<<<<<<<<<<<
  * 
  *     cdef double[:,:] smooth_it(self, double[:,:] arr, int factor = 3):
  */
-      __pyx_t_11 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 76, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_11);
-      __pyx_t_12 = __Pyx_PyInt_SubtractObjC(__pyx_v_p, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 76, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_12);
-      __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 76, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
+      __pyx_t_11 = __Pyx_PyInt_SubtractObjC(__pyx_v_p, __pyx_int_1, 1, 0, 0); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 130, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_11);
+      __pyx_t_7 = PyTuple_New(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 130, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GIVEREF(__pyx_t_1);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error);
       __Pyx_GIVEREF(__pyx_t_11);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_11)) __PYX_ERR(0, 76, __pyx_L1_error);
-      __Pyx_GIVEREF(__pyx_t_12);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_t_12)) __PYX_ERR(0, 76, __pyx_L1_error);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_t_11)) __PYX_ERR(0, 130, __pyx_L1_error);
+      __pyx_t_1 = 0;
       __pyx_t_11 = 0;
-      __pyx_t_12 = 0;
-      __pyx_t_12 = __Pyx_PyObject_GetItem(((PyObject *)__pyx_v_self->atr), __pyx_t_1); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 76, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_12);
-      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __pyx_t_1 = __Pyx_PyInt_From_long((__pyx_v_period - 1)); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 76, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_1);
-      __pyx_t_11 = PyNumber_Multiply(__pyx_t_12, __pyx_t_1); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 76, __pyx_L1_error)
+      __pyx_t_11 = __Pyx_PyObject_GetItem(((PyObject *)__pyx_v_self->atr), __pyx_t_7); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 130, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_11);
-      __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
-      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __pyx_t_1 = PyNumber_Add(__pyx_t_11, __pyx_v_tr); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 76, __pyx_L1_error)
+      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+      __pyx_t_7 = __Pyx_PyInt_From_long((__pyx_v_period - 1)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 130, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
+      __pyx_t_1 = PyNumber_Multiply(__pyx_t_11, __pyx_t_7); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
       __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-      __pyx_t_11 = __Pyx_PyInt_From_int(__pyx_v_period); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 76, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_11);
-      __pyx_t_12 = __Pyx_PyNumber_Divide(__pyx_t_1, __pyx_t_11); if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 76, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_12);
+      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+      __pyx_t_7 = PyNumber_Add(__pyx_t_1, __pyx_v_tr); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 130, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
       __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
-      __pyx_t_11 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 76, __pyx_L1_error)
-      __Pyx_GOTREF(__pyx_t_11);
-      __pyx_t_1 = PyTuple_New(2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 76, __pyx_L1_error)
+      __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_period); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error)
       __Pyx_GOTREF(__pyx_t_1);
-      __Pyx_GIVEREF(__pyx_t_11);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 0, __pyx_t_11)) __PYX_ERR(0, 76, __pyx_L1_error);
+      __pyx_t_11 = __Pyx_PyNumber_Divide(__pyx_t_7, __pyx_t_1); if (unlikely(!__pyx_t_11)) __PYX_ERR(0, 130, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_11);
+      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+      __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_m); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_1);
+      __pyx_t_7 = PyTuple_New(2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 130, __pyx_L1_error)
+      __Pyx_GOTREF(__pyx_t_7);
+      __Pyx_GIVEREF(__pyx_t_1);
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_7, 0, __pyx_t_1)) __PYX_ERR(0, 130, __pyx_L1_error);
       __Pyx_INCREF(__pyx_v_p);
       __Pyx_GIVEREF(__pyx_v_p);
-      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_1, 1, __pyx_v_p)) __PYX_ERR(0, 76, __pyx_L1_error);
-      __pyx_t_11 = 0;
-      if (unlikely((PyObject_SetItem(((PyObject *)__pyx_v_self->atr), __pyx_t_1, __pyx_t_12) < 0))) __PYX_ERR(0, 76, __pyx_L1_error)
-      __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-      __Pyx_DECREF(__pyx_t_12); __pyx_t_12 = 0;
+      if (__Pyx_PyTuple_SET_ITEM(__pyx_t_7, 1, __pyx_v_p)) __PYX_ERR(0, 130, __pyx_L1_error);
+      __pyx_t_1 = 0;
+      if (unlikely((PyObject_SetItem(((PyObject *)__pyx_v_self->atr), __pyx_t_7, __pyx_t_11) < 0))) __PYX_ERR(0, 130, __pyx_L1_error)
+      __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+      __Pyx_DECREF(__pyx_t_11); __pyx_t_11 = 0;
 
-      /* "src/analysis/models/market_data_store.pyx":70
+      /* "src/analysis/models/market_data_store.pyx":124
  * 
  *         for m in range(markets):
  *             for p in range(period, periods):             # <<<<<<<<<<<<<<
@@ -21151,7 +21846,7 @@ static void __pyx_f_3src_8analysis_6models_17market_data_store_15MarketDataStore
     __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
   }
 
-  /* "src/analysis/models/market_data_store.pyx":63
+  /* "src/analysis/models/market_data_store.pyx":117
  *         )
  * 
  *     cdef void compute_atr(self, int period=14):             # <<<<<<<<<<<<<<
@@ -21175,7 +21870,7 @@ static void __pyx_f_3src_8analysis_6models_17market_data_store_15MarketDataStore
   __Pyx_RefNannyFinishContext();
 }
 
-/* "src/analysis/models/market_data_store.pyx":78
+/* "src/analysis/models/market_data_store.pyx":132
  *                 self.atr[m, p] = ((self.atr[m, p - 1] * (period - 1) + tr) / period)
  * 
  *     cdef double[:,:] smooth_it(self, double[:,:] arr, int factor = 3):             # <<<<<<<<<<<<<<
@@ -21201,7 +21896,7 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
     }
   }
 
-  /* "src/analysis/models/market_data_store.pyx":79
+  /* "src/analysis/models/market_data_store.pyx":133
  * 
  *     cdef double[:,:] smooth_it(self, double[:,:] arr, int factor = 3):
  *         for market in range(arr.shape[1]):             # <<<<<<<<<<<<<<
@@ -21213,7 +21908,7 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
   for (__pyx_t_3 = 0; __pyx_t_3 < __pyx_t_2; __pyx_t_3+=1) {
     __pyx_v_market = __pyx_t_3;
 
-    /* "src/analysis/models/market_data_store.pyx":80
+    /* "src/analysis/models/market_data_store.pyx":134
  *     cdef double[:,:] smooth_it(self, double[:,:] arr, int factor = 3):
  *         for market in range(arr.shape[1]):
  *             self._apply_smoothing_1D(arr[:, market], factor)             # <<<<<<<<<<<<<<
@@ -21236,19 +21931,19 @@ __pyx_t_4.strides[0] = __pyx_v_arr.strides[0];
         if (unlikely(!__Pyx_is_valid_index(__pyx_tmp_idx, __pyx_tmp_shape))) {
             PyErr_SetString(PyExc_IndexError,
                             "Index out of bounds (axis 1)");
-            __PYX_ERR(0, 80, __pyx_L1_error)
+            __PYX_ERR(0, 134, __pyx_L1_error)
         }
         __pyx_t_4.data += __pyx_tmp_idx * __pyx_tmp_stride;
 }
 
-__pyx_t_5 = ((struct __pyx_vtabstruct_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self->__pyx_vtab)->_apply_smoothing_1D(__pyx_v_self, __pyx_t_4, __pyx_v_factor); if (unlikely(!__pyx_t_5.memview)) __PYX_ERR(0, 80, __pyx_L1_error)
+__pyx_t_5 = ((struct __pyx_vtabstruct_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self->__pyx_vtab)->_apply_smoothing_1D(__pyx_v_self, __pyx_t_4, __pyx_v_factor); if (unlikely(!__pyx_t_5.memview)) __PYX_ERR(0, 134, __pyx_L1_error)
     __PYX_XCLEAR_MEMVIEW(&__pyx_t_4, 1);
     __pyx_t_4.memview = NULL; __pyx_t_4.data = NULL;
     __PYX_XCLEAR_MEMVIEW(&__pyx_t_5, 1);
     __pyx_t_5.memview = NULL; __pyx_t_5.data = NULL;
   }
 
-  /* "src/analysis/models/market_data_store.pyx":81
+  /* "src/analysis/models/market_data_store.pyx":135
  *         for market in range(arr.shape[1]):
  *             self._apply_smoothing_1D(arr[:, market], factor)
  *         return arr             # <<<<<<<<<<<<<<
@@ -21259,7 +21954,7 @@ __pyx_t_5 = ((struct __pyx_vtabstruct_3src_8analysis_6models_17market_data_store
   __pyx_r = __pyx_v_arr;
   goto __pyx_L0;
 
-  /* "src/analysis/models/market_data_store.pyx":78
+  /* "src/analysis/models/market_data_store.pyx":132
  *                 self.atr[m, p] = ((self.atr[m, p - 1] * (period - 1) + tr) / period)
  * 
  *     cdef double[:,:] smooth_it(self, double[:,:] arr, int factor = 3):             # <<<<<<<<<<<<<<
@@ -21283,7 +21978,7 @@ __pyx_t_5 = ((struct __pyx_vtabstruct_3src_8analysis_6models_17market_data_store
   return __pyx_r;
 }
 
-/* "src/analysis/models/market_data_store.pyx":84
+/* "src/analysis/models/market_data_store.pyx":138
  * 
  *     # ..................................................................................
  *     cdef double[:] _apply_smoothing_1D(self, double[:] data, int length):             # <<<<<<<<<<<<<<
@@ -21324,7 +22019,7 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("_apply_smoothing_1D", 1);
 
-  /* "src/analysis/models/market_data_store.pyx":95
+  /* "src/analysis/models/market_data_store.pyx":149
  *         - us (np.ndarray): The smoothed data series.
  *         """
  *         cdef int n = len(data)             # <<<<<<<<<<<<<<
@@ -21334,46 +22029,46 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
   __pyx_t_1 = __Pyx_MemoryView_Len(__pyx_v_data); 
   __pyx_v_n = __pyx_t_1;
 
-  /* "src/analysis/models/market_data_store.pyx":96
+  /* "src/analysis/models/market_data_store.pyx":150
  *         """
  *         cdef int n = len(data)
  *         cdef double[:] us = np.zeros(n, dtype=np.float64)             # <<<<<<<<<<<<<<
  * 
  *         # Check if data length is sufficient
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 150, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_zeros); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_zeros); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 150, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_n); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_n); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 150, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __pyx_t_4 = PyTuple_New(1); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 150, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_GIVEREF(__pyx_t_2);
-  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_2)) __PYX_ERR(0, 96, __pyx_L1_error);
+  if (__Pyx_PyTuple_SET_ITEM(__pyx_t_4, 0, __pyx_t_2)) __PYX_ERR(0, 150, __pyx_L1_error);
   __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyDict_NewPresized(1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 150, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_5, __pyx_n_s_np); if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 150, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_5);
-  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_float64); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_GetAttrStr(__pyx_t_5, __pyx_n_s_float64); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 150, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_5); __pyx_t_5 = 0;
-  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_dtype, __pyx_t_6) < 0) __PYX_ERR(0, 96, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_t_2, __pyx_n_s_dtype, __pyx_t_6) < 0) __PYX_ERR(0, 150, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_4, __pyx_t_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyObject_Call(__pyx_t_3, __pyx_t_4, __pyx_t_2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 150, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(__pyx_t_6, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 96, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(__pyx_t_6, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 150, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   __pyx_v_us = __pyx_t_7;
   __pyx_t_7.memview = NULL;
   __pyx_t_7.data = NULL;
 
-  /* "src/analysis/models/market_data_store.pyx":99
+  /* "src/analysis/models/market_data_store.pyx":153
  * 
  *         # Check if data length is sufficient
  *         if n < 3:             # <<<<<<<<<<<<<<
@@ -21383,20 +22078,20 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
   __pyx_t_8 = (__pyx_v_n < 3);
   if (unlikely(__pyx_t_8)) {
 
-    /* "src/analysis/models/market_data_store.pyx":100
+    /* "src/analysis/models/market_data_store.pyx":154
  *         # Check if data length is sufficient
  *         if n < 3:
  *             raise ValueError("Data array must have at least 3 elements.")             # <<<<<<<<<<<<<<
  * 
  *         # Initialize the smoothed series with zeros
  */
-    __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__11, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 100, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_Call(__pyx_builtin_ValueError, __pyx_tuple__11, NULL); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 154, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_Raise(__pyx_t_6, 0, 0, 0);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-    __PYX_ERR(0, 100, __pyx_L1_error)
+    __PYX_ERR(0, 154, __pyx_L1_error)
 
-    /* "src/analysis/models/market_data_store.pyx":99
+    /* "src/analysis/models/market_data_store.pyx":153
  * 
  *         # Check if data length is sufficient
  *         if n < 3:             # <<<<<<<<<<<<<<
@@ -21405,19 +22100,19 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
  */
   }
 
-  /* "src/analysis/models/market_data_store.pyx":103
+  /* "src/analysis/models/market_data_store.pyx":157
  * 
  *         # Initialize the smoothed series with zeros
  *         us = np.zeros(n)             # <<<<<<<<<<<<<<
  * 
  *         cdef cnp.float64_t f = (1.414 * pi) / length
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_2, __pyx_n_s_np); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 157, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_zeros); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __pyx_t_4 = __Pyx_PyObject_GetAttrStr(__pyx_t_2, __pyx_n_s_zeros); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 157, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_n); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_From_int(__pyx_v_n); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 157, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __pyx_t_3 = NULL;
   __pyx_t_9 = 0;
@@ -21438,49 +22133,49 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
     __pyx_t_6 = __Pyx_PyObject_FastCall(__pyx_t_4, __pyx_callargs+1-__pyx_t_9, 1+__pyx_t_9);
     __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-    if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 103, __pyx_L1_error)
+    if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 157, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   }
-  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(__pyx_t_6, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 103, __pyx_L1_error)
+  __pyx_t_7 = __Pyx_PyObject_to_MemoryviewSlice_ds_double(__pyx_t_6, PyBUF_WRITABLE); if (unlikely(!__pyx_t_7.memview)) __PYX_ERR(0, 157, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   __PYX_XCLEAR_MEMVIEW(&__pyx_v_us, 1);
   __pyx_v_us = __pyx_t_7;
   __pyx_t_7.memview = NULL;
   __pyx_t_7.data = NULL;
 
-  /* "src/analysis/models/market_data_store.pyx":105
+  /* "src/analysis/models/market_data_store.pyx":159
  *         us = np.zeros(n)
  * 
  *         cdef cnp.float64_t f = (1.414 * pi) / length             # <<<<<<<<<<<<<<
  *         a1 = exp(-f)
  *         c2 = 2 * a1 * cos(f)
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_pi); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 105, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_pi); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 159, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_4 = PyNumber_Multiply(__pyx_float_1_414, __pyx_t_6); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 105, __pyx_L1_error)
+  __pyx_t_4 = PyNumber_Multiply(__pyx_float_1_414, __pyx_t_6); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 159, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyInt_From_int(__pyx_v_length); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 105, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_From_int(__pyx_v_length); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 159, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_2 = __Pyx_PyNumber_Divide(__pyx_t_4, __pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 105, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyNumber_Divide(__pyx_t_4, __pyx_t_6); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 159, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_10 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_10 == ((npy_float64)-1)) && PyErr_Occurred())) __PYX_ERR(0, 105, __pyx_L1_error)
+  __pyx_t_10 = __pyx_PyFloat_AsDouble(__pyx_t_2); if (unlikely((__pyx_t_10 == ((npy_float64)-1)) && PyErr_Occurred())) __PYX_ERR(0, 159, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_f = __pyx_t_10;
 
-  /* "src/analysis/models/market_data_store.pyx":106
+  /* "src/analysis/models/market_data_store.pyx":160
  * 
  *         cdef cnp.float64_t f = (1.414 * pi) / length
  *         a1 = exp(-f)             # <<<<<<<<<<<<<<
  *         c2 = 2 * a1 * cos(f)
  *         c3 = -a1 ** 2
  */
-  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_exp); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 106, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_6, __pyx_n_s_exp); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 160, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_4 = PyFloat_FromDouble((-__pyx_v_f)); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 106, __pyx_L1_error)
+  __pyx_t_4 = PyFloat_FromDouble((-__pyx_v_f)); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 160, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __pyx_t_3 = NULL;
   __pyx_t_9 = 0;
@@ -21501,25 +22196,25 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
     __pyx_t_2 = __Pyx_PyObject_FastCall(__pyx_t_6, __pyx_callargs+1-__pyx_t_9, 1+__pyx_t_9);
     __Pyx_XDECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
-    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 106, __pyx_L1_error)
+    if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 160, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   }
   __pyx_v_a1 = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "src/analysis/models/market_data_store.pyx":107
+  /* "src/analysis/models/market_data_store.pyx":161
  *         cdef cnp.float64_t f = (1.414 * pi) / length
  *         a1 = exp(-f)
  *         c2 = 2 * a1 * cos(f)             # <<<<<<<<<<<<<<
  *         c3 = -a1 ** 2
  *         c1 = (1 + c2 - c3) / 4
  */
-  __pyx_t_2 = __Pyx_PyInt_MultiplyCObj(__pyx_int_2, __pyx_v_a1, 2, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 107, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyInt_MultiplyCObj(__pyx_int_2, __pyx_v_a1, 2, 0, 0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 161, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_cos); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 107, __pyx_L1_error)
+  __Pyx_GetModuleGlobalName(__pyx_t_4, __pyx_n_s_cos); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 161, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_f); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 107, __pyx_L1_error)
+  __pyx_t_3 = PyFloat_FromDouble(__pyx_v_f); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 161, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __pyx_t_5 = NULL;
   __pyx_t_9 = 0;
@@ -21540,51 +22235,51 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
     __pyx_t_6 = __Pyx_PyObject_FastCall(__pyx_t_4, __pyx_callargs+1-__pyx_t_9, 1+__pyx_t_9);
     __Pyx_XDECREF(__pyx_t_5); __pyx_t_5 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 107, __pyx_L1_error)
+    if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 161, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   }
-  __pyx_t_4 = PyNumber_Multiply(__pyx_t_2, __pyx_t_6); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 107, __pyx_L1_error)
+  __pyx_t_4 = PyNumber_Multiply(__pyx_t_2, __pyx_t_6); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 161, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
   __pyx_v_c2 = __pyx_t_4;
   __pyx_t_4 = 0;
 
-  /* "src/analysis/models/market_data_store.pyx":108
+  /* "src/analysis/models/market_data_store.pyx":162
  *         a1 = exp(-f)
  *         c2 = 2 * a1 * cos(f)
  *         c3 = -a1 ** 2             # <<<<<<<<<<<<<<
  *         c1 = (1 + c2 - c3) / 4
  * 
  */
-  __pyx_t_4 = PyNumber_Power(__pyx_v_a1, __pyx_int_2, Py_None); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 108, __pyx_L1_error)
+  __pyx_t_4 = PyNumber_Power(__pyx_v_a1, __pyx_int_2, Py_None); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 162, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
-  __pyx_t_6 = PyNumber_Negative(__pyx_t_4); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 108, __pyx_L1_error)
+  __pyx_t_6 = PyNumber_Negative(__pyx_t_4); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 162, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_c3 = __pyx_t_6;
   __pyx_t_6 = 0;
 
-  /* "src/analysis/models/market_data_store.pyx":109
+  /* "src/analysis/models/market_data_store.pyx":163
  *         c2 = 2 * a1 * cos(f)
  *         c3 = -a1 ** 2
  *         c1 = (1 + c2 - c3) / 4             # <<<<<<<<<<<<<<
  * 
  *         # Initialization:
  */
-  __pyx_t_6 = __Pyx_PyInt_AddCObj(__pyx_int_1, __pyx_v_c2, 1, 0, 0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 109, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_AddCObj(__pyx_int_1, __pyx_v_c2, 1, 0, 0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 163, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
-  __pyx_t_4 = PyNumber_Subtract(__pyx_t_6, __pyx_v_c3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 109, __pyx_L1_error)
+  __pyx_t_4 = PyNumber_Subtract(__pyx_t_6, __pyx_v_c3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 163, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_4);
   __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
-  __pyx_t_6 = __Pyx_PyInt_TrueDivideObjC(__pyx_t_4, __pyx_int_4, 4, 0, 0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 109, __pyx_L1_error)
+  __pyx_t_6 = __Pyx_PyInt_TrueDivideObjC(__pyx_t_4, __pyx_int_4, 4, 0, 0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 163, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_6);
   __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
   __pyx_v_c1 = __pyx_t_6;
   __pyx_t_6 = 0;
 
-  /* "src/analysis/models/market_data_store.pyx":112
+  /* "src/analysis/models/market_data_store.pyx":166
  * 
  *         # Initialization:
  *         us[0] = data[0]             # <<<<<<<<<<<<<<
@@ -21599,7 +22294,7 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
   } else if (unlikely(__pyx_t_11 >= __pyx_v_data.shape[0])) __pyx_t_12 = 0;
   if (unlikely(__pyx_t_12 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_12);
-    __PYX_ERR(0, 112, __pyx_L1_error)
+    __PYX_ERR(0, 166, __pyx_L1_error)
   }
   __pyx_t_13 = 0;
   __pyx_t_12 = -1;
@@ -21609,11 +22304,11 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
   } else if (unlikely(__pyx_t_13 >= __pyx_v_us.shape[0])) __pyx_t_12 = 0;
   if (unlikely(__pyx_t_12 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_12);
-    __PYX_ERR(0, 112, __pyx_L1_error)
+    __PYX_ERR(0, 166, __pyx_L1_error)
   }
   *((double *) ( /* dim=0 */ (__pyx_v_us.data + __pyx_t_13 * __pyx_v_us.strides[0]) )) = (*((double *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_11 * __pyx_v_data.strides[0]) )));
 
-  /* "src/analysis/models/market_data_store.pyx":113
+  /* "src/analysis/models/market_data_store.pyx":167
  *         # Initialization:
  *         us[0] = data[0]
  *         us[1] = data[1]             # <<<<<<<<<<<<<<
@@ -21628,7 +22323,7 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
   } else if (unlikely(__pyx_t_11 >= __pyx_v_data.shape[0])) __pyx_t_12 = 0;
   if (unlikely(__pyx_t_12 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_12);
-    __PYX_ERR(0, 113, __pyx_L1_error)
+    __PYX_ERR(0, 167, __pyx_L1_error)
   }
   __pyx_t_13 = 1;
   __pyx_t_12 = -1;
@@ -21638,11 +22333,11 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
   } else if (unlikely(__pyx_t_13 >= __pyx_v_us.shape[0])) __pyx_t_12 = 0;
   if (unlikely(__pyx_t_12 != -1)) {
     __Pyx_RaiseBufferIndexError(__pyx_t_12);
-    __PYX_ERR(0, 113, __pyx_L1_error)
+    __PYX_ERR(0, 167, __pyx_L1_error)
   }
   *((double *) ( /* dim=0 */ (__pyx_v_us.data + __pyx_t_13 * __pyx_v_us.strides[0]) )) = (*((double *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_11 * __pyx_v_data.strides[0]) )));
 
-  /* "src/analysis/models/market_data_store.pyx":118
+  /* "src/analysis/models/market_data_store.pyx":172
  * 
  *         # Iterate through the data starting from index 2
  *         for t in range(2, n):             # <<<<<<<<<<<<<<
@@ -21654,14 +22349,14 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
   for (__pyx_t_15 = 2; __pyx_t_15 < __pyx_t_14; __pyx_t_15+=1) {
     __pyx_v_t = __pyx_t_15;
 
-    /* "src/analysis/models/market_data_store.pyx":120
+    /* "src/analysis/models/market_data_store.pyx":174
  *         for t in range(2, n):
  *             us[t] = (
  *                 (1 - c1) * data[t] +             # <<<<<<<<<<<<<<
  *                 (2 * c1 - c2) * data[t - 1] +
  *                 (-c1 - c3) * data[t - 2] +
  */
-    __pyx_t_6 = __Pyx_PyInt_SubtractCObj(__pyx_int_1, __pyx_v_c1, 1, 0, 0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 120, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyInt_SubtractCObj(__pyx_int_1, __pyx_v_c1, 1, 0, 0); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 174, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __pyx_t_11 = __pyx_v_t;
     __pyx_t_16 = -1;
@@ -21671,25 +22366,25 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
     } else if (unlikely(__pyx_t_11 >= __pyx_v_data.shape[0])) __pyx_t_16 = 0;
     if (unlikely(__pyx_t_16 != -1)) {
       __Pyx_RaiseBufferIndexError(__pyx_t_16);
-      __PYX_ERR(0, 120, __pyx_L1_error)
+      __PYX_ERR(0, 174, __pyx_L1_error)
     }
-    __pyx_t_4 = PyFloat_FromDouble((*((double *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_11 * __pyx_v_data.strides[0]) )))); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 120, __pyx_L1_error)
+    __pyx_t_4 = PyFloat_FromDouble((*((double *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_11 * __pyx_v_data.strides[0]) )))); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 174, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_2 = PyNumber_Multiply(__pyx_t_6, __pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 120, __pyx_L1_error)
+    __pyx_t_2 = PyNumber_Multiply(__pyx_t_6, __pyx_t_4); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 174, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-    /* "src/analysis/models/market_data_store.pyx":121
+    /* "src/analysis/models/market_data_store.pyx":175
  *             us[t] = (
  *                 (1 - c1) * data[t] +
  *                 (2 * c1 - c2) * data[t - 1] +             # <<<<<<<<<<<<<<
  *                 (-c1 - c3) * data[t - 2] +
  *                 c2 * us[t - 1] +
  */
-    __pyx_t_4 = __Pyx_PyInt_MultiplyCObj(__pyx_int_2, __pyx_v_c1, 2, 0, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 121, __pyx_L1_error)
+    __pyx_t_4 = __Pyx_PyInt_MultiplyCObj(__pyx_int_2, __pyx_v_c1, 2, 0, 0); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 175, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_6 = PyNumber_Subtract(__pyx_t_4, __pyx_v_c2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 121, __pyx_L1_error)
+    __pyx_t_6 = PyNumber_Subtract(__pyx_t_4, __pyx_v_c2); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 175, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __pyx_t_11 = (__pyx_v_t - 1);
@@ -21700,37 +22395,37 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
     } else if (unlikely(__pyx_t_11 >= __pyx_v_data.shape[0])) __pyx_t_16 = 0;
     if (unlikely(__pyx_t_16 != -1)) {
       __Pyx_RaiseBufferIndexError(__pyx_t_16);
-      __PYX_ERR(0, 121, __pyx_L1_error)
+      __PYX_ERR(0, 175, __pyx_L1_error)
     }
-    __pyx_t_4 = PyFloat_FromDouble((*((double *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_11 * __pyx_v_data.strides[0]) )))); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 121, __pyx_L1_error)
+    __pyx_t_4 = PyFloat_FromDouble((*((double *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_11 * __pyx_v_data.strides[0]) )))); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 175, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_3 = PyNumber_Multiply(__pyx_t_6, __pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 121, __pyx_L1_error)
+    __pyx_t_3 = PyNumber_Multiply(__pyx_t_6, __pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 175, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-    /* "src/analysis/models/market_data_store.pyx":120
+    /* "src/analysis/models/market_data_store.pyx":174
  *         for t in range(2, n):
  *             us[t] = (
  *                 (1 - c1) * data[t] +             # <<<<<<<<<<<<<<
  *                 (2 * c1 - c2) * data[t - 1] +
  *                 (-c1 - c3) * data[t - 2] +
  */
-    __pyx_t_4 = PyNumber_Add(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 120, __pyx_L1_error)
+    __pyx_t_4 = PyNumber_Add(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 174, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-    /* "src/analysis/models/market_data_store.pyx":122
+    /* "src/analysis/models/market_data_store.pyx":176
  *                 (1 - c1) * data[t] +
  *                 (2 * c1 - c2) * data[t - 1] +
  *                 (-c1 - c3) * data[t - 2] +             # <<<<<<<<<<<<<<
  *                 c2 * us[t - 1] +
  *                 c3 * us[t - 2]
  */
-    __pyx_t_3 = PyNumber_Negative(__pyx_v_c1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 122, __pyx_L1_error)
+    __pyx_t_3 = PyNumber_Negative(__pyx_v_c1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 176, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_2 = PyNumber_Subtract(__pyx_t_3, __pyx_v_c3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 122, __pyx_L1_error)
+    __pyx_t_2 = PyNumber_Subtract(__pyx_t_3, __pyx_v_c3); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 176, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_2);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __pyx_t_11 = (__pyx_v_t - 2);
@@ -21741,28 +22436,28 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
     } else if (unlikely(__pyx_t_11 >= __pyx_v_data.shape[0])) __pyx_t_16 = 0;
     if (unlikely(__pyx_t_16 != -1)) {
       __Pyx_RaiseBufferIndexError(__pyx_t_16);
-      __PYX_ERR(0, 122, __pyx_L1_error)
+      __PYX_ERR(0, 176, __pyx_L1_error)
     }
-    __pyx_t_3 = PyFloat_FromDouble((*((double *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_11 * __pyx_v_data.strides[0]) )))); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 122, __pyx_L1_error)
+    __pyx_t_3 = PyFloat_FromDouble((*((double *) ( /* dim=0 */ (__pyx_v_data.data + __pyx_t_11 * __pyx_v_data.strides[0]) )))); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 176, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    __pyx_t_6 = PyNumber_Multiply(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 122, __pyx_L1_error)
+    __pyx_t_6 = PyNumber_Multiply(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 176, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
 
-    /* "src/analysis/models/market_data_store.pyx":121
+    /* "src/analysis/models/market_data_store.pyx":175
  *             us[t] = (
  *                 (1 - c1) * data[t] +
  *                 (2 * c1 - c2) * data[t - 1] +             # <<<<<<<<<<<<<<
  *                 (-c1 - c3) * data[t - 2] +
  *                 c2 * us[t - 1] +
  */
-    __pyx_t_3 = PyNumber_Add(__pyx_t_4, __pyx_t_6); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 121, __pyx_L1_error)
+    __pyx_t_3 = PyNumber_Add(__pyx_t_4, __pyx_t_6); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 175, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
-    /* "src/analysis/models/market_data_store.pyx":123
+    /* "src/analysis/models/market_data_store.pyx":177
  *                 (2 * c1 - c2) * data[t - 1] +
  *                 (-c1 - c3) * data[t - 2] +
  *                 c2 * us[t - 1] +             # <<<<<<<<<<<<<<
@@ -21777,27 +22472,27 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
     } else if (unlikely(__pyx_t_11 >= __pyx_v_us.shape[0])) __pyx_t_16 = 0;
     if (unlikely(__pyx_t_16 != -1)) {
       __Pyx_RaiseBufferIndexError(__pyx_t_16);
-      __PYX_ERR(0, 123, __pyx_L1_error)
+      __PYX_ERR(0, 177, __pyx_L1_error)
     }
-    __pyx_t_6 = PyFloat_FromDouble((*((double *) ( /* dim=0 */ (__pyx_v_us.data + __pyx_t_11 * __pyx_v_us.strides[0]) )))); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 123, __pyx_L1_error)
+    __pyx_t_6 = PyFloat_FromDouble((*((double *) ( /* dim=0 */ (__pyx_v_us.data + __pyx_t_11 * __pyx_v_us.strides[0]) )))); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 177, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
-    __pyx_t_4 = PyNumber_Multiply(__pyx_v_c2, __pyx_t_6); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 123, __pyx_L1_error)
+    __pyx_t_4 = PyNumber_Multiply(__pyx_v_c2, __pyx_t_6); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 177, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
 
-    /* "src/analysis/models/market_data_store.pyx":122
+    /* "src/analysis/models/market_data_store.pyx":176
  *                 (1 - c1) * data[t] +
  *                 (2 * c1 - c2) * data[t - 1] +
  *                 (-c1 - c3) * data[t - 2] +             # <<<<<<<<<<<<<<
  *                 c2 * us[t - 1] +
  *                 c3 * us[t - 2]
  */
-    __pyx_t_6 = PyNumber_Add(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 122, __pyx_L1_error)
+    __pyx_t_6 = PyNumber_Add(__pyx_t_3, __pyx_t_4); if (unlikely(!__pyx_t_6)) __PYX_ERR(0, 176, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_6);
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-    /* "src/analysis/models/market_data_store.pyx":124
+    /* "src/analysis/models/market_data_store.pyx":178
  *                 (-c1 - c3) * data[t - 2] +
  *                 c2 * us[t - 1] +
  *                 c3 * us[t - 2]             # <<<<<<<<<<<<<<
@@ -21812,29 +22507,29 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
     } else if (unlikely(__pyx_t_11 >= __pyx_v_us.shape[0])) __pyx_t_16 = 0;
     if (unlikely(__pyx_t_16 != -1)) {
       __Pyx_RaiseBufferIndexError(__pyx_t_16);
-      __PYX_ERR(0, 124, __pyx_L1_error)
+      __PYX_ERR(0, 178, __pyx_L1_error)
     }
-    __pyx_t_4 = PyFloat_FromDouble((*((double *) ( /* dim=0 */ (__pyx_v_us.data + __pyx_t_11 * __pyx_v_us.strides[0]) )))); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 124, __pyx_L1_error)
+    __pyx_t_4 = PyFloat_FromDouble((*((double *) ( /* dim=0 */ (__pyx_v_us.data + __pyx_t_11 * __pyx_v_us.strides[0]) )))); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 178, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
-    __pyx_t_3 = PyNumber_Multiply(__pyx_v_c3, __pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 124, __pyx_L1_error)
+    __pyx_t_3 = PyNumber_Multiply(__pyx_v_c3, __pyx_t_4); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 178, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-    /* "src/analysis/models/market_data_store.pyx":123
+    /* "src/analysis/models/market_data_store.pyx":177
  *                 (2 * c1 - c2) * data[t - 1] +
  *                 (-c1 - c3) * data[t - 2] +
  *                 c2 * us[t - 1] +             # <<<<<<<<<<<<<<
  *                 c3 * us[t - 2]
  *             )
  */
-    __pyx_t_4 = PyNumber_Add(__pyx_t_6, __pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 123, __pyx_L1_error)
+    __pyx_t_4 = PyNumber_Add(__pyx_t_6, __pyx_t_3); if (unlikely(!__pyx_t_4)) __PYX_ERR(0, 177, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_4);
     __Pyx_DECREF(__pyx_t_6); __pyx_t_6 = 0;
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-    __pyx_t_17 = __pyx_PyFloat_AsDouble(__pyx_t_4); if (unlikely((__pyx_t_17 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 123, __pyx_L1_error)
+    __pyx_t_17 = __pyx_PyFloat_AsDouble(__pyx_t_4); if (unlikely((__pyx_t_17 == (double)-1) && PyErr_Occurred())) __PYX_ERR(0, 177, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_4); __pyx_t_4 = 0;
 
-    /* "src/analysis/models/market_data_store.pyx":119
+    /* "src/analysis/models/market_data_store.pyx":173
  *         # Iterate through the data starting from index 2
  *         for t in range(2, n):
  *             us[t] = (             # <<<<<<<<<<<<<<
@@ -21849,12 +22544,12 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
     } else if (unlikely(__pyx_t_11 >= __pyx_v_us.shape[0])) __pyx_t_16 = 0;
     if (unlikely(__pyx_t_16 != -1)) {
       __Pyx_RaiseBufferIndexError(__pyx_t_16);
-      __PYX_ERR(0, 119, __pyx_L1_error)
+      __PYX_ERR(0, 173, __pyx_L1_error)
     }
     *((double *) ( /* dim=0 */ (__pyx_v_us.data + __pyx_t_11 * __pyx_v_us.strides[0]) )) = __pyx_t_17;
   }
 
-  /* "src/analysis/models/market_data_store.pyx":127
+  /* "src/analysis/models/market_data_store.pyx":181
  *             )
  * 
  *         return us             # <<<<<<<<<<<<<<
@@ -21863,7 +22558,7 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
   __pyx_r = __pyx_v_us;
   goto __pyx_L0;
 
-  /* "src/analysis/models/market_data_store.pyx":84
+  /* "src/analysis/models/market_data_store.pyx":138
  * 
  *     # ..................................................................................
  *     cdef double[:] _apply_smoothing_1D(self, double[:] data, int length):             # <<<<<<<<<<<<<<
@@ -21897,13 +22592,119 @@ static __Pyx_memviewslice __pyx_f_3src_8analysis_6models_17market_data_store_15M
   return __pyx_r;
 }
 
-/* "src/analysis/models/market_data_store.pyx":8
+/* "src/analysis/models/market_data_store.pyx":10
  * cdef class MarketDataStore:
  *     cdef:
- *         public cnp.ndarray open, high, low, close, volume             # <<<<<<<<<<<<<<
- *         public cnp.ndarray atr, volatility
- *         public int num_assets, num_periods
+ *         public cnp.ndarray timestamp, open, high, low, close, volume             # <<<<<<<<<<<<<<
+ *         public cnp.ndarray annual_vol
+ *         public cnp.ndarray annual_sr
  */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp___get__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__", 1);
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF((PyObject *)__pyx_v_self->timestamp);
+  __pyx_r = ((PyObject *)__pyx_v_self->timestamp);
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_2__set__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__set__", 1);
+  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 10, __pyx_L1_error)
+  __pyx_t_1 = __pyx_v_value;
+  __Pyx_INCREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->timestamp);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->timestamp);
+  __pyx_v_self->timestamp = ((PyArrayObject *)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.market_data_store.MarketDataStore.timestamp.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_5__del__(PyObject *__pyx_v_self); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_5__del__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_4__del__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__", 1);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->timestamp);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->timestamp);
+  __pyx_v_self->timestamp = ((PyArrayObject *)Py_None);
+
+  /* function exit code */
+  __pyx_r = 0;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
 
 /* Python wrapper */
 static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_4open_1__get__(PyObject *__pyx_v_self); /*proto*/
@@ -21959,7 +22760,7 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__set__", 1);
-  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 8, __pyx_L1_error)
+  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 10, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -22065,7 +22866,7 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__set__", 1);
-  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 8, __pyx_L1_error)
+  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 10, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -22171,7 +22972,7 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__set__", 1);
-  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 8, __pyx_L1_error)
+  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 10, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -22277,7 +23078,7 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__set__", 1);
-  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 8, __pyx_L1_error)
+  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 10, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -22383,7 +23184,7 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__set__", 1);
-  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 8, __pyx_L1_error)
+  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 10, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -22435,12 +23236,354 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   return __pyx_r;
 }
 
-/* "src/analysis/models/market_data_store.pyx":9
+/* "src/analysis/models/market_data_store.pyx":11
  *     cdef:
- *         public cnp.ndarray open, high, low, close, volume
+ *         public cnp.ndarray timestamp, open, high, low, close, volume
+ *         public cnp.ndarray annual_vol             # <<<<<<<<<<<<<<
+ *         public cnp.ndarray annual_sr
+ *         public cnp.ndarray signal_scale_factor
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol___get__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__", 1);
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF((PyObject *)__pyx_v_self->annual_vol);
+  __pyx_r = ((PyObject *)__pyx_v_self->annual_vol);
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_2__set__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__set__", 1);
+  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 11, __pyx_L1_error)
+  __pyx_t_1 = __pyx_v_value;
+  __Pyx_INCREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->annual_vol);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->annual_vol);
+  __pyx_v_self->annual_vol = ((PyArrayObject *)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.market_data_store.MarketDataStore.annual_vol.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_5__del__(PyObject *__pyx_v_self); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_5__del__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_4__del__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__", 1);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->annual_vol);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->annual_vol);
+  __pyx_v_self->annual_vol = ((PyArrayObject *)Py_None);
+
+  /* function exit code */
+  __pyx_r = 0;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/market_data_store.pyx":12
+ *         public cnp.ndarray timestamp, open, high, low, close, volume
+ *         public cnp.ndarray annual_vol
+ *         public cnp.ndarray annual_sr             # <<<<<<<<<<<<<<
+ *         public cnp.ndarray signal_scale_factor
+ *         public cnp.ndarray atr, volatility
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr___get__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__", 1);
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF((PyObject *)__pyx_v_self->annual_sr);
+  __pyx_r = ((PyObject *)__pyx_v_self->annual_sr);
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_2__set__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__set__", 1);
+  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 12, __pyx_L1_error)
+  __pyx_t_1 = __pyx_v_value;
+  __Pyx_INCREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->annual_sr);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->annual_sr);
+  __pyx_v_self->annual_sr = ((PyArrayObject *)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.market_data_store.MarketDataStore.annual_sr.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_5__del__(PyObject *__pyx_v_self); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_5__del__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_4__del__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__", 1);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->annual_sr);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->annual_sr);
+  __pyx_v_self->annual_sr = ((PyArrayObject *)Py_None);
+
+  /* function exit code */
+  __pyx_r = 0;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/market_data_store.pyx":13
+ *         public cnp.ndarray annual_vol
+ *         public cnp.ndarray annual_sr
+ *         public cnp.ndarray signal_scale_factor             # <<<<<<<<<<<<<<
+ *         public cnp.ndarray atr, volatility
+ *         public int lookback, num_assets, num_periods
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor___get__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__", 1);
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF((PyObject *)__pyx_v_self->signal_scale_factor);
+  __pyx_r = ((PyObject *)__pyx_v_self->signal_scale_factor);
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_2__set__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__set__", 1);
+  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 13, __pyx_L1_error)
+  __pyx_t_1 = __pyx_v_value;
+  __Pyx_INCREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->signal_scale_factor);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->signal_scale_factor);
+  __pyx_v_self->signal_scale_factor = ((PyArrayObject *)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.market_data_store.MarketDataStore.signal_scale_factor.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_5__del__(PyObject *__pyx_v_self); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_5__del__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_4__del__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__", 1);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->signal_scale_factor);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->signal_scale_factor);
+  __pyx_v_self->signal_scale_factor = ((PyArrayObject *)Py_None);
+
+  /* function exit code */
+  __pyx_r = 0;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "src/analysis/models/market_data_store.pyx":14
+ *         public cnp.ndarray annual_sr
+ *         public cnp.ndarray signal_scale_factor
  *         public cnp.ndarray atr, volatility             # <<<<<<<<<<<<<<
- *         public int num_assets, num_periods
- * 
+ *         public int lookback, num_assets, num_periods
+ *         public Statistics stats
  */
 
 /* Python wrapper */
@@ -22497,7 +23640,7 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__set__", 1);
-  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 9, __pyx_L1_error)
+  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 14, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -22603,7 +23746,7 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__set__", 1);
-  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 9, __pyx_L1_error)
+  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_5numpy_ndarray))))) __PYX_ERR(0, 14, __pyx_L1_error)
   __pyx_t_1 = __pyx_v_value;
   __Pyx_INCREF(__pyx_t_1);
   __Pyx_GIVEREF(__pyx_t_1);
@@ -22655,13 +23798,88 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   return __pyx_r;
 }
 
-/* "src/analysis/models/market_data_store.pyx":10
- *         public cnp.ndarray open, high, low, close, volume
+/* "src/analysis/models/market_data_store.pyx":15
+ *         public cnp.ndarray signal_scale_factor
  *         public cnp.ndarray atr, volatility
- *         public int num_assets, num_periods             # <<<<<<<<<<<<<<
+ *         public int lookback, num_assets, num_periods             # <<<<<<<<<<<<<<
+ *         public Statistics stats
  * 
- *     def __cinit__(
  */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_8lookback_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_8lookback_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_8lookback___get__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_8lookback___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__get__", 1);
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_self->lookback); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.market_data_store.MarketDataStore.lookback.__get__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_8lookback_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_8lookback_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_8lookback_2__set__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_8lookback_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  int __pyx_t_1;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_v_self->lookback = __pyx_t_1;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_AddTraceback("src.analysis.models.market_data_store.MarketDataStore.lookback.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  return __pyx_r;
+}
 
 /* Python wrapper */
 static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_10num_assets_1__get__(PyObject *__pyx_v_self); /*proto*/
@@ -22687,7 +23905,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_self->num_assets); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 10, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_self->num_assets); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -22725,7 +23943,7 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
-  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 10, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 15, __pyx_L1_error)
   __pyx_v_self->num_assets = __pyx_t_1;
 
   /* function exit code */
@@ -22762,7 +23980,7 @@ static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDat
   int __pyx_clineno = 0;
   __Pyx_RefNannySetupContext("__get__", 1);
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_self->num_periods); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 10, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_From_int(__pyx_v_self->num_periods); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
@@ -22800,7 +24018,7 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   int __pyx_lineno = 0;
   const char *__pyx_filename = NULL;
   int __pyx_clineno = 0;
-  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 10, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_As_int(__pyx_v_value); if (unlikely((__pyx_t_1 == (int)-1) && PyErr_Occurred())) __PYX_ERR(0, 15, __pyx_L1_error)
   __pyx_v_self->num_periods = __pyx_t_1;
 
   /* function exit code */
@@ -22810,6 +24028,120 @@ static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore
   __Pyx_AddTraceback("src.analysis.models.market_data_store.MarketDataStore.num_periods.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = -1;
   __pyx_L0:;
+  return __pyx_r;
+}
+
+/* "src/analysis/models/market_data_store.pyx":16
+ *         public cnp.ndarray atr, volatility
+ *         public int lookback, num_assets, num_periods
+ *         public Statistics stats             # <<<<<<<<<<<<<<
+ * 
+ *     def __cinit__(
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_1__get__(PyObject *__pyx_v_self); /*proto*/
+static PyObject *__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_1__get__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats___get__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats___get__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self) {
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__get__", 1);
+  __Pyx_XDECREF(__pyx_r);
+  __Pyx_INCREF((PyObject *)__pyx_v_self->stats);
+  __pyx_r = ((PyObject *)__pyx_v_self->stats);
+  goto __pyx_L0;
+
+  /* function exit code */
+  __pyx_L0:;
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_3__set__(PyObject *__pyx_v_self, PyObject *__pyx_v_value) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__set__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_2__set__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self), ((PyObject *)__pyx_v_value));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_2__set__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self, PyObject *__pyx_v_value) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  int __pyx_lineno = 0;
+  const char *__pyx_filename = NULL;
+  int __pyx_clineno = 0;
+  __Pyx_RefNannySetupContext("__set__", 1);
+  if (!(likely(((__pyx_v_value) == Py_None) || likely(__Pyx_TypeTest(__pyx_v_value, __pyx_ptype_8analysis_10statistics_17cython_statistics_Statistics))))) __PYX_ERR(0, 16, __pyx_L1_error)
+  __pyx_t_1 = __pyx_v_value;
+  __Pyx_INCREF(__pyx_t_1);
+  __Pyx_GIVEREF(__pyx_t_1);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->stats);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->stats);
+  __pyx_v_self->stats = ((struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *)__pyx_t_1);
+  __pyx_t_1 = 0;
+
+  /* function exit code */
+  __pyx_r = 0;
+  goto __pyx_L0;
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_AddTraceback("src.analysis.models.market_data_store.MarketDataStore.stats.__set__", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = -1;
+  __pyx_L0:;
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* Python wrapper */
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_5__del__(PyObject *__pyx_v_self); /*proto*/
+static int __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_5__del__(PyObject *__pyx_v_self) {
+  CYTHON_UNUSED PyObject *const *__pyx_kwvalues;
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__ (wrapper)", 0);
+  __pyx_kwvalues = __Pyx_KwValues_VARARGS(__pyx_args, __pyx_nargs);
+  __pyx_r = __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_4__del__(((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)__pyx_v_self));
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static int __pyx_pf_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_4__del__(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *__pyx_v_self) {
+  int __pyx_r;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("__del__", 1);
+  __Pyx_INCREF(Py_None);
+  __Pyx_GIVEREF(Py_None);
+  __Pyx_GOTREF((PyObject *)__pyx_v_self->stats);
+  __Pyx_DECREF((PyObject *)__pyx_v_self->stats);
+  __pyx_v_self->stats = ((struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *)Py_None);
+
+  /* function exit code */
+  __pyx_r = 0;
+  __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
@@ -23044,13 +24376,18 @@ static PyObject *__pyx_tp_new_3src_8analysis_6models_17market_data_store_MarketD
   #endif
   p = ((struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)o);
   p->__pyx_vtab = __pyx_vtabptr_3src_8analysis_6models_17market_data_store_MarketDataStore;
+  p->timestamp = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
   p->open = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
   p->high = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
   p->low = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
   p->close = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
   p->volume = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
+  p->annual_vol = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
+  p->annual_sr = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
+  p->signal_scale_factor = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
   p->atr = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
   p->volatility = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
+  p->stats = ((struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *)Py_None); Py_INCREF(Py_None);
   if (unlikely(__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_1__cinit__(o, a, k) < 0)) goto bad;
   return o;
   bad:
@@ -23068,13 +24405,18 @@ static void __pyx_tp_dealloc_3src_8analysis_6models_17market_data_store_MarketDa
   }
   #endif
   PyObject_GC_UnTrack(o);
+  Py_CLEAR(p->timestamp);
   Py_CLEAR(p->open);
   Py_CLEAR(p->high);
   Py_CLEAR(p->low);
   Py_CLEAR(p->close);
   Py_CLEAR(p->volume);
+  Py_CLEAR(p->annual_vol);
+  Py_CLEAR(p->annual_sr);
+  Py_CLEAR(p->signal_scale_factor);
   Py_CLEAR(p->atr);
   Py_CLEAR(p->volatility);
+  Py_CLEAR(p->stats);
   #if CYTHON_USE_TYPE_SLOTS || CYTHON_COMPILING_IN_PYPY
   (*Py_TYPE(o)->tp_free)(o);
   #else
@@ -23088,6 +24430,9 @@ static void __pyx_tp_dealloc_3src_8analysis_6models_17market_data_store_MarketDa
 static int __pyx_tp_traverse_3src_8analysis_6models_17market_data_store_MarketDataStore(PyObject *o, visitproc v, void *a) {
   int e;
   struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *p = (struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)o;
+  if (p->timestamp) {
+    e = (*v)(((PyObject *)p->timestamp), a); if (e) return e;
+  }
   if (p->open) {
     e = (*v)(((PyObject *)p->open), a); if (e) return e;
   }
@@ -23103,11 +24448,23 @@ static int __pyx_tp_traverse_3src_8analysis_6models_17market_data_store_MarketDa
   if (p->volume) {
     e = (*v)(((PyObject *)p->volume), a); if (e) return e;
   }
+  if (p->annual_vol) {
+    e = (*v)(((PyObject *)p->annual_vol), a); if (e) return e;
+  }
+  if (p->annual_sr) {
+    e = (*v)(((PyObject *)p->annual_sr), a); if (e) return e;
+  }
+  if (p->signal_scale_factor) {
+    e = (*v)(((PyObject *)p->signal_scale_factor), a); if (e) return e;
+  }
   if (p->atr) {
     e = (*v)(((PyObject *)p->atr), a); if (e) return e;
   }
   if (p->volatility) {
     e = (*v)(((PyObject *)p->volatility), a); if (e) return e;
+  }
+  if (p->stats) {
+    e = (*v)(((PyObject *)p->stats), a); if (e) return e;
   }
   return 0;
 }
@@ -23115,6 +24472,9 @@ static int __pyx_tp_traverse_3src_8analysis_6models_17market_data_store_MarketDa
 static int __pyx_tp_clear_3src_8analysis_6models_17market_data_store_MarketDataStore(PyObject *o) {
   PyObject* tmp;
   struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *p = (struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *)o;
+  tmp = ((PyObject*)p->timestamp);
+  p->timestamp = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
+  Py_XDECREF(tmp);
   tmp = ((PyObject*)p->open);
   p->open = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
   Py_XDECREF(tmp);
@@ -23130,11 +24490,23 @@ static int __pyx_tp_clear_3src_8analysis_6models_17market_data_store_MarketDataS
   tmp = ((PyObject*)p->volume);
   p->volume = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
   Py_XDECREF(tmp);
+  tmp = ((PyObject*)p->annual_vol);
+  p->annual_vol = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
+  Py_XDECREF(tmp);
+  tmp = ((PyObject*)p->annual_sr);
+  p->annual_sr = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
+  Py_XDECREF(tmp);
+  tmp = ((PyObject*)p->signal_scale_factor);
+  p->signal_scale_factor = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
+  Py_XDECREF(tmp);
   tmp = ((PyObject*)p->atr);
   p->atr = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
   Py_XDECREF(tmp);
   tmp = ((PyObject*)p->volatility);
   p->volatility = ((PyArrayObject *)Py_None); Py_INCREF(Py_None);
+  Py_XDECREF(tmp);
+  tmp = ((PyObject*)p->stats);
+  p->stats = ((struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics *)Py_None); Py_INCREF(Py_None);
   Py_XDECREF(tmp);
   return 0;
 }
@@ -23149,6 +24521,19 @@ static PyObject *__pyx_getprop_3src_8analysis_6models_17market_data_store_15Mark
 
 static PyObject *__pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_symbols(PyObject *o, CYTHON_UNUSED void *x) {
   return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_7symbols_1__get__(o);
+}
+
+static PyObject *__pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_timestamp(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_1__get__(o);
+}
+
+static int __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_timestamp(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_3__set__(o, v);
+  }
+  else {
+    return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9timestamp_5__del__(o);
+  }
 }
 
 static PyObject *__pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_open(PyObject *o, CYTHON_UNUSED void *x) {
@@ -23216,6 +24601,45 @@ static int __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketData
   }
 }
 
+static PyObject *__pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_annual_vol(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_1__get__(o);
+}
+
+static int __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_annual_vol(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_3__set__(o, v);
+  }
+  else {
+    return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_10annual_vol_5__del__(o);
+  }
+}
+
+static PyObject *__pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_annual_sr(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_1__get__(o);
+}
+
+static int __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_annual_sr(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_3__set__(o, v);
+  }
+  else {
+    return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_9annual_sr_5__del__(o);
+  }
+}
+
+static PyObject *__pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_signal_scale_factor(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_1__get__(o);
+}
+
+static int __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_signal_scale_factor(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_3__set__(o, v);
+  }
+  else {
+    return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_19signal_scale_factor_5__del__(o);
+  }
+}
+
 static PyObject *__pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_atr(PyObject *o, CYTHON_UNUSED void *x) {
   return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_3atr_1__get__(o);
 }
@@ -23239,6 +24663,20 @@ static int __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketData
   }
   else {
     return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_10volatility_5__del__(o);
+  }
+}
+
+static PyObject *__pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_lookback(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_8lookback_1__get__(o);
+}
+
+static int __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_lookback(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_8lookback_3__set__(o, v);
+  }
+  else {
+    PyErr_SetString(PyExc_NotImplementedError, "__del__");
+    return -1;
   }
 }
 
@@ -23270,6 +24708,19 @@ static int __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketData
   }
 }
 
+static PyObject *__pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_stats(PyObject *o, CYTHON_UNUSED void *x) {
+  return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_1__get__(o);
+}
+
+static int __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_stats(PyObject *o, PyObject *v, CYTHON_UNUSED void *x) {
+  if (v) {
+    return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_3__set__(o, v);
+  }
+  else {
+    return __pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_5stats_5__del__(o);
+  }
+}
+
 static PyMethodDef __pyx_methods_3src_8analysis_6models_17market_data_store_MarketDataStore[] = {
   {"__reduce_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_3__reduce_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
   {"__setstate_cython__", (PyCFunction)(void*)(__Pyx_PyCFunction_FastCallWithKeywords)__pyx_pw_3src_8analysis_6models_17market_data_store_15MarketDataStore_5__setstate_cython__, __Pyx_METH_FASTCALL|METH_KEYWORDS, 0},
@@ -23280,15 +24731,21 @@ static struct PyGetSetDef __pyx_getsets_3src_8analysis_6models_17market_data_sto
   {(char *)"periods_per_year", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_periods_per_year, 0, (char *)0, 0},
   {(char *)"periods", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_periods, 0, (char *)PyDoc_STR("\n        Return the number of periods in the data.\n        "), 0},
   {(char *)"symbols", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_symbols, 0, (char *)PyDoc_STR("\n        Return the number of symbols in the data.\n        "), 0},
+  {(char *)"timestamp", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_timestamp, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_timestamp, (char *)0, 0},
   {(char *)"open", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_open, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_open, (char *)0, 0},
   {(char *)"high", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_high, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_high, (char *)0, 0},
   {(char *)"low", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_low, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_low, (char *)0, 0},
   {(char *)"close", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_close, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_close, (char *)0, 0},
   {(char *)"volume", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_volume, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_volume, (char *)0, 0},
+  {(char *)"annual_vol", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_annual_vol, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_annual_vol, (char *)0, 0},
+  {(char *)"annual_sr", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_annual_sr, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_annual_sr, (char *)0, 0},
+  {(char *)"signal_scale_factor", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_signal_scale_factor, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_signal_scale_factor, (char *)0, 0},
   {(char *)"atr", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_atr, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_atr, (char *)0, 0},
   {(char *)"volatility", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_volatility, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_volatility, (char *)0, 0},
+  {(char *)"lookback", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_lookback, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_lookback, (char *)0, 0},
   {(char *)"num_assets", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_num_assets, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_num_assets, (char *)0, 0},
   {(char *)"num_periods", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_num_periods, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_num_periods, (char *)0, 0},
+  {(char *)"stats", __pyx_getprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_stats, __pyx_setprop_3src_8analysis_6models_17market_data_store_15MarketDataStore_stats, (char *)0, 0},
   {0, 0, 0, 0, 0}
 };
 #if CYTHON_USE_TYPE_SPECS
@@ -24415,8 +25872,7 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
     {&__pyx_n_s_abc, __pyx_k_abc, sizeof(__pyx_k_abc), 0, 0, 1, 1},
     {&__pyx_n_s_allocate_buffer, __pyx_k_allocate_buffer, sizeof(__pyx_k_allocate_buffer), 0, 0, 1, 1},
     {&__pyx_kp_u_and, __pyx_k_and, sizeof(__pyx_k_and), 0, 1, 0, 0},
-    {&__pyx_n_s_annual_vol, __pyx_k_annual_vol, sizeof(__pyx_k_annual_vol), 0, 0, 1, 1},
-    {&__pyx_n_s_annualized_volatility, __pyx_k_annualized_volatility, sizeof(__pyx_k_annualized_volatility), 0, 0, 1, 1},
+    {&__pyx_n_s_asarray, __pyx_k_asarray, sizeof(__pyx_k_asarray), 0, 0, 1, 1},
     {&__pyx_n_s_astype, __pyx_k_astype, sizeof(__pyx_k_astype), 0, 0, 1, 1},
     {&__pyx_n_s_asyncio_coroutines, __pyx_k_asyncio_coroutines, sizeof(__pyx_k_asyncio_coroutines), 0, 0, 1, 1},
     {&__pyx_n_s_base, __pyx_k_base, sizeof(__pyx_k_base), 0, 0, 1, 1},
@@ -24447,6 +25903,7 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
     {&__pyx_n_s_format, __pyx_k_format, sizeof(__pyx_k_format), 0, 0, 1, 1},
     {&__pyx_n_s_fortran, __pyx_k_fortran, sizeof(__pyx_k_fortran), 0, 0, 1, 1},
     {&__pyx_n_u_fortran, __pyx_k_fortran, sizeof(__pyx_k_fortran), 0, 1, 0, 1},
+    {&__pyx_n_s_full_like, __pyx_k_full_like, sizeof(__pyx_k_full_like), 0, 0, 1, 1},
     {&__pyx_kp_u_gc, __pyx_k_gc, sizeof(__pyx_k_gc), 0, 1, 0, 0},
     {&__pyx_n_s_getstate, __pyx_k_getstate, sizeof(__pyx_k_getstate), 0, 0, 1, 1},
     {&__pyx_kp_u_got, __pyx_k_got, sizeof(__pyx_k_got), 0, 1, 0, 0},
@@ -24469,6 +25926,7 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
     {&__pyx_n_s_mode, __pyx_k_mode, sizeof(__pyx_k_mode), 0, 0, 1, 1},
     {&__pyx_n_s_name, __pyx_k_name, sizeof(__pyx_k_name), 0, 0, 1, 1},
     {&__pyx_n_s_name_2, __pyx_k_name_2, sizeof(__pyx_k_name_2), 0, 0, 1, 1},
+    {&__pyx_n_s_nan, __pyx_k_nan, sizeof(__pyx_k_nan), 0, 0, 1, 1},
     {&__pyx_n_s_ndim, __pyx_k_ndim, sizeof(__pyx_k_ndim), 0, 0, 1, 1},
     {&__pyx_n_s_new, __pyx_k_new, sizeof(__pyx_k_new), 0, 0, 1, 1},
     {&__pyx_kp_s_no_default___reduce___due_to_non, __pyx_k_no_default___reduce___due_to_non, sizeof(__pyx_k_no_default___reduce___due_to_non), 0, 0, 1, 0},
@@ -24477,8 +25935,8 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
     {&__pyx_kp_u_numpy__core_multiarray_failed_to, __pyx_k_numpy__core_multiarray_failed_to, sizeof(__pyx_k_numpy__core_multiarray_failed_to), 0, 1, 0, 0},
     {&__pyx_kp_u_numpy__core_umath_failed_to_impo, __pyx_k_numpy__core_umath_failed_to_impo, sizeof(__pyx_k_numpy__core_umath_failed_to_impo), 0, 1, 0, 0},
     {&__pyx_n_s_obj, __pyx_k_obj, sizeof(__pyx_k_obj), 0, 0, 1, 1},
+    {&__pyx_n_s_ones, __pyx_k_ones, sizeof(__pyx_k_ones), 0, 0, 1, 1},
     {&__pyx_n_s_open, __pyx_k_open, sizeof(__pyx_k_open), 0, 0, 1, 1},
-    {&__pyx_n_s_open_2, __pyx_k_open_2, sizeof(__pyx_k_open_2), 0, 0, 1, 1},
     {&__pyx_n_s_pack, __pyx_k_pack, sizeof(__pyx_k_pack), 0, 0, 1, 1},
     {&__pyx_n_s_periods_per_year, __pyx_k_periods_per_year, sizeof(__pyx_k_periods_per_year), 0, 0, 1, 1},
     {&__pyx_n_s_pi, __pyx_k_pi, sizeof(__pyx_k_pi), 0, 0, 1, 1},
@@ -24504,7 +25962,6 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
     {&__pyx_n_s_spec, __pyx_k_spec, sizeof(__pyx_k_spec), 0, 0, 1, 1},
     {&__pyx_n_s_src_analysis_models_market_data, __pyx_k_src_analysis_models_market_data, sizeof(__pyx_k_src_analysis_models_market_data), 0, 0, 1, 1},
     {&__pyx_n_s_start, __pyx_k_start, sizeof(__pyx_k_start), 0, 0, 1, 1},
-    {&__pyx_n_s_stats, __pyx_k_stats, sizeof(__pyx_k_stats), 0, 0, 1, 1},
     {&__pyx_n_s_step, __pyx_k_step, sizeof(__pyx_k_step), 0, 0, 1, 1},
     {&__pyx_n_s_stop, __pyx_k_stop, sizeof(__pyx_k_stop), 0, 0, 1, 1},
     {&__pyx_kp_s_strided_and_direct, __pyx_k_strided_and_direct, sizeof(__pyx_k_strided_and_direct), 0, 0, 1, 0},
@@ -24528,8 +25985,8 @@ static int __Pyx_CreateStringTabAndInitStrings(void) {
 }
 /* #### Code section: cached_builtins ### */
 static CYTHON_SMALL_CODE int __Pyx_InitCachedBuiltins(void) {
-  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 69, __pyx_L1_error)
-  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(0, 100, __pyx_L1_error)
+  __pyx_builtin_range = __Pyx_GetBuiltinName(__pyx_n_s_range); if (!__pyx_builtin_range) __PYX_ERR(0, 123, __pyx_L1_error)
+  __pyx_builtin_ValueError = __Pyx_GetBuiltinName(__pyx_n_s_ValueError); if (!__pyx_builtin_ValueError) __PYX_ERR(0, 154, __pyx_L1_error)
   __pyx_builtin_TypeError = __Pyx_GetBuiltinName(__pyx_n_s_TypeError); if (!__pyx_builtin_TypeError) __PYX_ERR(1, 2, __pyx_L1_error)
   __pyx_builtin___import__ = __Pyx_GetBuiltinName(__pyx_n_s_import); if (!__pyx_builtin___import__) __PYX_ERR(1, 100, __pyx_L1_error)
   __pyx_builtin_MemoryError = __Pyx_GetBuiltinName(__pyx_n_s_MemoryError); if (!__pyx_builtin_MemoryError) __PYX_ERR(1, 156, __pyx_L1_error)
@@ -24607,14 +26064,14 @@ static CYTHON_SMALL_CODE int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__10);
   __Pyx_GIVEREF(__pyx_tuple__10);
 
-  /* "src/analysis/models/market_data_store.pyx":100
+  /* "src/analysis/models/market_data_store.pyx":154
  *         # Check if data length is sufficient
  *         if n < 3:
  *             raise ValueError("Data array must have at least 3 elements.")             # <<<<<<<<<<<<<<
  * 
  *         # Initialize the smoothed series with zeros
  */
-  __pyx_tuple__11 = PyTuple_Pack(1, __pyx_kp_u_Data_array_must_have_at_least_3); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(0, 100, __pyx_L1_error)
+  __pyx_tuple__11 = PyTuple_Pack(1, __pyx_kp_u_Data_array_must_have_at_least_3); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(0, 154, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__11);
   __Pyx_GIVEREF(__pyx_tuple__11);
 
@@ -24843,15 +26300,15 @@ static int __Pyx_modinit_type_init_code(void) {
   __pyx_vtable_3src_8analysis_6models_17market_data_store_MarketDataStore.smooth_it = (__Pyx_memviewslice (*)(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *, __Pyx_memviewslice, struct __pyx_opt_args_3src_8analysis_6models_17market_data_store_15MarketDataStore_smooth_it *__pyx_optional_args))__pyx_f_3src_8analysis_6models_17market_data_store_15MarketDataStore_smooth_it;
   __pyx_vtable_3src_8analysis_6models_17market_data_store_MarketDataStore._apply_smoothing_1D = (__Pyx_memviewslice (*)(struct __pyx_obj_3src_8analysis_6models_17market_data_store_MarketDataStore *, __Pyx_memviewslice, int))__pyx_f_3src_8analysis_6models_17market_data_store_15MarketDataStore__apply_smoothing_1D;
   #if CYTHON_USE_TYPE_SPECS
-  __pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_3src_8analysis_6models_17market_data_store_MarketDataStore_spec, NULL); if (unlikely(!__pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore)) __PYX_ERR(0, 6, __pyx_L1_error)
-  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_3src_8analysis_6models_17market_data_store_MarketDataStore_spec, __pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore) < 0) __PYX_ERR(0, 6, __pyx_L1_error)
+  __pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore = (PyTypeObject *) __Pyx_PyType_FromModuleAndSpec(__pyx_m, &__pyx_type_3src_8analysis_6models_17market_data_store_MarketDataStore_spec, NULL); if (unlikely(!__pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore)) __PYX_ERR(0, 8, __pyx_L1_error)
+  if (__Pyx_fix_up_extension_type_from_spec(&__pyx_type_3src_8analysis_6models_17market_data_store_MarketDataStore_spec, __pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
   #else
   __pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore = &__pyx_type_3src_8analysis_6models_17market_data_store_MarketDataStore;
   #endif
   #if !CYTHON_COMPILING_IN_LIMITED_API
   #endif
   #if !CYTHON_USE_TYPE_SPECS
-  if (__Pyx_PyType_Ready(__pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore) < 0) __PYX_ERR(0, 6, __pyx_L1_error)
+  if (__Pyx_PyType_Ready(__pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
   #endif
   #if PY_MAJOR_VERSION < 3
   __pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore->tp_print = 0;
@@ -24861,13 +26318,13 @@ static int __Pyx_modinit_type_init_code(void) {
     __pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore->tp_getattro = __Pyx_PyObject_GenericGetAttr;
   }
   #endif
-  if (__Pyx_SetVtable(__pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore, __pyx_vtabptr_3src_8analysis_6models_17market_data_store_MarketDataStore) < 0) __PYX_ERR(0, 6, __pyx_L1_error)
+  if (__Pyx_SetVtable(__pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore, __pyx_vtabptr_3src_8analysis_6models_17market_data_store_MarketDataStore) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if (__Pyx_MergeVtables(__pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore) < 0) __PYX_ERR(0, 6, __pyx_L1_error)
+  if (__Pyx_MergeVtables(__pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
   #endif
-  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_MarketDataStore, (PyObject *) __pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore) < 0) __PYX_ERR(0, 6, __pyx_L1_error)
+  if (PyObject_SetAttr(__pyx_m, __pyx_n_s_MarketDataStore, (PyObject *) __pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
   #if !CYTHON_COMPILING_IN_LIMITED_API
-  if (__Pyx_setup_reduce((PyObject *) __pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore) < 0) __PYX_ERR(0, 6, __pyx_L1_error)
+  if (__Pyx_setup_reduce((PyObject *) __pyx_ptype_3src_8analysis_6models_17market_data_store_MarketDataStore) < 0) __PYX_ERR(0, 8, __pyx_L1_error)
   #endif
   __pyx_vtabptr_array = &__pyx_vtable_array;
   __pyx_vtable_array.get_memview = (PyObject *(*)(struct __pyx_array_obj *))__pyx_array_get_memview;
@@ -25054,6 +26511,11 @@ static int __Pyx_modinit_type_import_code(void) {
   __pyx_ptype_5numpy_flexible = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "flexible", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_flexible) __PYX_ERR(2, 864, __pyx_L1_error)
   __pyx_ptype_5numpy_character = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "character", sizeof(PyObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyObject),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_5numpy_character) __PYX_ERR(2, 866, __pyx_L1_error)
   __pyx_ptype_5numpy_ufunc = __Pyx_ImportType_3_0_11(__pyx_t_1, "numpy", "ufunc", sizeof(PyUFuncObject), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(PyUFuncObject),__Pyx_ImportType_CheckSize_Ignore_3_0_11); if (!__pyx_ptype_5numpy_ufunc) __PYX_ERR(2, 930, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = PyImport_ImportModule("analysis.statistics.cython_statistics"); if (unlikely(!__pyx_t_1)) __PYX_ERR(4, 4, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_ptype_8analysis_10statistics_17cython_statistics_Statistics = __Pyx_ImportType_3_0_11(__pyx_t_1, "analysis.statistics.cython_statistics", "Statistics", sizeof(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics), __PYX_GET_STRUCT_ALIGNMENT_3_0_11(struct __pyx_obj_8analysis_10statistics_17cython_statistics_Statistics),__Pyx_ImportType_CheckSize_Warn_3_0_11); if (!__pyx_ptype_8analysis_10statistics_17cython_statistics_Statistics) __PYX_ERR(4, 4, __pyx_L1_error)
+  __pyx_vtabptr_8analysis_10statistics_17cython_statistics_Statistics = (struct __pyx_vtabstruct_8analysis_10statistics_17cython_statistics_Statistics*)__Pyx_GetVtable(__pyx_ptype_8analysis_10statistics_17cython_statistics_Statistics); if (unlikely(!__pyx_vtabptr_8analysis_10statistics_17cython_statistics_Statistics)) __PYX_ERR(4, 4, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __Pyx_RefNannyFinishContext();
   return 0;
@@ -25893,7 +27355,7 @@ if (!__Pyx_RefNanny) {
  * import numpy as np
  * from math import cos, exp, pi             # <<<<<<<<<<<<<<
  * 
- * cdef class MarketDataStore:
+ * from analysis.statistics.cython_statistics cimport Statistics
  */
   __pyx_t_7 = PyList_New(3); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 4, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_7);
@@ -28438,17 +29900,142 @@ static CYTHON_INLINE int __Pyx_HasAttr(PyObject *o, PyObject *n) {
     }
 }
 
-/* PyObjectSetAttrStr */
-#if CYTHON_USE_TYPE_SLOTS
-static CYTHON_INLINE int __Pyx_PyObject_SetAttrStr(PyObject* obj, PyObject* attr_name, PyObject* value) {
-    PyTypeObject* tp = Py_TYPE(obj);
-    if (likely(tp->tp_setattro))
-        return tp->tp_setattro(obj, attr_name, value);
-#if PY_MAJOR_VERSION < 3
-    if (likely(tp->tp_setattr))
-        return tp->tp_setattr(obj, PyString_AS_STRING(attr_name), value);
+/* PyObjectCallNoArg */
+static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func) {
+    PyObject *arg[2] = {NULL, NULL};
+    return __Pyx_PyObject_FastCall(func, arg + 1, 0 | __Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET);
+}
+
+/* PyIntBinop */
+#if !CYTHON_COMPILING_IN_PYPY
+static PyObject* __Pyx_PyInt_AddObjC(PyObject *op1, PyObject *op2, long intval, int inplace, int zerodivision_check) {
+    CYTHON_MAYBE_UNUSED_VAR(intval);
+    CYTHON_MAYBE_UNUSED_VAR(inplace);
+    CYTHON_UNUSED_VAR(zerodivision_check);
+    #if PY_MAJOR_VERSION < 3
+    if (likely(PyInt_CheckExact(op1))) {
+        const long b = intval;
+        long x;
+        long a = PyInt_AS_LONG(op1);
+        
+            x = (long)((unsigned long)a + (unsigned long)b);
+            if (likely((x^a) >= 0 || (x^b) >= 0))
+                return PyInt_FromLong(x);
+            return PyLong_Type.tp_as_number->nb_add(op1, op2);
+    }
+    #endif
+    #if CYTHON_USE_PYLONG_INTERNALS
+    if (likely(PyLong_CheckExact(op1))) {
+        const long b = intval;
+        long a, x;
+#ifdef HAVE_LONG_LONG
+        const PY_LONG_LONG llb = intval;
+        PY_LONG_LONG lla, llx;
 #endif
-    return PyObject_SetAttr(obj, attr_name, value);
+        if (unlikely(__Pyx_PyLong_IsZero(op1))) {
+            return __Pyx_NewRef(op2);
+        }
+        if (likely(__Pyx_PyLong_IsCompact(op1))) {
+            a = __Pyx_PyLong_CompactValue(op1);
+        } else {
+            const digit* digits = __Pyx_PyLong_Digits(op1);
+            const Py_ssize_t size = __Pyx_PyLong_SignedDigitCount(op1);
+            switch (size) {
+                case -2:
+                    if (8 * sizeof(long) - 1 > 2 * PyLong_SHIFT) {
+                        a = -(long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0]));
+                        break;
+                    #ifdef HAVE_LONG_LONG
+                    } else if (8 * sizeof(PY_LONG_LONG) - 1 > 2 * PyLong_SHIFT) {
+                        lla = -(PY_LONG_LONG) (((((unsigned PY_LONG_LONG)digits[1]) << PyLong_SHIFT) | (unsigned PY_LONG_LONG)digits[0]));
+                        goto long_long;
+                    #endif
+                    }
+                    CYTHON_FALLTHROUGH;
+                case 2:
+                    if (8 * sizeof(long) - 1 > 2 * PyLong_SHIFT) {
+                        a = (long) (((((unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0]));
+                        break;
+                    #ifdef HAVE_LONG_LONG
+                    } else if (8 * sizeof(PY_LONG_LONG) - 1 > 2 * PyLong_SHIFT) {
+                        lla = (PY_LONG_LONG) (((((unsigned PY_LONG_LONG)digits[1]) << PyLong_SHIFT) | (unsigned PY_LONG_LONG)digits[0]));
+                        goto long_long;
+                    #endif
+                    }
+                    CYTHON_FALLTHROUGH;
+                case -3:
+                    if (8 * sizeof(long) - 1 > 3 * PyLong_SHIFT) {
+                        a = -(long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0]));
+                        break;
+                    #ifdef HAVE_LONG_LONG
+                    } else if (8 * sizeof(PY_LONG_LONG) - 1 > 3 * PyLong_SHIFT) {
+                        lla = -(PY_LONG_LONG) (((((((unsigned PY_LONG_LONG)digits[2]) << PyLong_SHIFT) | (unsigned PY_LONG_LONG)digits[1]) << PyLong_SHIFT) | (unsigned PY_LONG_LONG)digits[0]));
+                        goto long_long;
+                    #endif
+                    }
+                    CYTHON_FALLTHROUGH;
+                case 3:
+                    if (8 * sizeof(long) - 1 > 3 * PyLong_SHIFT) {
+                        a = (long) (((((((unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0]));
+                        break;
+                    #ifdef HAVE_LONG_LONG
+                    } else if (8 * sizeof(PY_LONG_LONG) - 1 > 3 * PyLong_SHIFT) {
+                        lla = (PY_LONG_LONG) (((((((unsigned PY_LONG_LONG)digits[2]) << PyLong_SHIFT) | (unsigned PY_LONG_LONG)digits[1]) << PyLong_SHIFT) | (unsigned PY_LONG_LONG)digits[0]));
+                        goto long_long;
+                    #endif
+                    }
+                    CYTHON_FALLTHROUGH;
+                case -4:
+                    if (8 * sizeof(long) - 1 > 4 * PyLong_SHIFT) {
+                        a = -(long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0]));
+                        break;
+                    #ifdef HAVE_LONG_LONG
+                    } else if (8 * sizeof(PY_LONG_LONG) - 1 > 4 * PyLong_SHIFT) {
+                        lla = -(PY_LONG_LONG) (((((((((unsigned PY_LONG_LONG)digits[3]) << PyLong_SHIFT) | (unsigned PY_LONG_LONG)digits[2]) << PyLong_SHIFT) | (unsigned PY_LONG_LONG)digits[1]) << PyLong_SHIFT) | (unsigned PY_LONG_LONG)digits[0]));
+                        goto long_long;
+                    #endif
+                    }
+                    CYTHON_FALLTHROUGH;
+                case 4:
+                    if (8 * sizeof(long) - 1 > 4 * PyLong_SHIFT) {
+                        a = (long) (((((((((unsigned long)digits[3]) << PyLong_SHIFT) | (unsigned long)digits[2]) << PyLong_SHIFT) | (unsigned long)digits[1]) << PyLong_SHIFT) | (unsigned long)digits[0]));
+                        break;
+                    #ifdef HAVE_LONG_LONG
+                    } else if (8 * sizeof(PY_LONG_LONG) - 1 > 4 * PyLong_SHIFT) {
+                        lla = (PY_LONG_LONG) (((((((((unsigned PY_LONG_LONG)digits[3]) << PyLong_SHIFT) | (unsigned PY_LONG_LONG)digits[2]) << PyLong_SHIFT) | (unsigned PY_LONG_LONG)digits[1]) << PyLong_SHIFT) | (unsigned PY_LONG_LONG)digits[0]));
+                        goto long_long;
+                    #endif
+                    }
+                    CYTHON_FALLTHROUGH;
+                default: return PyLong_Type.tp_as_number->nb_add(op1, op2);
+            }
+        }
+                x = a + b;
+            return PyLong_FromLong(x);
+#ifdef HAVE_LONG_LONG
+        long_long:
+                llx = lla + llb;
+            return PyLong_FromLongLong(llx);
+#endif
+        
+        
+    }
+    #endif
+    if (PyFloat_CheckExact(op1)) {
+        const long b = intval;
+#if CYTHON_COMPILING_IN_LIMITED_API
+        double a = __pyx_PyFloat_AsDouble(op1);
+#else
+        double a = PyFloat_AS_DOUBLE(op1);
+#endif
+            double result;
+            
+            PyFPE_START_PROTECT("add", return NULL)
+            result = ((double)a) + (double)b;
+            PyFPE_END_PROTECT(result)
+            return PyFloat_FromDouble(result);
+    }
+    return (inplace ? PyNumber_InPlaceAdd : PyNumber_Add)(op1, op2);
 }
 #endif
 
@@ -29325,12 +30912,6 @@ static int __Pyx_fix_up_extension_type_from_spec(PyType_Spec *spec, PyTypeObject
     return 0;
 }
 #endif
-
-/* PyObjectCallNoArg */
-static CYTHON_INLINE PyObject* __Pyx_PyObject_CallNoArg(PyObject *func) {
-    PyObject *arg[2] = {NULL, NULL};
-    return __Pyx_PyObject_FastCall(func, arg + 1, 0 | __Pyx_PY_VECTORCALL_ARGUMENTS_OFFSET);
-}
 
 /* PyObjectGetMethod */
 static int __Pyx_PyObject_GetMethod(PyObject *obj, PyObject *name, PyObject **method) {
@@ -31502,18 +33083,6 @@ __pyx_slices_overlap(__Pyx_memviewslice *slice1,
         return (target_type) value;\
     }
 
-/* MemviewDtypeToObject */
-static CYTHON_INLINE PyObject *__pyx_memview_get_double(const char *itemp) {
-    return (PyObject *) PyFloat_FromDouble(*(double *) itemp);
-}
-static CYTHON_INLINE int __pyx_memview_set_double(const char *itemp, PyObject *obj) {
-    double value = __pyx_PyFloat_AsDouble(obj);
-    if (unlikely((value == (double)-1) && PyErr_Occurred()))
-        return 0;
-    *(double *) itemp = value;
-    return 1;
-}
-
 /* IsLittleEndian */
 static CYTHON_INLINE int __Pyx_Is_Little_Endian(void)
 {
@@ -32259,6 +33828,41 @@ no_fail:
 }
 
 /* ObjectToMemviewSlice */
+  static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_dsds_double(PyObject *obj, int writable_flag) {
+    __Pyx_memviewslice result = { 0, 0, { 0 }, { 0 }, { 0 } };
+    __Pyx_BufFmt_StackElem stack[1];
+    int axes_specs[] = { (__Pyx_MEMVIEW_DIRECT | __Pyx_MEMVIEW_STRIDED), (__Pyx_MEMVIEW_DIRECT | __Pyx_MEMVIEW_STRIDED) };
+    int retcode;
+    if (obj == Py_None) {
+        result.memview = (struct __pyx_memoryview_obj *) Py_None;
+        return result;
+    }
+    retcode = __Pyx_ValidateAndInit_memviewslice(axes_specs, 0,
+                                                 PyBUF_RECORDS_RO | writable_flag, 2,
+                                                 &__Pyx_TypeInfo_double, stack,
+                                                 &result, obj);
+    if (unlikely(retcode == -1))
+        goto __pyx_fail;
+    return result;
+__pyx_fail:
+    result.memview = NULL;
+    result.data = NULL;
+    return result;
+}
+
+/* MemviewDtypeToObject */
+  static CYTHON_INLINE PyObject *__pyx_memview_get_double(const char *itemp) {
+    return (PyObject *) PyFloat_FromDouble(*(double *) itemp);
+}
+static CYTHON_INLINE int __pyx_memview_set_double(const char *itemp, PyObject *obj) {
+    double value = __pyx_PyFloat_AsDouble(obj);
+    if (unlikely((value == (double)-1) && PyErr_Occurred()))
+        return 0;
+    *(double *) itemp = value;
+    return 1;
+}
+
+/* ObjectToMemviewSlice */
   static CYTHON_INLINE __Pyx_memviewslice __Pyx_PyObject_to_MemoryviewSlice_ds_double(PyObject *obj, int writable_flag) {
     __Pyx_memviewslice result = { 0, 0, { 0 }, { 0 }, { 0 } };
     __Pyx_BufFmt_StackElem stack[1];
@@ -32945,219 +34549,6 @@ static CYTHON_INLINE void __Pyx_XCLEAR_MEMVIEW(__Pyx_memviewslice *memslice,
     }
 }
 
-/* CIntToPy */
-  static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
-#ifdef __Pyx_HAS_GCC_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
-    const long neg_one = (long) -1, const_zero = (long) 0;
-#ifdef __Pyx_HAS_GCC_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(long) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(long) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-#ifdef HAVE_LONG_LONG
-        } else if (sizeof(long) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-#endif
-        }
-    } else {
-        if (sizeof(long) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-#ifdef HAVE_LONG_LONG
-        } else if (sizeof(long) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-#endif
-        }
-    }
-    {
-        unsigned char *bytes = (unsigned char *)&value;
-#if !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX >= 0x030d00A4
-        if (is_unsigned) {
-            return PyLong_FromUnsignedNativeBytes(bytes, sizeof(value), -1);
-        } else {
-            return PyLong_FromNativeBytes(bytes, sizeof(value), -1);
-        }
-#elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        return _PyLong_FromByteArray(bytes, sizeof(long),
-                                     little, !is_unsigned);
-#else
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        PyObject *from_bytes, *result = NULL;
-        PyObject *py_bytes = NULL, *arg_tuple = NULL, *kwds = NULL, *order_str = NULL;
-        from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
-        if (!from_bytes) return NULL;
-        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(long));
-        if (!py_bytes) goto limited_bad;
-        order_str = PyUnicode_FromString(little ? "little" : "big");
-        if (!order_str) goto limited_bad;
-        arg_tuple = PyTuple_Pack(2, py_bytes, order_str);
-        if (!arg_tuple) goto limited_bad;
-        if (!is_unsigned) {
-            kwds = PyDict_New();
-            if (!kwds) goto limited_bad;
-            if (PyDict_SetItemString(kwds, "signed", __Pyx_NewRef(Py_True))) goto limited_bad;
-        }
-        result = PyObject_Call(from_bytes, arg_tuple, kwds);
-        limited_bad:
-        Py_XDECREF(kwds);
-        Py_XDECREF(arg_tuple);
-        Py_XDECREF(order_str);
-        Py_XDECREF(py_bytes);
-        Py_XDECREF(from_bytes);
-        return result;
-#endif
-    }
-}
-
-/* CIntToPy */
-  static CYTHON_INLINE PyObject* __Pyx_PyInt_From_npy_intp(npy_intp value) {
-#ifdef __Pyx_HAS_GCC_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
-    const npy_intp neg_one = (npy_intp) -1, const_zero = (npy_intp) 0;
-#ifdef __Pyx_HAS_GCC_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(npy_intp) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(npy_intp) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-#ifdef HAVE_LONG_LONG
-        } else if (sizeof(npy_intp) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-#endif
-        }
-    } else {
-        if (sizeof(npy_intp) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-#ifdef HAVE_LONG_LONG
-        } else if (sizeof(npy_intp) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-#endif
-        }
-    }
-    {
-        unsigned char *bytes = (unsigned char *)&value;
-#if !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX >= 0x030d00A4
-        if (is_unsigned) {
-            return PyLong_FromUnsignedNativeBytes(bytes, sizeof(value), -1);
-        } else {
-            return PyLong_FromNativeBytes(bytes, sizeof(value), -1);
-        }
-#elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        return _PyLong_FromByteArray(bytes, sizeof(npy_intp),
-                                     little, !is_unsigned);
-#else
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        PyObject *from_bytes, *result = NULL;
-        PyObject *py_bytes = NULL, *arg_tuple = NULL, *kwds = NULL, *order_str = NULL;
-        from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
-        if (!from_bytes) return NULL;
-        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(npy_intp));
-        if (!py_bytes) goto limited_bad;
-        order_str = PyUnicode_FromString(little ? "little" : "big");
-        if (!order_str) goto limited_bad;
-        arg_tuple = PyTuple_Pack(2, py_bytes, order_str);
-        if (!arg_tuple) goto limited_bad;
-        if (!is_unsigned) {
-            kwds = PyDict_New();
-            if (!kwds) goto limited_bad;
-            if (PyDict_SetItemString(kwds, "signed", __Pyx_NewRef(Py_True))) goto limited_bad;
-        }
-        result = PyObject_Call(from_bytes, arg_tuple, kwds);
-        limited_bad:
-        Py_XDECREF(kwds);
-        Py_XDECREF(arg_tuple);
-        Py_XDECREF(order_str);
-        Py_XDECREF(py_bytes);
-        Py_XDECREF(from_bytes);
-        return result;
-#endif
-    }
-}
-
-/* CIntToPy */
-  static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
-#ifdef __Pyx_HAS_GCC_DIAGNOSTIC
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-#endif
-    const int neg_one = (int) -1, const_zero = (int) 0;
-#ifdef __Pyx_HAS_GCC_DIAGNOSTIC
-#pragma GCC diagnostic pop
-#endif
-    const int is_unsigned = neg_one > const_zero;
-    if (is_unsigned) {
-        if (sizeof(int) < sizeof(long)) {
-            return PyInt_FromLong((long) value);
-        } else if (sizeof(int) <= sizeof(unsigned long)) {
-            return PyLong_FromUnsignedLong((unsigned long) value);
-#ifdef HAVE_LONG_LONG
-        } else if (sizeof(int) <= sizeof(unsigned PY_LONG_LONG)) {
-            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
-#endif
-        }
-    } else {
-        if (sizeof(int) <= sizeof(long)) {
-            return PyInt_FromLong((long) value);
-#ifdef HAVE_LONG_LONG
-        } else if (sizeof(int) <= sizeof(PY_LONG_LONG)) {
-            return PyLong_FromLongLong((PY_LONG_LONG) value);
-#endif
-        }
-    }
-    {
-        unsigned char *bytes = (unsigned char *)&value;
-#if !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX >= 0x030d00A4
-        if (is_unsigned) {
-            return PyLong_FromUnsignedNativeBytes(bytes, sizeof(value), -1);
-        } else {
-            return PyLong_FromNativeBytes(bytes, sizeof(value), -1);
-        }
-#elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        return _PyLong_FromByteArray(bytes, sizeof(int),
-                                     little, !is_unsigned);
-#else
-        int one = 1; int little = (int)*(unsigned char *)&one;
-        PyObject *from_bytes, *result = NULL;
-        PyObject *py_bytes = NULL, *arg_tuple = NULL, *kwds = NULL, *order_str = NULL;
-        from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
-        if (!from_bytes) return NULL;
-        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(int));
-        if (!py_bytes) goto limited_bad;
-        order_str = PyUnicode_FromString(little ? "little" : "big");
-        if (!order_str) goto limited_bad;
-        arg_tuple = PyTuple_Pack(2, py_bytes, order_str);
-        if (!arg_tuple) goto limited_bad;
-        if (!is_unsigned) {
-            kwds = PyDict_New();
-            if (!kwds) goto limited_bad;
-            if (PyDict_SetItemString(kwds, "signed", __Pyx_NewRef(Py_True))) goto limited_bad;
-        }
-        result = PyObject_Call(from_bytes, arg_tuple, kwds);
-        limited_bad:
-        Py_XDECREF(kwds);
-        Py_XDECREF(arg_tuple);
-        Py_XDECREF(order_str);
-        Py_XDECREF(py_bytes);
-        Py_XDECREF(from_bytes);
-        return result;
-#endif
-    }
-}
-
 /* CIntFromPy */
   static CYTHON_INLINE int __Pyx_PyInt_As_int(PyObject *x) {
 #ifdef __Pyx_HAS_GCC_DIAGNOSTIC
@@ -33423,6 +34814,219 @@ raise_neg_overflow:
     PyErr_SetString(PyExc_OverflowError,
         "can't convert negative value to int");
     return (int) -1;
+}
+
+/* CIntToPy */
+  static CYTHON_INLINE PyObject* __Pyx_PyInt_From_npy_intp(npy_intp value) {
+#ifdef __Pyx_HAS_GCC_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
+    const npy_intp neg_one = (npy_intp) -1, const_zero = (npy_intp) 0;
+#ifdef __Pyx_HAS_GCC_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(npy_intp) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(npy_intp) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+#ifdef HAVE_LONG_LONG
+        } else if (sizeof(npy_intp) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+#endif
+        }
+    } else {
+        if (sizeof(npy_intp) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+#ifdef HAVE_LONG_LONG
+        } else if (sizeof(npy_intp) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+#endif
+        }
+    }
+    {
+        unsigned char *bytes = (unsigned char *)&value;
+#if !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX >= 0x030d00A4
+        if (is_unsigned) {
+            return PyLong_FromUnsignedNativeBytes(bytes, sizeof(value), -1);
+        } else {
+            return PyLong_FromNativeBytes(bytes, sizeof(value), -1);
+        }
+#elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        return _PyLong_FromByteArray(bytes, sizeof(npy_intp),
+                                     little, !is_unsigned);
+#else
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        PyObject *from_bytes, *result = NULL;
+        PyObject *py_bytes = NULL, *arg_tuple = NULL, *kwds = NULL, *order_str = NULL;
+        from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
+        if (!from_bytes) return NULL;
+        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(npy_intp));
+        if (!py_bytes) goto limited_bad;
+        order_str = PyUnicode_FromString(little ? "little" : "big");
+        if (!order_str) goto limited_bad;
+        arg_tuple = PyTuple_Pack(2, py_bytes, order_str);
+        if (!arg_tuple) goto limited_bad;
+        if (!is_unsigned) {
+            kwds = PyDict_New();
+            if (!kwds) goto limited_bad;
+            if (PyDict_SetItemString(kwds, "signed", __Pyx_NewRef(Py_True))) goto limited_bad;
+        }
+        result = PyObject_Call(from_bytes, arg_tuple, kwds);
+        limited_bad:
+        Py_XDECREF(kwds);
+        Py_XDECREF(arg_tuple);
+        Py_XDECREF(order_str);
+        Py_XDECREF(py_bytes);
+        Py_XDECREF(from_bytes);
+        return result;
+#endif
+    }
+}
+
+/* CIntToPy */
+  static CYTHON_INLINE PyObject* __Pyx_PyInt_From_int(int value) {
+#ifdef __Pyx_HAS_GCC_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
+    const int neg_one = (int) -1, const_zero = (int) 0;
+#ifdef __Pyx_HAS_GCC_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(int) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(int) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+#ifdef HAVE_LONG_LONG
+        } else if (sizeof(int) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+#endif
+        }
+    } else {
+        if (sizeof(int) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+#ifdef HAVE_LONG_LONG
+        } else if (sizeof(int) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+#endif
+        }
+    }
+    {
+        unsigned char *bytes = (unsigned char *)&value;
+#if !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX >= 0x030d00A4
+        if (is_unsigned) {
+            return PyLong_FromUnsignedNativeBytes(bytes, sizeof(value), -1);
+        } else {
+            return PyLong_FromNativeBytes(bytes, sizeof(value), -1);
+        }
+#elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        return _PyLong_FromByteArray(bytes, sizeof(int),
+                                     little, !is_unsigned);
+#else
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        PyObject *from_bytes, *result = NULL;
+        PyObject *py_bytes = NULL, *arg_tuple = NULL, *kwds = NULL, *order_str = NULL;
+        from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
+        if (!from_bytes) return NULL;
+        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(int));
+        if (!py_bytes) goto limited_bad;
+        order_str = PyUnicode_FromString(little ? "little" : "big");
+        if (!order_str) goto limited_bad;
+        arg_tuple = PyTuple_Pack(2, py_bytes, order_str);
+        if (!arg_tuple) goto limited_bad;
+        if (!is_unsigned) {
+            kwds = PyDict_New();
+            if (!kwds) goto limited_bad;
+            if (PyDict_SetItemString(kwds, "signed", __Pyx_NewRef(Py_True))) goto limited_bad;
+        }
+        result = PyObject_Call(from_bytes, arg_tuple, kwds);
+        limited_bad:
+        Py_XDECREF(kwds);
+        Py_XDECREF(arg_tuple);
+        Py_XDECREF(order_str);
+        Py_XDECREF(py_bytes);
+        Py_XDECREF(from_bytes);
+        return result;
+#endif
+    }
+}
+
+/* CIntToPy */
+  static CYTHON_INLINE PyObject* __Pyx_PyInt_From_long(long value) {
+#ifdef __Pyx_HAS_GCC_DIAGNOSTIC
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+#endif
+    const long neg_one = (long) -1, const_zero = (long) 0;
+#ifdef __Pyx_HAS_GCC_DIAGNOSTIC
+#pragma GCC diagnostic pop
+#endif
+    const int is_unsigned = neg_one > const_zero;
+    if (is_unsigned) {
+        if (sizeof(long) < sizeof(long)) {
+            return PyInt_FromLong((long) value);
+        } else if (sizeof(long) <= sizeof(unsigned long)) {
+            return PyLong_FromUnsignedLong((unsigned long) value);
+#ifdef HAVE_LONG_LONG
+        } else if (sizeof(long) <= sizeof(unsigned PY_LONG_LONG)) {
+            return PyLong_FromUnsignedLongLong((unsigned PY_LONG_LONG) value);
+#endif
+        }
+    } else {
+        if (sizeof(long) <= sizeof(long)) {
+            return PyInt_FromLong((long) value);
+#ifdef HAVE_LONG_LONG
+        } else if (sizeof(long) <= sizeof(PY_LONG_LONG)) {
+            return PyLong_FromLongLong((PY_LONG_LONG) value);
+#endif
+        }
+    }
+    {
+        unsigned char *bytes = (unsigned char *)&value;
+#if !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX >= 0x030d00A4
+        if (is_unsigned) {
+            return PyLong_FromUnsignedNativeBytes(bytes, sizeof(value), -1);
+        } else {
+            return PyLong_FromNativeBytes(bytes, sizeof(value), -1);
+        }
+#elif !CYTHON_COMPILING_IN_LIMITED_API && PY_VERSION_HEX < 0x030d0000
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        return _PyLong_FromByteArray(bytes, sizeof(long),
+                                     little, !is_unsigned);
+#else
+        int one = 1; int little = (int)*(unsigned char *)&one;
+        PyObject *from_bytes, *result = NULL;
+        PyObject *py_bytes = NULL, *arg_tuple = NULL, *kwds = NULL, *order_str = NULL;
+        from_bytes = PyObject_GetAttrString((PyObject*)&PyLong_Type, "from_bytes");
+        if (!from_bytes) return NULL;
+        py_bytes = PyBytes_FromStringAndSize((char*)bytes, sizeof(long));
+        if (!py_bytes) goto limited_bad;
+        order_str = PyUnicode_FromString(little ? "little" : "big");
+        if (!order_str) goto limited_bad;
+        arg_tuple = PyTuple_Pack(2, py_bytes, order_str);
+        if (!arg_tuple) goto limited_bad;
+        if (!is_unsigned) {
+            kwds = PyDict_New();
+            if (!kwds) goto limited_bad;
+            if (PyDict_SetItemString(kwds, "signed", __Pyx_NewRef(Py_True))) goto limited_bad;
+        }
+        result = PyObject_Call(from_bytes, arg_tuple, kwds);
+        limited_bad:
+        Py_XDECREF(kwds);
+        Py_XDECREF(arg_tuple);
+        Py_XDECREF(order_str);
+        Py_XDECREF(py_bytes);
+        Py_XDECREF(from_bytes);
+        return result;
+#endif
+    }
 }
 
 /* CIntFromPy */
