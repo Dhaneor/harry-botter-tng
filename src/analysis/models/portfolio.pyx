@@ -8,11 +8,12 @@ cimport numpy as np
 import numpy as np
 from functools import reduce
 from libc.stdlib cimport malloc, free
+from .shared cimport MarketData, BacktestData, ActionData
 
 cdef double fee_rate = 0.001
 cdef double slippage_rate = 0.001
 
-
+"""
 cdef extern from *:
     ctypedef struct MarketData:
         double** open
@@ -40,7 +41,7 @@ cdef struct ActionData:
     double quote_qty
     double fee
     double slippage
-
+"""
 
 """"
 cdef class StopOrder:

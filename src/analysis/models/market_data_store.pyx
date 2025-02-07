@@ -3,6 +3,7 @@ cimport numpy as cnp
 import numpy as np
 from math import cos, exp, pi
 
+from .shared cimport MarketData
 from analysis.statistics.cython_statistics cimport Statistics
 
 cdef class MarketDataStore:
@@ -94,16 +95,12 @@ cdef class MarketDataStore:
 
     @property
     def periods(self) -> int:
-        """
-        Return the number of periods in the data.
-        """
+        """Return the number of periods in the data."""
         return self.timestamp.shape[0]
 
     @property
     def symbols(self) -> int:
-        """
-        Return the number of symbols in the data.
-        """
+        """ Return the number of symbols in the data."""
         return self.close.shape[1]
 
     # ..................................................................................

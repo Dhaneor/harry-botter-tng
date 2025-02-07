@@ -201,8 +201,13 @@ class MarketDataStoreJIT:
         
         return us
 
+
 class MarketData(PlottingMixin):
     """A class to hold OHLCV data for multiple symbols.
+
+    This is a wrapper class for MarketDataStore which holds the actual 
+    data and is a cythonized class that can be used be other cythonized
+    code.
 
     NOTE: This class assumes that the provided data is for
     the same interval for all symbols.
