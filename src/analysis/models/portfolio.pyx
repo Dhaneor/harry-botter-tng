@@ -8,8 +8,8 @@ cimport numpy as np
 import numpy as np
 from functools import reduce
 from libc.stdlib cimport malloc, free
-from .shared cimport BacktestData, ActionData
-from analysis.models.market_data_store cimport MarketDataStore
+from .shared cimport ActionData
+from analysis.models.market_data_store cimport MarketDataStore, MarketState
 
 cdef double fee_rate = 0.001
 cdef double slippage_rate = 0.001
@@ -291,77 +291,64 @@ cdef class Position:
 
 
 # ................................. Portfolio class ....................................
-
 cdef class Portfolio:
 
     cdef:
-        MarketDataStore market_data
-        public np.ndarray leverage
-        public np.ndarray cash_balance
+        list[double] shape
+        list[double] a_weights
+        list[double] s_weights
         public np.ndarray equity
         public np.ndarray base_qty
         public np.ndarray quote_qty
-        public np.ndarray effective_leverage_per_asset
-        public np.ndarray effective_leverage_global
+        public np.ndarray leverage
+        public np.ndarray quote_qty_global
+        public np.ndarray equity_global
+        public np.ndarray leverage_global
 
-    def __cinit__(self, int num_assets, int num_timepoints):
-        self.leverage = np.zeros((num_assets, num_timepoints), dtype=np.float64)
-        self.cash_balance = np.zeros((num_assets, num_timepoints), dtype=np.float64)
-        self.equity = np.zeros((num_assets, num_timepoints), dtype=np.float64)
-        self.base_qty = np.zeros((num_assets, num_assets, num_timepoints), dtype=np.float64)
-        self.quote_qty = np.zeros((num_assets, num_assets, num_timepoints), dtype=np.float64)
-        self.effective_leverage_per_asset = np.zeros((num_assets, num_assets, num_timepoints), dtype=np.float64)
-        self.effective_leverage_global = np.zeros((num_assets, num_timepoints), dtype=np.float64)
+    def __cinit__(
+        self, 
+        list[double] shape, 
+        list[double] a_weights, 
+        list[double] s_weights
+    ):
+        self.shape = shape
+
+        self.a_weights = a_weights
+        self.s_weights = s_weights
+
+        # arrays for tracking assets per period and strategy
+        self.equity = np.zeros(shape, dtype=np.float64)
+        self.base_qty = np.zeros(shape, dtype=np.float64)
+        self.quote_qty = np.zeros(shape, dtype=np.float64)
+        self.leverage = np.zeros(shape, dtype=np.float64)
+
+        # arrays for tracking the portfolio
+        self.quote_qty_global = np.zeros(self.shape[:1], dtype=np.float64)
+        self.equity_global = np.zeros(self.shape[:1], dtype=np.float64)
+        self.leverage_global = np.zeros(self.shape[:1], dtype=np.float64)
+
+    cdef void update(self, MarketState state):
+        pass
 
 
 # ................................ The BackTestEngine ...................................
-"""
 cdef class BacktestEngine:
     cdef:
-        BacktestData* data
+        MarketDataStore market_data
+        np.ndarray signals
         Portfolio portfolio
-        list positions
-        int num_periods
-        int num_assets
 
-    def __cinit__(self, int num_periods, int num_assets):
-        self.num_periods = num_periods
-        self.num_assets = num_assets
-        
-        # Allocate memory for BacktestData
-        self.data = <BacktestData*>malloc(sizeof(BacktestData))
-        if not self.data:
-            raise MemoryError()
-
-        # Initialize arrays
-        self.data.market_data.open = np.zeros((num_periods, num_assets), dtype=np.float64)
-        self.data.market_data.high = np.zeros((num_periods, num_assets), dtype=np.float64)
-        self.data.market_data.low = np.zeros((num_periods, num_assets), dtype=np.float64)
-        self.data.market_data.close = np.zeros((num_periods, num_assets), dtype=np.float64)
-        self.data.market_data.volume = np.zeros((num_periods, num_assets), dtype=np.float64)
-        self.data.market_data.atr = np.zeros((num_periods, num_assets), dtype=np.float64)
-        self.data.market_data.volatility = np.zeros((num_periods, num_assets), dtype=np.float64)
-
-        self.data.leverage = np.zeros((num_periods, num_assets), dtype=np.float64)
-        self.data.cash_balance = np.zeros((num_periods, 1), dtype=np.float64)
-        self.data.equity = np.zeros((num_periods, 1), dtype=np.float64)
-        self.data.asset_balances = np.zeros((num_periods, num_assets, 1), dtype=np.float64)
-        self.data.effective_leverage_per_asset = np.zeros((num_periods, num_assets), dtype=np.float64)
-        self.data.effective_leverage_global = np.zeros(num_periods, dtype=np.float64)
-
-        # Initialize Portfolio and Positions
-        self.portfolio = Portfolio(self.data)
-        self.positions = [Position(self.data, i) for i in range(num_assets)]
-
-    def __dealloc__(self):
-        if self.data:
-            free(self.data)
+    def __cinit__(self, MarketDataStore market_data, np.ndarray signals):
+        self.market_data = market_data
+        self.signals = signals
+                
+        # Initialize Portfolio
+        self.portfolios = [Portfolio(self.data) for _ in range(signals.shape[2])]
 
     def run_backtest(self):
-        # Backtest logic here
-        pass
-"""
+        periods, _, strategies = self.shape
 
-# Usage
-# cdef BacktestEngine engine = BacktestEngine(1000, 5)  # 1000 periods, 5 assets
-# engine.run_backtest()
+        for p in range(periods):
+            state = self.market_data.get_state(p)
+            for s in range(strategies):
+                self.portfolio.update(state)

@@ -6,9 +6,12 @@ Created on Wed Feb 05 06:09:23 2025
 @author: dhaneor
 """
 
+import numpy as np
 import pytest
 from analysis.models.portfolio import Buy, Sell, Position
 
+
+# ........................ Tests for the Buy/Sell action classes .......................
 def test_buy_calculation():
     buy = Buy(1000, 100, 10)  # timestamp, amount, price
 
@@ -81,6 +84,50 @@ def test_repr():
 
     sell = Sell(2000, 10, 11)
     assert repr(sell) == "Sell(timestamp=2000, amount=10.0, price=11.0)"
+
+
+# ......................... Tests for the MarketState classes ..........................
+# def test_market_state():
+#     timestamp = 1735865000000
+#     open_ = np.random.rand(1000, 10)
+#     high = np.random.rand(1000, 10)
+#     low = np.random.rand(1000, 10)
+#     close = np.random.rand(1000, 10)
+#     leverage = np.random.rand(1000, 10)
+#     signals = np.random.rand(1000, 10, 10)
+
+
+#     ms = MarketState(
+#         timestamp,
+#         open_[0, :],
+#         high[0, :],
+#         low[0, :],
+#         close[0, :],
+#         leverage[0, :],
+#         signals[0, :, 0],
+#     )
+
+#     assert isinstance(ms, MarketState)
+#     assert ms.timestamp == timestamp
+#     try:
+#         np.testing.assert_equal(ms.open, open_[0, :])
+#         np.testing.assert_equal(ms.high, high[0, :])
+#         np.testing.assert_equal(ms.low, low[0, :])
+#         np.testing.assert_equal(ms.close, close[0, :])
+#         np.testing.assert_equal(ms.leverage, leverage[0, :])
+#         np.testing.assert_equal(ms.signals, signals[0, :, 0])
+#     except AssertionError as e:
+#         print(str(e))
+#         raise
+
+
+# def test_market_state_pool():
+#     p = MarketStatePool(10)
+
+#     assert isinstance(p, MarketStatePool)
+#     assert len(p.pool) == 10
+#     assert p.size == 10
+#     assert isinstance(p.pool[0], MarketState)
 
 # ............................ Tests for the Position class ............................
 def test_position_init():

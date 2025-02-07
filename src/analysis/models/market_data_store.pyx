@@ -1,11 +1,61 @@
 # cython: language_level=3
-cimport numpy as cnp
+cimport numpy as np
 import numpy as np
 from math import cos, exp, pi
 
 from .shared cimport MarketData
 from analysis.statistics.cython_statistics cimport Statistics
 
+
+# ............................... MarketState classes ..................................
+cdef class MarketState:
+
+    def __cinit__(self):
+        self.timestamp = 0
+        # Initialize with empty memoryviews
+        self.open = self.high = self.low = self.close = self.volume = \
+        np.empty(0, dtype=np.float64)
+
+    cdef void update(
+        self, 
+        long long timestamp, 
+        double[:] open, 
+        double[:] high, 
+        double[:] low,  
+        double[:] close, 
+        double[:] volume, 
+    ):
+        self.timestamp = timestamp
+        self.open = open
+        self.high = high
+        self.low = low
+        self.close = close
+        self.volume = volume
+
+
+cdef class MarketStatePool:
+
+    def __cinit__(self, int size):
+        self._pool = [MarketState() for _ in range(size)]
+        self.size = size
+
+    cdef MarketState get(self):
+        return self._pool.pop() if self._pool else MarketState()
+
+    cdef void release(self, MarketState state):
+        if len(self._pool) < self.size:
+            self._pool.append(state)
+
+    @property
+    def pool(self):
+        return self._pool
+
+    @property
+    def size(self):
+        return len(self._pool)
+
+
+# .................................. MarketDataStore class .............................
 cdef class MarketDataStore:
 
     def __cinit__(
@@ -28,10 +78,11 @@ cdef class MarketDataStore:
         self.lookback = lookback     
 
         self.stats = Statistics() 
+        self._state_pool = MarketStatePool(5)
 
         rows, cols = close.shape[0], close.shape[1]
 
-        self.atr = np.full_like(close, np.nan)
+        self.atr = np.full_like(close, np.nan, dtype=np.float64)
         self.annual_vol = np.zeros((rows, cols), dtype=np.float64)
         self.annual_sr = np.ones((rows, cols), dtype=np.float64)
         self.signal_scale_factor = np.ones((rows, cols), dtype=np.float64)
@@ -102,6 +153,21 @@ cdef class MarketDataStore:
             self.periods_per_year,
             self.lookback
         )
+
+    cdef get_state(self, int index):
+        state = self._state_pool.get()
+        state.update(
+            self.timestamp[index],
+            self.open[index, :],
+            self.high[index, :],
+            self.low[index, :],
+            self.close[index, :],
+            self.volume[index, :],
+        )
+        return state
+
+    cdef release_state(self, MarketState state):
+        self._state_pool.release(state)
 
     cdef void compute_atr(self, int period=14):
         cdef int markets

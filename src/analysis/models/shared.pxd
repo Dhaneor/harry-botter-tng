@@ -13,18 +13,6 @@ ctypedef struct MarketData:
     double** atr
     double** volatility
 
-
-ctypedef struct BacktestData:
-    MarketData market_data
-    double** leverage
-    double** cash_balance
-    double** equity
-    double** base_qty
-    double** quote_qty
-    double** effective_leverage_per_asset
-    double** effective_leverage_global
-
-
 cdef struct ActionData:
     np.int64_t timestamp
     double price
