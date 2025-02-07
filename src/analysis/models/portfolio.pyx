@@ -8,40 +8,11 @@ cimport numpy as np
 import numpy as np
 from functools import reduce
 from libc.stdlib cimport malloc, free
-from .shared cimport MarketData, BacktestData, ActionData
+from .shared cimport BacktestData, ActionData
+from analysis.models.market_data_store cimport MarketDataStore
 
 cdef double fee_rate = 0.001
 cdef double slippage_rate = 0.001
-
-"""
-cdef extern from *:
-    ctypedef struct MarketData:
-        double** open
-        double** high
-        double** low
-        double** close
-        double** volume
-        double** atr
-        double** volatility
-
-    ctypedef struct BacktestData:
-        MarketData market_data
-        double** leverage
-        double** cash_balance
-        double** equity
-        double*** asset_balances
-        double** effective_leverage_per_asset
-        double* effective_leverage_global
-
-
-cdef struct ActionData:
-    np.int64_t timestamp
-    double price
-    double qty
-    double quote_qty
-    double fee
-    double slippage
-"""
 
 """"
 cdef class StopOrder:
@@ -320,17 +291,27 @@ cdef class Position:
 
 
 # ................................. Portfolio class ....................................
+
 cdef class Portfolio:
 
-    cdef BacktestData* data
+    cdef:
+        MarketDataStore market_data
+        public np.ndarray leverage
+        public np.ndarray cash_balance
+        public np.ndarray equity
+        public np.ndarray base_qty
+        public np.ndarray quote_qty
+        public np.ndarray effective_leverage_per_asset
+        public np.ndarray effective_leverage_global
 
-    def __cinit__(self, BacktestData* data):
-        self.data = data
-
-    # cdef void process_period(
-    #     self, np.int64_ timestamp, np.ndarray open_price, double close_price
-    # ):
-    #     pass
+    def __cinit__(self, int num_assets, int num_timepoints):
+        self.leverage = np.zeros((num_assets, num_timepoints), dtype=np.float64)
+        self.cash_balance = np.zeros((num_assets, num_timepoints), dtype=np.float64)
+        self.equity = np.zeros((num_assets, num_timepoints), dtype=np.float64)
+        self.base_qty = np.zeros((num_assets, num_assets, num_timepoints), dtype=np.float64)
+        self.quote_qty = np.zeros((num_assets, num_assets, num_timepoints), dtype=np.float64)
+        self.effective_leverage_per_asset = np.zeros((num_assets, num_assets, num_timepoints), dtype=np.float64)
+        self.effective_leverage_global = np.zeros((num_assets, num_timepoints), dtype=np.float64)
 
 
 # ................................ The BackTestEngine ...................................

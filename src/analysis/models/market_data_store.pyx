@@ -7,14 +7,6 @@ from .shared cimport MarketData
 from analysis.statistics.cython_statistics cimport Statistics
 
 cdef class MarketDataStore:
-    cdef:
-        public cnp.ndarray timestamp, open, high, low, close, volume
-        public cnp.ndarray annual_vol
-        public cnp.ndarray annual_sr
-        public cnp.ndarray signal_scale_factor
-        public cnp.ndarray atr, volatility
-        public int lookback, num_assets, num_periods
-        public Statistics stats
 
     def __cinit__(
         self,

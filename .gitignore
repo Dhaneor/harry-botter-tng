@@ -14,8 +14,8 @@
 .DS_Store
 .vscode
 .env
-**/.so
-**/.cpp
+**/*.so
+**/*.cpp
 **/*.pyd
 .DS_Store
 tikr_mvp_strategy.py

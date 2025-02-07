@@ -19,9 +19,10 @@ ctypedef struct BacktestData:
     double** leverage
     double** cash_balance
     double** equity
-    double*** asset_balances
+    double** base_qty
+    double** quote_qty
     double** effective_leverage_per_asset
-    double* effective_leverage_global
+    double** effective_leverage_global
 
 
 cdef struct ActionData:
