@@ -92,6 +92,13 @@ cdef class MarketStatePool:
     def size(self):
         return len(self._pool)
 
+    # .................... Python wrapper methods for testing only .....................
+    def _get(self) -> MarketState:
+        return self.get()
+
+    def _release(self, state: MarketState) -> None:
+        self.release(state)
+
 
 # .................................. MarketDataStore class .............................
 cdef class MarketDataStore:

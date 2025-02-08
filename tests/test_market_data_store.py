@@ -67,6 +67,25 @@ def test_market_state_pool():
     assert p.size == 10
     assert isinstance(p.pool[0], MarketState)
 
+def test_pool_get_state():
+    p = MarketStatePool(10)
+    s = p._get()
+
+    assert isinstance(s, MarketState)
+    assert p.size == 9
+
+def test_pool_release_state():
+    p = MarketStatePool(10)
+    s1 = p._get()
+    s2 = p._get()
+
+    p._release(s1)
+
+    assert p.size == 9
+
+    p._release(s2)
+
+    assert p.size == 10
 
 # ........................ Tests for the MarketDataStore class .........................
 @pytest.fixture
