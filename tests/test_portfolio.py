@@ -6,7 +6,6 @@ Created on Wed Feb 05 06:09:23 2025
 @author: dhaneor
 """
 
-import numpy as np
 import pytest
 from analysis.models.portfolio import Buy, Sell, Position
 

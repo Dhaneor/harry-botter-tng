@@ -327,7 +327,7 @@ cdef class Portfolio:
         self.equity_global = np.zeros(self.shape[:1], dtype=np.float64)
         self.leverage_global = np.zeros(self.shape[:1], dtype=np.float64)
 
-    cdef void update(self, MarketState state):
+    cdef void update(self, MarketState state, double[:] signals):
         pass
 
 
@@ -351,4 +351,8 @@ cdef class BacktestEngine:
         for p in range(periods):
             state = self.market_data.get_state(p)
             for s in range(strategies):
-                self.portfolio.update(state)
+                self.portfolio[s].update(
+                    state,
+                    self.signals[p, :, s],
+                    self.leverage[p, :]
+                )

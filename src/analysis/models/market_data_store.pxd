@@ -5,7 +5,7 @@ from analysis.statistics.cython_statistics cimport Statistics
 cdef class MarketState:
     cdef:
         public long long timestamp
-        public double[:] open, high, low, close, volume
+        public double[:] open, high, low, close, volume, vola_anno, sr_anno, atr
 
     cdef void update(
         self, 
@@ -15,6 +15,9 @@ cdef class MarketState:
         double[:] low, 
         double[:] close, 
         double[:] volume,
+        double[:] vola_anno,
+        double[:] sr_anno,
+        double[:] atr,
     )
 
 
@@ -30,8 +33,8 @@ cdef class MarketStatePool:
 cdef class MarketDataStore:
     cdef:
         public cnp.ndarray timestamp, open, high, low, close, volume
-        public cnp.ndarray annual_vol
-        public cnp.ndarray annual_sr
+        public cnp.ndarray vola_anno
+        public cnp.ndarray sr_anno
         public cnp.ndarray signal_scale_factor
         public cnp.ndarray atr, volatility
         public int lookback, num_assets, num_periods
@@ -39,8 +42,8 @@ cdef class MarketDataStore:
         MarketStatePool _state_pool
 
     cdef compute_annualized_volatility(self)
-    cdef get_state(self, int index)
-    cdef release_state(self, MarketState state)
+    cdef MarketState get_state(self, int index)
+    cdef void release_state(self, MarketState state)
     cdef void compute_atr(self, int period=*)
     cdef double[:,:] smooth_it(self, double[:,:] arr, int factor=*)
     cdef double[:] _apply_smoothing_1D(self, double[:] data, int length)

@@ -1,4 +1,5 @@
 # cython: language_level=3
+import logging
 cimport numpy as np
 import numpy as np
 from math import cos, exp, pi
@@ -6,14 +7,18 @@ from math import cos, exp, pi
 from .shared cimport MarketData
 from analysis.statistics.cython_statistics cimport Statistics
 
+logger = logging.getLogger("main.market_data_store")
+
 
 # ............................... MarketState classes ..................................
 cdef class MarketState:
+    """A class to represent the state of the marlet at a particular point in time"""
 
     def __cinit__(self):
         self.timestamp = 0
         # Initialize with empty memoryviews
         self.open = self.high = self.low = self.close = self.volume = \
+        self.vola_anno = self.sr_anno = self.atr = \
         np.empty(0, dtype=np.float64)
 
     cdef void update(
@@ -23,7 +28,10 @@ cdef class MarketState:
         double[:] high, 
         double[:] low,  
         double[:] close, 
-        double[:] volume, 
+        double[:] volume,
+        double[:] vola_anno,
+        double[:] sr_anno,
+        double[:] atr
     ):
         self.timestamp = timestamp
         self.open = open
@@ -31,9 +39,39 @@ cdef class MarketState:
         self.low = low
         self.close = close
         self.volume = volume
+        self.vola_anno = vola_anno
+        self.sr_anno = sr_anno
+        self.atr = atr
+
+    def test_update(
+        self,
+        timestamp: int,
+        open: np.ndarray,
+        high: np.ndarray,
+        low: np.ndarray,
+        close: np.ndarray,
+        volume: np.ndarray,
+        vola_anno: np.ndarray,
+        sr_anno: np.ndarray,
+        atr: np.ndarray
+    ):
+        """Method for testing the .update() method.
+        
+        The .update() method is intended to be used by other Cython 
+        code,  but for tests, this wrapper must be used as .update() 
+        is not accessible from Python code.
+        """
+        self.update(timestamp, open, high, low, close, volume, vola_anno, sr_anno, atr)
 
 
 cdef class MarketStatePool:
+    """A pool if readily available MarketState objects.
+    
+    As MarketState objects are required at every step in backtests,
+    this pool prevents constant instantion and destruction of 
+    MarketState objects and (hopefully) saves time / increases
+    efficiency and speed.
+    """
 
     def __cinit__(self, int size):
         self._pool = [MarketState() for _ in range(size)]
@@ -57,6 +95,18 @@ cdef class MarketStatePool:
 
 # .................................. MarketDataStore class .............................
 cdef class MarketDataStore:
+    """A class to hold market data.
+    
+    This class holds market data (OHLCV) and some related data 
+    that is needed repeatedly, like:
+    • annualized volatility
+    • annualized Sharpe Ratio for each asset
+    • ATR
+
+    It also provides a method to get the market state in the form of
+    MarketState objects for a given point in time (which is useful 
+    for backtests).
+    """
 
     def __cinit__(
         self,
@@ -68,6 +118,47 @@ cdef class MarketDataStore:
         cnp.ndarray volume,
         int lookback = 20
     ):
+        # Check dimensionality
+        if timestamp.ndim != 1 and timestamp.ndim != 2:
+            raise ValueError("timestamp must be a 1- or 2-dimensional array")
+        if open.ndim != 2 or high.ndim != 2 or low.ndim != 2 \
+        or close.ndim != 2 or volume.ndim != 2:
+            raise ValueError(
+                "open, high, low, close, and volume must be 2-dimensional arrays"
+            )
+
+        # Check that all arrays have the same shape
+        markets = close.shape[1]
+        if (
+            open.shape[1] != markets or high.shape[1] != markets 
+            or low.shape[1] != markets or volume.shape[1] != markets
+        ):
+            raise ValueError(
+                "All input arrays must have the same number of markets:\n"
+                f"markets timestamp: {timestamp.shape[1]}\n"
+                f"markets open: {open.shape[1]}\n"
+                f"markets high: {high.shape[1]}\n"
+                f"markets low: {low.shape[1]}\n"
+                f"markets close: {close.shape[1]}\n"
+                f"markets volume: {volume.shape[1]}\n"
+                )
+
+        periods = close.shape[0]
+        if (
+            open.shape[0] != periods or high.shape[0] != periods
+            or low.shape[0] != periods or volume.shape[0] != periods
+        ):
+            raise ValueError(
+                "All input arrays must have the same number of periods:\n"
+                f"periods timestamp: {timestamp.shape[0]}\n"
+                f"periods open: {open.shape[0]}\n"
+                f"periods high: {high.shape[0]}\n"
+                f"periods low: {low.shape[0]}\n"
+                f"periods close: {close.shape[0]}\n"
+                f"periods volume: {volume.shape[0]}\n"
+                )
+
+        # set attributes
         self.timestamp = timestamp
         self.open = open
         self.high = high
@@ -77,20 +168,23 @@ cdef class MarketDataStore:
 
         self.lookback = lookback     
 
+        # initialize component classes
         self.stats = Statistics() 
         self._state_pool = MarketStatePool(5)
 
         rows, cols = close.shape[0], close.shape[1]
 
+        # initialize empty arrays for all additional values
         self.atr = np.full_like(close, np.nan, dtype=np.float64)
-        self.annual_vol = np.zeros((rows, cols), dtype=np.float64)
-        self.annual_sr = np.ones((rows, cols), dtype=np.float64)
+        self.vola_anno = np.zeros((rows, cols), dtype=np.float64)
+        self.sr_anno = np.ones((rows, cols), dtype=np.float64)
         self.signal_scale_factor = np.ones((rows, cols), dtype=np.float64)
 
+        # compute the additional values
         self.compute_atr()
         self.compute_annualized_volatility()
 
-        self.annual_sr = self.stats.annualized_sharpe_ratio(
+        self.sr_anno = self.stats.annualized_sharpe_ratio(
             self.close.astype(np.float64),
             self.periods_per_year,
             self.lookback
@@ -129,11 +223,11 @@ cdef class MarketDataStore:
     # ..................................................................................
     @property
     def periods_per_year(self) -> int:
-        ts = self.timestamp.astype(np.float64).reshape(-1,)
+        ts = self.timestamp[0]
         timestamp_diffs = np.diff(ts)
         mask = timestamp_diffs != 0
         typical_diff = np.median(timestamp_diffs[mask])
-        ms_per_year = 356 * 24 * 60 * 60 * 1000
+        ms_per_year = 365 * 24 * 60 * 60 * 1000
         return int(ms_per_year / typical_diff)
 
     @property
@@ -148,41 +242,59 @@ cdef class MarketDataStore:
 
     # ..................................................................................
     cdef compute_annualized_volatility(self):
-        self.annual_vol = self.stats.annualized_volatility(
+        self.vola_anno = self.stats.annualized_volatility(
             self.close.astype(np.float64), 
             self.periods_per_year,
             self.lookback
         )
 
-    cdef get_state(self, int index):
+    cdef MarketState get_state(self, int index):
         state = self._state_pool.get()
         state.update(
-            self.timestamp[index],
+            self.timestamp[index] if self.timestamp.ndim == 1 else self.timestamp[index, 0],
             self.open[index, :],
             self.high[index, :],
             self.low[index, :],
             self.close[index, :],
             self.volume[index, :],
+            self.vola_anno[index, :],
+            self.sr_anno[index, :],
+            self.atr[index, :]
         )
         return state
 
-    cdef release_state(self, MarketState state):
+    cdef void release_state(self, MarketState state):
         self._state_pool.release(state)
 
     cdef void compute_atr(self, int period=14):
-        cdef int markets
-        cdef int periods
-
-        markets, periods = self.atr.shape[0], self.atr.shape[1]
-
+        cdef int markets, periods
+        cdef double tr, sum_tr
+        cdef int m, p
+    
+        markets, periods = self.atr.shape[1], self.atr.shape[0]
+    
         for m in range(markets):
-            for p in range(period, periods):
+            # Calculate initial ATR
+            sum_tr = 0
+            for p in range(1, period + 1):
                 tr = max(
-                    self.high[m, p] - self.low[m, p],
-                    abs(self.high[m, p] - self.open[m, p]),
-                    abs(self.low[m, p] - self.open[m, p])
+                    self.high[p, m] - self.low[p, m],
+                    abs(self.high[p, m] - self.close[p-1, m]),
+                    abs(self.low[p, m] - self.close[p-1, m])
                 )
-                self.atr[m, p] = ((self.atr[m, p - 1] * (period - 1) + tr) / period)
+                sum_tr += tr
+    
+            # Set initial ATR value
+            self.atr[period, m] = sum_tr / period
+    
+            # Calculate subsequent ATR values
+            for p in range(period + 1, periods):
+                tr = max(
+                    self.high[p, m] - self.low[p, m],
+                    abs(self.high[p, m] - self.close[p-1, m]),
+                    abs(self.low[p, m] - self.close[p-1, m])
+                )
+                self.atr[p, m] = (self.atr[p-1, m] * (period - 1) + tr) / period
 
     cdef double[:,:] smooth_it(self, double[:,:] arr, int factor = 3):
         for market in range(arr.shape[1]):
@@ -234,3 +346,10 @@ cdef class MarketDataStore:
             )
         
         return us
+
+    # ................... Python accessible wrappers for testing .......................
+    def _get_state(self, index: int) -> MarketState:
+        return self.get_state(index)
+
+    def _smooth_it(self, arr: np.ndarray, factor: int = 3) -> np.ndarray:
+        return np.asarray(self.smooth_it(arr, factor))
