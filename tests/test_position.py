@@ -7,7 +7,7 @@ Created on Wed Feb 05 06:09:23 2025
 """
 
 import pytest
-from analysis.models.portfolio import Buy, Sell, Position
+from analysis.models.position import Buy, Sell, Position
 
 
 # ........................ Tests for the Buy/Sell action classes .......................
