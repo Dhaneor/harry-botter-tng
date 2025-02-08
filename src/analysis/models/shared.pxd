@@ -14,6 +14,7 @@ ctypedef struct MarketData:
     double** volatility
 
 cdef struct ActionData:
+    int type
     np.int64_t timestamp
     double price
     double qty

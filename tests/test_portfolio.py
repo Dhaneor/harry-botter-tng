@@ -85,55 +85,13 @@ def test_repr():
     assert repr(sell) == "Sell(timestamp=2000, amount=10.0, price=11.0)"
 
 
-# ......................... Tests for the MarketState classes ..........................
-# def test_market_state():
-#     timestamp = 1735865000000
-#     open_ = np.random.rand(1000, 10)
-#     high = np.random.rand(1000, 10)
-#     low = np.random.rand(1000, 10)
-#     close = np.random.rand(1000, 10)
-#     leverage = np.random.rand(1000, 10)
-#     signals = np.random.rand(1000, 10, 10)
-
-
-#     ms = MarketState(
-#         timestamp,
-#         open_[0, :],
-#         high[0, :],
-#         low[0, :],
-#         close[0, :],
-#         leverage[0, :],
-#         signals[0, :, 0],
-#     )
-
-#     assert isinstance(ms, MarketState)
-#     assert ms.timestamp == timestamp
-#     try:
-#         np.testing.assert_equal(ms.open, open_[0, :])
-#         np.testing.assert_equal(ms.high, high[0, :])
-#         np.testing.assert_equal(ms.low, low[0, :])
-#         np.testing.assert_equal(ms.close, close[0, :])
-#         np.testing.assert_equal(ms.leverage, leverage[0, :])
-#         np.testing.assert_equal(ms.signals, signals[0, :, 0])
-#     except AssertionError as e:
-#         print(str(e))
-#         raise
-
-
-# def test_market_state_pool():
-#     p = MarketStatePool(10)
-
-#     assert isinstance(p, MarketStatePool)
-#     assert len(p.pool) == 10
-#     assert p.size == 10
-#     assert isinstance(p.pool[0], MarketState)
-
 # ............................ Tests for the Position class ............................
 def test_position_init():
     pos = Position("BTCUSDT")
 
     assert pos.symbol == "BTCUSDT"
     assert pos.get_actions() == []
+
 
 def test_position_avg_entry_exit_none():
     pos = Position("BTCUSDT")

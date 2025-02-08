@@ -29,7 +29,7 @@ from analysis.strategy.definitions import (  # noqa: F401
 )
 from analysis.chart.tikr_charts import BacktestChart as Chart
 from analysis.backtest import result_stats as rs
-from analysis.models import position
+from analysis.models import position_py
 from util import get_logger
 
 logger = get_logger('main')
@@ -257,7 +257,7 @@ def run(data, show=False, plot=False):
     if show:
         _show(df)
 
-    positions = position.Positions(df_pos, symbol)
+    positions = position_py.Positions(df_pos, symbol)
 
     # for pos in positions:
     #     print(pos)

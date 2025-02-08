@@ -21,7 +21,7 @@ from src.rawi import ohlcv_repository as repo
 from src.analysis import strategy_builder as sb
 from src.analysis import strategy_backtest as bt
 from src.analysis.backtest import statistics as st
-from src.analysis.models.position import Positions
+from analysis.models.position_py import Positions
 from src.analysis import telegram_signal as ts
 from analysis.backtest import result_stats as rs
 from src.analysis.chart.tikr_charts import TikrChart as Chart

@@ -18,8 +18,20 @@ extensions = [
         language="c++"
     ),
     Extension(
+        "src.analysis.models.position",
+        ["src/analysis/models/position.pyx"],
+        include_dirs=[np.get_include()],
+        language="c++"
+    ),
+    Extension(
         "src.analysis.models.portfolio",
         ["src/analysis/models/portfolio.pyx"],
+        include_dirs=[np.get_include()],
+        language="c++"
+    ),
+    Extension(
+        "src.analysis.models.struct_bench",
+        ["src/analysis/models/struct_bench.pyx"],
         include_dirs=[np.get_include()],
         language="c++"
     ),
