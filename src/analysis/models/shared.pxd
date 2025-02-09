@@ -3,6 +3,7 @@
 
 cimport numpy as np
 import numpy as np
+from libcpp.vector cimport vector
 
 ctypedef struct MarketData:
     double** open

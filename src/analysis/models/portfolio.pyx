@@ -33,6 +33,8 @@ cdef class TrailingStopOrder(StopOrder):
 """
 
 
+
+
 # ................................. Portfolio class ....................................
 cdef class Portfolio:
 

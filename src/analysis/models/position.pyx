@@ -9,6 +9,7 @@ import numpy as np
 from functools import reduce
 from time import time
 from libc.stdlib cimport malloc, free
+from libcpp.memory cimport shared_ptr, make_shared
 
 # define fee and slippage rate. might later be replaced with
 # imported values from  a config file, but these are good defualt
@@ -17,12 +18,7 @@ cdef double fee_rate = 0.001
 cdef double slippage_rate = 0.001
 
 
-# ............................... Trade Action classes .................................
-cdef class Trade:
-    def __cinit__(self, TradeData data):
-        self.data = data
-
-
+# .......................... Functions to process positions ............................
 cdef inline double get_fee(double qty, double fee_rate):
     return qty * fee_rate
 
@@ -33,14 +29,18 @@ cdef inline double get_slippage(double qty, double slippage_rate):
 cdef inline TradeData build_buy_trade(long long timestamp, double quote_qty, double price):
     """Get a Trade struct for a buy action."""
     cdef TradeData t
+    cdef double fee = get_fee(quote_qty, fee_rate)
+    cdef double slippage = get_slippage(quote_qty, slippage_rate)
+    cdef double net_quote_qty = quote_qty - fee - slippage
     
     t.type = 1
     t.timestamp = timestamp
     t.price = price
-    t.quote_qty = quote_qty
-    t.fee = get_fee(quote_qty, fee_rate)
-    t.slippage = get_slippage(quote_qty, slippage_rate)
-    t.qty = (quote_qty - t.fee - t.slippage) / price
+    t.qty = net_quote_qty / price
+    t.gross_quote_qty = quote_qty
+    t.net_quote_qty = net_quote_qty
+    t.fee = fee
+    t.slippage = slippage
 
     return t
 
@@ -48,23 +48,232 @@ cdef inline TradeData build_sell_trade(long long timestamp, double base_qty, dou
     """Fill an existing Trade struct for a sell action."""
     cdef TradeData t
     cdef double gross_quote_qty = base_qty * price
+    cdef double fee = get_fee(gross_quote_qty, fee_rate)
+    cdef double slippage = get_slippage(gross_quote_qty, slippage_rate)
     
     t.type = -1
     t.timestamp = timestamp
     t.price = price
     t.qty = base_qty    
-    t.fee = get_fee(gross_quote_qty, fee_rate)
-    t.slippage = get_slippage(gross_quote_qty, slippage_rate)
-    t.quote_qty = gross_quote_qty - t.fee - t.slippage
+    t.gross_quote_qty = gross_quote_qty
+    t.net_quote_qty =gross_quote_qty - fee - slippage
+    t.fee = fee
+    t.slippage = slippage
 
     return t
 
 
+cdef void add_buy(PositionData* pos, long long timestamp, double quote_qty, double price):
+    """Adds a Buy trade to the position"""
+    pos.trades.push_back(build_buy_trade(timestamp, quote_qty, price))
+
+cdef void add_sell(PositionData* pos, long long timestamp, double base_qty, double price):
+    """Adds a Sell trade to the position"""
+    pos.trades.push_back(build_sell_trade(timestamp, base_qty, price))
+
+
+cdef PositionData build_long_position(int index, long long timestamp, double quote_qty, double price):
+    """Builds a long position (PositionData stuct)."""
+    cdef PositionData pos
+
+    pos.idx = index
+    pos.type = 1
+    pos.is_active = 1
+    pos.duration = 1
+    pos.avg_entry_price = price
+    pos.trades = vector[TradeData]()
+    pos.stop_orders = vector[StopOrder]()
+    
+    add_buy(&pos, timestamp, quote_qty, price)
+
+    return pos
+
+cdef PositionData build_short_position(int index, long long timestamp, double base_qty, double price):
+    """Builds a short position (PositionData stuct)."""
+    cdef PositionData pos
+
+    pos.idx = index
+    pos.type = -1
+    pos.is_active = 1
+    pos.duration = 1
+    pos.avg_entry_price = price
+    pos.trades = vector[TradeData]()
+    pos.stop_orders = vector[StopOrder]()
+
+    add_sell(&pos, timestamp, base_qty, price)
+
+    return pos
+
+
+# ............... Python accessible versions of the position functions .................
+# I couldn't find a working solution to test position functions with 
+# pytest when they are defined with cdef. I also did not want to use 
+# cpdef to avoid the added call overhead. That's why each of the 
+# functions above has a wrapper function.
+
+def _get_fee(double qty, double fee_rate):
+    return get_fee(qty, fee_rate)
+
+def _get_slippage(double qty, double slippage_rate):
+    return get_slippage(qty, slippage_rate)
+
+def _build_buy_trade(long long timestamp, double quote_qty, double price):
+    return build_buy_trade(timestamp, quote_qty, price)
+
+def _build_sell_trade(long long timestamp, double base_qty, double price):
+    return build_sell_trade(timestamp, base_qty, price)
+
+
+def _add_buy(PositionData pos, long long timestamp, double quote_qty, double price):
+    add_buy(&pos, timestamp, quote_qty, price)
+    return pos
+
+"""
+def _add_sell(PositionData* pos, long long timestamp, double base_qty, double price):
+    return add_sell(pos, timestamp, base_qty, price)
+"""
+
+def _build_long_position(int index, long long timestamp, double quote_qty, double price):
+    return build_long_position(index, timestamp, quote_qty, price)
+
+def _build_short_position(int index, long long timestamp, double base_qty, double price):
+    return build_short_position(index, timestamp, base_qty, price)
+
+
+cdef class FuncBench:
+    cdef int iterations
+
+    def __cinit__(self, int iterations = 1000):
+        self.iterations = iterations
+
+    def run(self):
+        funcs = {
+            "get_fee": self.bench_get_fee,
+            "get_slippage": self.bench_get_slippage,
+            "build_buy_trade": self.bench_build_buy_trade,
+            "build_sell_trade": self.bench_build_sell_trade,
+            "add_buy": self.bench_add_buy,
+            "add_sell": self.bench_add_sell,
+            "build_long_position": self.bench_build_long_position,
+            "build_short_position": self.bench_build_short_position
+        }
+        for name, func in funcs.items():
+            exc_time, avg_exc_time = func()
+            print(f"[{name}] exc time: {exc_time:,.0f}µs")
+            print(f"[{name}] avg exc time: {avg_exc_time:,.2f}ns")
+            print("-" * 80)
+
+    cdef bench_get_fee(self):
+        st = time()
+        for i in range(self.iterations):
+            get_fee(1000, fee_rate)
+        exc_time = (time() - st) * 1e6
+        avg_exc_time = (exc_time / self.iterations) * 1_000
+        
+        return exc_time, avg_exc_time
+
+    cdef bench_get_slippage(self):
+        st = time()
+        for i in range(self.iterations):
+            get_slippage(1000, fee_rate)
+        exc_time = (time() - st) * 1e6
+        avg_exc_time = (exc_time / self.iterations) * 1_000
+        
+        return exc_time, avg_exc_time
+
+    cdef bench_build_buy_trade(self):
+        st = time()
+        for i in range(self.iterations):
+            build_buy_trade(17345000000, 1000.0, 100.0)
+        exc_time = (time() - st) * 1e6
+        avg_exc_time = (exc_time / self.iterations) * 1_000
+        
+        return exc_time, avg_exc_time
+
+    cdef bench_build_sell_trade(self):
+        st = time()
+        for i in range(self.iterations):
+            build_sell_trade(17345000000, 1000.0, 100.0)
+        exc_time = (time() - st) * 1e6
+        avg_exc_time = (exc_time / self.iterations) * 1_000
+        
+        return exc_time, avg_exc_time
+
+    cdef bench_add_buy(self):
+        pos = build_long_position(1, 17345000000, 1000.0, 100.0)
+        st = time()
+        for i in range(self.iterations):
+            add_buy(&pos, 1735000000, 1000.0, 100.0)
+        exc_time = (time() - st) * 1e6
+        avg_exc_time = (exc_time / self.iterations) * 1_000
+        
+        return exc_time, avg_exc_time
+
+    cdef bench_add_sell(self):
+        pos = build_short_position(1, 17345000000, 1000.0, 100.0)
+        st = time()
+        for i in range(self.iterations):
+            add_sell(&pos, 1735000000, 1000.0, 100.0)
+        exc_time = (time() - st) * 1e6
+        avg_exc_time = (exc_time / self.iterations) * 1_000
+        
+        return exc_time, avg_exc_time
+
+    cdef bench_build_long_position(self):
+        st = time()
+        for i in range(self.iterations):
+            build_long_position(1, 17345000000, 1000.0, 100.0)
+        exc_time = (time() - st) * 1e6
+        avg_exc_time = (exc_time / self.iterations) * 1_000
+        
+        return exc_time, avg_exc_time
+
+    cdef bench_build_short_position(self):
+        st = time()
+        for i in range(self.iterations):
+            build_short_position(1, 17345000000, 1000.0, 100.0)
+        exc_time = (time() - st) * 1e6
+        avg_exc_time = (exc_time / self.iterations) * 1_000
+        
+        return exc_time, avg_exc_time
+
+cpdef void run_func_bench(int iterations):
+    fb = FuncBench(iterations)
+    fb.run()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # ======================================================================================
+#                                                                                      #
+#             ----- BENCHMARK FOR DETERMINING THE BEST DATA STRUCTURE -----            #
+#                                                                                      #
+#                                                                                      #
 #                        Position class with C struct elements                         #
 # ======================================================================================
 cdef class PositionStruct:
     cdef int idx
+    cdef int type
+    cdef int is_active
+    cdef int duration
     cdef vector[TradeData] trades
 
     def __cinit__(self, int symbol_idx):
@@ -77,6 +286,29 @@ cdef class PositionStruct:
     cdef void add_sell(self, long long timestamp, double base_qty, double price):
         self.trades.push_back(build_sell_trade(timestamp, base_qty, price))
 
+
+cdef class PositionStructPointer:
+    cdef int idx
+    cdef int type
+    cdef int is_active
+    cdef int duration
+    cdef vector[shared_ptr[TradeData]] trades  # Use shared_ptr instead of raw pointers
+
+    def __cinit__(self, int symbol_idx):
+        self.idx = symbol_idx
+        self.trades = vector[shared_ptr[TradeData]]()  # Initialize empty vector
+
+    cdef void add_buy(self, long long timestamp, double quote_qty, double price):
+        """Store a Buy trade using shared_ptr."""
+        self.trades.push_back(make_shared[TradeData](build_buy_trade(timestamp, quote_qty, price)))
+
+    cdef void add_sell(self, long long timestamp, double base_qty, double price):
+        """Store a Sell trade using shared_ptr."""
+        self.trades.push_back(make_shared[TradeData](build_sell_trade(timestamp, base_qty, price)))
+
+    def __dealloc__(self):
+        """Automatic cleanup is handled by shared_ptr, so no need for manual free()."""
+        self.trades.clear()
 
 
 # ======================================================================================
@@ -227,6 +459,9 @@ cdef class PositionExt:
     """A class to represent a trading position."""
 
     cdef int idx
+    cdef int type
+    cdef int is_active
+    cdef int duration
     cdef list[ActionInterface] trades
 
     def __cinit__(self, int symbol_idx):
@@ -240,12 +475,16 @@ cdef class PositionExt:
         self.trades.append(Sell(timestamp, base_qty, price))
 
 
-
+# ======================================================================================
+#                    Benchmark that uses the classes defined above                     #
+# ======================================================================================
 cdef class Benchmark:
+    cdef list[PositionStructPointer] pointer
     cdef list[PositionStruct] struct
     cdef list[PositionExt] ext
 
     def __cinit__(self, int num_positions):
+        self.pointer = [PositionStructPointer(pos) for pos in range(num_positions)] 
         self.struct = [PositionStruct(pos) for pos in range(num_positions)]
         self.ext = [PositionExt(pos) for pos in range(num_positions)]
 
@@ -258,6 +497,13 @@ cdef class Benchmark:
         for i in range(num_trades):
             Buy(1000, 10.0, 100.0)
             Sell(1000, 10.0, 100)
+
+    cdef benchmark_struct_pointer_class(self, int num_trades):
+        cdef PositionStructPointer pos
+        for pos in self.pointer:
+            for i in range(num_trades):
+                pos.add_buy(timestamp=i, quote_qty=100 + i, price=50000 + i)
+                pos.add_sell(timestamp=i, base_qty=0.002 + i * 0.0001, price=50000 + i)
 
     cdef benchmark_struct_class(self, int num_trades):
         cdef PositionStruct pos
@@ -272,7 +518,6 @@ cdef class Benchmark:
             for i in range(num_trades):
                 pos.add_buy(timestamp=i, quote_qty=100 + i, price=50000 + i)
                 pos.add_sell(timestamp=i, base_qty=0.002 + i * 0.0001, price=50000 + i)
-
 
 
 cpdef void compare_position_classes(int num_positions=1000, int num_trades=1000):
@@ -299,6 +544,11 @@ cpdef void compare_position_classes(int num_positions=1000, int num_trades=1000)
     print(f"speedup: {(ext_time_avg / struct_time_avg):.1f}x")
     print("----------------------------------------˜n")
 
+    st = time()
+    bm.benchmark_struct_pointer_class(num_trades)
+
+    pointer_time = time()- st
+    pointer_time_avg = pointer_time / (2 * num_positions * num_trades) * 1e9 
 
     st = time()
     bm.benchmark_struct_class(num_trades)
@@ -313,13 +563,18 @@ cpdef void compare_position_classes(int num_positions=1000, int num_trades=1000)
     ext_time_avg = ext_time / (2 * num_positions * num_trades) * 1e9
 
     print("Benchmark class method execution time ...\n")
+
+    print(f"[Pointer] overall time: {pointer_time:,.2f}s")
+    print(f"[Pointer] average time: {pointer_time_avg:,.0f}ns")
+
     print(f"[Struct] overall time: {struct_time:,.2f}s")
     print(f"[Struct] average time: {struct_time_avg:,.0f}ns")
 
     print(f"[Ext] overall time: {ext_time:,.2f}s")
     print(f"[Ext] average time: {ext_time_avg:,.0f}ns")
 
-    print(f"speedup: {(ext_time_avg / struct_time_avg):.1f}x")
+    print(f"speedup poitner: {(ext_time_avg / pointer_time_avg):.1f}x")
+    print(f"speedup struct: {(ext_time_avg / struct_time_avg):.1f}x")
 
 
 

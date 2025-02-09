@@ -1,9 +1,9 @@
 # cython: language_level=3
 # distutils: language = c++
+from libcpp.vector cimport vector
 
 cimport numpy as np
 import numpy as np
-from libcpp.vector cimport vector
 
 
 cdef struct TradeData:
@@ -11,7 +11,8 @@ cdef struct TradeData:
     long long timestamp
     double price
     double qty
-    double quote_qty
+    double gross_quote_qty
+    double net_quote_qty
     double fee
     double slippage
 
@@ -26,22 +27,48 @@ cdef struct ActionData:
     double slippage
 
 
+cdef struct StopOrder:
+    int type
+    int trailing 
+    double price
+    double qty
+    int exit_after
+
+
+cdef struct PositionData:
+    int idx
+    int type
+    int is_active
+    int duration
+    double avg_entry_price
+    double pnl
+    vector[TradeData] trades
+    vector[StopOrder] stop_orders
+
+
+cdef double get_fee(double qty, double fee_rate)
+cdef double get_slippage(double qty, double slippage_rate)
+
+cdef TradeData build_buy_trade(long long timestamp, double quote_qty, double price)
+cdef TradeData build_sell_trade(long long timestamp, double base_qty, double price)
+
+cdef void add_buy(PositionData* pos, long long timestamp, double quote_qty, double price)
+cdef void add_sell(PositionData* pos, long long timestamp, double base_qty, double price)
+
+cdef PositionData build_long_position(int index, long long timestamp, double quote_qty, double price)
+cdef PositionData build_short_position(int index, long long timestamp, double base_qty, double price)
+
+cpdef void run_func_bench(int iterations)
+
 # ............................... Trade Action classes .................................
-cdef class Trade:
-    cdef TradeData data
-
-
 cdef class ActionInterface:
     cdef public ActionData data
-
 
 cdef class Buy(ActionInterface):
     cdef void _calculate(self, double amount)
 
-
 cdef class Sell(ActionInterface):
     cdef void _calculate(self, double amount)
-
 
 # .................................. Position class ....................................
 cdef class Position:
