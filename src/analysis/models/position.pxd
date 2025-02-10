@@ -40,6 +40,7 @@ cdef struct PositionData:
     int type
     int is_active
     int duration
+    double size
     double avg_entry_price
     double pnl
     vector[TradeData] trades

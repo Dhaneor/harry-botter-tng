@@ -9,6 +9,7 @@ import numpy as np
 from functools import reduce
 from time import time
 from libc.stdlib cimport malloc, free
+from libcpp.vector cimport vector
 from libcpp.memory cimport shared_ptr, make_shared
 
 # define fee and slippage rate. might later be replaced with
@@ -65,11 +66,33 @@ cdef inline TradeData build_sell_trade(long long timestamp, double base_qty, dou
 
 cdef void add_buy(PositionData* pos, long long timestamp, double quote_qty, double price):
     """Adds a Buy trade to the position"""
-    pos.trades.push_back(build_buy_trade(timestamp, quote_qty, price))
+    cdef TradeData trade = build_buy_trade(timestamp, quote_qty, price) 
+    pos.size += trade.qty
+    pos.trades.push_back(trade)
 
 cdef void add_sell(PositionData* pos, long long timestamp, double base_qty, double price):
     """Adds a Sell trade to the position"""
-    pos.trades.push_back(build_sell_trade(timestamp, base_qty, price))
+    cdef TradeData trade = build_sell_trade(timestamp, base_qty, price) 
+    pos.size -= trade.qty
+    pos.trades.push_back(trade)
+
+
+cdef inline double get_avg_entry_price(PositionData* pos):
+    cdef double sum_qty = 0
+    cdef double sum_quote_qty = 0
+    cdef int i
+
+    for i in range(pos[0].trades.size()):
+        # sum buys for long position
+        if pos[0].type == 1 and pos[0].trades[i].type == 1:
+            sum_qty += pos[0].trades[i].qty
+            sum_quote_qty += pos[0].trades[i].gross_quote_qty
+        # sum sells for short position
+        elif pos[0].type == -1 and pos[0].trades[i].type == -1:
+            sum_qty += pos[0].trades[i].qty
+            sum_quote_qty += pos[0].trades[i].net_quote_qty
+
+    return (sum_quote_qty * 1e6) / (sum_qty * 1e6)
 
 
 cdef PositionData build_long_position(int index, long long timestamp, double quote_qty, double price):
@@ -80,7 +103,9 @@ cdef PositionData build_long_position(int index, long long timestamp, double quo
     pos.type = 1
     pos.is_active = 1
     pos.duration = 1
+    pos.size = 0.0
     pos.avg_entry_price = price
+    pos.pnl = 0.0
     pos.trades = vector[TradeData]()
     pos.stop_orders = vector[StopOrder]()
     
@@ -96,7 +121,9 @@ cdef PositionData build_short_position(int index, long long timestamp, double ba
     pos.type = -1
     pos.is_active = 1
     pos.duration = 1
+    pos.size = 0.0
     pos.avg_entry_price = price
+    pos.pnl = 0.0
     pos.trades = vector[TradeData]()
     pos.stop_orders = vector[StopOrder]()
 
@@ -123,15 +150,16 @@ def _build_buy_trade(long long timestamp, double quote_qty, double price):
 def _build_sell_trade(long long timestamp, double base_qty, double price):
     return build_sell_trade(timestamp, base_qty, price)
 
+def _get_avg_entry_price(PositionData pos):
+    return get_avg_entry_price(&pos)
 
 def _add_buy(PositionData pos, long long timestamp, double quote_qty, double price):
     add_buy(&pos, timestamp, quote_qty, price)
     return pos
 
-"""
-def _add_sell(PositionData* pos, long long timestamp, double base_qty, double price):
-    return add_sell(pos, timestamp, base_qty, price)
-"""
+def _add_sell(PositionData pos, long long timestamp, double base_qty, double price):
+    add_sell(&pos, timestamp, base_qty, price)
+    return pos
 
 def _build_long_position(int index, long long timestamp, double quote_qty, double price):
     return build_long_position(index, timestamp, quote_qty, price)
@@ -154,6 +182,7 @@ cdef class FuncBench:
             "build_sell_trade": self.bench_build_sell_trade,
             "add_buy": self.bench_add_buy,
             "add_sell": self.bench_add_sell,
+            "avg_entry_price": self.bench_get_avg_entry_price,
             "build_long_position": self.bench_build_long_position,
             "build_short_position": self.bench_build_short_position
         }
@@ -214,6 +243,19 @@ cdef class FuncBench:
         st = time()
         for i in range(self.iterations):
             add_sell(&pos, 1735000000, 1000.0, 100.0)
+        exc_time = (time() - st) * 1e6
+        avg_exc_time = (exc_time / self.iterations) * 1_000
+        
+        return exc_time, avg_exc_time
+
+    cdef bench_get_avg_entry_price(self):
+        pos = build_short_position(1, 17345000000, 1000.0, 100.0)
+        add_sell(&pos, 1736000000, 1000.0, 100.0)
+        add_sell(&pos, 1737000000, 1000.0, 100.0)
+        add_buy(&pos, 1738000000, 1000.0, 100.0)
+        st = time()
+        for i in range(self.iterations):
+            get_avg_entry_price(&pos)
         exc_time = (time() - st) * 1e6
         avg_exc_time = (exc_time / self.iterations) * 1_000
         
