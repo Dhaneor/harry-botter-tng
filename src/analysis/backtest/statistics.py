@@ -8,12 +8,14 @@ Created on Mon Oct 28 21:58:50 2024
 """
 import logging
 import numpy as np
+from numba import jit
 
 
 logger = logging.getLogger("main.statistics")
 logger.setLevel(logging.DEBUG)
 
 
+@jit(nopython=True, cache=True)
 def calculate_profit(portfolio_values: np.ndarray) -> float:
     """
     Calculate the total profit of the strategy.
@@ -31,6 +33,7 @@ def calculate_profit(portfolio_values: np.ndarray) -> float:
     return (portfolio_values[-1] / portfolio_values[0] - 1) * 100
 
 
+@jit(nopython=True, cache=True)
 def calculate_annualized_returns(
     values: np.ndarray,
     periods_per_year: int = 365
@@ -56,6 +59,7 @@ def calculate_annualized_returns(
     return annualized_return * 100
 
 
+@jit(nopython=True, cache=True)
 def calculate_annualized_volatility(
     portfolio_values: np.ndarray,
     periods_per_year: int = 365,
@@ -99,12 +103,18 @@ def calculate_max_drawdown(portfolio_values: np.ndarray) -> float:
     -------
     float
         Maximum drawdown as a percentage.
+
+    Note:
+    -----
+    Numba would need a loop here, and the resulting function is not
+    faster than this version.
     """
     peak = np.maximum.accumulate(portfolio_values)
-    drawdown = (portfolio_values - peak) / peak
-    return np.min(drawdown) * 100
+
+    return np.min((portfolio_values - peak) / peak) * 100
 
 
+@jit(nopython=True)
 def calculate_sharpe_ratio(
     portfolio_values: np.ndarray,
     risk_free_rate: float = 0.0,
@@ -142,7 +152,8 @@ def calculate_sharpe_ratio(
         if annualized_volatility != 0 else 0
 
 
-def calculate_sortino_ratio(
+@jit(nopython=True)
+def calculate_sortino_ratio(    
     portfolio_values: np.ndarray,
     risk_free_rate: float = 0.0,
     periods_per_year: int = 365
@@ -203,13 +214,20 @@ def calculate_kalmar_ratio(
     -------
     float
         Kalmar ratio.
+
+    Note:
+    -----
+    Numba would need a loop here, and the resulting function is not
+    faster than this version.
     """
     total_return = (portfolio_values[-1] / portfolio_values[0]) - 1
     annualized_return = \
         (1 + total_return) ** (periods_per_year / len(portfolio_values)) - 1
 
-    # Convert percentage to decimal
     max_drawdown = calculate_max_drawdown(portfolio_values) / 100
+    # peak = np.maximum.accumulate(portfolio_values)
+
+    # max_drawdown = np.min((portfolio_values - peak) / peak) * 100
     return annualized_return / abs(max_drawdown) if max_drawdown != 0 else np.inf
 
 
