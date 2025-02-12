@@ -20,7 +20,6 @@ Created on Sat Aug 05 22:39:50 2023
 import inspect
 import logging
 import numpy as np
-import pandas as pd
 import talib
 
 from collections import OrderedDict
@@ -29,24 +28,27 @@ from typing import (
     Generator,
     Tuple,
     Union,
-    Dict,
-    Any
+    Any,
+    Callable
 )
 from talib import MA_Type, abstract
 
 from .iindicator import IIndicator
 from .indicators_custom import custom_indicators
 from .indicator_parameter import Parameter
-from ..chart.plot_definition import Line, SubPlot
+from ..chart.plot_definition import Line, Channel, Histogram, SubPlot
+
 
 logger = logging.getLogger("main.indicator")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.ERROR)
 
-Params = Dict[str, Union[str, float, int, bool]]
+Params = dict[str, Union[str, float, int, bool]]
 IndicatorSource = Literal["talib", "nb"]
 
 MA_TYPES = MA_Type.__dict__.get("_lookup", [])
 Combinations = Generator[Tuple[Any, ...], None, None]
+
+TALIB_INDICATORS = talib.get_functions()
 
 
 def get_parameter_space(param_name: str) -> dict:
@@ -143,59 +145,124 @@ class Indicator(IIndicator):
     def __init__(self) -> None:
         super().__init__()
         self._is_subplot: bool = self._name.upper() not in Indicator.not_subplot
-        self._plot_desc: Dict[str, Tuple[str, Any]] = OrderedDict()
+        self._plot_desc: dict[str, Tuple[str, Any]] = OrderedDict()
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__} - {self.parameters}"
 
     @property
-    def plot_desc(self) -> SubPlot:
+    def subplots(self) -> tuple[SubPlot]:
+        """Return the subplots for the indicator."""
+        param_ext = ",".join(str(p.value) for p in self.parameters)
+        subplot_label = f"{self.display_name} ({param_ext})"  # ({self.parameters[0].value})"
+        channel_elements = {"upper": None, "lower": None}
         elements = []
+
+        logger.debug(self._plot_desc)
+
         idx = 0
-
-        logger.debug(self.__dict__)
-
         for k, v in self._plot_desc.items():
-            v = v[0]
+            v = v[0]  # it's always a list with one element
+            elem = None
 
-            logger.info(f"Adding {k} to plot description: {v}")
+            logger.info(f"processing: '{k}' ...")
 
-            line = Line(
-                label=f"{self.unique_name.upper()} {k if k != 'real' else ''}",
-                column=self.unique_output[idx],
-                end_marker=False
-                )
-            elements.append(line)
+            # talib specifies the plotting descriptions (output_flags)
+            # in an OrderedDict, where the key is:
+            # • 'real' for indicators with one output
+            # • the name of the output for indicators with multiple outputs
+            if k == "real":
+                label = legend = self.name.upper() + f" ({param_ext})"
+            else:
+                label = legend = k.upper()
+            
+            legendgroup = self.name.upper()
 
-            logger.debug(f"Line added: {line}")
-
+            # the values in the output_flags dictioanry describe the 
+            # type of line (or histogram for instance) to be plotted 
+            # for each output
+            match v:
+                case "Line":
+                    elem = Line(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                        shadow=False,
+                        end_marker=False
+                    )
+                case "Dashed Line":
+                    elem = Line(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case "Histogram":
+                    elem = Histogram(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case "Values represent an upper limit":
+                    logger.debug(
+                        "[CHANNEL ELEMENTS] Adding upper limit: %s" % legend
+                        )
+                    channel_elements["upper"] = Line(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case "Values represent a lower limit":
+                    logger.debug(
+                        "[CHANNEL ELEMENTS] Adding lower limit: %s" % legend
+                        )
+                    channel_elements["lower"] = Line(
+                        label=label,
+                        column=self.unique_output[idx],
+                        legend=legend,
+                        legendgroup=legendgroup,
+                    )
+                case _:
+                    raise NotImplementedError(
+                        f"Unsupported output_flag: {v}"
+                    )
+                
+            if elem:                
+                elements.append(elem)
+                logger.debug(f"added element: {elem}")
+            
             idx += 1
 
+        # if channel elements are present, prepare a Channel
+        # class and add it to the elements of the subplot
+        if any(channel_elements.values()):
+            if not all(channel_elements.values()):
+                raise ValueError(
+                    "Either upper or lower limit lines are missing. "
+                    f"channel elements: {channel_elements}"
+                )
+
+            logger.debug(f"Adding channel elements: {channel_elements}")
+            elem = Channel(
+                label=self.name.upper(),
+                upper=channel_elements["upper"],
+                lower=channel_elements["lower"],
+            )
+            elem.shadow = False
+            elements.append(elem)
+            logger.debug(f"added element: {elem}")
+
         return SubPlot(
-            label=f"{self.display_name} ({self.parameters[0].value})",
+            label=subplot_label,
             elements=elements,
+            level="indicator",
             is_subplot=self.is_subplot,
-        )
-
-    def run(self, *inputs) -> np.ndarray:
-        """Run function that returns the result of the self._apply_func.
-
-        This skeleton method is replaced by the factory() method
-        when building the indicator class.
-
-        Returns
-        -------
-        np.ndarray
-
-        Raises
-        ------
-        ValueError
-            Error if array has more than 2 dimensions.
-        NotImplementedError
-            Error if self._apply_func is not implemented.
-        """
-        raise NotImplementedError()
-
+        ),
+        
+    
     def help(self):
         """Prints help information (docstring) for the class.
 
@@ -215,9 +282,7 @@ class FixedIndicator(IIndicator):
     indicators), because now these behave like normal indicators.
     """
 
-    def __init__(
-        self, name: str, value: np.flexible | bool, parameter: Parameter
-    ) -> None:
+    def __init__(self, name: str, parameter: Parameter) -> None:
         """Initializes the FixedIndicator class.
 
         Parameters
@@ -233,9 +298,11 @@ class FixedIndicator(IIndicator):
         self._parameters = parameter,
         self.output: tuple[str] = (self.unique_name,)
         self.output_names: tuple[str] = (self.unique_name,)
-        self.input: tuple[str] = ("close",)
+        self.input: tuple[str] = tuple()
         self._is_subplot: bool = True
         self._plot_desc: dict = {"name": ["Line"]}
+
+        self._data = None
 
     def __repr__(self) -> str:
         return self.display_name
@@ -250,6 +317,20 @@ class FixedIndicator(IIndicator):
         return False
 
     # ..................................................................................
+    @property
+    def unique_name(self) -> str:
+        """Returns a unique name for the indicator.
+
+        Returns
+        -------
+        str
+            Unique name for the indicator.
+        """
+        return (
+            f"{self.name.lower()}_"
+            f"{'_'.join((str(p.value) for p in self._parameters))}"
+        )
+
     @property
     def plot_desc(self) -> SubPlot:
         return SubPlot(
@@ -272,11 +353,24 @@ class FixedIndicator(IIndicator):
         Returns
         -------
         np.ndarray
-            array with the same dimensions as the close prices of the
-            data dictionary, filled with the fixed value that was set
-            for the instance of this class.
+            Array with shape (n, 1) where n is the length of the input array's first dimension,
+            filled with the fixed value that was set for the instance of this class.
         """
-        return np.full_like(inputs[0], self._parameters[0].value)
+        input_array = inputs[0]
+        value = self._parameters[0].value
+
+        if self._data is None or self._data.shape[0] != input_array.shape[0]:
+            # Initialize or update self._data
+            self._data = np.full((input_array.shape[0], 1), value, dtype=np.float32)
+        elif not np.can_cast(self._data.dtype, input_array.dtype, casting='same_kind'):
+            # Update dtype if necessary
+            self._data = self._data.astype(input_array.dtype)
+
+        return self._data
+
+    def on_parameter_change(self, *args) -> None:
+        super().on_parameter_change(*args)
+        self._data = None
 
     def help(self):
         """Prints help information (docstring) for the class.
@@ -327,9 +421,12 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     talib_func = getattr(talib, func_name)
     info = abstract.Function(func_name).info
 
+    # instead of telling the indicators which inputs they should
+    # use, every time we run them, these values are hard-coded here
+    # (but cann be overridden at runtime)
     if isinstance(info["input_names"], OrderedDict):
         if "prices" in info["input_names"].keys():
-            input_names = set(info["input_names"]["prices"])
+            input_names = info["input_names"]["prices"]   # set(info["input_names"]["prices"])
         elif "price" in info["input_names"].keys():
             input_names = {info["input_names"]["price"]}
         else:
@@ -349,7 +446,7 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
     parameters = dict(info["parameters"])
     display_name = info["display_name"]
 
-    # ..........................................................................
+    # .................................................................................
     # helper functions
     def _build_apply_func_doc_str() -> str:
         # build the function docstring dynamically
@@ -438,54 +535,22 @@ def _indicator_factory_talib(func_name: str) -> Indicator:
 
         return inspect.Signature(parameters=sig_params)
 
-    # ..........................................................................
+    # .................................................................................
     # define the run function based on the indicator requested
-    def run(
-        self, *inputs: tuple[np.ndarray]
-    ) -> np.ndarray | tuple[np.ndarray, ...]:  # type: ignore
+    def apply_func(self, *inputs: tuple[np.ndarray], **kwargs) -> np.ndarray:  # type: ignore
+        return talib_func(*inputs, **self.parameters_dict)  # type: ignore
 
-        logger.debug("provided data is in format %s", type(inputs))
-        logger.debug("parameters: %s", self.parameters_dict)
-
-        if type(inputs[0]) in (np.ndarray, pd.Series, pd.DataFrame):
-            logger.debug("shape of data: %s", inputs[0].shape)
-
-        # run indicator for one-dimensional array
-        if isinstance(inputs[0], np.ndarray) and inputs[0].ndim == 1:  # ignore:type
-            return talib_func(*inputs, **self.parameters_dict)  # type: ignore
-
-        # run indicator for two-dimensional array
-        # NOTE: This code is not yet fully implemented, and the commented
-        #       block does not work as it is! This will be necessary for
-        #       running an indicator for multiple assets at once.
-        if isinstance(inputs[0], np.ndarray) and inputs[0].ndim == 2:
-            raise NotImplementedError()
-
-            # for i in range(inputs[0].shape[1]):
-            # out = np.empty(
-            #     (inputs[0].shape[0], inputs[0].shape[1] * len(output_names))
-            # )
-            # res = talib_func(*inputs, **kwargs)
-
-            # if isinstance(res, np.ndarray):
-            #     out[:, 1] = res
-            # else:
-            #     for j in range(len(res)):
-            #         out[:, i + j] = res[j]
-
-        raise ValueError(f"indicator {func_name} only supports 1D or 2D arrays")
-
-    run.__signature__ = _build_apply_func_signature()  # type: ignore
-    run.__doc__ = _build_apply_func_doc_str()
+    apply_func.__signature__ = _build_apply_func_signature()  # type: ignore
+    apply_func.__doc__ = _build_apply_func_doc_str()
 
     ind_instance = type(
         func_name,
         (Indicator,),
         {
-            "__doc__": run.__doc__,
+            "__doc__": apply_func.__doc__,
             "__init__": Indicator.__init__,
             "display_name": display_name,
-            "run": run,  # types.MethodType(run, Indicator),
+            "_apply_func": apply_func,  # types.MethodType(run, Indicator),
         },
     )()
 
@@ -562,7 +627,8 @@ def fixed_indicator_factory(name, params):
 
     if not isinstance(space, (list, tuple)) or len(space) < 2:
         raise ValueError(
-            "parameter_space['value'] must be a list/tuple with at least two values"
+            "parameter_space['value'] must be a list/tuple with at least two values, "
+            f"but was provided: {space}"
         )
 
     try:
@@ -581,7 +647,7 @@ def fixed_indicator_factory(name, params):
         step=step
     )
 
-    ind = FixedIndicator(name, params[name], _parameter)
+    ind = FixedIndicator(name, _parameter)
 
     return ind
 
@@ -630,7 +696,8 @@ def _custom_indicator_factory(name, params):
 def factory(
     indicator_name: str,
     params: Params | None = None,
-    source: IndicatorSource | None = None
+    source: IndicatorSource | None = None,
+    on_change: Callable | None = None,
 ) -> Indicator:
     """Creates an indicator object based on its name .
 
@@ -641,6 +708,8 @@ def factory(
     ----------
     indicator_name : str
         name of the indicator,
+    on_change : Callable
+        A function that will be called when the indicator value changes.
     params : dict
         parameters for the indicator
     source : str
@@ -658,20 +727,29 @@ def factory(
     NotImplementedError
         if the indicator source is not supported
     """
-    logger.debug("creating indicator %s (%s) from %s", indicator_name, params, source)
+    logger.debug(
+        "creating indicator %s (params: %s) from %s",
+        indicator_name, params, f" from {source}" if source else ""
+        )
 
     if (source == "talib") | (indicator_name in talib.get_functions()):
         ind_instance = _indicator_factory_talib(indicator_name)
 
-    elif (source == "custom") | (indicator_name in custom_indicators):
+    elif (source == "custom") | (indicator_name.upper() in custom_indicators):
         ind_instance = _custom_indicator_factory(indicator_name, params)
 
     elif source == "fixed":
         ind_instance = fixed_indicator_factory(indicator_name, params)
 
     else:
-        print(custom_indicators)
-        raise NotImplementedError(f"Indicator source {source} not supported.")
+        raise NotImplementedError(
+            f"Indicator {indicator_name} not found/supported."
+            f"Available sources: talib, custom")
+
+    ind_instance.on_change = on_change
+
+    for param in ind_instance._parameters:
+        param.add_subscriber(ind_instance.on_parameter_change)
 
     logger.debug(ind_instance.__dict__)
 

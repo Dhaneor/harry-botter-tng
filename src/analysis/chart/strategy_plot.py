@@ -26,7 +26,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from .plot_definition import Line, Channel, PlotDefinition
-from ..util import proj_types as tp
+from ...util import proj_types as tp
 
 from src.analysis.indicators.iindicator import PlotDescription
 

@@ -6,61 +6,28 @@ Created on Oct 06 10:03:20 2021
 @author dhaneor
 """
 import sys
-import os
 import time
 import logging
 import numpy as np
-import pandas as pd
 
 from pprint import pprint
-from random import choice, random, randint
+from random import choice, random
 
 # profiler imports
 from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
-# configure logger
-LOG_LEVEL = logging.DEBUG
-logger = logging.getLogger("main")
-logger.setLevel(LOG_LEVEL)
-
-ch = logging.StreamHandler()
-ch.setLevel(LOG_LEVEL)
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
+from analysis import strategy_builder as sb, MarketData
+from analysis.strategy import exit_order_strategies as es
+from analysis.strategy.definitions import (  # noqa: F401
+    tema_cross, breakout, rsi,
+    s_test_er, s_tema_cross, s_linreg, s_trix, s_breakout, s_kama_cross,
 )
-ch.setFormatter(formatter)
+from util import get_logger
 
-logger.addHandler(ch)
+logger = get_logger("main")
 
-# -----------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# -----------------------------------------------------------------------------
-
-from src.analysis import strategy_builder as sb  # noqa: E402
-from src.analysis.strategies import operand as op  # noqa: E402, F401
-from src.analysis.strategies import condition as cnd  # noqa: E402, F401
-from src.analysis.strategies import signal_generator as sg  # noqa: E402, F401
-from src.analysis.strategies import exit_order_strategies as es  # noqa: E402
-from src.analysis.strategies.definitions import (  # noqa: E402, F401
-    cci, rsi, ema_cross, tema_cross, breakout
-)  # noqa: E402, F401
-
-
-df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
-df.drop(
-    ["Unnamed: 0", "close time", "volume", "quote asset volume"], axis=1, inplace=True
-)
-length = 1500
-start = randint(0, len(df) - length)
-end = start + length
-# df = df[start: end]
-
-data = {col: df[start:end][col].to_numpy() for col in df.columns}
-
+data = MarketData.from_random(length=2000, no_of_symbols=1)
 
 # -----------------------------------------------------------------------------
 def __get_sl_strategy_definition():
@@ -91,16 +58,7 @@ def __get_single_strategy_definition():
         symbol=choice(("BTCUSDT", "ETHUSDT", "LTCUSDT", "XRPUSDT")),
         interval="1d",
         signals_definition=tema_cross,
-        weight=random(),
-        stop_loss=None,  # [__get_sl_strategy_definition() for _ in range(1)],
-        take_profit=None,  # [__get_tp_strategy_definition() for _ in range(1)],
-        params={
-            "timeperiod": 28,
-            # 'test': False,
-            # 'wrong_param': None,
-            # 'not_exist': None,
-            # 'holy_crap': None
-        },
+        weight=1,  # random(),
     )
 
 
@@ -140,11 +98,7 @@ def build_valid_single_strategy():
 
     assert isinstance(s, sb.IStrategy)
     assert s.symbol is not None
-    assert s.interval is not None
     assert s.weight is not None
-
-    assert isinstance(s.sl_strategy[0], es.IStopLossStrategy)
-    assert isinstance(s.tp_strategy[0], es.ITakeProfitStrategy)
 
     return s
 
@@ -208,33 +162,15 @@ def test_get_strategy_definition():
 # @execution_time
 def test_strategy_builder():
     return build_valid_single_strategy()
-    # build_valid_composite_strategy()
 
 
-def test_strategy_run(s, show=False):
+def test_strategy_run(s):
+    res = s.speak()
 
-    s.speak(data)
+    assert isinstance(res, np.ndarray)
+    assert res.ndim == 3
 
-    if show:
-        df = pd.DataFrame.from_dict(data)
-
-        for col in (
-            "open time", "close time", "high", "low", "open",
-            "rsi_oversold_20", "rsi_overbought_80",
-            "cci_oversold_-100", "cci_overbought_100",
-        ):
-            try:
-                del df[col]
-            except Exception:
-                pass
-
-        df.loc[(df["rsi_2_close"] < 80) & (df["rsi_2_close"] > 20), "rsi_2_close"] = 0
-
-        df.replace(False, ".", inplace=True)
-        df.replace(np.nan, "-", inplace=True)
-        df.replace(0.0, ".", inplace=True)
-
-        print(df.tail(50))
+    print(res)
 
 
 # ============================================================================ #
@@ -245,34 +181,31 @@ if __name__ == "__main__":
     # close = np.random.rand(1_000)
     # print(close.shape)
 
-    # if s := test_strategy_builder():
-    #     print('-' * 200)
-    #     print(s)
+    if s := test_strategy_builder():
+        s.market_data = data
+        print('-' * 200)
+        print(s)
+
+    sys.exit()
 
     # test_sl_strategy_factory()
     # sdef = __get_single_strategy_definition()
-    sdef = __get_composite_strategy_definition()
-    s = sb.build_strategy(sdef)
-    assert isinstance(s, sb.IStrategy)
-    print("-" * 200)
-    print(s)
 
-    test_strategy_run(s, True)
+    # test_serialize_object(s)
+
+    test_strategy_run(s)
 
     # ..........................................................................
-    sys.exit()
+    # sys.exit()
 
     logger.setLevel(logging.ERROR)
-    runs = 1_000
+    runs = 100_000
     data = data
     st = time.perf_counter()
 
-    for i in range(runs):
-        test_strategy_run(s, False)
-
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            s.speak(data)
+            s.speak()
 
     (
         Stats(p)
@@ -285,6 +218,14 @@ if __name__ == "__main__":
     # for _ in range(runs):
     #     test_strategy_run(s, False)
 
-    et = time.perf_counter()
-    print(f'length data: {len(data["close"])} periods')
-    print(f"execution time: {((et - st)*1_000_000/runs):.2f} microseconds")
+    et = time.perf_counter() - st
+    ips = runs / et
+    periods = len(data["close"]) * ips
+
+    print(f'data: {len(data["close"]):,} periods')
+    print(f"periods/s: {periods:,.0f}")
+    print(f"\navg exc time: {(et * 1_000_000 / runs):.0f} µs")
+
+    print(f"\n~iter/s (1 core): {ips:>10,.0f}")
+    print(f"~iter/s (8 core): {ips * 5:>10,.0f}")
+    print(f"~iter/m (8 core): {ips * 5 * 60:>10,.0f}")

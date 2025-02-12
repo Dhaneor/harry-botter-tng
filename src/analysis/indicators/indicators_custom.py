@@ -7,32 +7,53 @@ Created on Fri July 28 20:08:20 2023
 """
 import bottleneck as bn
 import numpy as np
-from numba import njit
-from .indicator import IIndicator
-from .indicator_parameter import Parameter
-from ..chart.plot_definition import Line, SubPlot
 
-# defining parameters for the Noise indicator
-timeperiod = Parameter(
-    name="timeperiod", initial_value=14, hard_min=5, hard_max=200, step=5
-)
+from math import exp, cos, pi
+from numba import njit
+from . import IIndicator, Parameter
 
 
 class EfficiencyRatio(IIndicator):
+    """A class to calculate the Efficiency Ratio (ER) of a given time series.
+
+    The Efficiency Ratio is a technical indicator used to measure
+    the noise in the market. It is determined by calculating the
+    ratio between:
+    a) the absolute price difference between the current price
+    and the previous price at the beginning of the lookback period
+    b) the sum of the price differences for all lookback periods
+    
+    """
+    method: int = 1  # calculation method (0=numpy, 1=numba)
+
     def __init__(self):
         super().__init__()
         self._name = "er"
-        self._update_name = True
+        self.display_name = "Efficiency Ratio"
+
         self.input = ["close"]
         self.output = ["er"]
-        self.output_flags = {}
+        self.output_flags = dict(real=["Line"])
 
-        self._parameters = timeperiod,
+        self._parameters = (
+            Parameter(
+                name="timeperiod", 
+                initial_value=14, 
+                hard_min=5, 
+                hard_max=200, 
+                step=5
+            ),
+            Parameter(
+                name="smoothing", 
+                initial_value=10, 
+                hard_min=2, 
+                hard_max=50, 
+                step=5
+            ),
+        )
+        self._plot_desc = dict(real=["Line"])
 
-        self._is_subplot = True
-        self._method: int = 0  # calculation method (0=numpy, 1=numba)
-
-    def run(self, data: np.ndarray) -> np.ndarray:
+    def _apply_func(self, data: np.ndarray, **kwargs) -> np.ndarray:
         """
         Calculates the (Kaufman) Efficiency Ratio.
 
@@ -55,52 +76,27 @@ class EfficiencyRatio(IIndicator):
             The Noise indicator values for the lookback set
             in the 'timeperiod' parameter (default: 14).
         """
-        if data.ndim == 1:
-            if self._method:
-                return self._noise_index_numba(data=data, lookback=14)
+        smoothing = self.parameters[1].value
+
+        if self._cache is None:
+            if self.method == 1:
+                res = efficiency_ratio_nb(
+                    data=data, 
+                    lookback=self.parameters[0].value
+                    )
             else:
-                return self._noise_index_numpy(data)
-        # elif data.ndim == 2:
-        #     return np.apply_along_axis(
-        #         self._noise_index_numpy
-        #         if self._method == 0
-        #         else self._noise_index_numba, 0, data
-        #         )
-        else:
-            raise ValueError("Input data must be either 1D or 2D array")
+                res = self._noise_index_numpy(data)
 
-    def help(self):
-        return print(self.run.__doc__)
 
-    @property
-    def plot_desc(self) -> SubPlot:
-        return SubPlot(
-            label=self.unique_name,
-            is_subplot=self._is_subplot,
-            elements=(
-                Line(
-                    label=self.unique_name,
-                    column=self.unique_name,
-                    end_marker=False),
-            ),
-            level="indicator",
-        )
+            if smoothing > 1:
+                res = ultimate_smoother(
+                    np.nan_to_num(res), 
+                    smoothing
+                )
 
-    @njit
-    def _noise_index_numba(self, data, lookback: int) -> np.ndarray:
-        n = len(data)
-        noise = np.empty(n)
-        noise[:] = np.nan
-
-        for i in range(lookback, n):
-            returns = np.abs(
-                np.diff(data[i - lookback: i]) / data[i - lookback: i - 1]
-            )
-            rolling_sum = np.sum(returns)
-            price_diff = np.abs(data[i] / data[i - lookback] - 1)
-            noise[i] = price_diff / rolling_sum
-
-        return noise
+            self._cache = res
+        
+        return self._cache
 
     def _noise_index_numpy(self, data: np.ndarray) -> np.ndarray:
         """
@@ -142,29 +138,289 @@ class EfficiencyRatio(IIndicator):
         )
 
 
+@njit
+def noise_index_nb(data, lookback: int) -> np.ndarray:
+    n = len(data)
+    noise = np.empty(n)
+    noise[:] = np.nan
+
+    for i in range(lookback, n):
+        returns = np.abs(
+            np.diff(data[i - lookback: i]) / data[i - lookback: i - 1]
+        )
+        rolling_sum = np.sum(returns)
+        price_diff = np.abs(data[i] / data[i - lookback] - 1)
+        noise[i] = price_diff / rolling_sum
+
+    return noise
+
+
+@njit
+def efficiency_ratio_nb(data, lookback: int) -> np.ndarray:
+    n = len(data)
+    er = np.empty(n)
+    er[:] = np.nan
+
+    for i in range(lookback, n):
+        # Absolute price change over the lookback period
+        price_diff = np.abs(data[i] - data[i - lookback])
+
+        # Sum of absolute price changes within the lookback window
+        window_start = i - lookback
+        window_end = i
+        sum_abs_changes = 0.0
+        for j in range(window_start + 1, window_end):
+            sum_abs_changes += np.abs(data[j] - data[j - 1])
+
+        # Calculate Efficiency Ratio
+        if sum_abs_changes != 0.0:
+            er[i] = price_diff / sum_abs_changes
+        else:
+            er[i] = np.nan
+
+    return er
+
+
+@njit
+def noise_index_weighted_nb(data, lookback: int) -> np.ndarray:
+    n = len(data)
+    noise = np.empty(n)
+    noise[:] = np.nan
+
+    alpha = 2.0 / (lookback + 1)
+    
+    for i in range(lookback, n):
+        # Calculate returns in the lookback window
+        window_data = data[i - lookback: i]
+        returns = np.abs(np.diff(window_data) / window_data[:-1])
+
+        # Build weights (most recent has largest weight)
+        weights = np.array([alpha * (1 - alpha)**k for k in range(lookback - 1, -1, -1)])
+        # If desired, normalize so sum of weights == 1
+        weights /= np.sum(weights)
+        
+        # Weighted sum of returns
+        weighted_sum = np.sum(returns * weights[1:])  # returns is length (lookback-1)
+        
+        # "Price diff" can stay the same or be adjusted with the first weight
+        price_diff = np.abs(data[i] / data[i - lookback] - 1)
+        
+        noise[i] = price_diff / weighted_sum if weighted_sum != 0 else np.nan
+
+    return noise
+
+
+
+@njit
+def weighted_efficiency_ratio_nb(data, lookback: int) -> np.ndarray:
+    n = len(data)
+    er = np.empty(n)
+    er[:] = np.nan
+
+    alpha = 2.0 / (lookback + 1)
+
+    # Precompute weights: weights[k] corresponds to data[i - lookback + k]
+    weights = np.empty(lookback - 1)
+    for k in range(lookback - 1):
+        weights[k] = alpha * (1 - alpha) ** (lookback - 2 - k)  # Exponential weights
+
+    # Normalize weights so that sum(weights) = 1
+    weight_sum = 0.0
+    for k in range(lookback - 1):
+        weight_sum += weights[k]
+    for k in range(lookback - 1):
+        weights[k] /= weight_sum if weight_sum != 0 else 1.0
+
+    for i in range(lookback, n):
+        # Absolute price change over the lookback period
+        price_diff = np.abs(data[i] - data[i - lookback])
+
+        # Sum of weighted absolute price changes within the lookback window
+        window_start = i - lookback
+        window_end = i
+        weighted_sum = 0.0
+        for j in range(window_start + 1, window_end):
+            weighted_sum += weights[j - (window_start + 1)] * np.abs(data[j] - data[j - 1])
+
+        # Calculate Weighted Efficiency Ratio
+        if weighted_sum != 0.0:
+            er[i] = price_diff / weighted_sum
+        else:
+            er[i] = np.nan
+
+    return er
+
+
+
+@njit
+def noise_index_weighted_alt_nb(data, lookback: int) -> np.ndarray:
+    n = len(data)
+    noise = np.empty(n)
+    noise[:] = np.nan
+
+    alpha = 2.0 / (lookback + 1)
+
+    # Precompute weights: weights[k] corresponds to data[i - lookback + k]
+    weights = np.empty(lookback)
+    for k in range(lookback):
+        weights[k] = alpha * (1 - alpha) ** (lookback - 1 - k)
+    
+    # Normalize weights so that sum(weights[:-1]) == 1 for the returns
+    # Since returns have (lookback - 1) elements
+    weight_sum = 0.0
+    for k in range(lookback - 1):
+        weight_sum += weights[k + 1]
+    for k in range(lookback):
+        weights[k] /= weight_sum if weight_sum != 0 else 1.0
+
+    # Loop through each data point starting from 'lookback'
+    for i in range(lookback, n):
+        # Calculate returns in the lookback window
+        # data[i - lookback : i] has 'lookback' points
+        # returns will have (lookback - 1) elements
+        window_start = i - lookback
+        window_end = i
+        # Compute absolute returns
+        returns = np.empty(lookback - 1)
+        for j in range(lookback - 1):
+            returns[j] = np.abs((data[window_start + j + 1] - data[window_start + j]) / data[window_start + j])
+        
+        # Compute weighted sum of returns
+        weighted_sum = 0.0
+        for j in range(lookback - 1):
+            weighted_sum += returns[j] * weights[j + 1]
+        
+        # Compute price difference
+        price_diff = np.abs(data[i] / data[i - lookback] - 1)
+        
+        # Calculate noise index
+        if weighted_sum != 0.0:
+            noise[i] = price_diff / weighted_sum
+        else:
+            noise[i] = np.nan
+
+    return noise
+
+
+# ======================================================================================
+class UltimateSmoother(IIndicator):
+    """A class to calculate the Ultimate Smoother.
+
+    The Ultimate Smoother is a second-order recursive  low-pass 
+    filter designed to smooth out data (such  as price series in 
+    financial markets) while minimizing lag and preserving trend 
+    information. Its recursive nature means that each smoothed 
+    value depends on both current and past data points as well as 
+    past smoothed values.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self._name = "us"
+        self.display_name = "Ultimate Smoother"
+
+        self.input = ["close"]
+        self.output = ["us"]
+        self.output_flags = dict(real=["Line"])
+
+        self._parameters = (
+            Parameter(
+                name="timeperiod", 
+                initial_value=14, 
+                hard_min=2, 
+                hard_max=100, 
+                step=5
+            ),
+        )
+        self._plot_desc = dict(real=["Line"])
+        self._is_subplot = False
+
+    def _apply_func(self, data: np.ndarray, **kwargs) -> np.ndarray:
+        """
+        Calculates Ehler#s Ultmiate Smmother
+
+        The Ultimate Smoother is a second-order recursive  low-pass 
+        filter designed to smooth out data (such  as price series in 
+        financial markets) while minimizing lag and preserving trend 
+        information. Its recursive nature means that each smoothed 
+        value depends on both current and past data points as well as 
+        past smoothed values.
+
+        Parameters
+        ----------
+        data : np.ndarray
+            A one- or two-dimensional array of price data.
+        timeperiod : int, optional
+            The smoothing period (default: 14).
+
+        Returns
+        -------
+        np.ndarray
+            The Ultimate Smoother values for the lookback set
+            in the 'timeperiod' parameter (default: 14).
+        """
+        
+        if self._cache is None:
+            self._cache = ultimate_smoother(data, self.parameters[0].value)
+        
+        return self._cache
+    
+
+@njit
+def ultimate_smoother(data, length: np.int64 = 20) -> np.ndarray:
+    """
+    Calculate the Ehlers Ultimate Smoother for a given data series.
+
+    Parameters:
+    - data (array-like): The input data series (e.g., prices).
+    - length (int): The smoothing period.
+
+    Returns:
+    - us (np.ndarray): The smoothed data series.
+    """
+    # length = self.parameters[0].value
+    n: np.int64 = len(data)
+    us: np.ndarray = np.zeros(n, dtype=np.float64)
+    
+    # Check if data length is sufficient
+    if n < 3:
+        raise ValueError("Data array must have at least 3 elements.")
+    
+    # Initialize the smoothed series with zeros
+    us = np.zeros(n)
+
+    f: np.float64 = (1.414 * pi) / length
+    a1 = exp(-f)
+    c2 = 2 * a1 * cos(f)
+    
+    # # Calculate the frequency component
+    # f = (1.414 * np.pi) / length
+    
+    # # Compute intermediate coefficients
+    # a1 = np.exp(-f)
+    # c2 = 2 * a1 * np.cos(f)
+    c3 = -a1 ** 2
+    c1 = (1 + c2 - c3) / 4
+    
+    # Initialization:
+    us[0] = data[0]
+    us[1] = data[1]
+    
+    # Iterate through the data starting from index 2
+    for t in range(2, n):
+        us[t] = (
+            (1 - c1) * data[t] +
+            (2 * c1 - c2) * data[t - 1] +
+            (-c1 - c3) * data[t - 2] +
+            c2 * us[t - 1] +
+            c3 * us[t - 2]
+        )
+    
+    return us
+
+
+# ======================================================================================
 custom_indicators = {
     "ER": EfficiencyRatio,
+    "US": UltimateSmoother,
     }
-
-
-# ====================================================================================
-if __name__ == "__main__":
-    ind = EfficiencyRatio()
-    print(ind.unique_name)
-    print(ind.help())
-
-    # define test data with a length of 100
-    data = np.random.rand(10_000)
-
-    # define a 2D array with the same data
-    data_2d = np.stack((data, data + 0.1), axis=1)
-
-    # run the indicator with a 2D array and print the result
-    result_2d = ind.run(data_2d)
-    print(result_2d[-50:, 0])
-    print(ind.plot_description())
-
-    # run the indicator with a 1D array and print the result
-    result_1d = ind.run(data)
-    print(result_1d[-50:])
-    print(ind.plot_description())

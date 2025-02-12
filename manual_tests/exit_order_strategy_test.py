@@ -33,8 +33,8 @@ sys.path.append(parent)
 # -----------------------------------------------------------------------------
 
 from src.staff.hermes import Hermes
-import analysis.strategies.exit_order_strategies as es
-from analysis.strategies.exit_order_strategies import *
+import analysis.strategy.exit_order_strategies as es
+from analysis.strategy.exit_order_strategies import *
 from util.timeops import execution_time
 
 

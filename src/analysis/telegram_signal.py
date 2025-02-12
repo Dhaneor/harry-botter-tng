@@ -271,9 +271,6 @@ async def build_close_long_message(position: Dict[str, Any]) -> str:
         "prudent to  redirect my investments to other opportunities. It has been"
         " a privilege to partake in this endeavor, and I look forward to engaging"
         " in further ventures of a similar nature."
-        # "As always, this communication serves as a "
-        # "mere update and not as a source of financial guidance, and one is "
-        # "advised to seek professional counsel in such matters."
     )
 
 
