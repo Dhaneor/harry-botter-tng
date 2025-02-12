@@ -71,7 +71,7 @@ def get_ohlcv(symbol: str, interval: str, as_dataframe: bool = False) -> pd.Data
     """
 
     res = hermes.get_ohlcv(
-        symbols=symbol, interval=interval, start=-1000, end='now UTC'
+        symbols=symbol, interval=interval, start=-2000, end='now UTC'
     )
 
     if not res.get('success'):

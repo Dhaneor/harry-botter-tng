@@ -20,7 +20,7 @@ from broker.models.symbol import Symbol
 from models.users import Account
 from analysis.util.ohlcv_observer import OhlcvObserver
 from analysis.oracle import LiveOracle, OracleRequest
-from analysis.strategies.definitions import strategy
+from analysis.strategy.definitions import strategy
 from analysis.leverage import PositionSizeManager
 
 """
@@ -46,7 +46,7 @@ TODO    change Moses class so that the SL parameters are not set on
 """
 
 # =============================================================================
-from analysis.strategies.definitions import STRATEGIES
+from analysis.strategy.definitions import STRATEGIES
 from broker.config import MIN_POS_CHANGE_PERCENT, ALLOW_POS_INCREASE
 
 LOGGER_NAME = 'main.AccountManager'

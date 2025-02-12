@@ -11,10 +11,14 @@
 /config.py
 /*.ini
 **/keys
-**/
+**/*.so
 .DS_Store
 .vscode
 .env
+**/*.so
+**/*.cpp
+**/*.pyd
+.DS_Store
 tikr_mvp_strategy.py
 playground.ipynb
 /zguide
