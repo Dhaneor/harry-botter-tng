@@ -27,7 +27,6 @@ DOWN_ARROW = "\U0001F4C9"  # "\U0001F53D"  # 🔽
 try:
     bot = Bot(token=BOT_TOKEN)
 except InvalidToken as e:
-    print(BOT_TOKEN)
     logger.error(f"Invalid Telegram bot token: {e}")
     logger.error("Failed to initialize Telegram bot with token: %s." % BOT_TOKEN)
     raise
@@ -82,6 +81,9 @@ async def send_message(
             f"Message {'with picture' if image else ''} sent "
             f"successfully to chat {chat_id}"
             )
+    except InvalidToken as e:
+        logger.error()
+
     except Exception as e:
         logger.error(
             f"Error sending message {'with picture' if image else ''}: {e}",

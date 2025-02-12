@@ -102,7 +102,7 @@ class Ohlcv:
 
         # assume 1000 intervals by default, if not provided
         if self.start is None:
-            self.start = self.end - interval_in_ms[self.interval] * 1000
+            self.start = self.end - interval_in_ms[self.interval] * 1295
 
     @property
     def interval_in_ms(self):

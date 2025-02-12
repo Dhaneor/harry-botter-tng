@@ -375,6 +375,9 @@ class Positions:
 
         return position.to_dict() if (as_dict and position) else position
 
+    def last(self, as_dict: bool = False) -> Position | None:
+        ...
+
     def _extract_positions(self, backtest_df: pd.DataFrame, symbol: str) -> None:
         positions = []
 

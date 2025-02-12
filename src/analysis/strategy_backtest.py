@@ -199,7 +199,7 @@ def run(
     if isinstance(strategy, IStrategy):
         strategy.speak(data)
     else:
-        strategy.execute(data)
+        strategy.speak(data)
 
     merge_signals(data)
 

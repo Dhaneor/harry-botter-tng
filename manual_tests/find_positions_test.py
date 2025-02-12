@@ -28,7 +28,7 @@ from analysis.strategies.definitions import (  # noqa: E402, F401
 # from plotting.minerva import BacktestChart as Chart  # noqa: E402, F401)
 from analysis.chart.tikr_charts import BacktestChart as Chart  # noqa: E402, F401
 from analysis.backtest import result_stats as rs  # noqa: E402, F401
-from analysis.models import position  # noqa: E402, F401
+from analysis.models import py_position  # noqa: E402, F401
 from util import get_logger
 
 logger = get_logger(__name__)
@@ -219,7 +219,7 @@ def run(data, show=False, plot=False):
     if show:
         _show(df)
 
-    positions = position.Positions(df_pos, symbol)
+    positions = py_position.Positions(df_pos, symbol)
 
     for pos in positions:
         print(pos)
