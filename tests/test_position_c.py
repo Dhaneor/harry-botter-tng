@@ -1,6 +1,7 @@
 # cython: language_level=3
 # distutils: language = c++
 import pytest
+from pprint import pprint
 from src.analysis.models.position import (
     _get_fee,
     _get_slippage,
@@ -27,19 +28,24 @@ def test_get_slippage():
 
 
 def test_build_buy_trade():
-    t = _build_buy_trade(timestamp=1750000000, quote_qty=1000.0, price=100.0)
+    t = _build_buy_trade(timestamp=1750000000, price=100.0, quote_qty=1000.0)
     fee = _get_slippage(1000, slippage_rate)
     slippage = _get_slippage(1000, slippage_rate)
     base_qty = 10.0 * (1 - (fee_rate + slippage_rate))
     
-    assert t["type"] == 1
-    assert t["timestamp"] == 1750000000
-    assert t["price"] == 100.0
-    assert t["qty"] == base_qty
-    assert t["gross_quote_qty"] == 1000.0
-    assert t["net_quote_qty"] == 1000.0 - fee - slippage
-    assert t["fee"] == fee
-    assert t["slippage"] == slippage
+    try:
+        assert t["type"] == 1
+        assert t["timestamp"] == 1750000000
+        assert t["price"] == 100.0
+        assert t["qty"] == base_qty
+        assert t["gross_quote_qty"] == 1000.0
+        assert t["net_quote_qty"] == 1000.0 - fee - slippage
+        assert t["fee"] == fee
+        assert t["slippage"] == slippage
+    except AssertionError as e:
+        print(str(e))
+        print(t)
+        raise
 
 
 def test_build_sell_trade():
@@ -65,7 +71,10 @@ def test_add_buy():
     quote_qty = 1000.0
     price = 100.0
     p = _build_long_position(0, 1735000000, quote_qty=quote_qty, price=price)
-    p = _add_buy(p, 1736000000, quote_qty=quote_qty, price=price)
+    p = _add_buy(
+        p,
+        _build_buy_trade(timestamp=1750000000, quote_qty=quote_qty, price=price)
+    )
 
     assert len(p["trades"]) == 2
 
@@ -74,7 +83,10 @@ def test_add_sell():
     quote_qty = 1000.0
     price = 100.0
     p = _build_short_position(0, 1735000000, base_qty=quote_qty, price=price)
-    p = _add_sell(p, 1736000000, base_qty=quote_qty, price=price)
+    p = _add_sell(
+        p, 
+        _build_sell_trade(1736000000, price=price, base_qty=quote_qty)
+    )
 
     assert len(p["trades"]) == 2
 
@@ -83,38 +95,85 @@ precision = 1e-04
 
 
 def test_get_avg_entry_price_long():
+    price_1 = 100.0
     quote_qty = 1000.0
-    price = 100.0
-    price_1 = 200.0
-    p = _build_long_position(0, 1735000000, quote_qty=quote_qty, price=price)
-    p = _add_buy(p, 1736000000, quote_qty=quote_qty, price=price)
+
+    price_2 = 200.0
+    quote_qty_2 = 4000
+
+    p = _build_long_position(0, 1735000000, price=price_1, quote_qty=quote_qty)
+    p = _add_buy(
+        p, 
+        _build_buy_trade(1736000000, price=price_1, quote_qty=quote_qty)
+    )
 
     calculated = _get_avg_entry_price(p)
-    expected  = price * (1 + fee_rate + slippage_rate)
-    assert calculated == pytest.approx(expected, abs=precision)
+    expected = quote_qty / ((quote_qty / price_1) * (1 - fee_rate - slippage_rate))
+    try:
+        assert calculated == pytest.approx(expected, abs=precision)
+    except AssertionError as e:
+        print(e)
+        print(f"difference calculated <-> expected: {abs(calculated - expected):.6f}")
+        pprint (p)
+        raise
     
-    p = _add_buy(p, 1736700000, quote_qty=quote_qty * 4, price=price_1)
+    p = _add_buy(
+        p, 
+        _build_buy_trade(1736700000, price=price_2, quote_qty=quote_qty_2)
+    )
     
     calculated = _get_avg_entry_price(p)
-    expected = (price * 1.5) * (1 + fee_rate + slippage_rate)
-    assert calculated == pytest.approx(expected, abs=precision)
+    exp_bsase_qty = sum((
+        quote_qty * (1 - fee_rate - slippage_rate) / price_1,
+        quote_qty * (1 - fee_rate - slippage_rate) / price_1,
+        quote_qty_2 * (1 - fee_rate - slippage_rate) / price_2
+    ))
+    sum_quote_qty = 2 * quote_qty + quote_qty_2
+    expected = sum_quote_qty / exp_bsase_qty
+    try:
+        assert calculated == pytest.approx(expected, abs=precision)
+    except AssertionError as e:
+        print(e)
+        print(f"difference calculated <-> expected: {abs(calculated - expected):.6f}")
+        pprint (p)
+        raise
 
 
 def test_get_avg_entry_price_short():
     base_qty = 10.0
     price = 100.0
+    base_qty_2 = 20.0
     price_2 = 50.0
+    
     p = _build_short_position(0, 1735000000, base_qty=base_qty, price=price)
-    p = _add_sell(p, 1736000000, base_qty=base_qty, price=price)
-
+    
+    p = _add_sell(
+        p, 
+        _build_sell_trade(1736000000, price=price, base_qty=base_qty)
+    )
     calculated = _get_avg_entry_price(p)
     expected = price * (1 - fee_rate - slippage_rate)
-    assert calculated == pytest.approx(expected, abs=precision)
+    try:
+        assert calculated == pytest.approx(expected, abs=precision)
+    except AssertionError as e:
+        print(e)
+        print(f"difference calculated <-> expected: {abs(calculated - expected):.6f}")
+        pprint (p)
+        raise
 
-    p = _add_sell(p, 1736700000, base_qty=base_qty * 2, price=price_2)
+    p = _add_sell(
+        p, 
+        _build_sell_trade(1737000000, price=price_2, base_qty=base_qty_2)
+    )
     calculated = _get_avg_entry_price(p)
     expected = ((price + price_2) / 2) * (1 - fee_rate - slippage_rate)
-    assert calculated == pytest.approx(expected, abs=precision)
+    try:
+        assert calculated == pytest.approx(expected, abs=precision)
+    except AssertionError as e:
+        print(e)
+        print(f"difference calculated <-> expected: {abs(calculated - expected):.6f}")
+        pprint (p)
+        raise
 
 
 def test_build_long_position():

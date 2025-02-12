@@ -50,14 +50,27 @@ cdef struct PositionData:
 cdef double get_fee(double qty, double fee_rate)
 cdef double get_slippage(double qty, double slippage_rate)
 
-cdef TradeData build_buy_trade(long long timestamp, double quote_qty, double price)
-cdef TradeData build_sell_trade(long long timestamp, double base_qty, double price)
+cdef TradeData build_buy_trade(
+    long long timestamp, 
+    double price, 
+    double quote_qty = *, 
+    double base_qty = *
+) except *
 
-cdef void add_buy(PositionData* pos, long long timestamp, double quote_qty, double price)
-cdef void add_sell(PositionData* pos, long long timestamp, double base_qty, double price)
+cdef TradeData build_sell_trade(
+    long long timestamp, 
+    double price, 
+    double quote_qty = *,
+    double base_qty = *
+) except *
+
+cdef void add_buy(PositionData* pos, TradeData* trade) except *
+cdef void add_sell(PositionData* pos, TradeData* trade) except *
 
 cdef PositionData build_long_position(int index, long long timestamp, double quote_qty, double price)
 cdef PositionData build_short_position(int index, long long timestamp, double base_qty, double price)
+
+cdef void close_position(PositionData* pos, long long timestamp, double price)
 
 cpdef void run_func_bench(int iterations)
 

@@ -17,7 +17,7 @@ from libcpp.memory cimport shared_ptr, make_shared
 # values which do not need to be changed
 cdef double fee_rate = 0.001
 cdef double slippage_rate = 0.001
-
+cdef double SENTINEL = -1.0
 
 # .......................... Functions to process positions ............................
 cdef inline double get_fee(double qty, double fee_rate):
@@ -26,18 +26,68 @@ cdef inline double get_fee(double qty, double fee_rate):
 cdef inline double get_slippage(double qty, double slippage_rate):
     return qty * slippage_rate
 
+cdef inline double get_average_price(vector[TradeData]* trades, int trade_type):
+    cdef double sum_qty = 0
+    cdef double sum_quote_qty = 0
+    cdef int i    
+    
+    for i in range(trades.size()):
+        if trades[0][i].type == 1:
+            sum_qty += trades[0][i].qty
+            sum_quote_qty += trades[0][i].gross_quote_qty
+        else:
+            sum_qty += trades[0][i].qty
+            sum_quote_qty += trades[0][i].net_quote_qty
 
-cdef inline TradeData build_buy_trade(long long timestamp, double quote_qty, double price):
+    return sum_quote_qty / sum_qty
+
+cdef inline double get_avg_entry_price(PositionData* pos):
+    if pos[0].type == 1:
+        return get_average_price(&pos.trades, 1)
+    elif pos[0].type == -1:
+        return get_average_price(&pos.trades, -1)
+    else:
+        raise ValueError(f"unknown trade type: {pos[0].type}")
+
+cdef inline double get_avg_exit_price(PositionData* pos):
+    if pos[0].type == 1:
+        return get_average_price(&pos.trades, -1)
+    elif pos[0].type == -1:
+        return get_average_price(&pos.trades, 1)
+    else:
+        raise ValueError(f"unknown trade type: {pos[0].type}")
+
+
+cdef inline TradeData build_buy_trade(
+    long long timestamp, 
+    double price, 
+    double quote_qty = SENTINEL, 
+    double base_qty = SENTINEL
+) except *:
     """Get a Trade struct for a buy action."""
+
     cdef TradeData t
-    cdef double fee = get_fee(quote_qty, fee_rate)
-    cdef double slippage = get_slippage(quote_qty, slippage_rate)
-    cdef double net_quote_qty = quote_qty - fee - slippage
+    cdef double fee, slippage, net_quote_qty
+
+    if quote_qty != SENTINEL:
+        fee = get_fee(quote_qty, fee_rate)
+        slippage = get_slippage(quote_qty, slippage_rate)
+        net_quote_qty = quote_qty - fee - slippage
+        t.qty = net_quote_qty / price
+    
+    elif base_qty != SENTINEL:
+        t.qty = base_qty
+        quote_qty = base_qty * price
+        fee = get_fee(quote_qty, fee_rate)
+        slippage = get_slippage(quote_qty, slippage_rate)
+        net_quote_qty = quote_qty - fee - slippage
+    
+    else:
+        raise ValueError("Either quote_qty or base_qty must be provided.")
     
     t.type = 1
     t.timestamp = timestamp
     t.price = price
-    t.qty = net_quote_qty / price
     t.gross_quote_qty = quote_qty
     t.net_quote_qty = net_quote_qty
     t.fee = fee
@@ -45,57 +95,61 @@ cdef inline TradeData build_buy_trade(long long timestamp, double quote_qty, dou
 
     return t
 
-cdef inline TradeData build_sell_trade(long long timestamp, double base_qty, double price):
+cdef inline TradeData build_sell_trade(
+    long long timestamp, 
+    double price, 
+    double quote_qty = SENTINEL,
+    double base_qty = SENTINEL
+) except *:
     """Fill an existing Trade struct for a sell action."""
+
     cdef TradeData t
-    cdef double gross_quote_qty = base_qty * price
-    cdef double fee = get_fee(gross_quote_qty, fee_rate)
-    cdef double slippage = get_slippage(gross_quote_qty, slippage_rate)
-    
+    cdef double gross_quote_qty
+    cdef double fee 
+    cdef double slippage
+
+    if base_qty != SENTINEL:
+        gross_quote_qty = base_qty * price
+        fee = get_fee(gross_quote_qty, fee_rate)
+        slippage = get_slippage(gross_quote_qty, slippage_rate)
+
+    elif quote_qty != SENTINEL:
+        gross_quote_qty = quote_qty
+        fee = get_fee(gross_quote_qty, fee_rate)
+        slippage = get_slippage(gross_quote_qty, slippage_rate)
+        base_qty = (gross_quote_qty - fee - slippage) / price
+    else:
+        raise ValueError("Either quote_qty or base_qty must be provided.")
+
     t.type = -1
     t.timestamp = timestamp
     t.price = price
     t.qty = base_qty    
     t.gross_quote_qty = gross_quote_qty
-    t.net_quote_qty =gross_quote_qty - fee - slippage
+    t.net_quote_qty = gross_quote_qty - fee - slippage
     t.fee = fee
     t.slippage = slippage
 
     return t
 
 
-cdef void add_buy(PositionData* pos, long long timestamp, double quote_qty, double price):
+cdef void add_buy(PositionData* pos, TradeData* trade) except *:
     """Adds a Buy trade to the position"""
-    cdef TradeData trade = build_buy_trade(timestamp, quote_qty, price) 
+    if trade.type <= 0:
+        raise ValueError(f"Invalid trade type: {trade.type} is not a buy.")
     pos.size += trade.qty
-    pos.trades.push_back(trade)
+    pos.trades.push_back(trade[0])
 
-cdef void add_sell(PositionData* pos, long long timestamp, double base_qty, double price):
+cdef void add_sell(PositionData* pos, TradeData* trade) except *:
     """Adds a Sell trade to the position"""
-    cdef TradeData trade = build_sell_trade(timestamp, base_qty, price) 
+    if trade.type >= 0:
+        raise ValueError(f"Invalid trade type: {trade.type} is not a sell.")
     pos.size -= trade.qty
-    pos.trades.push_back(trade)
+    pos.trades.push_back(trade[0])
 
-
-cdef inline double get_avg_entry_price(PositionData* pos):
-    cdef double sum_qty = 0
-    cdef double sum_quote_qty = 0
-    cdef int i
-
-    for i in range(pos[0].trades.size()):
-        # sum buys for long position
-        if pos[0].type == 1 and pos[0].trades[i].type == 1:
-            sum_qty += pos[0].trades[i].qty
-            sum_quote_qty += pos[0].trades[i].gross_quote_qty
-        # sum sells for short position
-        elif pos[0].type == -1 and pos[0].trades[i].type == -1:
-            sum_qty += pos[0].trades[i].qty
-            sum_quote_qty += pos[0].trades[i].net_quote_qty
-
-    return (sum_quote_qty * 1e6) / (sum_qty * 1e6)
-
-
-cdef PositionData build_long_position(int index, long long timestamp, double quote_qty, double price):
+cdef PositionData build_long_position(
+    int index, long long timestamp, double quote_qty, double price
+):
     """Builds a long position (PositionData stuct)."""
     cdef PositionData pos
 
@@ -109,11 +163,16 @@ cdef PositionData build_long_position(int index, long long timestamp, double quo
     pos.trades = vector[TradeData]()
     pos.stop_orders = vector[StopOrder]()
     
-    add_buy(&pos, timestamp, quote_qty, price)
+    cdef TradeData initial_buy = build_buy_trade(
+        timestamp, price=price, quote_qty=quote_qty, base_qty=SENTINEL
+    )
+    add_buy(&pos, &initial_buy)
 
     return pos
 
-cdef PositionData build_short_position(int index, long long timestamp, double base_qty, double price):
+cdef PositionData build_short_position(
+    int index, long long timestamp, double base_qty, double price
+):
     """Builds a short position (PositionData stuct)."""
     cdef PositionData pos
 
@@ -127,9 +186,31 @@ cdef PositionData build_short_position(int index, long long timestamp, double ba
     pos.trades = vector[TradeData]()
     pos.stop_orders = vector[StopOrder]()
 
-    add_sell(&pos, timestamp, base_qty, price)
+    cdef TradeData initial_sell = build_sell_trade(
+        timestamp, price=price, base_qty=base_qty, quote_qty=SENTINEL
+    )
+    add_sell(&pos, &initial_sell)
 
     return pos
+
+cdef void close_position(PositionData* pos, long long timestamp, double price):
+    cdef TradeData t
+    
+    if pos.type == 1:
+        t = build_sell_trade(
+            timestamp=timestamp, price=price, base_qty=pos.size, quote_qty=SENTINEL
+        )
+        add_sell(pos, &t)
+    
+    elif pos.type == -1:
+        t = build_buy_trade(
+            timestamp=timestamp, price=price, base_qty=pos.size, quote_qty=SENTINEL
+        )
+        add_sell(pos, &t)
+    
+    else:
+        raise ValueError(f"Unable to close position of unknown type: {pos.type}")
+
 
 
 # ............... Python accessible versions of the position functions .................
@@ -144,21 +225,39 @@ def _get_fee(double qty, double fee_rate):
 def _get_slippage(double qty, double slippage_rate):
     return get_slippage(qty, slippage_rate)
 
-def _build_buy_trade(long long timestamp, double quote_qty, double price):
-    return build_buy_trade(timestamp, quote_qty, price)
+def _build_buy_trade(
+    long long timestamp, double price, double quote_qty = 0.0, double base_qty = 0.0
+):
+    quote_qty = quote_qty if quote_qty > 0 else SENTINEL
+    base_qty = base_qty if base_qty > 0 else SENTINEL
+    return build_buy_trade(
+        timestamp=timestamp, 
+        price=price,
+        quote_qty=quote_qty or SENTINEL,
+        base_qty=base_qty or SENTINEL
+    )
 
-def _build_sell_trade(long long timestamp, double base_qty, double price):
-    return build_sell_trade(timestamp, base_qty, price)
+def _build_sell_trade(
+    long long timestamp, double price, double quote_qty = 0.0, double base_qty = 0.0
+):
+    quote_qty = quote_qty if quote_qty > 0 else SENTINEL
+    base_qty = base_qty if base_qty > 0 else SENTINEL
+    return build_sell_trade(
+        timestamp=timestamp, 
+        price=price,
+        quote_qty=quote_qty,
+        base_qty=base_qty
+    )
 
 def _get_avg_entry_price(PositionData pos):
     return get_avg_entry_price(&pos)
 
-def _add_buy(PositionData pos, long long timestamp, double quote_qty, double price):
-    add_buy(&pos, timestamp, quote_qty, price)
+def _add_buy(PositionData pos, TradeData trade):
+    add_buy(&pos, &trade)
     return pos
 
-def _add_sell(PositionData pos, long long timestamp, double base_qty, double price):
-    add_sell(&pos, timestamp, base_qty, price)
+def _add_sell(PositionData pos, TradeData trade):
+    add_sell(&pos, &trade)
     return pos
 
 def _build_long_position(int index, long long timestamp, double quote_qty, double price):
@@ -213,7 +312,7 @@ cdef class FuncBench:
     cdef bench_build_buy_trade(self):
         st = time()
         for i in range(self.iterations):
-            build_buy_trade(17345000000, 1000.0, 100.0)
+            build_buy_trade(17345000000, price=100.0, quote_qty=1000.0)
         exc_time = (time() - st) * 1e6
         avg_exc_time = (exc_time / self.iterations) * 1_000
         
@@ -230,9 +329,10 @@ cdef class FuncBench:
 
     cdef bench_add_buy(self):
         pos = build_long_position(1, 17345000000, 1000.0, 100.0)
+        t = build_buy_trade(17345000000, price=100.0, quote_qty=1000.0)
         st = time()
         for i in range(self.iterations):
-            add_buy(&pos, 1735000000, 1000.0, 100.0)
+            add_buy(&pos, &t)
         exc_time = (time() - st) * 1e6
         avg_exc_time = (exc_time / self.iterations) * 1_000
         
@@ -240,9 +340,10 @@ cdef class FuncBench:
 
     cdef bench_add_sell(self):
         pos = build_short_position(1, 17345000000, 1000.0, 100.0)
+        t = build_sell_trade(17345000000, 1000.0, 100.0)
         st = time()
         for i in range(self.iterations):
-            add_sell(&pos, 1735000000, 1000.0, 100.0)
+            add_sell(&pos, &t)
         exc_time = (time() - st) * 1e6
         avg_exc_time = (exc_time / self.iterations) * 1_000
         
@@ -250,9 +351,11 @@ cdef class FuncBench:
 
     cdef bench_get_avg_entry_price(self):
         pos = build_short_position(1, 17345000000, 1000.0, 100.0)
-        add_sell(&pos, 1736000000, 1000.0, 100.0)
-        add_sell(&pos, 1737000000, 1000.0, 100.0)
-        add_buy(&pos, 1738000000, 1000.0, 100.0)
+        t = build_sell_trade(17345000000, 1000.0, 100)
+        add_sell(&pos, &t)
+        add_sell(&pos, &t)
+        add_sell(&pos, &t)
+
         st = time()
         for i in range(self.iterations):
             get_avg_entry_price(&pos)
@@ -282,25 +385,6 @@ cdef class FuncBench:
 cpdef void run_func_bench(int iterations):
     fb = FuncBench(iterations)
     fb.run()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -532,8 +616,8 @@ cdef class Benchmark:
 
     cdef benchmark_struct(self, int num_trades):
         for i in range(num_trades):
-            build_buy_trade(1000, 10.0, 100.0)
-            build_sell_trade(1000, 10.0, 100.0)
+            build_buy_trade(timestamp=1000, price=10.0, quote_qty=100.0, base_qty=0.0)
+            build_sell_trade(1000, price=100.0, base_qty=10.0, quote_qty=SENTINEL)
 
     cdef benchmark_ext(self, int num_trades):
         for i in range(num_trades):
