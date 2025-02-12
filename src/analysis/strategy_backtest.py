@@ -229,9 +229,10 @@ def calculate_trades(data: tp.Data, initial_capital: float = 1000) -> None:
 # =====================================================================================
 def run(
     strategy: IStrategy,
-    leverage_calculator: LeverageCalculator,
     data: tp.Data,
     initial_capital: float,
+    leverage: np.ndarray = None,
+    leverage_calculator: LeverageCalculator = None,
 ):
     
     if strategy.sub_strategies:
@@ -247,8 +248,11 @@ def run(
     # merge_signals(data)
 
     # add leverage
-    data["leverage"] = leverage_calculator.leverage().reshape(-1,)
-    data["leverage"] = data["leverage"] * np.abs(data["signal"])
+    if leverage is not None:
+        data["leverage"] = leverage
+    else:
+        data["leverage"] = leverage_calculator.leverage().reshape(-1,)
+    # data["leverage"] = data["leverage"] * np.abs(data["signal"])
 
     # before cutting off the first 200 data points, we need to make
     # sure that he last signal that occured before the cut-off is

@@ -34,8 +34,8 @@ spec = [
     ("lookback", int64),
     ("atr", float64[:, :]),
     ("signal_scale_factor", float64[:, :]),
-    ("annual_vol", float64[:, :]),
-    ("annual_sr", float64[:, :]),
+    ("vola_anno", float64[:, :]),
+    ("sr_anno", float64[:, :]),
 ]
 
 @jitclass(spec)
@@ -67,14 +67,14 @@ class MarketDataStoreJIT:
         rows, cols = close.shape
 
         self.atr = np.full_like(close, np.nan)
-        self.annual_vol = np.zeros((rows, cols), dtype=np.float64)
-        self.annual_sr = np.ones((rows, cols), dtype=np.float64)
+        self.vola_anno = np.zeros((rows, cols), dtype=np.float64)
+        self.sr_anno = np.ones((rows, cols), dtype=np.float64)
         self.signal_scale_factor = np.ones(close.shape, dtype=np.float64)
 
         self.compute_atr()
         self.compute_annualized_volatility()
 
-        self.annual_sr = self.stats.annualized_sharpe_ratio(
+        self.sr_anno = self.stats.annualized_sharpe_ratio(
             self.close.astype(np.float64),
             self.periods_per_year,
             self.lookback
@@ -134,7 +134,7 @@ class MarketDataStoreJIT:
 
     # ..................................................................................
     def compute_annualized_volatility(self):
-        self.annual_vol = self.stats.annualized_volatility(
+        self.vola_anno = self.stats.annualized_volatility(
             self.close.astype(np.float64), 
             self.periods_per_year,
             self.lookback
@@ -324,8 +324,8 @@ class MarketData(PlottingMixin):
             c_close = mds.close[:, sym_idx]
             c_vol = mds.volume[:, sym_idx]
             c_atr = mds.atr[:, sym_idx]
-            c_av = mds.annual_vol[:, sym_idx]
-            c_asr = mds.annual_sr[:, sym_idx]
+            c_av = mds.vola_anno[:, sym_idx]
+            c_asr = mds.sr_anno[:, sym_idx]
             c_scl = mds.signal_scale_factor[:, sym_idx]
 
             base = sym_idx * len(fields)
@@ -644,8 +644,8 @@ class MarketData(PlottingMixin):
             "close": mds.close[:, col],
             "volume": mds.volume[:, col],
             "atr": mds.atr[:, col],
-            "ann_vol": mds.annual_vol[:, col],
-            "ann_sr": mds.annual_sr[:, col],
+            "ann_vol": mds.vola_anno[:, col],
+            "ann_sr": mds.sr_anno[:, col],
             "signal_scale_factor": mds.signal_scale_factor[:, col],
         }
 
@@ -680,7 +680,7 @@ class MarketData(PlottingMixin):
             "close": mds.close,
             "volume": mds.volume,
             "atr": mds.atr,
-            "ann_vol": mds.annual_vol,
+            "ann_vol": mds.vola_anno,
         }
 
         arr = field_arrays.get(field, None)

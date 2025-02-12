@@ -213,19 +213,19 @@ if __name__ == "__main__":
     # test_get_all_parameters()
     # test_get_all_operands()
 
-    sig_gen = test_factory(linreg, False)
-    sig_gen.market_data = data
+    # sig_gen = test_factory(linreg, False)
+    # sig_gen.market_data = data
     # sig_gen.execute()
     # test_subplots(sig_gen)
-    test_plot(sig_gen)
+    # test_plot(sig_gen)
     # test_returns(sig_gen, data, True)
 
-    sys.exit()
+    # sys.exit()
 
     logger.setLevel(logging.ERROR)
 
     runs = 1_000
-    compact = False
+    compact = True
     sig_gen = test_factory(linreg_roc)
     sig_gen.market_data = data
     sig_gen.execute(compact=compact)

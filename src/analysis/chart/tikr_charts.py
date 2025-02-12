@@ -717,7 +717,7 @@ class BacktestChart(Chart):
                 zorder=1,
             ),
             fillmethod="tonexty",
-            color=self.style.colors.strategy_fill,
+            _color=self.style.colors.strategy_fill,
         )
 
     def subplot_portfolio(self) -> SubPlot:

@@ -45,10 +45,10 @@ class EfficiencyRatio(IIndicator):
             ),
             Parameter(
                 name="smoothing", 
-                initial_value=10, 
-                hard_min=2, 
-                hard_max=50, 
-                step=5
+                initial_value=1, 
+                hard_min=1, 
+                hard_max=15, 
+                step=3
             ),
         )
         self._plot_desc = dict(real=["Line"])

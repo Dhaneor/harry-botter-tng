@@ -28,7 +28,7 @@ from analysis.models.position_py import Positions
 from src.analysis import telegram_signal as ts
 from analysis.backtest import result_stats as rs
 from src.analysis.chart.tikr_charts import TikrChart as Chart
-from tikr_mvp_strategy import mvp_strategy, breakout
+from tikr_mvp_strategy import mvp_strategy
 
 # set up logging
 LOG_LEVEL = logging.INFO
@@ -48,13 +48,13 @@ start_time = time.time()
 # ================================ Configuration =====================================
 # instantiate strategy: the mvp_strategy is not available in the
 # Github repository, you can implement your own strategy
-strategy = sb.build_strategy(breakout)
+strategy = sb.build_strategy(mvp_strategy)
 strategy.name = "Safe HODL Strategy by Gregorovich"
 strategy.symbol = "BTC/USDT"
 strategy.interval = "1d"
 
 RISK_LEVEL = 0  # define the risk level for the strategy / position sizing
-MAX_LEVERAGE = 1  # define the maximum leverage for the strategy / position sizing
+MAX_LEVERAGE = 1.25  # define the maximum leverage for the strategy / position sizing
 
 TIMEOUT = 60  # time in seconds to wait for the data to be available in the repository
 RETRY_AFTER_SECS = 5  # time between retries in seconds
@@ -299,8 +299,8 @@ def start_async_loop(queue, stop_event):
         "exchange": "binance",
         "symbol": strategy.symbol,
         "interval": strategy.interval,
-        "start": -1480,
-        "end": "2025-02-07 00:00:00 UTC"
+        "start": -1296,
+        "end": "2025-02-08 00:00:00 UTC"
     }
 
     try:

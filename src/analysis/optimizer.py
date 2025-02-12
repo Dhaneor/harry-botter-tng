@@ -38,7 +38,7 @@ multiprocessing.set_start_method('spawn', force=True)
 
 INITIAL_CAPITAL = 10_000  # initial capital for backtesting
 RISK_FREE_RATE = 0.04  # risk-free rate for calculating Sharpe Ratio
-CHUNK_SIZE = 100 # size of chunks for processing data
+CHUNK_SIZE = 1000 # size of chunks for processing data
 
 PERIODS_PER_YEAR = {
     '1m': 365 * 24 * 60,
@@ -411,7 +411,6 @@ def worker(
     max_leverage: float,
     backtest_fn: Callable,
     initial_capital: float,
-    periods_per_year: int
 ) -> List[Tuple[Tuple[Any, ...], int, Dict[str, float]]]:
     """
     Process a chunk of parameter combinations for backtesting and optimization.
@@ -453,7 +452,10 @@ def worker(
         strategy = strategy.sub_strategies[0]
 
     md = MarketData.from_dictionary(strategy.symbol, data)
+    
     leverage_calculator = LeverageCalculator(md, risk_level, max_leverage)
+    leverage = leverage_calculator.leverage().reshape(-1,)
+    
     strategy.market_data = md
     strategy.signal_generator.market_data = md
 
@@ -464,11 +466,10 @@ def worker(
 
     for params in chunk:
         strategy.signal_generator.parameter_values = params
-        # data_new = {k: v for k, v in data.items() if k in ohlcv_keys}
 
         bt_result = backtest_fn(
             strategy=strategy,
-            leverage_calculator=leverage_calculator,
+            leverage=leverage,
             data=data,
             initial_capital=initial_capital,
         )
@@ -525,7 +526,7 @@ def optimize(
         combination, the risk level, the maximum leverage level,
         and the backtest statistics. The list is unsorted.
     """
-    periods_per_year = PERIODS_PER_YEAR.get(interval, 365)
+
     combinations = number_of_combinations(strategy.signal_generator) \
         * len(risk_levels) \
         * len(max_leverage_levels)
@@ -558,7 +559,6 @@ def optimize(
                         backtest_fn=backtest_fn,
                         initial_capital=INITIAL_CAPITAL,
                         max_leverage=max_leverage,
-                        periods_per_year=periods_per_year,
                     )
 
                     chunks_iterator = chunk_parameters(
