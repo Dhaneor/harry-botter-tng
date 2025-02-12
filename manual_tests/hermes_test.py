@@ -274,8 +274,8 @@ class HermesTester:
 # =============================================================================
 if __name__ == "__main__":
 
-    symbol_name = "XRPUSDT"
-    interval = "1h"
+    symbol_name = "BTCUSDT"
+    interval = "1d"
     symbols = ["BTCUSDT", "ADAUSDT", "XRPUSDT", "XLMUSDT"]
     intervals = ["5m", "15m", "30m", "1h", "2h", "4h"]
 
@@ -319,9 +319,9 @@ if __name__ == "__main__":
                             start=dates[0], end=dates[1])
 
     # -------------------------------------------------------------------------
-    # ht.update_database_for_interval(
-    #     exchange=exchange, quote_asset='USDT', interval=interval
-    #     )
+    ht.update_database_for_interval(
+        exchange=exchange, quote_asset='USDT', interval=interval
+        )
 
     # ht.get_listing_date(symbol_name, '15m')
 

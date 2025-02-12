@@ -98,7 +98,7 @@ Created on Sat Aug 18 11:14:50 2023
 @author: dhaneor
 """
 
-from functools import reduce, wraps  # noqa: F401
+from functools import wraps  # noqa: F401
 # import itertools
 import logging
 import numpy as np
@@ -125,7 +125,7 @@ from util import log_execution_time, DotDict, proj_types as tp  # noqa: F401
 from models.enums import COMPARISON
 
 logger = logging.getLogger("main.signal_generator")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 WARMUP_PERIODS = 200  # number of candles to use for warmup
 

@@ -59,6 +59,8 @@ async def send_message(
     Exception: Any exception raised during the message sending process is caught
                and logged, but not re-raised.
     """
+
+    logger.info("Sending message: %s", msg)
     try:
         if image:
             # If an image is provided, send it along with the message

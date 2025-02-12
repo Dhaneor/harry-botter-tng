@@ -12,7 +12,7 @@ import itertools
 import logging
 import numpy as np
 import numpy.typing as npt
-from numba import njit, float32, boolean, from_dtype, types, typeof
+from numba import njit, from_dtype, types, typeof
 from numba.experimental import jitclass
 
 from analysis.dtypes import SIGNALS_DTYPE

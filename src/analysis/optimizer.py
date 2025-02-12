@@ -82,6 +82,7 @@ def estimate_exc_time(
 
     md = MarketData.from_dictionary(strategy.symbol, data)
     leverage_calculator = LeverageCalculator(md)
+    strategy.market_data = md
 
     # Run the backtest function once to warm up the JIT compiler
     backtest_fn(
@@ -448,9 +449,13 @@ def worker(
         maximum drawdown criterion.
     """
     strategy = sb.build_strategy(strategy_definition)
+    if strategy.sub_strategies:
+        strategy = strategy.sub_strategies[0]
 
     md = MarketData.from_dictionary(strategy.symbol, data)
     leverage_calculator = LeverageCalculator(md, risk_level, max_leverage)
+    strategy.market_data = md
+    strategy.signal_generator.market_data = md
 
     cleanup_threshold = 100 * 1024 * 1024  # 10 MB, adjust as needed
     ohlcv_keys = ['open time', 'open', 'high', 'low', 'close', 'volume']
@@ -458,7 +463,7 @@ def worker(
     # seen = set()
 
     for params in chunk:
-        strategy.signal_generator.parameters = params
+        strategy.signal_generator.parameter_values = params
         # data_new = {k: v for k, v in data.items() if k in ohlcv_keys}
 
         bt_result = backtest_fn(
@@ -489,7 +494,7 @@ def worker(
 
 # ====================================================================================
 def optimize(
-    strategy: sb.SubStrategy,
+    strategy: sb.Strategy,
     data: OhlcvData,
     interval: str = '1d',
     risk_levels: Iterable[float] = (1,),

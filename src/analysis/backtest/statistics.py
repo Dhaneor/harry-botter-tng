@@ -12,7 +12,7 @@ from numba import jit
 
 
 logger = logging.getLogger("main.statistics")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.ERROR)
 
 
 @jit(nopython=True, cache=True)
@@ -245,10 +245,14 @@ def calculate_statistics_min(portfolio_values: np.ndarray) -> dict:
     dict
         Dictionary containing all calculated statistics.
     """
-    return {
-        'profit': calculate_profit(portfolio_values),
-        'max_drawdown': calculate_max_drawdown(portfolio_values),
-    }
+    try:
+        return {
+            'profit': calculate_profit(portfolio_values),
+            'max_drawdown': calculate_max_drawdown(portfolio_values),
+        }
+    except Exception as e:
+        logger.error('Error calculating statistics: %s', e)
+        raise
 
 
 def calculate_statistics(

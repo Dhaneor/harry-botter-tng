@@ -89,28 +89,49 @@ kama_cross = sg.SignalsDefinition(
 # {'profit': 3282.00105528086, 'max_drawdown': -33.46641732110709,
 # 'sharpe_ratio': 1.7523866305577998, 'sortino_ratio': 1.6187130942382568,
 # 'kalmar_ratio': 2.3868188824737215, 'annualized_volatility': 37.54528536133036}
+# breakout = sg.SignalsDefinition(
+#     name=f"Breakout {timeperiod}",
+#     conditions=[
+#         # cn.ConditionDefinition(
+#         #     interval="1d",
+#         #     operand_a=("er", {"timeperiod": 20}),
+#         #     operand_b=("trending", 0.2, [0.05, 0.55, 0.1]),
+#         #     open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
+#         #     close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
+#         #     open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
+#         #     close_short=("a", cn.COMPARISON.IS_BELOW, "b"),
+#         # ),
+#         cn.ConditionDefinition(
+#             interval="1d",
+#             operand_a="close",
+#             operand_b=("max", {"timeperiod": 20}),
+#             operand_c=("min", {"timeperiod": 12}),
+#             operand_d=("max", {"timeperiod": 7}),
+#             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
+#             close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
+#             open_short=("a", cn.COMPARISON.IS_EQUAL, "c"),
+#             close_short=("a", cn.COMPARISON.IS_EQUAL, "d"),
+#         ),
+#     ]
+# )
+
 breakout = sg.SignalsDefinition(
-    name=f"Breakout {timeperiod}",
+    name="TIKR MVP Signal",
     conditions=[
-        # cn.ConditionDefinition(
-        #     interval="1d",
-        #     operand_a=("er", {"timeperiod": 20}),
-        #     operand_b=("trending", 0.2, [0.05, 0.55, 0.1]),
-        #     open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
-        #     close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
-        #     open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
-        #     close_short=("a", cn.COMPARISON.IS_BELOW, "b"),
-        # ),
+        cn.ConditionDefinition(
+            interval="1d",
+            operand_a=("er", {"timeperiod": 90}),
+            operand_b=("trending", 0.12, [0.05, 0.55, 0.1]),
+            open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
+            close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
+        ),
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod": 20}),
-            operand_c=("min", {"timeperiod": 12}),
-            operand_d=("max", {"timeperiod": 7}),
+            operand_b=("max", {"timeperiod": 7}),
+            operand_c=("min", {"timeperiod": 3}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
             close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
-            open_short=("a", cn.COMPARISON.IS_EQUAL, "c"),
-            close_short=("a", cn.COMPARISON.IS_EQUAL, "d"),
         ),
     ]
 )

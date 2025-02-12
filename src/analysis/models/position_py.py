@@ -5,7 +5,7 @@ Created on Nov 11 22:18:20 2024
 
 @author dhaneor
 """
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
 import logging
 import pandas as pd
 import numpy as np
@@ -120,7 +120,8 @@ class Position:
 
     @property
     def entry_time(self) -> pd.Timestamp:
-        return datetime.fromtimestamp(self.df.index[0], tz=UTC)
+        # Convert Pandas Timestamp to Python datetime
+        return self.df.index[0].to_pydatetime().replace(tzinfo=UTC)
 
     @property
     def entry_time_utc(self):
@@ -132,8 +133,9 @@ class Position:
             raise
 
     @property
-    def exit_time(self) -> pd.Timestamp:
-        return datetime.fromtimestamp(self.df.index[-1], tz=UTC)
+    def exit_time(self) -> datetime:
+        # Convert Pandas Timestamp to Python datetime
+        return self.df.index[-1].to_pydatetime().replace(tzinfo=UTC)
 
     @property
     def duration(self) -> pd.Timedelta:
@@ -141,7 +143,7 @@ class Position:
             now = datetime.now(tz=UTC)
             return (now - self.entry_time).total_seconds()
 
-        return (self.exit_time - self.entry_time)
+        return (self.exit_time - self.entry_time).total_seconds()
 
     @property
     def entry_price(self) -> float:
@@ -215,7 +217,7 @@ class Position:
             "total_value": self.df["b.value"].iloc[-1],
             "pnl": self.pnl,
             "max_drawdown": self.max_drawdown,
-            "duration": self.duration.total_seconds(),
+            "duration": self.duration,
             "entry_price": self.entry_price,
             "entry_time": self.df.index[0].strftime("%Y-%m-%d %H:%M:%S"),
             "current_price": self.current_price,
@@ -375,7 +377,7 @@ class Positions:
 
         return position.to_dict() if (as_dict and position) else position
 
-    def _extract_positions(self, backtest_df: pd.DataFrame, symbol: str) -> None:
+    def _extract_positions(self, backtest_df: pd.DataFrame, symbol: str) -> list[Position]:
         positions = []
 
         # Group by position changes

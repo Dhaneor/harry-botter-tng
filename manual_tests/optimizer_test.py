@@ -25,6 +25,7 @@ from analysis.strategy.definitions import (  # noqa: F401
     s_trend_1, contra_1, s_test_er, s_linreg_ma_cross, s_aroon_osc,
     s_test_ema_cross
 )
+# from tikr_mvp_strategy import mvp_strategy
 from util import get_logger, seconds_to
 
 logger = get_logger('main', level="INFO")
@@ -36,21 +37,21 @@ warnings.filterwarnings('error')
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = "6 years ago UTC"
+start = "3 years ago UTC"
 end = "now UTC"
 
-strategy = s_kama_cross
-risk_levels = [0, 4, 5, 6, 7, 8, 9]
-max_leverage_levels = (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5)
+strategy = s_breakout
+risk_levels = 0,  # [0, 4, 5, 6, 7, 8, 9]
+max_leverage_levels = 1,  # (0.75, 1, 1.25, 1.5, 1.75, 2, 2.5)
 max_drawdown = 50
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.1
 
 
-strategy: sb.CompositeStrategy = sb.build_strategy(strategy)
+strategy = sb.build_strategy(strategy)
 
 # ---------------------------------------- SETUP -------------------------------------
 # Create a signal generator
-sub_strategy: sb.SubStrategy = [v for v in strategy.sub_strategies.values()][0][0]
+sub_strategy = strategy.sub_strategies[0]
 sig_gen = sub_strategy.signal_generator
 # print(sub_strategy)
 
@@ -72,7 +73,8 @@ def _get_ohlcv_from_db():
 
     else:
         error = res.get('error', 'no error provided in response')
-        raise Exception(error)
+        logger.error(error)
+        sys.exit()
 
 
 # ------------------------------------- TESTS ---------------------------------------
@@ -128,8 +130,6 @@ def test_optimize(data: dict | None = None):
         except TypeError:
             print(f"Warning: {key} is not a numpy array ({type(key)})")
             sys.exit()
-
-    sub_strategy = next((v for v in list(strategy.sub_strategies.values())[0]))
 
     # Optimize the strategy
     results, combinations = optimizer.optimize(

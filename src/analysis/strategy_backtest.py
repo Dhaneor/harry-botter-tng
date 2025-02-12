@@ -233,8 +233,12 @@ def run(
     data: tp.Data,
     initial_capital: float,
 ):
+    
+    if strategy.sub_strategies:
+        strategy = strategy.sub_strategies[0]
+   
     # add signals
-    data["signal"] = strategy.sub_strategies[0].signal_generator.execute(compact=True)[:, 0, 0].reshape(-1,)
+    data["signal"] = strategy.signal_generator.execute(compact=True)[:, 0, 0].reshape(-1,)
     # if isinstance(strategy, IStrategy):
     #     strategy.speak(data)
     # else:

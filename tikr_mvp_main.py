@@ -5,6 +5,7 @@ Created on Nov 11 15:15:20 2024
 
 @author dhaneor
 """
+import datetime
 import logging
 import threading
 import asyncio
@@ -27,7 +28,7 @@ from analysis.models.position_py import Positions
 from src.analysis import telegram_signal as ts
 from analysis.backtest import result_stats as rs
 from src.analysis.chart.tikr_charts import TikrChart as Chart
-from tikr_mvp_strategy import mvp_strategy
+from tikr_mvp_strategy import mvp_strategy, breakout
 
 # set up logging
 LOG_LEVEL = logging.INFO
@@ -47,7 +48,7 @@ start_time = time.time()
 # ================================ Configuration =====================================
 # instantiate strategy: the mvp_strategy is not available in the
 # Github repository, you can implement your own strategy
-strategy = sb.build_strategy(mvp_strategy)
+strategy = sb.build_strategy(breakout)
 strategy.name = "Safe HODL Strategy by Gregorovich"
 strategy.symbol = "BTC/USDT"
 strategy.interval = "1d"
@@ -228,12 +229,33 @@ async def fetch_ohlcv_data(request: dict, queue: Queue, stop_event: Event):
 
 async def send_signal(df: pd.DataFrame) -> None:
     """Sends a trading signal to Telegram, based on the results DataFrame."""
+    positions = Positions(df=df, symbol=strategy.symbol)
+    position = positions.current()
+
+    if position is None:
+        position = positions.positions[-1]
+        print(position.df)
+        last_trade = position.trades[-1]
+        now = df.index[-1].to_pydatetime().replace(tzinfo=datetime.UTC).timestamp() * 1000
+        time_diff = now - last_trade.timestamp
+        print("time since last trade: %s" % time_diff)
+        recent = now - last_trade.timestamp < 60_000
+        print(recent)
+        was_closed = last_trade.change == 'close'
+        if recent and was_closed:
+            position = positions.positions[-1].get_signal()
+        else:
+            position = None
+    else:
+        position = position.get_signal()
+
+    print(position)
+    print(df.tail(10))
+    # sys.exit()
+
     await ts.send_message(
-        chat_id=CHAT_ID,
-        msg=await ts.create_signal(
-            position=Positions(df=df, symbol=strategy.symbol).current().get_signal()
-            )
-        )
+        chat_id=CHAT_ID, msg=await ts.create_signal(position=position)
+    )
 
 
 async def send_performance_chart(df: pd.DataFrame) -> None:
@@ -277,8 +299,8 @@ def start_async_loop(queue, stop_event):
         "exchange": "binance",
         "symbol": strategy.symbol,
         "interval": strategy.interval,
-        "start": -1380,
-        "end": "now UTC"
+        "start": -1480,
+        "end": "2025-02-07 00:00:00 UTC"
     }
 
     try:
