@@ -14,7 +14,7 @@ from numba import int16, float64, boolean, types, from_dtype
 from numba.experimental import jitclass
 from typing import Tuple
 
-from analysis import MarketDataStore
+from analysis.models.market_data import MarketDataStoreJIT as MarketDataStore
 from analysis.dtypes import POSITION_DTYPE, PORTFOLIO_DTYPE
 
 logger = logging.getLogger("main.backtest")
