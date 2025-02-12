@@ -5,7 +5,6 @@ Created on July 06 21:12:20 2023
 
 @author dhaneor
 """
-import pandas as pd
 import numpy as np
 from numba import jit, int8
 
@@ -17,38 +16,68 @@ def merge_signals_nb(open_long, open_short, close_long, close_short):
     signal = np.zeros(n, dtype=np.float64)
     position = np.zeros(n, dtype=np.float64)
 
+    if open_long[0] > 0:
+        signal[0] = open_long[0]
+        position[0] = 1
+    elif open_short[0] > 0:
+        signal[0] = open_short[0] * -1
+        position[0] = -1
+
     for i in range(n):
-        if i == 0:
-            if open_long[i] > 0:
-                signal[i] = open_long[i]
-                position[i] = 1
-            elif open_short[i] > 0:
-                signal[i] = open_short[i] * -1
-                position[i] = -1
-        else:
-            prev_position = position[i-1]
-            signal[i] = signal[i-1]
-            position[i] = prev_position
+        prev_position = position[i-1]
+        signal[i] = signal[i-1]
+        position[i] = prev_position
 
-            if open_long[i] > 0:
-                signal[i] = open_long[i]
-                position[i] = 1
+        if open_long[i] > 0:
+            signal[i] = open_long[i]
+            position[i] = 1
 
-            elif close_long[i] > 0:
-                if prev_position > 0:
-                    signal[i] = 0
-                    position[i] = 0
+        elif close_long[i] > 0:
+            if prev_position > 0:
+                signal[i] = 0
+                position[i] = 0
 
-            elif open_short[i] > 0:
-                signal[i] = open_short[i] * -1
-                position[i] = -1
+        elif open_short[i] > 0:
+            signal[i] = open_short[i] * -1
+            position[i] = -1
 
-            elif close_short[i] > 0:
-                if prev_position < 0:
-                    signal[i] = 0
-                    position[i] = 0
+        elif close_short[i] > 0:
+            if prev_position < 0:
+                signal[i] = 0
+                position[i] = 0
 
     return signal, position
+
+@jit(nopython=True)
+def merge_signals_nb_fixed(open_long, open_short, close_long, close_short):
+    """Merges the four possible signals into one column."""
+    n = len(open_long)
+    signal = np.zeros(n, dtype=np.int8)
+
+    if open_long[0] > 0:
+        signal[0] = open_long[0]
+    elif open_short[0] > 0:
+        signal[0] = open_short[0] * -1
+
+    for i in range(1, n + 1):
+        prev_signal = signal[i-1]
+        signal[i] = signal[i-1]
+
+        if open_long[i] > 0:
+            signal[i] = open_long[i]
+
+        elif close_long[i] > 0:
+            if prev_signal > 0:
+                signal[i] = 0
+
+        elif open_short[i] > 0:
+            signal[i] = open_short[i] * -1
+
+        elif close_short[i] > 0:
+            if prev_signal < 0:
+                signal[i] = 0
+
+    return signal
 
 
 def merge_signals(data):
@@ -57,41 +86,10 @@ def merge_signals(data):
     close_long = np.nan_to_num(data["close_long"])
     close_short = np.nan_to_num(data["close_short"])
 
-    signal, position = merge_signals_nb(open_long, open_short, close_long, close_short)
-
-    data["signal"] = signal
-    data["position"] = position
+    # signal, position = merge_signals_nb(open_long, open_short, close_long, close_short)
+    data["signal"] = merge_signals_nb_fixed(open_long, open_short, close_long, close_short)
+    data["position"] = None
     return data
-
-
-def find_positions(df: pd.DataFrame) -> pd.DataFrame:
-
-    find_positions_nb(
-        df.open.to_numpy(),
-        df.high.to_numpy(),
-        df.low.to_numpy(),
-        df.close.to_numpy(),
-        df.signal.to_numpy(),
-        df.position.to_numpy(),
-        df.buy.to_numpy(),
-        df.buy_at.to_numpy(),
-        df.sell.to_numpy(),
-        df.sell_at.to_numpy(),
-        df.sl_long.to_numpy(),
-        df.sl_short.to_numpy(),
-        df.sl_current.to_numpy(),
-        df.sl_trig.to_numpy(),
-        df.tp_long.to_numpy(),
-        df.tp_short.to_numpy(),
-        df.tp_current.to_numpy()
-    )
-
-    df.sl_current.replace(0, np.nan, inplace=True)
-    df.buy = df.buy.astype(bool)
-    df.sell = df.sell.astype(bool)
-    df.sl_trig = df.sl_trig.astype(bool)
-
-    return df
 
 
 def find_positions_with_dict(data: dict) -> dict:
@@ -111,6 +109,8 @@ def find_positions_with_dict(data: dict) -> dict:
                 data[col] = np.zeros(data["close"].shape[0])
             else:
                 data[col] = np.full(data["close"].shape[0], np.nan)
+
+    data["position"] = np.empty(data["close"].shape[0])
 
     res = find_positions_nb(
         data["open"],
@@ -157,21 +157,25 @@ def find_positions_nb(open_, high, low, close, signal, position,
         position[i] = 0
         sl_trig[i] = 0
 
-        # continue LONG position
+        if active_position == 0 and signal[i - 1] == 0:
+            position[i] = 0
+            continue
+
+        # ........................... LONG POSITION ...................................
+        # open LONG position
+        if active_position != 1:
+            if signal[i - 1] > 0:
+                active_position = 1
+                position[i] = 1
+                buy[i] = 1
+                buy_at[i] = close[i - 1]
+                sl_current[i] = sl_long[i - 1]
+
+        # close LONG position
         if active_position == 1:
             position[i] = 1
             sl_current[i] = max(sl_current[i - 1], sl_long[i - 1])
 
-        # open LONG position
-        if active_position != 1 and signal[i - 1] > 0:
-            active_position = 1
-            position[i] = 1
-            buy[i] = 1
-            buy_at[i] = close[i - 1]
-            sl_current[i] = sl_long[i - 1]
-
-        # close LONG position
-        if active_position == 1:
             if signal[i] <= 0:
                 active_position = 0
                 sell[i] = 1
@@ -183,21 +187,21 @@ def find_positions_nb(open_, high, low, close, signal, position,
                 sell[i] = 1
                 sell_at[i] = sl_current[i]
 
-        # continue SHORT position
+        # ............................ SHORT POSITION .................................
+        # open SHORT position
+        if active_position != -1:
+            if signal[i - 1] < 0:
+                active_position = -1
+                position[i] = -1
+                sell[i] = 1
+                sell_at[i] = close[i - 1]
+                sl_current[i] = sl_short[i - 1]
+
+        # close SHORT position
         if active_position == -1:
             position[i] = -1
             sl_current[i] = min(sl_current[i - 1], sl_short[i - 1])
 
-        # open SHORT position
-        if active_position != -1 and signal[i - 1] < 0:
-            active_position = -1
-            position[i] = -1
-            sell[i] = 1
-            sell_at[i] = close[i - 1]
-            sl_current[i] = sl_short[i - 1]
-
-        # close SHORT position
-        if active_position == -1:
             if signal[i] >= 0:
                 active_position = 0
                 buy[i] = 1

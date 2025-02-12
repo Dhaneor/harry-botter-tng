@@ -17,7 +17,7 @@ sys.path.append(parent)
 # --------------------------------------------------------------------------------------
 
 from src.analysis import strategy_builder as sb  # noqa: E402
-from src.analysis.strategies.definitions import get_all_strategies  # noqa: E402
+from src.analysis.strategy.definitions import get_all_strategies  # noqa: E402
 
 logger = logging.getLogger("main.strategy_registry")
 

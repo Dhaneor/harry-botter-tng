@@ -8,7 +8,7 @@ functions:
         main entry point for the module, should be the only function
         that a user/client needs
 
-    build_strategy_single(sdef: StrategyDefinition) -> SubStrategy:
+    build_strategy_single(sdef: StrategyDefinition) -> Strategy:
         Builds a single strategy.
 
         This is a helper function for build_strategy(). Because
@@ -21,15 +21,6 @@ functions:
 
 
 classes:
-    COMPARISON
-        enum representing trigger conditions.
-
-    ActionDefinition
-        a complete set of ConditionDefinition objects for defining
-        entry/exit signals for long and/or short trades. These are
-        encapsulated here, so later on we can just call its
-        execute() method whenever new data is available.
-
     StrategyDefinition
         formal description of a strategy,
         with an ActionDefinition and other parameters
@@ -41,41 +32,17 @@ Created on Thu July 12 21:44:23 2023
 """
 import abc
 import logging
-import numpy as np
 from dataclasses import dataclass
-from functools import reduce
-from typing import Any, NamedTuple, Optional, Sequence, Callable
+from typing import Any, NamedTuple, Optional, Sequence
 
-from .util import proj_types as tp
-from .strategies import signal_generator as sg
-from .strategies import exit_order_strategies as es
-from .strategies.condition import ConditionResult
+from util import proj_types as tp
+from .strategy import signal_generator as sg
+from .strategy import exit_order_strategies as es
+from analysis.models.market_data import MarketData
+from analysis.models.signals import SignalStore
+from analysis.backtest.backtest import run_backtest, Config
 
 logger = logging.getLogger("main.strategy_builder")
-
-
-# ======================================================================================
-# type alias for
-CombineFuncT = Callable[[Sequence[np.ndarray]], np.ndarray]
-
-
-def combine_arrays(arrays: Sequence[np.ndarray]) -> np.ndarray:
-    """Combines a list of NumPy arrays by adding the values
-    from each cell with the same index, excluding the first array.
-
-    Parameters
-    ----------
-    arrays: Sequence[np.ndarray]
-        a sequence of NumPy arrays, which must have identical shape
-
-    Returns
-    -------
-    result: np.ndarray
-    """
-    result = np.array(arrays[0])
-    for array in arrays[1:]:
-        result = np.add(result, array)
-    return result
 
 
 # ======================================================================================
@@ -118,8 +85,9 @@ class StrategyDefinition:
     interval: str
     signals_definition: Optional[sg.SignalsDefinition] = None
     weight: float = 1.0
-    params: Optional[dict[str, str | float | int | bool]] = None
-    sub_strategies: Optional[Sequence[NamedTuple]] = None
+    rebalance: bool = False
+    params: dict[str, Any] | None = None
+    sub_strategies: Sequence[NamedTuple] | None = None
     stop_loss: Optional[Sequence[es.StopLossDefinition]] = None
     take_profit: Optional[Sequence[es.StopLossDefinition]] = None
 
@@ -127,359 +95,194 @@ class StrategyDefinition:
 class IStrategy(abc.ABC):
     """Interface for all strategy classes."""
 
-    def __init__(self) -> None:
-        self.name: str = ""
-        self.symbol: str = ""
-        self.interval: str = ""
+    def __init__(self, name: str, weight: float) -> None:
+        self.name: str = name
+        self.weight: float = weight
 
-        self.is_sub_strategy: bool = False
-        self.weight: tp.Weight = 1.0
-        self.params: dict[str, Any] = {}
+        self._market_data: MarketData = None
+        self.sub_strategies: Sequence[IStrategy] = []
+        self.definition: Optional[StrategyDefinition] = None
+        self.is_sub_strategy: bool = True
 
-        self.sl_strategy: Optional[Sequence[es.IStopLossStrategy]] = None
-        self.tp_strategy: Optional[Sequence[es.ITakeProfitStrategy]] = None
+        self.add_signals: bool = True
+        self.normalize_signals: bool = False
+
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__} ({self.sl_strategy}, {self.tp_strategy})"
+        return self.name
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__} for {self.symbol} "\
-            f"({self.sl_strategy}, {self.tp_strategy})"
+        return self.__repr__()
+
+    @property
+    def market_data(self) -> MarketData:
+        return self._market_data
+    
+    @market_data.setter
+    def market_data(self, market_data: MarketData) -> None:
+        logger.info(
+            "%s %s has been assigned market data",
+            "Sub-Strategy" if self.is_sub_strategy else "Composite Strategy",
+            self.name
+            )
+        if not self.sub_strategies:
+            self.signal_generator.market_data = market_data
+        else:
+            for strategy in self.sub_strategies:
+                strategy.market_data = market_data
 
     # ----------------------------------------------------------------------------------
-    @abc.abstractmethod
-    def speak(self, data: tp.Data) -> tp.Data:
-        """Calculates signals, stop loss, take profit and positions
-
-        This is the main entry point for getting results from the
-        strategy.
-
-        Parameters
-        ----------
-        data: tp.Data
-            'data' must be a dictionary with the following keys:
-            'o', 'h', 'l', 'c', 'v' (OHLCV data for one symbol)
-
-        Returns
-        -------
-        data: tp.Data
-            data with added signals, values for stop loss and
-            take profit, and the (theoretical) positions
+    def run(self):
+        return run_backtest(
+            market_data=self.market_data,
+            signals=self.speak(),
+            config=Config(10_000)
+            )
+    
+    def speak(self) -> SignalStore:
+        """Calculates signals for the current market data.
+        
+        Returns:
+        --------
+        SignalStore
+            A SignalStore object containing the calculated signals. If 
+            multiple parameter combinations are used, the signals will 
+            be summed up, but not normalized.
         """
+        signals = self._get_raw_signals()
+
+        if self.add_signals and self.normalize_signals:
+            return SignalStore(signals).summed(normalized=True)
+        elif self.add_signals and not self.normaalize_signals:
+            return SignalStore(signals).summed(normalized=False)
+        elif not self.add_signals and not self.normalize_signals:
+            return signals
+        else:
+            raise ValueError(
+                "Can not normalize signals when add_signals is set to False"
+                )
+
+    @abc.abstractmethod
+    def randomize(self) -> None:
         ...
 
-    # ----------------------------------------------------------------------------------
     @abc.abstractmethod
-    def _add_signals(self, data: tp.Data) -> None:
+    def plot(self, symbol: str):
         ...
 
-    def _add_stop_loss(self, data) -> np.ndarray:
-        if not self.sl_strategy:
-            return data
-
-        try:
-            return self.sl_strategy[0].add_stop_loss(data)
-        except Exception as e:
-            logger.warning("error adding stop loss: %s", e)
-            return data
-
-    def _add_take_profit(self, data) -> np.ndarray:
-        if self.tp_strategy:
-            return self.tp_strategy.add_take_profit(data)
-
-        return data
-
-    def _add_positions(self, data: tp.Data) -> None:
-        """Calculates positions and adds them to the data dictionary.
-
-        Parameters
-        ----------
-        data: tp.Data
-            dict with OHLCV data & signals
-        """
-        raise NotImplementedError(f"_add_positions() not implemented for {self.name}")
-
-    def _add_position_sizes(self, data: tp.Data) -> None:
-        """Calculates position sizes and adds them to the data dictionary.
-
-        Parameters
-        ----------
-        data: tp.Data
-            dict with OHLCV data & signals
-        """
-        raise NotImplementedError(
-            f"_add_position_sizes() not implemented for {self.name}"
-        )
+    @abc.abstractmethod
+    def _get_raw_signals(self) -> SignalStore:
+        ...
 
 
 # ======================================================================================
-class SubStrategy(IStrategy):
-    """Base class for all strategy classes with only one strategy.
+class Strategy(IStrategy):
+    """Class for simple strategies.
 
     Use the composite strategy class instead of this class, if
     you want to combine the signals (and their weight) from
     multiple of those simple strategies!
     """
-    def __init__(self, name: str, params: Optional[dict] = None):
-        super().__init__()
-        self.name: str = name
-        self._signal_generator: sg.SignalGenerator
+    def __init__(self, name: str, weight: float = 1) -> None:
+        self.signal_generator: sg.SignalGenerator = None
+        super().__init__(name, weight)
 
     def __repr__(self) -> str:
-
-        try:
-            sg_str = f'{str(self._signal_generator)}'
-        except AttributeError:
-            sg_str = 'None'
-
-        sl_str = ''
-        if self.sl_strategy:
-            sl_str = '\n\t\t'.join([str(s) for s in self.sl_strategy])
-
-        if not sl_str:
-            sl_str = 'None'
-
-        tp_str = ''
-        if self.tp_strategy:
-            tp_str = '\n\t\t'.join([str(s) for s in self.tp_strategy])
-
-        if not tp_str:
-            tp_str = 'None'
-
         return (
-            f"{self.name} strategy for {self.symbol} "
-            f'in {self.interval} interval ({self.weight=:.2f})'
-            f'\n\t {sg_str}'
-            f'\n\tstop loss: {sl_str}'
-            f'\n\ttake profit: {tp_str}'
+            f"{self.name} strategy for {self.symbol} ({self.weight=:.2f})"
+            f"\n\t {str(self.signal_generator)}"
         )
 
     def __str__(self) -> str:
         return self.__repr__()
 
-    # --------------------------------------------------------------------------
-    @property
-    def indicators(self) -> tuple:
-        return self._signal_generator.indicators
-
-    # --------------------------------------------------------------------------
-    def speak(self, data: tp.Data) -> tp.Data:
-        for key in sg.SignalGenerator.dict_keys:
-            if key not in data:
-                data[key] = np.zeros(data['open'].shape)
-
-        return self._add_take_profit(
-            self._add_stop_loss(
-                self._add_signals(data)
+    def __getattr__(self, attr) -> Any:
+        if attr in self.__dict__:
+            return self.__dict__[attr]
+        elif self.signal_generator is not None:
+            return getattr(self.signal_generator, attr)
+        else:
+            raise AttributeError(
+                f"{self.__class__.__name__} object has no attribute '{attr}'"
             )
-        )
 
-    def optimize(self, data: tp.Data, *args, **kwargs) -> None:
+    def __setattr__(self, attr, value) -> None:
+        if attr in (
+            'name', 'weight', 'signal_generator', '_market_data', 
+            'sub_strategies', 'definition', 'is_sub_strategy'
+        ):
+            super().__setattr__(attr, value)
+        elif self.signal_generator is not None:
+            setattr(self.signal_generator, attr, value)
+        else:
+            super().__setattr__(attr, value)
+        
+    # ----------------------------------------------------------------------------------
+    def speak(self) -> SignalStore:
+        return super().speak()
+
+    def randomize(self) -> None:
+        """Randomizes the parameters of the strategy."""
+        self.signal_generator.randomize()
+
+    def plot(self, symbol: str):
+        raise NotImplementedError(f"plot() not implemented for {self.name}")
+
+    def optimize(self) -> None:
         """
         # This method should be implemented in the subclasses to optimize the strategy
         pass
         """
         raise NotImplementedError(f"optimize() not implemented for {self.name}")
 
-    def get_signals(self, data: tp.Data) -> sg.cnd.ConditionResult:
-        """Gets the signals as ConditionResult object.
-
-        Instead of adding keys/values to the original data structure,
-        this method returns a ConditionResult object which allows further
-        processing, and or combining of multiple signals/strategies.
-        """
-        return self\
-            ._signal_generator\
-            .execute(data, as_dict=False)\
-            .apply_weight(self.weight)
-
-    # --------------------------------------------------------------------------
-    def _add_positions(self, data: tp.Data) -> None:
-        """Calculates positions and adds them to the data dictionary.
-        """
-        raise NotImplementedError(f"_add_positions() not implemented for {self.name}")
-
-    # --------------------------------------------------------------------------
-    def _add_signals(self, data: tp.Data) -> tp.Data:
-        """Calculates signals and adds them to the data dictionary.
-
-        Use this method to define the actual behaviour in the sub-classes!
-
-        :param data: dict with OHLCV data for one symbol
-        :type data: _type_
-        :return: _description_
-        :rtype: _type_
-        """
-        return data.update(self.get_signals(data).as_dict())
-
-    def _add_stop_loss(self, data: tp.Data) -> tp.Data:
-        """Calculates stop loss and adds it to the data dictionary.
-
-        Parameters
-        ----------
-        data: tp.Data
-            dict with OHLCV data
-
-        Returns
-        -------
-        tp.Data
-            the dict with added 'stop loss' series
-        """
-        # return data
-        return super()._add_stop_loss(data)
-
-    def _add_take_profit(self, data: tp.Data) -> tp.Data:
-        """Calculates take profit and adds it to the data dictionary.
-
-        Parameters
-        ----------
-        data: tp.Data
-            dict with OHLCV data
-
-        Returns
-        -------
-        tp.Data
-            the dict with added 'take profit' series
-        """
-        return super()._add_take_profit(data)
+    def _get_raw_signals(self) -> SignalStore:
+        return self.signal_generator.execute(compact=True)
 
 
 class CompositeStrategy(IStrategy):
     """Base class for all composite strategies."""
 
-    def __init__(self, symbol: str, interval: str, weight: float = 1):
-        super().__init__()
-
-        self.symbol = symbol
-        self.interval = interval
-        self.weight = weight
-        self._combine_func: CombineFuncT
-
-        self.sub_strategies: dict[str, tuple[IStrategy, tp.Weight]] = {}
+    def __init__(self, name: str = "Unnamed Strategy", weight: float = 1):
+        super().__init__(name, weight)
+        self.is_sub_strategy = False
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}({self.symbol}, {self.interval})"
-
-    def __str__(self) -> str:
-        string = f"{self.__class__.__name__}({self.symbol}, {self.interval})"
-        string += f"\n\tstop loss:   {self.sl_strategy}"
-        string += f"\n\ttake profit: {self.tp_strategy}"
+        string = f"{self.name})"
         string += f"\n\t{len(self.sub_strategies)} sub-strategies:"
 
-        for name, (strategy, weight) in self.sub_strategies.items():
-            string += f"\n\t\t{name}: {strategy} ({weight})"
+        for sub in self.sub_strategies:
+            string += f"\n\t\t{sub.name} ({sub.weight})"
 
         return string
 
-    def speak(self, data: tp.Data) -> tp.Data:
-        return self._add_signals(data)
+    def __str__(self) -> str:
+        return self.__repr__()
+
+    def speak(self) -> SignalStore:
+        """Collects and normalizes signals from all sub-strategies.
+
+        Returns
+        -------
+        SignalStore
+            SignalStore instances can be added, so we can just use the 
+            sum() function. The normalize() function is applied to the 
+            aggregated signals.            
+        """
+        return super().speak()
+
+    def randomize(self) -> None:
+        """Randomize the parameters of the strategies.
+        """
+        for strategy in self.sub_strategies:
+            strategy.randomize()
 
     def optimize(self) -> None:
-        """Optimize the strategy by testing param combinations.
+        for strategy in self.sub_strategies:
+            strategy.optimize()
 
-        Raises
-        ------
-        NotImplementedError
-            for now :P
-        """
-        raise NotImplementedError("optimize is waiting to be implemented")
-
-    def backtest(self, data: tp.Data) -> None:
-        """Backtest the strategy.
-
-        Parameters
-        ----------
-        data: tp.Data
-            OHLCV data dictionary
-
-        Raises
-        ------
-        NotImplementedError
-            for now :P
-        """
-        raise NotImplementedError("backtest is waiting to be implemented")
-
-    # ..................................................................................
-    def _add_signals(self, data: tp.Data) -> tp.Data:
-        """Calculates signals and adds them to the data dictionary.
-
-        Use this method to define the actual behaviour in the sub-classes!
-
-        Parameters
-        ----------
-        data : tp.Data
-            OHLCV data dictionary
-
-        Returns
-        -------
-        tp.Data
-            data with added 'signal' key/values
-        """
-        # get the (combined) signal from all sub-strategies. These are
-        # returned as ConditionResult objects, and we extract only the
-        # combined signal here.
-        try:
-            condition_results = tuple(
-                strat.get_signals(data).combined_signal
-                for strat, _ in self.sub_strategies.values()
-            )
-        except Exception as e:
-            logger.error(e, exc_info=True)
-            raise
-
-        logger.info("Got signals from %s sub-strategies" % len(condition_results))
-
-        # add the signals column from each sub-strategy to the data dictionary
-        as_dict = {
-            f"signal.{idx + 1}": elem for idx, elem in enumerate(condition_results)
-            }
-
-        data.update(as_dict)
-
-        logger.info(tuple(data.keys()))
-
-        # combine the signals from all sub-strategies into one
-        combined_signal = reduce(lambda x, y: np.add(x, y), condition_results)
-
-        # add the combine signal to the data dictionary. We need to
-        # construct a ConditionResult object first to get all columns
-        # (for open_long, open_short, etc., plus the combined signal)
-        data.update(
-            ConditionResult
-            .from_combined(combined_signal)
-            .as_dict()
-            )
-
-        return data
-
-    def _add_stop_loss(self, data: tp.Data) -> tp.Data:
-        """Calculates stop loss and adds it to the data dictionary.
-
-        Parameters
-        ----------
-        data: dict with OHLCV data for one symbol
-
-        Returns
-        -------
-        data: tp.Data
-            the dict with added 'stop loss' series
-        """
-        return super()._add_stop_loss(data)
-
-    def _add_take_profit(self, data: tp.Data) -> tp.Data:
-        """Calculates take profit and adds it to the data dictionary.
-
-        Parameters
-        ----------
-        data: dict with OHLCV data for one symbol
-
-        Returns
-        -------
-        data: tp.Data
-            the dict with added 'take profit' series
-        """
-        return super()._add_take_profit(data)
-
+    def _get_raw_signals(self) -> SignalStore:
+        return sum((sub.speak() for sub in self.sub_strategies)).normalized()
+    
 
 # ======================================================================================
 def build_sub_strategy(sdef: StrategyDefinition) -> IStrategy:
@@ -500,13 +303,10 @@ def build_sub_strategy(sdef: StrategyDefinition) -> IStrategy:
     logger.debug("building single strategy: %s - %s", sdef.strategy, sdef.params)
 
     # create the strategy class from the template for single strategies
-    strategy = SubStrategy(name=sdef.strategy, params=sdef.params)
+    strategy = Strategy(name=sdef.strategy, weight=sdef.weight)
     strategy.symbol = sdef.symbol
-    strategy.interval = sdef.interval
-    strategy.weight = sdef.weight if sdef.weight else 1.0
-    strategy.is_sub_strategy = True
-
-    strategy._signal_generator = sg.factory(sdef.signals_definition)
+    strategy.signal_generator = sg.signal_generator_factory(sdef.signals_definition)
+    strategy.definition = sdef
 
     # add stop loss strategy if provided
     if sdef.stop_loss:
@@ -578,17 +378,12 @@ def build_strategy(sdef: StrategyDefinition) -> IStrategy:
     else:
         logger.debug("building composite strategy: %s \n%s\n", sdef.strategy, sdef)
 
-        strategy = CompositeStrategy(sdef.symbol, sdef.interval, sdef.weight)
-        strategy.name = sdef.strategy
+        strategy = CompositeStrategy(sdef.strategy, sdef.weight)
 
         try:
-            strategy.sub_strategies = {
-                sub_def.strategy: (
-                    build_strategy(sub_def),
-                    sub_def.weight,
-                )
-                for sub_def in sdef.sub_strategies
-            }
+            strategy.sub_strategies = [
+                build_strategy(sub_def) for sub_def in sdef.sub_strategies
+            ]
         except ValueError as err:
             logger.error("failed to build %s: %s", sdef.strategy.upper, err)
             raise
@@ -609,3 +404,7 @@ def build_strategy(sdef: StrategyDefinition) -> IStrategy:
             ]
 
         return strategy
+
+
+async def strategy_repository() -> CompositeStrategy:
+    ...

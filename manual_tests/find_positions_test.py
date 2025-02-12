@@ -5,10 +5,10 @@ Created on Oct 06 10:03:20 2021
 
 @author dhaneor
 """
-import sys
-import os
-import time
 import logging
+import sys
+import time
+
 import numpy as np
 import pandas as pd
 
@@ -16,76 +16,77 @@ import pandas as pd
 from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
-from staff.hermes import Hermes  # noqa: E402, F4011
-from analysis import strategy_builder as sb  # noqa: E402, F401
-from analysis.util import find_positions as fp  # noqa: E402, F401
-from analysis import strategy_backtest as bt  # noqa: E402, F401
-from analysis.backtest import statistics as st  # noqa: E402, F401
-from analysis.strategies.definitions import (  # noqa: E402, F401
-    contra_1, trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross,
+from staff.hermes import Hermes
+from analysis import strategy_builder as sb
+from analysis.models.market_data import MarketData
+from analysis.leverage import LeverageCalculator
+from analysis.util import find_positions as fp
+from analysis import strategy_backtest as bt
+from analysis.backtest import statistics as st
+from analysis.strategy.definitions import (  # noqa: F401
+    contra_1, s_trend_1, s_tema_cross, s_breakout, s_trix, s_kama_cross,
     s_linreg, s_test_er, s_ema_multi, s_linreg_ma_cross, s_aroon_osc
 )
-# from plotting.minerva import BacktestChart as Chart  # noqa: E402, F401)
-from analysis.chart.tikr_charts import BacktestChart as Chart  # noqa: E402, F401
-from analysis.backtest import result_stats as rs  # noqa: E402, F401
-from analysis.models import position  # noqa: E402, F401
+from analysis.chart.tikr_charts import BacktestChart as Chart
+from analysis.backtest import result_stats as rs
+from analysis.models import position_py
 from util import get_logger
 
-logger = get_logger(__name__)
+logger = get_logger('main')
 
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = "7 years ago UTC"
+start = "1000 days ago UTC"
 end = 'now UTC'
 
 strategy = s_test_er
-risk_level, max_leverage = 9, 2
+risk_level, max_leverage = 0, 1
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='binance', mode='backtest')
 strategy = sb.build_strategy(strategy)
-
+strategy.symbol = symbol
 
 # ======================================================================================
-def get_data(length: int = 1000):
-    """
-    Reads a CSV file containing OHLCV (Open, High, Low, Close, Volume)
-    data for a cryptocurrency and performs data preprocessing.
+# def get_data(length: int = 1000):
+#     """
+#     Reads a CSV file containing OHLCV (Open, High, Low, Close, Volume)
+#     data for a cryptocurrency and performs data preprocessing.
 
-    Parameters
-        length
-            The number of data points to retrieve. Defaults to 1000.
+#     Parameters
+#         length
+#             The number of data points to retrieve. Defaults to 1000.
 
-    Returns:
-        dict
-            A dictionary containing the selected columns from the
-            preprocessed data as numpy arrays.
-    """
-    df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
-    df.drop(
-        ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
-    )
+#     Returns:
+#         dict
+#             A dictionary containing the selected columns from the
+#             preprocessed data as numpy arrays.
+#     """
+#     df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
+#     df.drop(
+#         ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
+#     )
 
-    df['human open time'] = pd.to_datetime(df['human open time'])
-    df.set_index(keys=['human open time'], inplace=True, drop=False)
+#     df['human open time'] = pd.to_datetime(df['human open time'])
+#     df.set_index(keys=['human open time'], inplace=True, drop=False)
 
-    if interval != "15min":
-        df = df.resample(interval)\
-            .agg(
-                {
-                    'open time': 'min', 'human open time': 'min',
-                    'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last',
-                    'volume': 'sum'
-                },
-                min_periods=1
-            )  # noqa: E123
+#     if interval != "15min":
+#         df = df.resample(interval)\
+#             .agg(
+#                 {
+#                     'open time': 'min', 'human open time': 'min',
+#                     'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last',
+#                     'volume': 'sum'
+#                 },
+#                 min_periods=1
+#             )  # noqa: E123
 
-    df.dropna(inplace=True)
+#     df.dropna(inplace=True)
 
-    start = len(df) - length  # randint(0, len(df) - length)
-    end = -1  # start + length
-    return {col: df[start:end][col].to_numpy() for col in df.columns}
+#     start = len(df) - length  # randint(0, len(df) - length)
+#     end = -1  # start + length
+#     return {col: df[start:end][col].to_numpy() for col in df.columns}
 
 
 def _get_ohlcv_from_db():
@@ -103,8 +104,45 @@ def _get_ohlcv_from_db():
         raise Exception(error)
 
 
-def _run_backtest(data: dict):
-    result = bt.run(strategy, data, initial_capital, risk_level, max_leverage)
+def generate_random_signals(length: int) -> dict:
+    """
+    Generate random trading signals without overlap.
+
+    Parameters:
+    length (int): The number of periods to generate signals for.
+
+    Returns:
+    dict: A dictionary containing arrays for 'open_long', 'open_short', 'close_long', and 'close_short' signals.
+    """
+    # Initialize an array of zeros
+    signals = np.zeros(length, dtype=np.int8)
+
+    # Randomly select indices for signals
+    signal_indices = np.random.choice(length, size=length//4, replace=False)
+
+    # Assign random signals (1, 2, 3, or 4) to the selected indices
+    signals[signal_indices] = np.random.randint(1, 5, size=len(signal_indices))
+
+    # Create the dictionary of signals
+    return {
+        'open_long': (signals == 1).astype(np.int8),
+        'open_short': (signals == 2).astype(np.int8),
+        'close_long': (signals == 3).astype(np.int8),
+        'close_short': (signals == 4).astype(np.int8)
+    }
+
+
+def _run_backtest(data: dict) -> pd.DataFrame:
+    md = MarketData.from_dictionary(strategy.symbol, data)
+    leverage_calculator = LeverageCalculator(md, risk_level, max_leverage)
+    
+
+    result = bt.run(
+        strategy=strategy, 
+        leverage_calculator=leverage_calculator,
+        data=data, 
+        initial_capital=initial_capital
+        )
     df = pd.DataFrame.from_dict(result)
 
     # Check if portfolio value ever goes negative
@@ -211,20 +249,20 @@ def display_problematic_rows(df):
 
 # ..............................................................................
 def run(data, show=False, plot=False):
-
-    df = _add_stats(pd.DataFrame.from_dict(_run_backtest(data)))
+    result = _run_backtest(data)
+    df = _add_stats(result)
 
     df_pos = df.copy()
 
     if show:
         _show(df)
 
-    positions = position.Positions(df_pos, symbol)
+    positions = position_py.Positions(df_pos, symbol)
 
-    for pos in positions:
-        print(pos)
-        for trade in pos.trades:
-            print(trade)
+    # for pos in positions:
+    #     print(pos)
+    #     for trade in pos.trades:
+    #         print(trade)
 
     print(f"Total number of trades: {len(positions)}")
     print(f"Profit Factor: {positions.profit_factor:.2f}")
@@ -237,6 +275,7 @@ def run(data, show=False, plot=False):
 
     logger.info(strategy_stats)
     logger.info(hodl_stats)
+    logger.info(df.index.name)
 
     if plot:
         plot_title = f'{strategy.name} - {symbol} ({interval})'
@@ -244,34 +283,45 @@ def run(data, show=False, plot=False):
 
 
 def test_find_positions(data: dict):
+    data.update(generate_random_signals(length=1000))
+
     fp.find_positions_with_dict(data)
 
     assert "position" in data, "'position' not found in data dictionary"
 
 
-# ==================================================================------========== #
-#                                       MAIN                                         #
-# ================================================================================== #
+# ==================================================================------=========== #
+#                                       MAIN                                          #
+# =================================================================================== #
 if __name__ == '__main__':
     logger.info("Starting backtest...")
     logger.info(strategy)
-    run(_get_ohlcv_from_db(), True, True)
+    run(_get_ohlcv_from_db(), False, False)
 
-    # ..........................................................................
+    # test_find_positions(_get_ohlcv_from_db())
+
+    # .................................................................................
     sys.exit()
 
     logger.setLevel(logging.ERROR)
-    runs = 1_000
+    runs = 1_000_000
     data_pre = [_get_ohlcv_from_db() for _ in range(runs)]
-    # st = time.perf_counter()
 
-    # for i in range(runs):
-    #     # test_find_positions(data_pre[i])
-    #     bt.run(strategy, data_pre[i], initial_capital, risk_level)
+    md = MarketData.from_dictionary(strategy.symbol, data_pre[0])
+    leverage_calculator = LeverageCalculator(md, risk_level, max_leverage)
+
+    data = _get_ohlcv_from_db()
+    signals = generate_random_signals(length=len(data["close"]))
+    data.update(signals)
+
+    fp.find_positions_with_dict(data)
+
+    start = time.perf_counter()
 
     with Profile(timeunit=0.001) as p:
         for i in range(runs):
-            bt.run(strategy, data_pre[i], initial_capital, risk_level)
+            # fp.merge_signals_nb_fixed(**signals)
+            fp.find_positions_with_dict(data)
 
     (
         Stats(p)
@@ -281,9 +331,11 @@ if __name__ == '__main__':
         .print_stats(30)
     )
 
-    # for _ in range(runs):
-    #     test_strategy_run(s, False)
-
-    et = time.perf_counter()
+    et = time.perf_counter() - start
     print(f'length data: {len(data_pre[0]["close"])} periods')
-    print(f"average execution time: {((et - st)*1_000_000/runs):.2f} microseconds")
+    print(f"average execution time: {(et * 1_000_000 / runs):.0f} microseconds")
+    iterations = runs / (et)
+    periods = len(data_pre[0]["close"]) * iterations
+    print(f"periods/s: {periods:,.0f}")
+    print(f"iter/s (1 core): ~{iterations:,.0f}")
+    print(f"iter/s (8 core): ~{iterations * 5:,.0f}")

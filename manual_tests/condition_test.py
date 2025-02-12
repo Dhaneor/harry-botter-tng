@@ -6,40 +6,25 @@ Created on Oct 06 10:03:20 2021
 @author dhaneor
 """
 import sys
-import os
 import time
 import logging
 import numpy as np
 import pandas as pd
 from typing import Iterable
-from pprint import pprint  # noqa: F401
+from pprint import pprint
 from random import choice
 
 # profiler imports
 from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
-# -----------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# -----------------------------------------------------------------------------
+from analysis.strategy import condition as cn
+from analysis.strategy import operand as op
+from analysis.indicators import Parameter
+from helpers_ import get_sample_data
+from util import get_logger
 
-from src.analysis.strategies import condition as cn  # noqa: E402
-from src.analysis.strategies import operand as op  # noqa: E402
-from helpers_ import get_sample_data  # noqa: E402
-
-logger = logging.getLogger("main")
-logger.setLevel(logging.DEBUG)
-
-ch = logging.StreamHandler()
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
+logger = get_logger('main', level="DEBUG")
 
 # ======================================================================================
 interval = "4h"
@@ -174,6 +159,17 @@ def test_condition_indicators(condition: cn.Condition):
     return indicators
 
 
+def test_condition_parameters(condition: cn.Condition):
+    parameters = condition.parameters
+
+    assert isinstance(parameters, tuple), "Parameters must be a dictionary"
+    assert all(
+        isinstance(v, Parameter) for v in parameters
+    ), "All parameters must be strings, integers, or floats"
+
+    return parameters
+
+
 def test_condition_result():
     def get_random_array(length=10):
         return np.array(tuple(choice([True, False]) for _ in range(length)))
@@ -196,7 +192,7 @@ def test_condition_result():
     print(cr1.close_short)
     print
     print('-' * 120)
-    print(cr1.combined())
+    print(cr1.combined_signal)
 
 
 def test_condition_result_from_combined():
@@ -223,8 +219,8 @@ def test_condition_result_combine():
         close_short=np.array([False, False, np.nan, False, True]),
     )
 
-    print(cr1.combined())
-    assert np.array_equal(cr1.combined(), np.array([1, 0, -1, -1, 0]))
+    print(cr1.combined_signal)
+    assert np.array_equal(cr1.combined_signal, np.array([1, 0, -1, -1, 0]))
 
     cr2 = cn.ConditionResult(
         open_long=np.array([False, True, True, False, False, np.nan, np.nan]),
@@ -233,25 +229,40 @@ def test_condition_result_combine():
         close_short=np.array([True, False, np.nan, True, False, np.nan, True]),
     )
 
-    print(cr2.combined())
-    assert np.array_equal(cr2.combined(), np.array([0, 1, 1, 0, -1, -1, 0]))
+    print(cr2.combined_signal)
+    assert np.array_equal(cr2.combined_signal, np.array([0, 1, 1, 0, -1, -1, 0]))
+
+
+def test_parameter_change_notification():
+    c = cn.condition_factory(c_defs["ema"], {})
+    key_store_before = list(c.key_store.values())
+
+    logger.debug("~-*-~" * 30)
+    pprint(c.__dict__)
+
+    for operand in (c.operand_a, c.operand_b, c.operand_c, c.operand_d):
+        if operand is not None:
+            operand.randomize()
+
+    key_store_after = list(c.key_store.values())
+
+    logger.debug("~-*-~" * 30)
+    pprint(c.__dict__)
+
+    assert key_store_before != key_store_after, "Key did not change"
 
 
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    test_condition_result_combine()
+    # test_condition_result_combine()
+    test_parameter_change_notification()
 
     sys.exit()
 
-    c = cn.factory(c_defs["golden_cross"])
-
-    for comp in (c.operand_a, c.operand_b, c.operand_c, c.operand_d):
-        if comp:
-            print(comp.indicators)
-
-    # print(c.indicators)
+    c = cn.condition_factory(c_defs["golden_cross"], {})
+    pprint(c.__dict__)
 
     # sys.exit()
 

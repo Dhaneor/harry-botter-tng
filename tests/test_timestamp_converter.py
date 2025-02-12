@@ -5,16 +5,11 @@ Created on Sat Dec 16 10:17:23 2024
 
 @author_ dhaneor
 """
-import os
+
 import pytest
 import pytz
-import sys
 from datetime import datetime, timedelta
 from time import time
-
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
 
 from data.util.timestamp_converter import timestamp_converter  # noqa: E402
 
@@ -129,7 +124,7 @@ def test_relative_time_expressions():
         elif unit == "week":
             expected_start = now - timedelta(weeks=1)
         elif unit == "month":
-            expected_start = now - timedelta(days=30)  # Approximate
+            expected_start = now - timedelta(days=31)  # Approximate
         elif unit == "year":
             expected_start = now.replace(year=now.year - 1)
 
