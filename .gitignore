@@ -1,5 +1,6 @@
 **/__pycache__
 **/.pytest_cache
+**/build
 /api
 /_backups
 /_configs
@@ -10,6 +11,7 @@
 /config.py
 /*.ini
 **/keys
+**/
 .DS_Store
 .vscode
 .env
