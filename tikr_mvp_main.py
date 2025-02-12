@@ -17,7 +17,7 @@ from queue import Queue, Empty
 from threading import Event
 from typing import Any
 
-from src.rawi import ohlcv_repository as repo
+from src.data import ohlcv_repository as repo
 from src.analysis import strategy_builder as sb
 from src.analysis import strategy_backtest as bt
 from src.analysis.backtest import statistics as st
