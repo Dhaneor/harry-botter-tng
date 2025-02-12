@@ -9,6 +9,7 @@ Created on July 06 21:12:20 2023
 import logging
 import pandas as pd
 import numpy as np
+import sys
 from typing import Optional, Tuple
 from numba import jit, int8
 
@@ -50,7 +51,7 @@ def calculate_trades_nb(
         if position[i] == 0:
             continue
 
-        leverage[i] = 1 if leverage[i] == np.nan else leverage[i]
+        # leverage[i] = 1 if leverage[i] == np.nan else leverage[i]
 
         # process LONG position
         if position[i] == 1:
@@ -226,22 +227,20 @@ def calculate_trades(data: tp.Data, initial_capital: float = 1000) -> None:
 
 
 # =====================================================================================
-# @execution_time
 def run(
     strategy: IStrategy,
     leverage_calculator: LeverageCalculator,
     data: tp.Data,
     initial_capital: float,
-    # risk_level: float = 0,
-    # max_leverage: float = 1
 ):
     # add signals
-    if isinstance(strategy, IStrategy):
-        strategy.speak(data)
-    else:
-        strategy.speak(data)
+    data["signal"] = strategy.sub_strategies[0].signal_generator.execute(compact=True)[:, 0, 0].reshape(-1,)
+    # if isinstance(strategy, IStrategy):
+    #     strategy.speak(data)
+    # else:
+    #     strategy.speak(data)
 
-    merge_signals(data)
+    # merge_signals(data)
 
     # add leverage
     data["leverage"] = leverage_calculator.leverage().reshape(-1,)

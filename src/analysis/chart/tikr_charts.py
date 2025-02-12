@@ -533,7 +533,7 @@ class Chart:
                 zorder=1,
             ),
             fillmethod="tonexty",
-            color=self.style.colors.strategy_fill,
+            _color=self.style.colors.strategy_fill,
         )
 
     def _hodl_equity(self):

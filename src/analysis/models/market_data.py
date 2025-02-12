@@ -529,12 +529,12 @@ class MarketData(PlottingMixin):
     def from_dictionary(cls, symbol, data: dict):
         """Builds a new MarketData object from an OHLCV dictionary."""
         mds = MarketDataStore(
-            open_=data["open"].reshape(-1, 1).astype(np.float32),
+            timestamp=data["open time"].reshape(-1, 1).astype(np.int64),
+            open=data["open"].reshape(-1, 1).astype(np.float32),
             high=data["high"].reshape(-1, 1).astype(np.float32),
             low=data["low"].reshape(-1, 1).astype(np.float32),
             close=data["close"].reshape(-1, 1).astype(np.float32),
             volume=data["volume"].reshape(-1, 1).astype(np.float32),
-            timestamp=data["open time"].reshape(-1, 1).astype(np.int64),
         )
 
         return MarketData(mds, [symbol])

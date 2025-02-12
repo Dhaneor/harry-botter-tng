@@ -230,7 +230,7 @@ cdef class MarketDataStore:
     # ..................................................................................
     @property
     def periods_per_year(self) -> int:
-        ts = self.timestamp[0]
+        ts = self.timestamp[:, 0] if self.timestamp.ndim > 0 else self.timestamp
         timestamp_diffs = np.diff(ts)
         mask = timestamp_diffs != 0
         typical_diff = np.median(timestamp_diffs[mask])

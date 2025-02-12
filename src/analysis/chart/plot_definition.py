@@ -589,6 +589,7 @@ class Trigger(Line):
 @dataclass
 class Channel:
     label: str
+    column = ""
     upper: Line | str | float | None = None
     lower: Line | str | float | None = None
 

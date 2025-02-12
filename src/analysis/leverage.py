@@ -203,7 +203,7 @@ class LeverageCalculator:
         np.ndarray
             a 2D array of the recommened leverage for trading period
         """
-        annualized_volatility = self.market_data.mds.annual_vol
+        annualized_volatility = self.market_data.mds.vola_anno
 
         # Apply smoothing to volatility
         if self.smoothing > 1:

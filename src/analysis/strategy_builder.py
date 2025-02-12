@@ -35,7 +35,6 @@ import logging
 from dataclasses import dataclass
 from typing import Any, NamedTuple, Optional, Sequence
 
-from util import proj_types as tp
 from .strategy import signal_generator as sg
 from .strategy import exit_order_strategies as es
 from analysis.models.market_data import MarketData
@@ -279,6 +278,9 @@ class CompositeStrategy(IStrategy):
     def optimize(self) -> None:
         for strategy in self.sub_strategies:
             strategy.optimize()
+
+    def plot(self) -> None:
+        pass
 
     def _get_raw_signals(self) -> SignalStore:
         return sum((sub.speak() for sub in self.sub_strategies)).normalized()

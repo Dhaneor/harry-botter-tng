@@ -148,7 +148,7 @@ cdef class BacktestEngine:
         MarketDataStore market_data
         np.ndarray signals
         Portfolio portfolio
-        tuple[int, int, int]
+        tuple[int, int, int] shape
         public np.ndarray equity
         public np.ndarray base_qty
         public np.ndarray quote_qty

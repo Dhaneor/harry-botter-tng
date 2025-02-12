@@ -21,6 +21,8 @@ from src.data import ohlcv_repository as repo
 from src.analysis import strategy_builder as sb
 from src.analysis import strategy_backtest as bt
 from src.analysis.backtest import statistics as st
+from analysis.leverage import LeverageCalculator
+from analysis.models.market_data import MarketData
 from analysis.models.position_py import Positions
 from src.analysis import telegram_signal as ts
 from analysis.backtest import result_stats as rs
@@ -47,6 +49,8 @@ start_time = time.time()
 # Github repository, you can implement your own strategy
 strategy = sb.build_strategy(mvp_strategy)
 strategy.name = "Safe HODL Strategy by Gregorovich"
+strategy.symbol = "BTC/USDT"
+strategy.interval = "1d"
 
 RISK_LEVEL = 0  # define the risk level for the strategy / position sizing
 MAX_LEVERAGE = 1  # define the maximum leverage for the strategy / position sizing
@@ -161,14 +165,18 @@ def display_results(df: pd.DataFrame) -> None:
     display_stats(df)
 
 
-def run_backtest(response: repo.Response):
+def run_backtest(response: repo.Ohlcv):
     logger.debug(response)
 
+    market_data = MarketData.from_dictionary("BTC/USDT", response.to_dict())
+
+    strategy.market_data = market_data
+    lc = LeverageCalculator(market_data=market_data, risk_level=RISK_LEVEL, max_leverage=MAX_LEVERAGE)
+
     backtest_result = bt.run(
-        data=response.to_dict(),
         strategy=strategy,
-        risk_level=RISK_LEVEL,
-        max_leverage=MAX_LEVERAGE,
+        leverage_calculator=lc,
+        data=response.to_dict(),
         initial_capital=10_000
     )
 
@@ -269,6 +277,8 @@ def start_async_loop(queue, stop_event):
         "exchange": "binance",
         "symbol": strategy.symbol,
         "interval": strategy.interval,
+        "start": -1380,
+        "end": "now UTC"
     }
 
     try:
