@@ -12,8 +12,8 @@ from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 from cython.operator cimport dereference as deref
 
-from analysis.models.market_data_store cimport MarketDataStore, MarketState
-from analysis.models.position cimport (
+from src.analysis.models.market_data_store cimport MarketDataStore, MarketState
+from src.analysis.models.position cimport (
     TradeData,
     PositionData,
     StopOrder,
@@ -25,27 +25,68 @@ from analysis.models.position cimport (
     build_short_position,
     close_position,
 )
-from src.analysis.models.portfolio import Account, Portfolio
+from src.analysis.models.portfolio cimport Account
 
-logger = logging.get_logger(f"main.{__name__}")
+logger = logging.getLogger(f"main.{__name__}")
+
+WARMUP_PERIODS = 200
 
 
-cdef class BacktestEngine:
+cdef class Config:
     cdef:
-        MarketDataStore market_data
-        np.ndarray signals
+        public double initial_capital
+        public double max_leverage
+        public int rebalance_freq
+        public int rebalance_position
+        public int increase_allowed
+        public int decrease_allowed
+        public double minimum_change
+        public double fee_rate
+        public double slippage_rate
+
+    def __init__(
+        self, 
+        initial_capital,
+        max_leverage = 1.0,
+        rebalance_freq = 0,  # in trading periods
+        rebalance_position = True, 
+        increase_allowed = True, 
+        decrease_allowed = True,
+        minimum_change = 0.1,
+        fee_rate = 0.001,
+        slippage_rate = 0.001, 
+    ):
+        self.initial_capital = initial_capital
+        self.max_leverage = max_leverage
+        self.rebalance_freq = rebalance_freq
+        self.rebalance_position = rebalance_position
+        self.increase_allowed = increase_allowed
+        self.decrease_allowed = decrease_allowed
+        self.minimum_change = minimum_change
+        self.fee_rate = fee_rate
+        self.slippage_rate = slippage_rate
+
+
+
+cdef class BackTestCore:
+    cdef:
+        public MarketDataStore market_data
+        public np.ndarray leverage
+        public np.ndarray signals
+        public Config config
         vector[Account] accounts
         tuple[int, int, int] shape
         public np.ndarray equity
         public np.ndarray base_qty
         public np.ndarray quote_qty
-        public np.ndarray leverage
         public np.ndarray quote_qty_global
         public np.ndarray equity_global
         public np.ndarray leverage_global
 
-    def __cinit__(self, MarketDataStore market_data, np.ndarray signals):
+    def __cinit__(self, MarketDataStore market_data, np.ndarray leverage, np.ndarray signals, Config config):
         self.market_data = market_data
+        self.quote_qty = np.zeros(self.shape, dtype=np.float64)
+        self.leverage = leverage
         self.signals = signals
                 
         # Initialize one account for each strategy
@@ -53,8 +94,7 @@ cdef class BacktestEngine:
         cdef Account acc
         
         for _ in range(signals.shape[2]):
-            acc = Account()
-            acc.positions = {}
+            acc = Account(positions={})
             self.accounts.push_back(acc)
 
         self.shape = (signals.shape[0], signals.shape[1], signals.shape[2],)
@@ -62,8 +102,6 @@ cdef class BacktestEngine:
         # Initialize arrays
         self.equity = np.zeros(self.shape, dtype=np.float64)
         self.base_qty = np.zeros(self.shape, dtype=np.float64)
-        self.quote_qty = np.zeros(self.shape, dtype=np.float64)
-        self.leverage = np.zeros(self.shape, dtype=np.float64)
 
         self.quote_qty_global = np.zeros(self.shape[:1], dtype=np.float64)
         self.equity_global = np.zeros(self.shape[:1], dtype=np.float64)

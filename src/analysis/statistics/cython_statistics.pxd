@@ -7,7 +7,7 @@ cdef class Statistics:
         long periods_per_year
         double risk_free_rate
 
-    cdef _apply_to_columns(self, cnp.ndarray arr, func, int period) except *
+    cdef _apply_to_columns(self, cnp.ndarray arr, func, int period)
     cdef double[:] _apply_rolling(self, double[:] arr, func, int period)
     cdef compute(self, cnp.ndarray arr, func, int period)
 

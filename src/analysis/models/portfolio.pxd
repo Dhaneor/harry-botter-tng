@@ -9,3 +9,5 @@ from analysis.models.position cimport PositionData
 
 cdef struct Account:
     unordered_map[int, unordered_map[int, vector[PositionData]]] positions
+
+cdef PositionData* get_current_position(self, Account acc, int m, int s)

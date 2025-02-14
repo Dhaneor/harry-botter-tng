@@ -30,7 +30,7 @@ extensions = [
         language="c++"
     ),
     Extension(
-        "src.analysis.backtest_cy",
+        "src.analysis.backtest.backtest_cy",
         ["src/analysis/backtest/backtest_cy.pyx"],
         include_dirs=[np.get_include()],
         language="c++"

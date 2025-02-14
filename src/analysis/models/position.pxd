@@ -55,14 +55,14 @@ cdef TradeData build_buy_trade(
     double price, 
     double quote_qty = *, 
     double base_qty = *
-) except *
+)
 
 cdef TradeData build_sell_trade(
     long long timestamp, 
     double price, 
     double quote_qty = *,
     double base_qty = *
-) except *
+)
 
 cdef void add_buy(PositionData* pos, TradeData* trade) except *
 cdef void add_sell(PositionData* pos, TradeData* trade) except *

@@ -1,4 +1,5 @@
 # cython: language_level=3
+import cython
 import logging
 cimport numpy as np
 import numpy as np

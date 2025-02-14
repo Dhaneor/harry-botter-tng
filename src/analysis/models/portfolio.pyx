@@ -69,6 +69,7 @@ cdef void add_position(self, int m, int s, PositionData position):
 
 
 # ................................. Portfolio class ....................................
+"""
 cdef class Portfolio:
 
     cdef:
@@ -138,3 +139,4 @@ cdef class Portfolio:
         if self.positions[m].find(s) == self.positions[m].end():
             self.positions[m][s] = vector[PositionData]()
         self.positions[m][s].push_back(position)
+"""
