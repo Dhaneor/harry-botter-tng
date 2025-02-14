@@ -11,7 +11,7 @@ import time
 from cProfile import Profile
 from pstats import SortKey, Stats
 
-from analysis.backtest.backtest import BackTestCore, Config
+from analysis.backtest.backtest_nb import BackTestCore, Config
 from analysis import MarketData, LeverageCalculator, signal_generator_factory
 from util.logger_setup import get_logger
 from analysis.strategy.definitions import ema_cross, linreg, rsi  # noqa: F401

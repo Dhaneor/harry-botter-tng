@@ -30,6 +30,12 @@ extensions = [
         language="c++"
     ),
     Extension(
+        "src.analysis.backtest_cy",
+        ["src/analysis/backtest/backtest_cy.pyx"],
+        include_dirs=[np.get_include()],
+        language="c++"
+    ),
+    Extension(
         "src.analysis.models.struct_bench",
         ["src/analysis/models/struct_bench.pyx"],
         include_dirs=[np.get_include()],

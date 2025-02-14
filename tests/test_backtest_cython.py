@@ -10,7 +10,7 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from analysis.backtest.backtest import (
+from analysis.backtest.backtest_nb import (
     BackTestCore,
     Config,
     run_backtest,
@@ -82,12 +82,12 @@ def market_data():
             )
 
             mds = MarketDataStore(
+                timestamp=timestamps.reshape(-1, 1),
                 open_=open_prices.astype(np.float64),
                 high=high_prices.astype(np.float64),
                 low=low_prices.astype(np.float64),
                 close=close_prices.astype(np.float64),
                 volume=volumes.astype(np.float64),
-                timestamp=timestamps.reshape(-1, 1),
             )
             return MarketData(mds, [f"Asset{i+1}" for i in range(number_of_assets)])
         else:

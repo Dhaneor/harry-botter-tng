@@ -39,7 +39,7 @@ from .strategy import signal_generator as sg
 from .strategy import exit_order_strategies as es
 from analysis.models.market_data import MarketData
 from analysis.models.signals import SignalStore
-from analysis.backtest.backtest import run_backtest, Config
+from analysis.backtest.backtest_nb import run_backtest, Config
 
 logger = logging.getLogger("main.strategy_builder")
 
