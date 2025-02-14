@@ -9,13 +9,12 @@ Created on July 06 21:12:20 2023
 import logging
 import pandas as pd
 import numpy as np
-import sys
 from typing import Optional, Tuple
 from numba import jit, int8
 
 from util import proj_types as tp
 from analysis.strategy_builder import IStrategy
-from analysis.util.find_positions import find_positions_with_dict, merge_signals
+from analysis.util.find_positions import find_positions_with_dict
 from analysis.leverage import LeverageCalculator
 
 logger = logging.getLogger("main.backtest")
@@ -239,13 +238,11 @@ def run(
         strategy = strategy.sub_strategies[0]
    
     # add signals
-    data["signal"] = strategy.signal_generator.execute(compact=True)[:, 0, 0].reshape(-1,)
-    # if isinstance(strategy, IStrategy):
-    #     strategy.speak(data)
-    # else:
-    #     strategy.speak(data)
-
-    # merge_signals(data)
+    data["signal"] = (
+        strategy.signal_generator
+        .execute(compact=True)[:, 0, 0]
+        .reshape(-1,)
+    )
 
     # add leverage
     if leverage is not None:
@@ -280,7 +277,8 @@ def run(
 
     # # calculate the value of the account/portfolio
     data["b.value"] = np.add(
-        data["b.quote"], np.multiply(data["b.base"], data["close"])
+        data["b.quote"], 
+        np.multiply(data["b.base"], data["close"])
     )
 
     return data

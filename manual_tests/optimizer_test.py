@@ -41,8 +41,8 @@ start = "6 years ago UTC"
 end = "now UTC"
 
 strategy = s_breakout
-risk_levels = [0, 6, 7, 8, 9]
-max_leverage_levels = (0.75, 1, 1.25,)  # , 1.5, 1.75, 2, 2.5)
+risk_levels = [0]
+max_leverage_levels = (1,)  # , 1.5, 1.75, 2, 2.5)
 max_drawdown = 30
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.1
 
@@ -135,7 +135,6 @@ def test_optimize(data: dict | None = None):
     results, combinations = optimizer.optimize(
         strategy=sub_strategy,
         data=data,
-        interval=interval,
         risk_levels=risk_levels,
         max_leverage_levels=max_leverage_levels
     )
@@ -214,7 +213,6 @@ def test_check_robustness():
         signal_generator=sig_gen,
         data=data,
         params=best_result[0],
-        interval=interval,
         risk_levels=(best_result[1],),
         max_leverage_levels=(best_result[2],),
     )

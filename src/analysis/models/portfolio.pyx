@@ -5,6 +5,7 @@
 # cython: numpy_api=2
 
 cimport numpy as np
+import logging
 import numpy as np
 from libcpp.unordered_map cimport unordered_map
 from libcpp.pair cimport pair
@@ -25,6 +26,7 @@ from analysis.models.position cimport (
     close_position,
 )
 
+logger = logging.get_logger(f"main.{__name__}")
 
 """"
 cdef class StopOrder:
@@ -69,6 +71,7 @@ cdef void add_position(self, int m, int s, PositionData position):
         self.positions[m][s] = vector[PositionData]()
     self.positions[m][s].push_back(position)
     
+
 
 # ................................. Portfolio class ....................................
 cdef class Portfolio:

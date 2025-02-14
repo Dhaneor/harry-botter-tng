@@ -54,7 +54,7 @@ strategy.symbol = "BTC/USDT"
 strategy.interval = "1d"
 
 RISK_LEVEL = 0  # define the risk level for the strategy / position sizing
-MAX_LEVERAGE = 1.25  # define the maximum leverage for the strategy / position sizing
+MAX_LEVERAGE = 1  # define the maximum leverage for the strategy / position sizing
 
 TIMEOUT = 60  # time in seconds to wait for the data to be available in the repository
 RETRY_AFTER_SECS = 5  # time between retries in seconds
@@ -300,7 +300,7 @@ def start_async_loop(queue, stop_event):
         "symbol": strategy.symbol,
         "interval": strategy.interval,
         "start": -1296,
-        "end": "2025-02-08 00:00:00 UTC"
+        "end": "now UTC"
     }
 
     try:

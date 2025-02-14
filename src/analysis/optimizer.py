@@ -27,7 +27,7 @@ from . import strategy_builder as sb
 from .strategy import signal_generator as sg
 from .models.market_data import MarketData
 from .leverage import LeverageCalculator
-from .backtest.statistics import calculate_statistics_min
+from .backtest.statistics import calculate_statistics_min, calculate_statistics
 logger = logging.getLogger('main.optimizer')
 logger.setLevel(logging.INFO)
 
@@ -497,7 +497,6 @@ def worker(
 def optimize(
     strategy: sb.Strategy,
     data: OhlcvData,
-    interval: str = '1d',
     risk_levels: Iterable[float] = (1,),
     max_leverage_levels: tuple[float, ...] = (1,),
     backtest_fn: Callable = bt.run
@@ -531,16 +530,15 @@ def optimize(
         * len(risk_levels) \
         * len(max_leverage_levels)
 
-    est_exc_time = combinations * estimate_exc_time(
-        backtest_fn, strategy, data)
+    est_exc_time = combinations * estimate_exc_time(backtest_fn, strategy, data)
 
     logger.info("Starting parallel optimization...")
+    logger.info("risk levels: %s", risk_levels)
     logger.info("leverage levels: %s", max_leverage_levels)
-    logger.info("testing %s combinations", combinations)
+    logger.info("testing %s combinations", f"{combinations:,}")
     logger.info("Estimated execution time: %.2fs", est_exc_time)
 
-    num_cores = multiprocessing.cpu_count()
-    num_processes = max(1, num_cores)  # Use all cores, but at least 1
+    num_processes = max(1, multiprocessing.cpu_count())  # Use all cores, at least 1
     logger.info("Using %s processes", num_processes)
 
     results = []

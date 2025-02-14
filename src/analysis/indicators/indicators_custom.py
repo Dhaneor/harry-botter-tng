@@ -80,7 +80,7 @@ class EfficiencyRatio(IIndicator):
 
         if self._cache is None:
             if self.method == 1:
-                res = efficiency_ratio_nb(
+                res = noise_index_nb(
                     data=data, 
                     lookback=self.parameters[0].value
                     )

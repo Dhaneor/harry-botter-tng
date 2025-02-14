@@ -6,7 +6,6 @@ Created on Oct 06 10:03:20 2021
 @author dhaneor
 """
 import sys
-import os
 import time
 import logging
 import numpy as np
@@ -37,11 +36,11 @@ logger = get_logger("main")
 symbol = "BTCUSDT"
 interval = "1d"
 
-start = int(-365*3)  # 'December 01, 2018 00:00:00'
+start = "72 months ago UTC"  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
 strategy = s_breakout
-risk_level, max_leverage = 0, 1
+risk_level, max_leverage = 9, 0.75
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')
@@ -49,46 +48,6 @@ strategy = sb.build_strategy(strategy)
 
 
 # ======================================================================================
-def get_data(length: int = 1000):
-    """
-    Reads a CSV file containing OHLCV (Open, High, Low, Close, Volume)
-    data for a cryptocurrency and performs data preprocessing.
-
-    Parameters
-        length
-            The number of data points to retrieve. Defaults to 1000.
-
-    Returns:
-        dict
-            A dictionary containing the selected columns from the
-            preprocessed data as numpy arrays.
-    """
-    df = pd.read_csv(os.path.join(parent, "ohlcv_data", "btcusdt_15m.csv"))
-    df.drop(
-        ["Unnamed: 0", "close time", "quote asset volume"], axis=1, inplace=True
-    )
-
-    df['human open time'] = pd.to_datetime(df['human open time'])
-    df.set_index(keys=['human open time'], inplace=True, drop=False)
-
-    if interval != "15min":
-        df = df.resample(interval)\
-            .agg(
-                {
-                    'open time': 'min', 'human open time': 'min',
-                    'open': 'first', 'high': 'max', 'low': 'min', 'close': 'last',
-                    'volume': 'sum'
-                },
-                min_periods=1
-            )  # noqa: E123
-
-    df.dropna(inplace=True)
-
-    start = len(df) - length  # randint(0, len(df) - length)
-    end = -1  # start + length
-    return {col: df[start:end][col].to_numpy() for col in df.columns}
-
-
 def _get_ohlcv_from_db():
 
     res = hermes.get_ohlcv(
