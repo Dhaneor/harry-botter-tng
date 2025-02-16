@@ -115,26 +115,49 @@ kama_cross = sg.SignalsDefinition(
 #     ]
 # )
 
+# best for ETHUSDT (test: 16-02-2025)
 breakout = sg.SignalsDefinition(
     name="TIKR MVP Signal",
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 95, "smoothing": 7}),
-            operand_b=("trending", 0.15, [0.05, 0.55, 0.1]),
+            operand_a=("er", {"timeperiod": 10, "smoothing": 10}),
+            operand_b=("trending", 0.05, [0.05, 0.55, 0.1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
         ),
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod":2}),
-            operand_c=("min", {"timeperiod": 27}),
+            operand_b=("max", {"timeperiod":57}),
+            operand_c=("min", {"timeperiod": 2}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
             close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
         ),
     ]
 )
+
+# best for BTCUSDT (test: 13-02-2025)
+# breakout = sg.SignalsDefinition(
+#     name="TIKR MVP Signal",
+#     conditions=[
+#         cn.ConditionDefinition(
+#             interval="1d",
+#             operand_a=("er", {"timeperiod": 95, "smoothing": 7}),
+#             operand_b=("trending", 0.15, [0.05, 0.55, 0.1]),
+#             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
+#             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
+#         ),
+#         cn.ConditionDefinition(
+#             interval="1d",
+#             operand_a="close",
+#             operand_b=("max", {"timeperiod":2}),
+#             operand_c=("min", {"timeperiod": 27}),
+#             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
+#             close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
+#         ),
+#     ]
+# )
 
 # ... this is the one that was used initially for TKIR MVP
 # breakout = sg.SignalsDefinition(

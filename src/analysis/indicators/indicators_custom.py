@@ -150,7 +150,7 @@ def noise_index_nb(data, lookback: int) -> np.ndarray:
         )
         rolling_sum = np.sum(returns)
         price_diff = np.abs(data[i] / data[i - lookback] - 1)
-        noise[i] = price_diff / rolling_sum
+        noise[i] = price_diff / (rolling_sum + 1e-8 )
 
     return noise
 

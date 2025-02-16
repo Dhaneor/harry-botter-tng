@@ -34,7 +34,7 @@ logger = get_logger('main', level="INFO")
 warnings.filterwarnings('error')
 # warnings.filterwarnings('always')
 
-symbol = "BTCUSDT"
+symbol = "ETHUSDT"
 interval = "1d"
 
 start = "6 years ago UTC"
@@ -43,7 +43,7 @@ end = "now UTC"
 strategy = s_breakout
 risk_levels = [0]
 max_leverage_levels = (1,)  # , 1.5, 1.75, 2, 2.5)
-max_drawdown = 30
+max_drawdown = 35
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.1
 
 
@@ -51,7 +51,13 @@ strategy = sb.build_strategy(strategy)
 
 # ---------------------------------------- SETUP -------------------------------------
 # Create a signal generator
-sub_strategy = strategy.sub_strategies[0]
+try:
+    sub_strategy = strategy.sub_strategies[0]
+except Exception as e:
+    # logger.error("unable to get sub_strategy: %s" % str(e))
+    # logger.error(strategy)
+    sub_strategy = strategy
+
 sig_gen = sub_strategy.signal_generator
 # print(sub_strategy)
 
@@ -158,7 +164,7 @@ def test_optimize(data: dict | None = None):
     for result in best_parameters[:50]:
         logger.info(
             "params: %s :: risk level %s :: max leverage %s, stats %s",
-            tuple(round(elem, 4) for elem in result[0]),
+            tuple(round(float(elem), 4) for elem in result[0]),
             result[1],
             result[2],
             {k: round(v, 3) for k, v in result[3].items()}
@@ -188,39 +194,43 @@ def test_optimize(data: dict | None = None):
     logger.info(f'Worst profit: {min(profits):.2f}%')
     logger.info(f'Average profit: {sum(profits) / len(profits):.2f}%')
 
-    # display the parameters for the best profit, which otherwise might not be displayed
-    # because parameters with less profit had a better Kalmar ratio
-    # for result in best_parameters:
-    #     if result[3]['profit'] == max(profits):
-    #         logger.info(f'Best profit parameters: {result}')
+    # df = optimizer.results_to_dataframe(best_parameters)
+    # print(df.describe())
 
-    df = optimizer.results_to_dataframe(best_parameters)
-    print(df.describe())
+    logger.info(f"returning best parameters: {best_parameters[0]}")
 
     return best_parameters
 
 
 def test_check_robustness():
+    logger.info("Running optimisation with robustness check ...")
     data = _get_ohlcv_from_db()
 
-    if test_optimize(data):
-        best_result = test_optimize(data)[0]
-    else:
+    result = test_optimize(data)
+
+    if not result:
         logger.info("No profitable parameters found.")
         return
 
+    # if test_optimize(data):
+    #     best_result = test_optimize(data)[0]
+    # else:
+    #     logger.info("No profitable parameters found.")
+    #     return
+    
+    logger.info("~*~" * 50)
+
+    best_result = result[0]
+
     results = optimizer.check_robustness(
-        signal_generator=sig_gen,
+        strategy=sub_strategy,
         data=data,
         params=best_result[0],
         risk_levels=(best_result[1],),
         max_leverage_levels=(best_result[2],),
     )
 
-    results.sort(
-        key=lambda x: x[3]['profit'],
-        reverse=True
-        )
+    results.sort(key=lambda x: x[3]['profit'], reverse=True)
 
     for result in results[:50]:
         logger.info(
@@ -284,8 +294,8 @@ if __name__ == '__main__':
     # test_estimate_combinations()
     # test_vector_generator()
     # test_mutations_for_parameters()
-    test_optimize()
-    # test_check_robustness()
+    # test_optimize()
+    test_check_robustness()
 
     # profile_function()
 

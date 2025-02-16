@@ -664,10 +664,9 @@ def soptimize(
 
 
 def check_robustness(
-    signal_generator: sg.SignalGenerator,
+    strategy: sb.Strategy,
     data: OhlcvData,
     params: tuple[int | float, ...],
-    interval: str = '1d',
     risk_levels: Iterable[float] = (1,),
     max_leverage_levels: tuple[float, ...] = (1,),
     backtest_fn: Callable = bt.run
@@ -692,9 +691,9 @@ def check_robustness(
     Returns:
     results : tuple[tuple[int | float], Dict[str, float]]]
     """
+    
     mutations = mutations_for_parameters(params)
     combinations = len(mutations) * len(risk_levels) * len(max_leverage_levels)
-    periods_per_year = PERIODS_PER_YEAR.get(interval, 365)
 
     logger.info("Starting robustness check ...")
     logger.info("testing %s combinations", combinations)
@@ -710,13 +709,12 @@ def check_robustness(
                 for risk_level in risk_levels:
                     worker_fn = partial(
                         worker,
-                        condition_definitions=signal_generator.condition_definitions,
+                        strategy_definition=strategy.definition,
                         data=data,
                         risk_level=risk_level,
                         backtest_fn=backtest_fn,
                         initial_capital=INITIAL_CAPITAL,
                         max_leverage=max_leverage,
-                        periods_per_year=periods_per_year,
                     )
 
                     chunks = chunk_mutations(mutations, chunk_size)

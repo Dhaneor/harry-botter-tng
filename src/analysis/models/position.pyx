@@ -4,6 +4,7 @@
 # Add this line to use the newer NumPy API
 # cython: numpy_api=2
 
+import logging
 cimport numpy as np
 import numpy as np
 from functools import reduce
@@ -18,6 +19,9 @@ from libcpp.memory cimport shared_ptr, make_shared
 cdef double fee_rate = 0.001
 cdef double slippage_rate = 0.001
 cdef double SENTINEL = -1.0
+
+logger = logging.getLogger(f"main.{__name__}")
+
 
 # .......................... Functions to process positions ............................
 cdef inline double get_fee(double qty, double fee_rate):
@@ -193,9 +197,17 @@ cdef PositionData build_short_position(
 
     return pos
 
-cdef void close_position(PositionData* pos, long long timestamp, double price):
+cdef void close_position(PositionData* pos, long long timestamp, double price) except *:
     cdef TradeData t
-    
+
+    if pos.type == 1:
+        logger.debug("closing long position")
+    elif pos.type == -1:
+        logger.debug("closing short position")
+    else:
+        logger.debug("wrong position type ...")
+        
+"""    
     if pos.type == 1:
         t = build_sell_trade(
             timestamp=timestamp, price=price, base_qty=pos.size, quote_qty=SENTINEL
@@ -209,8 +221,8 @@ cdef void close_position(PositionData* pos, long long timestamp, double price):
         add_sell(pos, &t)
     
     else:
-        raise ValueError(f"Unable to close position of unknown type: {pos.type}")
-
+        raise ValueError("Unable to close position of unknown type.")
+"""
 
 
 # ............... Python accessible versions of the position functions .................

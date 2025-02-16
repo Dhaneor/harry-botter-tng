@@ -24,8 +24,8 @@ extensions = [
         language="c++"
     ),
     Extension(
-        "src.analysis.models.portfolio",
-        ["src/analysis/models/portfolio.pyx"],
+        "src.analysis.models.account",
+        ["src/analysis/models/account.pyx"],
         include_dirs=[np.get_include()],
         language="c++"
     ),

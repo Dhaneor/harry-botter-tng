@@ -314,9 +314,9 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # ht.get_ohlcv_multiple(symbols=symbols, start=dates[0], end=dates[1])
 
-    for _ in range(3):
-        ht.get_ohlcv_single(symbol=symbol_name, interval=interval,
-                            start=dates[0], end=dates[1])
+    # for _ in range(3):
+    #     ht.get_ohlcv_single(symbol=symbol_name, interval=interval,
+    #                         start=dates[0], end=dates[1])
 
     # -------------------------------------------------------------------------
     ht.update_database_for_interval(

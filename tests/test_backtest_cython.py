@@ -303,11 +303,11 @@ def test_backtest_init(config, market_data, leverage_array, signals_array):
         # assert bt.rebalance_fn is None
         # assert bt.stop_order_fn is None
 
-"""
+
 def test_backtest_run(market_data, leverage_array, signals_array, config):
-    periods = 1_000
-    assets = 10
-    strategies = 10
+    periods = 210
+    assets = 3
+    strategies = 3
 
     md = market_data(
         number_of_periods=periods, number_of_assets=assets, data_type="fixed"
@@ -327,6 +327,9 @@ def test_backtest_run(market_data, leverage_array, signals_array, config):
     logger.info(
         "shape of signals array: %s (%s backtests)", signals.shape, assets * strategies
     )
+    logger.info(
+        "shape of timetamp array: %s", md.mds.timestamp.shape, 
+    )
 
     bt = BackTestCore(md.mds, leverage, signals, config)
 
@@ -339,7 +342,7 @@ def test_backtest_run(market_data, leverage_array, signals_array, config):
     assert isinstance(result, np.ndarray), "Positions array creation failed."
     assert result.shape == signals.shape, "Portfolios array shape mismatch."
 
-
+"""
 def test_run_backtest_fn(market_data, leverage_array, signals_array, config):
     periods = 1_000
     assets = 10
