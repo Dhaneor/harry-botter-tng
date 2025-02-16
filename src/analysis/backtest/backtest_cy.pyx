@@ -153,7 +153,7 @@ cdef class BackTestCore:
                         elif open_short:
                             self._open_position(p, m, s, -1)
 
-        # return self.equity, 0
+        return self.equity, 0
 
     # ............................ PROCESSINNG POSITIONS ...............................
     cdef _open_position(self, int p, int m, int s, int type):
@@ -189,6 +189,7 @@ cdef class BackTestCore:
         # print_positions(self.account)
 
     cdef _close_position(self, int p, int m, int s, double price):
+        return
         cdef PositionData* pos = get_current_position(self.account, m, s)
 
         if pos == NULL:
@@ -203,7 +204,7 @@ cdef class BackTestCore:
         self.base_qty[p, m, s] = 0.0
 
     cdef _update_position(self, int p, int m, int s):
-        cdef PositionData* pos = get_current_position(self.account, m, s)
+        cdef PositionData* pos = self.get_current_position(m, s)
         cdef double price = self.market_data.open[p, m]
         cdef double change_exposure, change_pct
         cdef int action
@@ -216,15 +217,7 @@ cdef class BackTestCore:
             logger.warning("last/current base_qty: %s", self.base_qty[p-1, m, s])
             return
 
-        logger.debug(f"[update] Position pointer: {<unsigned long>pos}")
-        logger.debug(f"[update] Position type: {pos.type}")
-        logger.debug(f"[update] Position size: {pos.size}")
-        logger.debug(f"[update] Position duration: {pos.duration}")
-
-
-        pos.duration += 1 # This line causes the segmentation fault
-        return
-
+        pos.duration += 1
         change_exposure, change_pct = self._calculate_change_exposure(p, m, s, price)
 
         if not self.config.rebalance_position or change_pct < self.config.minimum_change:
@@ -236,7 +229,6 @@ cdef class BackTestCore:
                     return
                 action = 1
 
-            
             elif change_exposure < 0:
                 if not self.config.decrease_allowed:
                     return
@@ -274,6 +266,18 @@ cdef class BackTestCore:
         self.base_qty[p, m, s] = pos.size
     
     # ..................................................................................
+    cdef PositionData* get_current_position(self, int m, int s):
+        if self.account.positions.find(m) == self.account.positions.end():
+            return NULL
+    
+        if self.account.positions[m].find(s) == self.account.positions[m].end():
+            return NULL
+
+        if self.account.positions[m][s].empty():
+            return NULL
+
+        return &self.account.positions[m][s].back()
+
     def _process_buy(self, p, m, s, quote_qty, price):
         fee , slippage = self._calculate_fee_and_slippage(quote_qty)
         base_qty = (quote_qty - fee - slippage) / price
