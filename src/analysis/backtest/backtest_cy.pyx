@@ -1,42 +1,43 @@
 # cython: language_level=3
+# cython: boundscheck=False
 # distutils: language = c++
 
-# Add this line to use the newer NumPy API
-# cython: numpy_api=2
 
-cimport numpy as np
-import logging
 import numpy as np
-from libc.stdio cimport printf
-from libcpp.unordered_map cimport unordered_map
-from libcpp.pair cimport pair
+cimport numpy as np
+from numpy cimport float64_t, float32_t, int16_t, int8_t
+from libc.math cimport fabs
 from libcpp.vector cimport vector
-from cython.operator cimport dereference as deref
+from libcpp.unordered_map cimport unordered_map
 
-from src.analysis.models.market_data_store cimport MarketDataStore, MarketState
-from src.analysis.models.position cimport (
-    TradeData,
-    PositionData,
-    StopOrder,
-    build_buy_trade,
-    build_sell_trade,
-    add_buy,
-    add_sell,
-    build_long_position,
-    build_short_position,
-    close_position,
-)
-from src.analysis.models.account cimport (
-    Account, 
-    get_current_position, 
-    add_position,
-    update_position,
-    print_positions, 
-)
 
-logger = logging.getLogger(f"main.{__name__}")
+from src.analysis.models.market_data_store cimport MarketDataStore
+from src.analysis.models.position cimport TradeData, PositionData, StopOrder
+from src.analysis.models.account cimport  Account
+from src.analysis.dtypes import POSITION_DTYPE, PORTFOLIO_DTYPE
 
-WARMUP_PERIODS = 200
+cdef int WARMUP_PERIODS = 200
+cdef double SENTINEL = -1.0
+
+cdef double fee_rate = 0.001
+cdef double slippage_rate = 0.001
+
+
+cdef struct PositionsC:
+    int8_t position
+    float64_t qty
+    float64_t quote_qty
+    float64_t entry_price
+    int16_t duration
+    float64_t equity
+    float64_t buy_qty
+    float64_t buy_price
+    float64_t sell_qty
+    float64_t sell_price
+    float64_t fee
+    float64_t slippage
+    float32_t asset_weight
+    float32_t strategy_weight
 
 
 cdef class Config:
@@ -74,166 +75,242 @@ cdef class Config:
         self.slippage_rate = slippage_rate
 
 
-
 cdef class BackTestCore:
     cdef:
         public MarketDataStore market_data
-        public np.ndarray leverage
-        public np.ndarray signals
+        public float[:, :] leverage
+        public double[:, :, :] signals
         public Config config
-        list[double] a_weights
-        list[double] s_weights
+        double[:] a_weights
+        double[:] s_weights
         Account account
-        tuple[int, int, int] shape
-        public np.ndarray equity
-        public np.ndarray base_qty
-        public np.ndarray quote_qty_global
-        public np.ndarray equity_global
-        public np.ndarray leverage_global
+        int periods, markets, strategies, warmup_periods
+        long long[:, :] timestamps
+        double[:, :] market_open 
+        double[:, :] market_close
+        double[:, :, :] equity
+        double[:, :, :] base_qty
+        double[:, :] quote_qty_global
+        double[:, :] equity_global
+        double[:, :] leverage_global
 
-    def __cinit__(self, MarketDataStore market_data, np.ndarray leverage, np.ndarray signals, Config config):
+    def __cinit__(
+        self, 
+        MarketDataStore market_data, 
+        np.ndarray[np.float32_t, ndim=2] leverage, 
+        np.ndarray[np.float64_t, ndim=3] signals, 
+        Config config
+    ):
         self.market_data = market_data
+        self.timestamps = market_data.timestamp  # CONVERT TO C-MEMORY VIEW
+        self.market_open = market_data.open  # CONVERT TO C-MEMORY VIEW
+        self.market_close = market_data.close  # CONVERT TO C-MEMORY VIEW
         self.leverage = leverage
         self.signals = signals
         self.config = config
 
-        self.a_weights = [1 / signals.shape[1] for _ in range(signals.shape[1])]
-        self.s_weights = [1 / signals.shape[2] for _ in range(signals.shape[2])]
-
-        # Initialize one account for each strategy
+        # Initialize a_weights and s_weights as memory views
+        cdef np.ndarray[np.float64_t, ndim=1] a_weights_np = (
+            np.full(signals.shape[1], 1.0 / signals.shape[1], dtype=np.float64)
+        )
+        cdef np.ndarray[np.float64_t, ndim=1] s_weights_np = (
+            np.full(signals.shape[2], 1.0 / signals.shape[2], dtype=np.float64)
+        )
+        self.a_weights = a_weights_np
+        self.s_weights = s_weights_np
+        
         self.account = Account(positions={})
 
-        self.shape = (signals.shape[0], signals.shape[1], signals.shape[2],)
+        self.periods = signals.shape[0]
+        self.markets = signals.shape[1]
+        self.strategies = signals.shape[2]
+        self.warmup_periods = WARMUP_PERIODS
 
         # Initialize arrays
-        self.equity = np.zeros(self.shape, dtype=np.float64)
-        self.base_qty = np.zeros(self.shape, dtype=np.float64)
+        cdef np.ndarray[np.float64_t, ndim=3] equity_np = np.zeros(
+            (self.periods, self.markets, self.strategies), 
+            dtype=np.float64
+        )
+        self.equity = equity_np
 
-        self.quote_qty_global = np.zeros(self.shape[:1], dtype=np.float64)
-        self.equity_global = np.zeros(self.shape[:1], dtype=np.float64)
-        self.leverage_global = np.zeros(self.shape[:1], dtype=np.float64)
+        cdef np.ndarray[np.float64_t, ndim=3] base_qty_np = np.zeros(
+            (self.periods, self.markets, self.strategies), 
+            dtype=np.float64
+        )
+        self.base_qty = base_qty_np
 
-    cpdef run(self):
-        cdef int signal, prev_signal, periods, markets, strategies
-        cdef double price
+        self.quote_qty_global = np.zeros((self.periods, self.markets), dtype=np.float64)
+        self.equity_global = np.zeros((self.periods, self.markets), dtype=np.float64)
+        self.leverage_global = np.zeros((self.periods, self.markets), dtype=np.float64)
 
-        periods, markets, strategies = self.shape
+        self.quote_qty_global[self.warmup_periods - 1, :] = self.config.initial_capital
+        
+        cdef int s
+        
+        for s in range(self.strategies):
+            self.equity_global[self.warmup_periods - 1, s] = self.config.initial_capital
 
-        for s in range(strategies):
+    def run(self):
+        self._run()
+        # return self._build_result_array(), self.equity_global
 
-            for p in range(periods):
+    cdef void _run(self) nogil:
+        cdef double signal, prev_signal
+        cdef double price = 0.0
+        cdef double current
+        cdef int s, p, m, open_long, close_long, open_short, close_short
 
-                for m in range(markets):
+        for s in range(self.strategies):
+
+            for p in range(self.warmup_periods, self.periods):
+                self.quote_qty_global[p, s] = self.quote_qty_global[p -1, s]
+
+                for m in range(self.markets):
+                    self.base_qty[p, m, s] = self.base_qty[p - 1, m, s]
+                    current = self.base_qty[p, m, s]
+
                     # determine the necessary action, if any
-                    signal = self.signals[p, m, s] if p > 0 else 0
+                    signal = self.signals[p-1, m, s] if p > 0 else 0
                     prev_signal = self.signals[p-2, m, s] if p > 1 else 0
 
-                    open_long = signal > 0 and prev_signal <= 0
-                    close_long = signal <= 0 and prev_signal > 0
-                    open_short = signal < 0 and prev_signal >= 0
-                    close_short = signal >= 0 and prev_signal < 0
+                    if signal > 0 and prev_signal <= 0:
+                        open_long = 1
+                    elif signal <= 0 and prev_signal > 0:
+                        close_long = 1
+                    elif signal < 0 and prev_signal >= 0:
+                        open_short = 1
+                    elif  signal >= 0 and prev_signal < 0:
+                        close_short = 1
 
-                    if self.base_qty[p-1, m, s] > 0:  # we are long
-                        if close_long or open_short:
-                            price = self.market_data.open[p, m]
+                    if current > 0:  # we are long
+                        if close_long == 1 or open_short == 1:
+                            self.market_open[p, m]
                             self._close_position(p, m, s, price)
                         else:
                             self._update_position(p, m, s)
                     
-                    elif self.base_qty[p-1, m, s] < 0:  # we are short
-                        if close_short or open_long:
-                            price = self.market_data.open[p, m]
+                    elif current < 0:  # we are short
+                        if close_short == 1 or open_long == 1:
+                            self.market_open[p, m]
                             self._close_position(p, m, s, price)
                         else:
                             self._update_position(p, m, s)
 
                     else:  # we have no position
-                        if open_long:
+                        if open_long == 1:
                             self._open_position(p, m, s, 1)
-                        elif open_short:
+                        elif open_short == 1:
                             self._open_position(p, m, s, -1)
 
-        return self.equity, 0
+                    self.equity[p, m, s] = self.base_qty[p, m, s] * self.market_close[p, m]
+
+                self._update_portfolio(p, s)
 
     # ............................ PROCESSINNG POSITIONS ...............................
-    cdef _open_position(self, int p, int m, int s, int type):
-        cdef double price = self.market_data.open[p, m]
+    cdef inline void _open_position(self, int p, int m, int s, int type) noexcept nogil:
+        cdef double price = self.market_open[p, m]
         cdef double quote_qty
         cdef PositionData pos
+        cdef TradeData trade
+
+        pos.idx = m
+        pos.type = 1
+        pos.is_active = 1
+        pos.duration = 1
+        pos.size = 0.0
+        pos.avg_entry_price = price
+        pos.pnl = 0.0
+        pos.trades = vector[TradeData]()
+        pos.stop_orders = vector[StopOrder]()
 
         quote_qty, _ = self._calculate_change_exposure(p, m, s, price)
 
+        if quote_qty == 0:
+            return
+
         if type == 1:
-            pos = build_long_position(
-                m,
-                self.market_data.timestamp[p, 0],
-                quote_qty,
-                price
+            trade = self.build_buy_trade(
+                timestamp=self.timestamps[p, 0],
+                price=price,
+                quote_qty=quote_qty,
+                base_qty=SENTINEL
             )
+            pos.size += trade.qty
+            pos.trades.push_back(trade)
+            self.quote_qty_global[p, s] -= quote_qty
+        
         elif type == -1:
-            pos = build_short_position(
-                m,
-                self.market_data.timestamp[p, 0],
-                quote_qty,
-                price
+            trade = self.build_sell_trade(
+                timestamp=self.timestamps[p, 0],
+                price=price,
+                quote_qty=quote_qty,
+                base_qty=SENTINEL
             )
-        else:
-            raise ValueError(
-                "Unsupported position type for opening a position: %s" % type
-            )
+            pos.size -= trade.qty
+            pos.trades.push_back(trade)
+            self.quote_qty_global[p, s] += trade.net_quote_qty
 
         self.base_qty[p, m, s] = pos.size
-        self.equity[p, m, s] = pos.size * self.market_data.close[p, m]
-        self.account = add_position(self.account, m, s, pos)
+        self._add_position(pos, m, s)
 
-        # print_positions(self.account)
-
-    cdef _close_position(self, int p, int m, int s, double price):
-        return
-        cdef PositionData* pos = get_current_position(self.account, m, s)
+    cdef inline void _close_position(self, int p, int m, int s, double price) noexcept nogil:
+        cdef PositionData* pos = self._get_current_position(m, s)
+        cdef TradeData t
 
         if pos == NULL:
-            logger.warning(
-                "[close] Got NULL, expected PositionData struct."
-                "Probable mismatch between arrays and position objects."
-            )
-            logger.warning("last/current base_qty: %s", self.base_qty[p-1, m, s])
             return
 
-        # close_position(pos, self.market_data.timestamp[p, 0], price)
+        if pos.type == 1:
+            trade = self.build_sell_trade(
+                timestamp=self.timestamps[p, 0],
+                price=price, 
+                base_qty=pos.size, 
+                quote_qty=SENTINEL
+            )
+            pos.size -= trade.qty
+            pos.trades.push_back(trade)
+            self.quote_qty_global[p, s] += trade.net_quote_qty
+        
+        elif pos.type == -1:
+            trade = self.build_buy_trade(
+                timestamp=self.timestamps[p, 0], 
+                price=price, 
+                base_qty=pos.size, 
+                quote_qty=SENTINEL
+            )
+            pos.size += trade.qty
+            pos.trades.push_back(trade)
+            self.quote_qty_global[p, s] -= trade.gross_quote_qty
+        else:
+            return
+
         self.base_qty[p, m, s] = 0.0
 
-    cdef _update_position(self, int p, int m, int s):
-        cdef PositionData* pos = self.get_current_position(m, s)
-        cdef double price = self.market_data.open[p, m]
+    cdef inline void _update_position(self, int p, int m, int s) noexcept nogil:
+        cdef PositionData* pos = self._get_current_position(m, s)
+        cdef TradeData trade
         cdef double change_exposure, change_pct
         cdef int action
-
+    
         if pos == NULL:
-            logger.warning(
-                f"[update] Got NULL, expected PositionData struct."
-                f"Probable mismatch between arrays and position objects."
-            )
-            logger.warning("last/current base_qty: %s", self.base_qty[p-1, m, s])
             return
-
+    
         pos.duration += 1
-        change_exposure, change_pct = self._calculate_change_exposure(p, m, s, price)
-
+        change_exposure, change_pct = self._calculate_change_exposure(p, m, s, self.market_open[p, m])
+    
         if not self.config.rebalance_position or change_pct < self.config.minimum_change:
             return
-
+    
         if pos.type == 1:
             if change_exposure > 0:
                 if not self.config.increase_allowed:
                     return
                 action = 1
-
             elif change_exposure < 0:
                 if not self.config.decrease_allowed:
                     return
                 action = -1
-
+    
         if pos.type == -1:
             if change_exposure < 0:
                 if not self.config.increase_allowed:
@@ -243,30 +320,113 @@ cdef class BackTestCore:
                 if not self.config.decrease_allowed:
                     return
                 action =  1
-
-        cdef TradeData t
-       
+           
         if action == 1:
-            t = build_buy_trade(
-                timestamp = self.market_data.timestamp[p, 0],
-                price = price,
+            trade = self.build_buy_trade(
+                timestamp = self.timestamps[p, 0],
+                price = self.market_open[p, m],
                 quote_qty=change_exposure,
-            )
-            
-            add_buy(pos, &t)
+            )            
+            pos.size += trade.qty
+            pos.trades.push_back(trade)
+            self.base_qty[p, m, s] += trade.qty
         
         elif action == -1:
-            t = build_sell_trade(
-                timestamp = self.market_data.timestamp[p, 0],
-                price = price,
+            trade = self.build_sell_trade(
+                timestamp = self.timestamps[p, 0],
+                price = self.market_open[p, m],
                 quote_qty=change_exposure,
             )
-            add_sell(pos, &t)
-
-        self.base_qty[p, m, s] = pos.size
+            pos.size -= trade.qty
+            pos.trades.push_back(trade)
+            self.base_qty[p, m, s] -= trade.qty
     
     # ..................................................................................
-    cdef PositionData* get_current_position(self, int m, int s):
+    cdef inline TradeData build_buy_trade(
+        self,
+        long long timestamp,
+        double price, 
+        double quote_qty = SENTINEL, 
+        double base_qty = SENTINEL
+    ) noexcept nogil:
+        """Get a Trade struct for a buy action."""
+
+        cdef TradeData t
+        cdef double fee, slippage, net_quote_qty
+        cdef int test
+
+        if quote_qty != SENTINEL:
+            fee = quote_qty * fee_rate
+            slippage = quote_qty * slippage_rate
+            net_quote_qty = quote_qty - fee - slippage
+            t.qty = net_quote_qty / price
+        
+        elif base_qty != SENTINEL:
+            t.qty = base_qty
+            quote_qty = base_qty * price
+            fee = quote_qty * fee_rate
+            slippage = quote_qty * slippage_rate
+            net_quote_qty = quote_qty - fee - slippage
+
+        else:
+            gross_quote_qty = 0.0
+            net_quote_qty = 0.0
+            fee = 0.0
+            slippage = 0.0
+            t.qty = 0.0
+
+        t.type = 1
+        t.timestamp = timestamp
+        t.price = price
+        t.gross_quote_qty = quote_qty
+        t.net_quote_qty = net_quote_qty
+        t.fee = fee
+        t.slippage = slippage
+
+        return t
+
+    cdef inline TradeData build_sell_trade(
+        self,
+        long long timestamp, 
+        double price, 
+        double quote_qty = SENTINEL,
+        double base_qty = SENTINEL
+    ) noexcept nogil:
+        """Fill an existing Trade struct for a sell action."""
+
+        cdef TradeData t
+        cdef double gross_quote_qty
+        cdef double fee 
+        cdef double slippage
+
+        if base_qty != SENTINEL:
+            gross_quote_qty = base_qty * price
+            fee = gross_quote_qty * fee_rate
+            slippage = gross_quote_qty * slippage_rate
+
+        elif quote_qty != SENTINEL:
+            gross_quote_qty = quote_qty
+            fee = gross_quote_qty * fee_rate
+            slippage = gross_quote_qty * slippage_rate
+            base_qty = (gross_quote_qty - fee - slippage) / price
+
+        else:
+            gross_quote_qty = 0.0
+            fee = 0.0
+            slippage = 0.0
+
+        t.type = -1
+        t.timestamp = timestamp
+        t.price = price
+        t.qty = base_qty    
+        t.gross_quote_qty = gross_quote_qty
+        t.net_quote_qty = gross_quote_qty - fee - slippage
+        t.fee = fee
+        t.slippage = slippage
+
+        return t
+
+    cdef inline PositionData* _get_current_position(self, int m, int s) noexcept nogil:
         if self.account.positions.find(m) == self.account.positions.end():
             return NULL
     
@@ -278,62 +438,47 @@ cdef class BackTestCore:
 
         return &self.account.positions[m][s].back()
 
-    def _process_buy(self, p, m, s, quote_qty, price):
-        fee , slippage = self._calculate_fee_and_slippage(quote_qty)
-        base_qty = (quote_qty - fee - slippage) / price
+    cdef inline void _add_position(self, PositionData p, int m, int s) noexcept nogil:
+        if self.account.positions.find(m) == self.account.positions.end():
+            self.account.positions[m] = unordered_map[int, vector[PositionData]]()
+        if self.account.positions[m].find(s) == self.account.positions[m].end():
+            self.account.positions[m][s] = vector[PositionData]()
 
-        self.positions[p, m, s]["buy_qty"] = base_qty
-        self.positions[p, m, s]["buy_price"] = price
-        self.positions[p, m, s]["quote_qty"] -= quote_qty
+        self.account.positions[m][s].push_back(p)       
 
-        self.positions[p, m, s]["qty"] += base_qty
-        self.positions[p, m, s]["fee"] += fee
-        self.positions[p, m, s]["slippage"] += slippage
-
-    def _process_sell(self, p, m, s, quote_qty, price):
-        fee , slippage = self._calculate_fee_and_slippage(quote_qty)
-        base_qty = quote_qty / price
-
-        self.positions[p, m, s]["sell_qty"] = abs(base_qty)
-        self.positions[p, m, s]["sell_price"] = price
-        self.positions[p, m, s]["quote_qty"] += quote_qty - fee - slippage
-
-        self.positions[p, m, s]["qty"] -= base_qty
-        self.positions[p, m, s]["fee"] += fee
-        self.positions[p, m, s]["slippage"] += slippage
-
-    cdef tuple[double, double] _calculate_change_exposure(
+    cdef inline tuple[double, double] _calculate_change_exposure(
         self, int p, int m, int s, double price
-    ):        
-        return 20, 10
-        """
-        # calculate the current exposure
+    ) noexcept nogil:
+        cdef double current_exposure, budget, target_exposure, effective_leverage, change
+        cdef double equity_plus_quote, inv_budget, inv_max_leverage
+    
+        # Calculate the current exposure
         current_exposure = self.base_qty[p - 1, m, s] * price
-
-        # calulate the target exposure
-        budget = self.equity_global[p] * self.a_weights[m] * self.s_weights[s]
+    
+        # Calculate the target exposure
+        equity_plus_quote = self.equity_global[p - 1, s] + self.quote_qty_global[p, s]
+        budget = equity_plus_quote * self.a_weights[m]
         target_exposure = budget * self.signals[p-1, m, s] * self.leverage[p, m]
-
-        logger.debug("budget: %s (%s)", budget, self.equity_global[p])
-        logger.debug("target_exposure: %s", target_exposure)
-
-        # even if the leverage value is smaller that the max allowed
-        # leverage, signals can be >1 or <-1, so we need to check the 
-        # effective leverage again and adjust if necessary
-        effective_leverage = np.abs(target_exposure / budget)
-
+    
+        # Check and adjust effective leverage
+        inv_budget = 1.0 / (budget + 1e-8)
+        effective_leverage = fabs(target_exposure * inv_budget)
+    
         if effective_leverage > self.config.max_leverage:
-            target_exposure /= (effective_leverage / self.config.max_leverage)
-
-        # calculate the change (absolute & percentage)      
+            inv_max_leverage = 1.0 / self.config.max_leverage
+            target_exposure *= effective_leverage * inv_max_leverage
+    
+        # Calculate the change
         change = target_exposure - current_exposure
+    
+        # Return change and change percentage or effective leverage
+        if current_exposure > 0:
+            return change, change / current_exposure
+        else:
+            return change, effective_leverage
 
-        return (
-            change, 
-            change / current_exposure if current_exposure > 0 else effective_leverage,
-        )
-        """
 
+    """
     def _calculate_leverage(self, p, m, s) -> float:
         price = self.market_data.open_[p, m]
         current_exposure = self.positions[p - 1, m, s]["qty"] * price
@@ -346,3 +491,34 @@ cdef class BackTestCore:
         fee = self.config.fee_rate * change_quote
         slippage = self.config.slippage_rate * change_quote
         return np.abs(fee), np.abs(slippage)
+    """
+
+
+    # ..................................................................................
+    cdef inline void _update_portfolio(self, int p, int s) noexcept nogil:
+        cdef double quote_qty = self.quote_qty_global[p, s]
+        cdef double equity = 0.0
+        cdef int m
+
+        for m in range(self.markets):
+            equity += self.equity[p, m, s]
+
+        self.equity_global[p, s] = equity
+        self.leverage_global[p, s] = fabs(equity) / (equity + quote_qty)
+
+    cdef np.ndarray _build_result_array(self):
+        cdef np.ndarray[double, ndim=3] base_qty_array = np.asarray(self.base_qty)
+        
+        out = np.zeros(
+            (self.periods, self.markets, self.strategies), 
+            dtype=POSITION_DTYPE
+        )
+        out["qty"] = base_qty_array
+        
+        out["position"] = np.select(
+            [base_qty_array > 0.0, base_qty_array < 0.0],
+            [1, -1],
+            default=0
+        )
+        
+        return out

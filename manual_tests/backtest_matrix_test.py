@@ -7,16 +7,22 @@ Created on January 14 01:22:23 2025
 """
 import numpy as np
 import time
+import os
+import sys
 # profiler imports
 from cProfile import Profile
 from pstats import SortKey, Stats
 
-from analysis.backtest.backtest_nb import BackTestCore, Config
-from analysis import MarketData, LeverageCalculator, signal_generator_factory
-from util.logger_setup import get_logger
-from analysis.strategy.definitions import ema_cross, linreg, rsi  # noqa: F401
+current = os.path.dirname(os.path.realpath(__file__))
+parent = os.path.dirname(current)
+sys.path.append(parent)
 
-logger = get_logger('main', level="DEBUG")
+from src.analysis.backtest.backtest import BackTestCore, Config  # noqa: E402
+from src.analysis import MarketData, LeverageCalculator, signal_generator_factory  # noqa: E402
+from src.util.logger_setup import get_logger  # noqa: E402
+from src.analysis.strategy.definitions import ema_cross, linreg, rsi  # noqa: F401, E402
+
+logger = get_logger('main', level="ERROR")
 
 
 periods = 1_000
@@ -46,7 +52,7 @@ if __name__ == "__main__":
 
     logger.setLevel("ERROR")
 
-    runs = 100
+    runs = 1_000
 
     st = time.time()
     with Profile(timeunit=0.000_001) as p:

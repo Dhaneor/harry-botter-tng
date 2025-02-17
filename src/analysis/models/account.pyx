@@ -1,32 +1,15 @@
 # cython: language_level=3
 # distutils: language = c++
-# cython: numpy_api=2
 
-cimport numpy as np
 import logging
-import numpy as np
 from libcpp.unordered_map cimport unordered_map
-from libcpp.pair cimport pair
 from libcpp.vector cimport vector
-from cython.operator cimport dereference as deref
 
-from src.analysis.models.market_data_store cimport MarketDataStore, MarketState
-from src.analysis.models.position cimport (
-    TradeData,
-    PositionData,
-    StopOrder,
-    build_buy_trade,
-    build_sell_trade,
-    add_buy,
-    add_sell,
-    build_long_position,
-    build_short_position,
-    close_position,
-)
+from src.analysis.models.position cimport PositionData
 
 logger = logging.getLogger(f"main.{__name__}")
 
-
+# ............................. Account C strcut and functions .........................
 cpdef get_account():
     cdef Account acc = Account(positions={})
     return acc
@@ -119,3 +102,84 @@ def _get_current_position(acc: Account, m: int, s: int) -> PositionData | None:
 
 def _add_position(acc: Account, m: int, s: int, pos: PositionData) -> Account:
     return add_position(acc, m, s, pos)
+
+
+# ...................................... Account class .................................
+cdef class TradingAccount:
+
+    def __cinit__(self, str name, int n_assets, int n_strategies):
+        self.assets = n_assets
+        self.strategies = n_strategies
+        self.positions = {}
+
+    cdef void add(self, int m, int s, PositionData pos):
+        if self.positions.find(m) == self.positions.end():
+            self.positions[m] = unordered_map[int, vector[PositionData]]()
+        if self.positions[m].find(s) == self.positions[m].end():
+            self.positions[m][s] = vector[PositionData]()
+
+        self.positions[m][s].push_back(pos)
+
+    cdef void replace(self, int m, int s, PositionData* pos):
+        cdef PositionData* pos_ptr = self.current(m, s)
+        
+        if pos_ptr == NULL:
+            logger.warning("No position found to update")
+            return
+
+        if self.positions.find(m) == self.positions.end():
+            logger.warning(f"No map for market {m}")
+            return
+        if self.positions[m].find(s) == self.positions[m].end():
+            logger.warning(f"No sub-map for market {m}, symbol {s}")
+            return
+
+        # Update the existing position in place
+        self.positions[m][s].pop_back()
+        self.positions[m][s].push_back(pos[0])
+
+    cdef PositionData* current(self, int m, int s):
+        if self.positions.find(m) == self.positions.end():
+            return NULL
+    
+        if self.positions[m].find(s) == self.positions[m].end():
+            return NULL
+
+        if self.positions[m][s].empty():
+            return NULL
+
+        cdef PositionData* pos = &self.positions[m][s].back()
+
+        if pos.is_active == 1:
+            return pos
+        else:
+            return NULL
+
+    # .................. Python wrapper methods fo the methods above ...................
+    def _add(self, m: int, s: int, pos: PositionData) -> None:
+        self.add(m, s, pos)
+
+    def _replace(self, m: int, s: int, pos: PositionData) -> None:
+        self.replace(m, s, &pos)
+
+    def _current(self, m: int, s: int) -> PositionData:
+        cdef PositionData* pos = self.current(m, s)
+
+        return None if pos == NULL else pos[0]
+
+    cpdef void print_positions(self):
+        """Prints all positions stored in the account."""
+        cdef int m  # Market ID
+        cdef int s  # Symbol ID
+        cdef vector[PositionData] positions
+        
+        for market_iter in self.positions:
+            m = market_iter.first
+            logger.debug(f"[Market] {m}:")
+            for symbol_iter in market_iter.second:
+                s = symbol_iter.first
+                positions = symbol_iter.second
+                
+                logger.debug(f"  [Symbol] {s}: {positions.size()} positions")
+                for pos in positions:
+                    logger.debug(f"    [PositionData] id={pos.idx}, size={pos.size}")

@@ -15,3 +15,15 @@ cdef PositionData* get_current_position(Account acc, int m, int s)
 cdef Account add_position(Account acc, int m, int s, PositionData position)
 cdef void update_position(Account* acc, int m, int s, PositionData* new_pos)
 cpdef void print_positions(Account acc)
+
+
+cdef class TradingAccount:
+    cdef int assets
+    cdef int strategies
+    cdef unordered_map[int, unordered_map[int, vector[PositionData]]] positions
+
+    cdef void add(self, int m, int s, PositionData pos)
+    cdef void replace(self, int m, int s, PositionData* pos)
+    cdef PositionData* current(self, int m, int s)
+
+    cpdef void print_positions(self)

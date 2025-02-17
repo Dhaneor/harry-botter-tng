@@ -210,7 +210,7 @@ class BackTestCore:
 
     # ............................ PROCESSINNG POSITIONS ...............................
     def _open_position(self, p: int, m: int, s: int, type: int):
-        price = self.market_data.open_[p, m]
+        price = self.market_data.open[p, m]
         exposure_quote, _ = self._calculate_change_exposure(p, m, s, price)
 
         self.positions[p, m, s]["position"] = type
@@ -254,7 +254,7 @@ class BackTestCore:
 
     def _update_position(self, p, m, s):
         position_type = self.positions[p, m, s]["position"]
-        price = self.market_data.open_[p, m]
+        price = self.market_data.open[p, m]
         change_exposure, change_pct = self._calculate_change_exposure(p, m, s, price)
 
         self.positions[p, m, s]["duration"] += 1
@@ -346,7 +346,7 @@ class BackTestCore:
         )
 
     def _calculate_leverage(self, p, m, s) -> float:
-        price = self.market_data.open_[p, m]
+        price = self.market_data.open[p, m]
         current_exposure = self.positions[p - 1, m, s]["qty"] * price
         equity = current_exposure + self.positions[p - 1, m, s]["quote_qty"]
         

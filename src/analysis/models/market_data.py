@@ -24,7 +24,7 @@ from misc.mixins import PlottingMixin
 
 spec = [
     ("timestamp", int64[:, :]),
-    ("open_", float64[:, :]),
+    ("open", float64[:, :]),
     ("high", float64[:, :]),
     ("low", float64[:, :]),
     ("close", float64[:, :]),
@@ -45,7 +45,7 @@ class MarketDataStoreJIT:
     def __init__(
         self,
         timestamp: npt.ArrayLike,
-        open_: npt.ArrayLike,
+        open: npt.ArrayLike,
         high: npt.ArrayLike,
         low: npt.ArrayLike,
         close: npt.ArrayLike,
@@ -53,7 +53,7 @@ class MarketDataStoreJIT:
         lookback: int = 20
     ):
         self.timestamp = timestamp
-        self.open = open_
+        self.open = open
         self.high = high
         self.low = low
         self.close = close
@@ -545,7 +545,7 @@ class MarketData(PlottingMixin):
 
         # Create MarketDataStore
         mds = MarketDataStore(
-            open_=df["open"].values.astype(np.float32),
+            open=df["open"].values.astype(np.float32),
             high=df["high"].values.astype(np.float32),
             low=df["low"].values.astype(np.float32),
             close=df["close"].values.astype(np.float32),

@@ -33,7 +33,15 @@ extensions = [
         "src.analysis.backtest.backtest_cy",
         ["src/analysis/backtest/backtest_cy.pyx"],
         include_dirs=[np.get_include()],
-        language="c++"
+        language="c++",
+        extra_compile_args=["-O3", "-fno-strict-aliasing"],
+    ),
+    Extension(
+        "src.analysis.backtest.backtest",
+        ["src/analysis/backtest/backtest.pyx"],
+        include_dirs=[np.get_include()],
+        language="c++",
+        extra_compile_args=["-O2", "-fno-strict-aliasing"],
     ),
     Extension(
         "src.analysis.models.struct_bench",

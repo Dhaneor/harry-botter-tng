@@ -12,6 +12,7 @@ from src.analysis.models.position import (
     _get_avg_entry_price,
     _build_long_position,
     _build_short_position,
+    _close_position,
 )
 
 fee_rate = 0.001
@@ -208,3 +209,11 @@ def test_build_short_position():
     assert p["pnl"] == 0
     assert len(p["trades"]) == 1
     assert len(p["stop_orders"]) == 0
+
+
+def tests_close_position():
+    base_qty = 1000.0
+    price = 100.0
+    p = _build_short_position(0, 1735000000, base_qty=base_qty, price=price)
+
+    p = _close_position(p, 1737000000, price)

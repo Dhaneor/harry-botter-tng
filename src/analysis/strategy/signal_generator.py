@@ -112,9 +112,7 @@ from . import (
     Operand, operand_factory, comp_funcs as cmp,
 )
 from analysis import (  # noqa: F401
-    MarketData, Indicator, Parameter,
-    combine_signals, SignalStore, 
-    SubPlot
+    MarketData, Indicator, Parameter, combine_signals, SubPlot
 ) 
 from analysis.chart.plot_definition import (
     Candlestick, Line, Trigger, Buy, Sell, Positions
@@ -636,8 +634,8 @@ class SignalGenerator(SubPlotBuilder, PlottingMixin):
 
     @market_data.setter
     def market_data(self, market_data: MarketData) -> None:
-        if market_data and not isinstance(market_data, MarketData):
-            raise TypeError("market_data must be an instance of MarketData")
+        # if market_data and not isinstance(market_data, MarketData):
+        #     raise TypeError(f"market_data must be an instance of MarketData (is {type(market_data)})")
         
         if len(market_data) <= WARMUP_PERIODS:
             raise ValueError(

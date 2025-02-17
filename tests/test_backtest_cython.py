@@ -10,10 +10,9 @@ import pytest
 import numpy as np
 import pandas as pd
 
-from analysis.backtest.backtest_cy import (
+from src.analysis.backtest.backtest import (
     BackTestCore,
     Config,
-    WARMUP_PERIODS,
 )
 from analysis import (
     MarketData,
@@ -33,6 +32,8 @@ logger = get_logger("main", level="DEBUG")
 pd.set_option("display.max_columns", None)  # Show all columns
 pd.set_option("display.width", None)  # Don't wrap to multiple lines
 pd.set_option("display.max_colwidth", None)  # Show full content of each column
+
+WARMUP_PERIODS = 200
 
 
 # ==================================== FIXTURES =======================================
@@ -342,35 +343,35 @@ def test_backtest_run(market_data, leverage_array, signals_array, config):
     assert isinstance(result, np.ndarray), "Positions array creation failed."
     assert result.shape == signals.shape, "Portfolios array shape mismatch."
 
-"""
-def test_run_backtest_fn(market_data, leverage_array, signals_array, config):
-    periods = 1_000
-    assets = 10
-    strategies = 10
 
-    md = market_data(
-        number_of_periods=periods, number_of_assets=assets, data_type="fixed"
-    )
-    leverage = leverage_array(md)
+# def test_run_backtest_fn(market_data, leverage_array, signals_array, config):
+#     periods = 1_000
+#     assets = 10
+#     strategies = 10
 
-    signal_gen_def = SignalGeneratorDefinition(
-        name="TestSignalGenerator",
-        operands={"sma": ("sma"), "close": "close"},
-        conditions={
-            "open_long": [("close", COMPARISON.IS_ABOVE, "sma")],
-            "open_short": [("close", COMPARISON.IS_BELOW, "sma")],
-        },
-    )
-    signals = signals_array(md, signal_gen_def, strategies)
+#     md = market_data(
+#         number_of_periods=periods, number_of_assets=assets, data_type="fixed"
+#     )
+#     leverage = leverage_array(md)
 
-    try:
-        result, _ = run_backtest(md.mds, leverage, signals, config)
-    except Exception as e:
-        print(f"Error in BackTestCore run: {str(e)}")
-        raise
+#     signal_gen_def = SignalGeneratorDefinition(
+#         name="TestSignalGenerator",
+#         operands={"sma": ("sma"), "close": "close"},
+#         conditions={
+#             "open_long": [("close", COMPARISON.IS_ABOVE, "sma")],
+#             "open_short": [("close", COMPARISON.IS_BELOW, "sma")],
+#         },
+#     )
+#     signals = signals_array(md, signal_gen_def, strategies)
 
-    assert isinstance(result, np.ndarray), "Positions array creation failed."
-    assert result.shape == signals.shape, "Portfolios array shape mismatch."
+#     try:
+#         result, _ = run_backtest(md.mds, leverage, signals, config)
+#     except Exception as e:
+#         print(f"Error in BackTestCore run: {str(e)}")
+#         raise
+
+#     assert isinstance(result, np.ndarray), "Positions array creation failed."
+#     assert result.shape == signals.shape, "Portfolios array shape mismatch."
 
 
 def test_backtest_run_correctness(market_data, leverage_array, config):
@@ -400,7 +401,7 @@ def test_backtest_run_correctness(market_data, leverage_array, config):
     assert result.shape == (periods, assets, strategies)
     assert (
         result.dtype == POSITION_DTYPE
-    ), f"Result dtype mismatch. Exepcted POSITION_DTYPE, got: {result.dtype}"
+    ), f"Result dtype mismatch. Expected POSITION_DTYPE, got: {result.dtype}"
 
     # Check that no positions are opened before WARMUP_PERIODS
     assert np.all(
@@ -414,7 +415,7 @@ def test_backtest_run_correctness(market_data, leverage_array, config):
         ), "Long position for asset 0 not opened for correct period"
         assert np.all(
             result[long_start + 1 : long_end + 1, 0, 0]["qty"] > 0
-        ), "Long position for asset 0 -qty not positive for correct period"
+        ), "Long position for asset 0 - qty not positive for correct period"
         assert np.any(
             result["qty"][long_start + 1 : long_end + 1, 0, 0] > 0
         ), "Long position qty is 0 for all periods for asset 0"
@@ -433,7 +434,10 @@ def test_backtest_run_correctness(market_data, leverage_array, config):
     try:
         assert np.all(
             result[short_start + 1 : short_end + 1, 1, 0]["position"] == -1
-        ), "Short position for asset 1 not opened for correct period"
+        ), (
+            "Short position for asset 1 not opened for correct "
+            f"period ({short_start+1}-{short_end+1})"
+        )
         assert np.all(
             result[short_start + 1 : short_end + 1, 1, 0]["qty"] < 0
         ), "Short position for asset 1 qty not negative for correct period"
@@ -450,6 +454,8 @@ def test_backtest_run_correctness(market_data, leverage_array, config):
         print(f"Error: {str(e)}")
         print_df_for_result_column(md, result, leverage, signals, 1, 0)
         raise e
+
+
 
 def test_backtest_run_with_leverage(market_data, leverage_array, config):
     periods = 220  # Ensure we have enough periods after WARMUP_PERIODS
@@ -489,7 +495,7 @@ def test_backtest_run_with_leverage(market_data, leverage_array, config):
         print_df_for_result_column(md, result, leverage, signals, 0, 0)
         raise e
 
-
+"""
 # def test_backtest_run_with_multiple_strategies(market_data, leverage_array, config):
 #     periods = 400
 #     assets = 1

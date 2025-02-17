@@ -71,7 +71,7 @@ cdef inline TradeData build_buy_trade(
     """Get a Trade struct for a buy action."""
 
     cdef TradeData t
-    cdef double fee, slippage, net_quote_qty
+#    cdef double fee, slippage, net_quote_qty
 
     if quote_qty != SENTINEL:
         fee = get_fee(quote_qty, fee_rate)
@@ -137,14 +137,14 @@ cdef inline TradeData build_sell_trade(
     return t
 
 
-cdef void add_buy(PositionData* pos, TradeData* trade) except *:
+cdef inline void add_buy(PositionData* pos, TradeData* trade) except *:
     """Adds a Buy trade to the position"""
     if trade.type <= 0:
         raise ValueError(f"Invalid trade type: {trade.type} is not a buy.")
     pos.size += trade.qty
     pos.trades.push_back(trade[0])
 
-cdef void add_sell(PositionData* pos, TradeData* trade) except *:
+cdef inline void add_sell(PositionData* pos, TradeData* trade) except *:
     """Adds a Sell trade to the position"""
     if trade.type >= 0:
         raise ValueError(f"Invalid trade type: {trade.type} is not a sell.")
@@ -197,17 +197,9 @@ cdef PositionData build_short_position(
 
     return pos
 
-cdef void close_position(PositionData* pos, long long timestamp, double price) except *:
+cdef inline void close_position(PositionData* pos, long long timestamp, double price) except *:
     cdef TradeData t
-
-    if pos.type == 1:
-        logger.debug("closing long position")
-    elif pos.type == -1:
-        logger.debug("closing short position")
-    else:
-        logger.debug("wrong position type ...")
-        
-"""    
+          
     if pos.type == 1:
         t = build_sell_trade(
             timestamp=timestamp, price=price, base_qty=pos.size, quote_qty=SENTINEL
@@ -218,11 +210,13 @@ cdef void close_position(PositionData* pos, long long timestamp, double price) e
         t = build_buy_trade(
             timestamp=timestamp, price=price, base_qty=pos.size, quote_qty=SENTINEL
         )
-        add_sell(pos, &t)
+        add_buy(pos, &t)
     
     else:
         raise ValueError("Unable to close position of unknown type.")
-"""
+
+    pos.is_active = 0
+
 
 
 # ............... Python accessible versions of the position functions .................
@@ -277,6 +271,10 @@ def _build_long_position(int index, long long timestamp, double quote_qty, doubl
 
 def _build_short_position(int index, long long timestamp, double base_qty, double price):
     return build_short_position(index, timestamp, base_qty, price)
+
+def _close_position(pos: PositionData, timestamp: int, price: float) -> PositionData:
+    close_position(&pos, timestamp, price)
+    return pos
 
 
 cdef class FuncBench:

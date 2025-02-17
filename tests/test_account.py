@@ -3,57 +3,71 @@
 import logging
 import pytest
 from pprint import pprint
-from src.analysis.models.account import get_account, _add_position, _get_current_position
+from src.analysis.models.account import (
+    get_account, _add_position, _get_current_position,
+    TradingAccount
+)
 from src.analysis.models.position import (
     _build_long_position,
+    _build_short_position,
+    _close_position,
 )
 from util import get_logger
 
 logger = get_logger(level="DEBUG")
 
 
-def test_get_current_position():
-    # Create a new account
-    acc = get_account()
+# ------------------------- Tests for the TradingAccount class -------------------------
+def test_initialize():
+    ta = TradingAccount("test", 2, 2)
 
-    # Create a sample position
-    # sample_position = PositionData()
-    # sample_position.idx = 1
-    # sample_position.size = 100.0
-    sample_position = _build_long_position(0, 1735000000, 10.0, 100.0)
+    assert isinstance(ta, TradingAccount)
 
-    # Add the position to the account
-    market_id = 1
-    symbol_id = 1
-    acc = _add_position(acc, market_id, symbol_id, sample_position)
 
-    # Try to get the current position
-    result = _get_current_position(acc, market_id, symbol_id)
+def test_add_position():
+    ta = TradingAccount("test", 2, 2)
+    pos = _build_long_position(0, 1735000000, 100.0, 10.0)
 
-    # Check if the result is not None
-    assert result is not None
+    ta._add(0, 0, pos)
 
-    # Check if the returned position matches the one we added
+def test_get_current_position_with_active():
+    ta = TradingAccount("test", 2, 2)
+    pos = _build_long_position(0, 1735000000, 100.0, 10.0)
+
+    ta._add(0, 0, pos)
+    curr = ta._current(0, 0)
+
     try:
-        assert result == sample_position, f"Expected: {sample_position}\nGot: {result}\n" 
+        assert curr == pos, "Current position is not equal to the one that was added"
     except AssertionError as e:
+        print(e)
         print("Expected:")
-        pprint(sample_position)
-        print("-" * 80)
+        pprint(pos)
         print("Got:")
-        pprint(result)
-        raise
+        pprint(curr)
 
-def test_get_current_position_nonexistent():
-    # Create a new account
-    acc = get_account()
 
-    # Try to get a position that doesn't exist
-    result = _get_current_position(acc, 1, 1)
+def test_get_current_position_with_inactive():
+    ta = TradingAccount("test", 2, 2)
+    pos = _build_long_position(0, 1735000000, quote_qty=100.0, price=10.0) 
+    pos = _close_position(pos, 1736000000, 12.0)
+    ta._add(0, 0, pos)
+    curr = ta._current(0, 0)
 
-    # The result should be None
-    assert result is None
+    assert curr is None, f"Expected: None, but got: {curr}"
 
-# Add more tests as needed
+
+
+def test_update_position():
+    ta = TradingAccount("test", 2, 2)
+    pos = _build_long_position(0, 1735000000, 100.0, 10.0)
+
+    ta._add(0, 0, pos)
+
+    new_pos = _build_long_position(0, 1735000000, 100.0, 20.0)
+
+    ta._replace(0, 0, new_pos)
+
+
 
 
