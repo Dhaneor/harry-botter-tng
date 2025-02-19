@@ -5,23 +5,12 @@ Created on Oct 06 10:03:20 2021
 
 @author dhaneor
 """
-import logging
-import os
-import sys
-import time
+import asyncio
 
-# ------------------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# ------------------------------------------------------------------------------------
+from analysis.telegram_signal import create_signal
+from util import get_logger
 
-from src.analysis.telegram_signal import (  # noqa: E402
-    TelegramSignal, create_telegram_signal
-    )
-
-logger = logging.getLogger('main')
-logger.setLevel(logging.DEBUG)
+logger = get_logger("main")
 
 # ....................................................................................
 positions = [
@@ -157,19 +146,17 @@ chat_id = "-1002318654276"
 
 
 # ....................................................................................
-def test_with_class(position):
-    signal = TelegramSignal(position, chat_id)
-    signal.send_intro()
-    signal.send_signal()
+async def test_create_signal(position: dict):
+    print(await create_signal(position))
 
 
-def test_with_function(position):
-    signal = create_telegram_signal(position, chat_id)
-    # signal['send_intro']()
-    signal['send_signal']()
+async def main():
+    for p in positions:
+        print("-" * 120)
+        print(p)
+        await test_create_signal(p)
+
 
 
 if __name__ == "__main__":
-    for p in positions[:]:
-        test_with_function(p)
-        time.sleep(1)  # to avoid hitting Telegram API rate limit
+    asyncio.run(main())

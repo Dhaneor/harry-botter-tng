@@ -7,8 +7,7 @@ import numpy as np
 cimport numpy as np
 from numpy cimport float32_t, uint16_t, int8_t
 from libc.math cimport fabs
-from libcpp.vector cimport vector
-from libcpp.unordered_map cimport unordered_map
+from libc.stdio cimport printf
 
 from src.analysis.models.market_data_store cimport MarketDataStore
 from src.analysis.models.account cimport  Account
@@ -224,6 +223,9 @@ cdef class BackTestCore:
         cdef int open_long, close_long, lopen_short, lclose_short
 
         position = self.position[p-1, m, s]   
+
+        self.asset_weight[p, m, s] = self.asset_weight[p-1, m, s]
+        self.strategy_weight[p, m, s] = self.strategy_weight[p-1, m, s]
         
         signal = self.signals[p-1, m, s]
         prev_signal = self.signals[p-2, m, s] if p > 1 else 0
@@ -273,28 +275,28 @@ cdef class BackTestCore:
         if exposure_quote > 0:
             self._process_buy(p, m, s, exposure_quote, price)
         elif exposure_quote < 0:
-            self._process_sell(p, m, s, -exposure_quote, price)
+            self._process_sell(p, m, s, exposure_quote, price)
 
     cdef inline void _close_position(self, int p, int m, int s) noexcept nogil:
         cdef double  price = self.market_open[p, m]
-        cdef int position = self.position[p, m, s]
+        cdef int position = self.position[p-1, m, s]
         cdef double change_quote
         cdef double fee, slippage
 
         if position == 0:
             return
         
-        change_quote = self.qty[p-1, m, s] * price
+        change_quote = self.qty[p-1, m, s] * price * -1
         fee, slippage = self._calculate_fee_and_slippage(change_quote)
 
         self.quote_qty[p, m, s] = self.quote_qty[p-1, m, s] - change_quote - fee - slippage
         
         # Update portfolio
         if position == 1:
-            self.sell_qty[p, m, s] = self.qty[p, m, s]
+            self.sell_qty[p, m, s] = self.qty[p-1, m, s]
             self.sell_price[p, m, s] = price
         elif position == -1:
-            self.buy_qty[p, m, s] = fabs(self.qty[p, m, s])
+            self.buy_qty[p, m, s] = fabs(self.qty[p-1, m, s])
             self.buy_price[p, m, s] = price
 
         self.fee[p, m, s] = fee
@@ -309,42 +311,31 @@ cdef class BackTestCore:
     cdef inline void _update_position(self, int p, int m, int s) noexcept nogil:
         self.position[p, m, s] = self.position[p-1, m, s]
         self.duration[p, m, s] = self.duration[p-1, m, s] + 1
+        self.entry_price[p, m, s] = self.entry_price[p-1, m, s]
 
         cdef int position_type = self.position[p, m, s]
         cdef double price = self.market_open[p, m]
-        cdef double change_exposure, change_pct, fee, slippage, change_qty
+        cdef double change_exposure, change_pct, fee, slippage
+        cdef double current_qty, change_qty
+        cdef int can_rebalance
 
-        change_exposure, change_pct = self._calculate_change_exposure(p, m, s, price)
+        change_exposure, change_pct = self._calculate_change_exposure(p, m, s, price)        
+        fee , slippage = self._calculate_fee_and_slippage(change_exposure)
+        
+        change_qty = (change_exposure - fee - slippage) / price
+        current_qty = self.qty[p-1, m, s]
 
-        if not self.config.rebalance_position \
-        or change_pct < self.config.minimum_change:
+        can_rebalance = self._can_rebalance(current_qty, change_qty)
+
+        if can_rebalance == 0:
             self.qty[p, m, s] = self.qty[p-1, m, s]
             self.quote_qty[p, m, s] = self.quote_qty[p-1, m, s]
             return
-        
-        fee , slippage = self._calculate_fee_and_slippage(change_exposure)
-        change_qty = (change_exposure - fee - slippage) / price
-
-        if position_type == 1:
-            if (change_qty > 0 and not self.config.increase_allowed) \
-            or (change_qty < 0 and not self.config.decrease_allowed) \
-            or change_qty == 0:
-                self.qty[p, m, s] = self.qty[p-1, m, s]
-                self.quote_qty[p, m, s] = self.quote_qty[p-1, m, s]
-                return
-            
-        if position_type == -1:
-            if (change_qty < 0 and not self.config.increase_allowed) \
-            or (change_qty > 0 and not self.config.decrease_allowed) \
-            or change_qty == 0:
-                self.qty[p, m, s] = self.qty[p-1, m, s]
-                self.quote_qty[p, m, s] = self.quote_qty[p-1, m, s]
-                return
 
         if change_qty > 0:
             self._process_buy(p, m, s, change_exposure, price)
         elif change_qty < 0:
-            self._process_sell(p, m, s, -change_exposure, price)
+            self._process_sell(p, m, s, change_exposure, price)
     
     # ..................................................................................
     cdef inline void _process_buy(
@@ -373,16 +364,16 @@ cdef class BackTestCore:
 
         self.sell_qty[p, m, s] = abs(base_qty)
         self.sell_price[p, m, s] = price
-        self.quote_qty[p, m, s] = self.quote_qty[p, m, s] = quote_qty - fee - slippage
+        self.quote_qty[p, m, s] = self.quote_qty[p-1, m, s] - (quote_qty + fee + slippage)
 
-        self.qty[p, m, s] = self.qty[p, m, s] - base_qty
+        self.qty[p, m, s] = self.qty[p-1, m, s] + base_qty
         self.fee[p, m, s] = fee
         self.slippage[p, m, s] = slippage
 
-    cdef inline tuple[double, double] _calculate_change_exposure(
+    cdef inline tuple[double, double] _calculate_change_exposure_old(
         self, int p, int m, int s, double price
     ) noexcept nogil:
-        cdef double currnet_exposure, equity, target_exposure, effective_leverage, change
+        cdef double current_exposure, equity, target_exposure, effective_leverage, change
 
         # calculate the current exposure
         current_exposure = self.qty[p - 1, m, s] * price
@@ -405,7 +396,79 @@ cdef class BackTestCore:
         if current_exposure > 0:
             return change, change / current_exposure
         else:
-            return change, effective_leverage,
+            return change, effective_leverage
+
+    cdef inline tuple[double, double] _calculate_change_exposure(
+        self, int p, int m, int s, double price
+    ) noexcept nogil:
+        cdef double current_exposure, budget, target_exposure, effective_leverage, change
+
+        # calculate the current exposure
+        current_exposure = self.qty[p - 1, m, s] * price
+
+        # calulate the target exposure
+        budget = self._get_budget(p, m, s) 
+        
+        target_exposure = (
+            budget
+            * self.signals[p-1, m, s] 
+            * self.leverage[p-1, m]
+        )
+
+        # even if the leverage value is smaller that the max allowed
+        # leverage, signals can be >1 or <-1, so we need to check the 
+        # effective leverage again and adjust if necessary
+        effective_leverage = fabs(target_exposure / (budget + 1e-8)) 
+
+        if effective_leverage > self.config.max_leverage:
+            target_exposure /= (effective_leverage / self.config.max_leverage)
+
+        # calculate the change (absolute & percentage)      
+        change = target_exposure - current_exposure
+
+        if current_exposure > 0:
+            return change, change / current_exposure
+        else:
+            return change, effective_leverage
+
+    cdef inline double _get_budget(self, int p, int m, int s) noexcept nogil:
+        cdef double equity_global, a_weight, strategy_weight
+
+        equity_global = self.equity_global[p-1, s] 
+        a_weight = self.asset_weight[p, m, s]
+        s_weight = self.strategy_weight[p, m, s]
+
+        return equity_global * a_weight * s_weight
+
+    cdef inline int _can_rebalance(self, double qty, double change_qty) noexcept nogil:
+        cdef double change_pct, minimum_change
+        cdef int position_type
+
+        if not self.config.rebalance_position:
+            return 0
+
+        change_pct = change_qty / qty
+        minimum_change = self.config.minimum_change
+
+        if fabs(change_pct) < minimum_change:
+            return 0
+
+        position_type = 1 if qty > 0 else -1
+
+        if position_type == 1:
+            if (change_qty > 0 and not self.config.increase_allowed) \
+            or (change_qty < 0 and not self.config.decrease_allowed) \
+            or change_qty == 0:
+                return 0 
+            
+        elif position_type == -1:
+            if (change_qty < 0 and not self.config.increase_allowed) \
+            or (change_qty > 0 and not self.config.decrease_allowed) \
+            or change_qty == 0:
+                return 0
+
+        return 1
+        
 
     cdef inline double _calculate_leverage(self, int p, int m, int s):
         cdef double price, current_exposure, equity

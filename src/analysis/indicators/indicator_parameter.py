@@ -24,7 +24,6 @@ from typing import (
     Tuple,
     Optional,
     Iterable,
-    Sequence,
     Callable
 )
 from random import uniform, randint

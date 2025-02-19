@@ -139,9 +139,8 @@ def result_column_to_dataframe(result, symbol_index, strategies_index):
     df = pd.DataFrame()
 
     for field in POSITION_DTYPE.names:
-        df[f"{field}.{symbol_index + 1}.{strategies_index + 1}"] = result[
-            :, symbol_index, strategies_index
-        ][field]
+        df[f"{field}.{symbol_index + 1}.{strategies_index + 1}"] = \
+            result[:, symbol_index, strategies_index][field]
 
     return df
 
@@ -377,7 +376,7 @@ def test_backtest_run(market_data, leverage_array, signals_array, config):
 def test_backtest_run_correctness(market_data, leverage_array, config):
     periods = 220  # Ensure we have enough periods after WARMUP_PERIODS
     assets = 2
-    strategies = 1
+    strategies = 2
 
     long_start = WARMUP_PERIODS + 1
     long_end = long_start + 5
@@ -495,71 +494,43 @@ def test_backtest_run_with_leverage(market_data, leverage_array, config):
         print_df_for_result_column(md, result, leverage, signals, 0, 0)
         raise e
 
-"""
-# def test_backtest_run_with_multiple_strategies(market_data, leverage_array, config):
-#     periods = 400
-#     assets = 1
-#     strategies = 2
 
-#     md = market_data(
-#         number_of_periods=periods, number_of_assets=assets, data_type="fixed"
-#     )
-#     leverage = leverage_array(md)
+def test_backtest_run_with_multiple_strategies(market_data, leverage_array, config):
+    periods = 400
+    assets = 1
+    strategies = 2
 
-#     signals = np.zeros((periods, assets, strategies), dtype=np.float32)
-#     signals[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 0, 0] = (
-#         1  # Long position for strategy 0
-#     )
-#     signals[
-#         WARMUP_PERIODS + 150 : WARMUP_PERIODS + 200, 0, 1
-#     ] = -1  # Short position for strategy 1
+    md = market_data(
+        number_of_periods=periods, number_of_assets=assets, data_type="fixed"
+    )
+    leverage = leverage_array(md)
 
-#     bt = BackTestCore(md.mds, leverage, signals, config)
-#     result = bt.run()
+    signals = np.zeros((periods, assets, strategies), dtype=np.float64)
+    signals[WARMUP_PERIODS + 49 : WARMUP_PERIODS + 99, 0, 0] = (
+        1  # Long position for strategy 0
+    )
+    signals[
+        WARMUP_PERIODS + 149 : WARMUP_PERIODS + 199, 0, 1
+    ] = -1  # Short position for strategy 1
 
-#     # Check positions for strategy 0
-#     assert np.all(
-#         result[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 0, 0]["position"] == 1
-#     )
-#     assert np.all(result[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 0, 0]["qty"] > 0)
-#     assert np.all(result[: WARMUP_PERIODS + 50, 0, 0]["position"] == 0)
-#     assert np.all(result[WARMUP_PERIODS + 100 :, 0, 0]["position"] == 0)
+    bt = BackTestCore(md.mds, leverage, signals, config)
+    result, _ = bt.run()
 
-#     # Check positions for strategy 1
-#     assert np.all(
-#         result[WARMUP_PERIODS + 150 : WARMUP_PERIODS + 200, 0, 1]["position"] == -1
-#     )
-#     assert np.all(result[WARMUP_PERIODS + 150 : WARMUP_PERIODS + 200, 0, 1]["qty"] < 0)
-#     assert np.all(result[: WARMUP_PERIODS + 150, 0, 1]["position"] == 0)
-#     assert np.all(result[WARMUP_PERIODS + 200 :, 0, 1]["position"] == 0)
+    # Check positions for strategy 0
+    assert np.all(
+        result[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 0, 0]["position"] == 1
+    )
+    assert np.all(result[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 0, 0]["qty"] > 0)
+    assert np.all(result[: WARMUP_PERIODS + 50, 0, 0]["position"] == 0)
+    assert np.all(result[WARMUP_PERIODS + 100 :, 0, 0]["position"] == 0)
 
-
-# def test_backtest_run_with_rebalancing(market_data, leverage_array, config):
-#     periods = 400
-#     assets = 2
-#     strategies = 1
-
-#     md = market_data(
-#         number_of_periods=periods, number_of_assets=assets, data_type="fixed"
-#     )
-#     leverage = leverage_array(md)
-
-#     signals = np.zeros((periods, assets, strategies), dtype=np.float32)
-#     signals[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 0, 0] = (
-#         0.5  # 50% long position for asset 0
-#     )
-#     signals[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 1, 0] = (
-#         0.5  # 50% long position for asset 1
-#     )
-
-#     config.rebalance_position = True
-#     bt = BackTestCore(md.mds, leverage, signals, config)
-#     result = bt.run()
-
-#     # Check that positions are balanced between the two assets
-#     qty_0 = result[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 0, 0]["qty"]
-#     qty_1 = result[WARMUP_PERIODS + 50 : WARMUP_PERIODS + 100, 1, 0]["qty"]
-#     assert np.allclose(qty_0, qty_1, rtol=1e-2)
+    # Check positions for strategy 1
+    assert np.all(
+        result[WARMUP_PERIODS + 150 : WARMUP_PERIODS + 200, 0, 1]["position"] == -1
+    )
+    assert np.all(result[WARMUP_PERIODS + 150 : WARMUP_PERIODS + 200, 0, 1]["qty"] < 0)
+    assert np.all(result[: WARMUP_PERIODS + 150, 0, 1]["position"] == 0)
+    assert np.all(result[WARMUP_PERIODS + 200 :, 0, 1]["position"] == 0)
 
 
 def test_backtest_run_fields(market_data, leverage_array, config):
@@ -573,11 +544,12 @@ def test_backtest_run_fields(market_data, leverage_array, config):
     leverage = leverage_array(md)
 
     md.mds.close = np.full_like(md.mds.close, 100, dtype=np.float64)
-    md.mds.open_ = np.full_like(md.mds.close, 100, dtype=np.float64)
+    md.mds.open = np.full_like(md.mds.close, 100, dtype=np.float64)
 
     signals = np.zeros((periods, assets, strategies), dtype=np.float64)
     signals[WARMUP_PERIODS + 1: WARMUP_PERIODS + 18, 0, 0] = 1  # Long position
-    signals[WARMUP_PERIODS + 1: WARMUP_PERIODS + 18, 1, 0] = -1  # Short position
+    signals[WARMUP_PERIODS + 1: WARMUP_PERIODS + 8, 1, 0] = -1  # Short position
+    signals[WARMUP_PERIODS + 11: WARMUP_PERIODS + 18, 1, 0] = -1  # Short position
 
     bt = BackTestCore(md.mds, leverage, signals, config)
     result, _ = bt.run()
@@ -609,7 +581,7 @@ def test_backtest_run_fields(market_data, leverage_array, config):
         assert active_period["entry_price"] > 0, "Entry price is not > 0"
         assert active_period["duration"] > 0, "Duration is not > 0"
         assert active_period["equity"] > 0, "Equity is not > 0"
-        # assert active_period["position"] == 0, "... just checking"
+        assert active_period["position"] == 0, "... just checking"
     except AssertionError as e:
         print(f"Error: {str(e)}")
         print_df_for_result_column(md, result, leverage, signals, 1, 0)
@@ -626,7 +598,5 @@ def test_backtest_run_fields(market_data, leverage_array, config):
 
             change_quote_expected = qty * price + fee + slippage
             change_quote_real = column[idx - 1]["quote_qty"] - column[idx]["quote_qty"]
-            assert change_quote_expected == change_quote_real, \
+            assert pytest.approx(change_quote_expected) == change_quote_real, \
                 f"{change_quote_expected=} != {change_quote_real=}"
-            
-"""

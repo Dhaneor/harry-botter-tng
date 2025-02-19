@@ -239,7 +239,7 @@ async def _build_change_position_message(
     }.get((change, position_type), "")
 
     return (
-        f"{arrow} In the bustling market of memes and coins, it is my intention "
+        f"{arrow} In the bustling market of memes and coins, it is my intention"
         f" to {action}, thereby {change} my {position_type} position by "
         f"not less than {round(change_percent, 3):g}%, my esteemed colleagues!"
     )
@@ -316,7 +316,7 @@ async def build_close_short_message(position: Dict[str, Any]) -> str:
 
 @position_overview
 async def build_increase_long_message(position: Dict[str, Any]) -> str:
-    return _build_change_position_message(
+    return await _build_change_position_message(
         await _build_buy_str(position),
         '*increasing*',
         'LONG',
@@ -326,7 +326,7 @@ async def build_increase_long_message(position: Dict[str, Any]) -> str:
 
 @position_overview
 async def build_decrease_long_message(position: Dict[str, Any]) -> str:
-    return _build_change_position_message(
+    return await _build_change_position_message(
         await _build_sell_str(position),
         '*decreasing*',
         'LONG',
@@ -336,7 +336,7 @@ async def build_decrease_long_message(position: Dict[str, Any]) -> str:
 
 @position_overview
 async def build_increase_short_message(position: Dict[str, Any]) -> str:
-    return _build_change_position_message(
+    return await _build_change_position_message(
         await _build_sell_str(position),
         '*increasing*',
         'SHORT',
@@ -346,7 +346,7 @@ async def build_increase_short_message(position: Dict[str, Any]) -> str:
 
 @position_overview
 async def build_decrease_short_message(position: Dict[str, Any]) -> str:
-    return _build_change_position_message(
+    return await _build_change_position_message(
         await _build_buy_str(position),
         '*decreasing*',
         'SHORT',

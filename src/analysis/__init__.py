@@ -6,7 +6,7 @@ Created on Thu Sep 22 13:00:23 2024
 @author_ dhaneor
 """
 
-from .backtest.backtest_cy import BackTestCore, Config
+# from .backtest.backtest_cy import BackTestCore, Config
 from .chart import (
     LayoutValidator,
     PlotDefinition,
@@ -41,8 +41,8 @@ from .strategy import (
 from .dtypes import SIGNALS_DTYPE, POSITION_DTYPE, PORTFOLIO_DTYPE
 
 __all__ = [
-    "BackTestCore",
-    "Config",
+    # "BackTestCore",
+    # "Config",
     "LayoutValidator",
     "PlotDefinition",
     "SubPlot",
