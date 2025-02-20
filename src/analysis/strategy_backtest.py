@@ -9,6 +9,7 @@ Created on July 06 21:12:20 2023
 import logging
 import pandas as pd
 import numpy as np
+import sys
 from typing import Optional, Tuple
 from numba import jit, int8
 
@@ -243,6 +244,9 @@ def run(
         .execute(compact=True)[:, 0, 0]
         .reshape(-1,)
     )
+
+    print(list(data["signal"]))
+    sys.exit()
 
     # add leverage
     if leverage is not None:

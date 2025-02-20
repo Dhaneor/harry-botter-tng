@@ -775,6 +775,16 @@ class SignalGenerator(SubPlotBuilder, PlottingMixin):
     def _execute_single(self, out: np.ndarray, zindex=0) -> dict[str, tp.Array_3D]:
         """Execute the signal generator.
 
+        Run the conditions for each action (open/close - long/short).
+        
+        actions = ['open_long', 'open_short', 'close_long', 'close_short']
+        or_conditions = either must be true
+        and_conditions = all must be true
+        
+        Conditions are nested lists (one for each action), where the
+        inner layer contains conditions that must all be true (AND).
+        The results from the sub-lists are combined using logical OR
+
         Parameters
         ----------
         data : tp.Data
@@ -786,15 +796,6 @@ class SignalGenerator(SubPlotBuilder, PlottingMixin):
             OHLCV data dictionary
         """
 
-        # run the conditions for each action (open/close - long/short)
-        #
-        # actions = ['open_long', 'open_short', 'close_long', 'close_short']
-        # or_conditions = either must be true
-        # and_conditions = all must be true
-        #
-        # # conditions are nested lists (one for each action), where the
-        # inner layer contains conditions that must all be true (AND).
-        # the results from the sub-lists are combined using logical OR
         for action, or_conditions in self.conditions.items():
 
             if or_conditions is None:
@@ -832,23 +833,6 @@ class SignalGenerator(SubPlotBuilder, PlottingMixin):
         periods = len(self.market_data)
         assets = self.market_data.number_of_assets
         return np.zeros((periods, assets, depth), dtype=SIGNALS_DTYPE)
-
-    # def plot(self, data: tp.Data) -> None:
-    #     self.make_plot(data).draw()
-
-    # def make_plot(self, data: tp.Data, style='night') -> SignalChart:
-    #     # run the signal generator and convert the result
-    #     # to a pandas DataFrame
-    #     df = pd.DataFrame.from_dict(self.execute(data))
-
-    #     # set open time to datetime format and set it as index
-    #     df['open time'] = pd.to_datetime(df['open time'], unit='ms')
-    #     df.set_index('open time', inplace=True)
-    #     df.index = df.index.strftime('%Y-%m-%d %X')
-
-    #     return SignalChart(
-    #         data=df, subplots=self._subplots, style=style, title=self.name
-    #         )
 
 
 # ======================================================================================

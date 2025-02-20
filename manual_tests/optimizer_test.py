@@ -34,16 +34,16 @@ logger = get_logger('main', level="INFO")
 warnings.filterwarnings('error')
 # warnings.filterwarnings('always')
 
-symbol = "ETHUSDT"
+symbol = "BTCUSDT"
 interval = "1d"
 
 start = "6 years ago UTC"
 end = "now UTC"
 
-strategy = s_breakout
-risk_levels = [0]
-max_leverage_levels = (1,)  # , 1.5, 1.75, 2, 2.5)
-max_drawdown = 35
+strategy = s_kama_cross
+risk_levels = [0, 4, 5, 6, 7, 8]
+max_leverage_levels = (1, 1.25, 1.5)
+max_drawdown = 30
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.1
 
 
@@ -163,11 +163,12 @@ def test_optimize(data: dict | None = None):
 
     for result in best_parameters[:50]:
         logger.info(
-            "params: %s :: risk level %s :: max leverage %s, stats %s",
+            "params: %s :: risk level %s :: max leverage %s, stats %s, equity %s:",
             tuple(round(float(elem), 4) for elem in result[0]),
             result[1],
             result[2],
-            {k: round(v, 3) for k, v in result[3].items()}
+            {k: round(v, 3) for k, v in result[3].items()},
+            round(result[4]),
         )
 
     profitable = sum([1 for result in results if result[3]['profit'] > 0])

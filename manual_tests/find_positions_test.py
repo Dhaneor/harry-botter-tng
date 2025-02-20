@@ -33,14 +33,14 @@ from util import get_logger
 
 logger = get_logger("main")
 
-symbol = "ETHUSDT"
+symbol = "BTCUSDT"
 interval = "1d"
 
 start = "72 months ago UTC"  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_breakout
-risk_level, max_leverage = 0, 1
+strategy = s_aroon_osc
+risk_level, max_leverage = 8, 1.5
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
 hermes = Hermes(exchange='kucoin', mode='backtest')

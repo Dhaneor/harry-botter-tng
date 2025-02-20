@@ -209,7 +209,7 @@ def filter_results(results_list):
     filtered_results = {}
 
     for result in results_list:
-        params, risk_level, max_leverage, stats = result
+        params, risk_level, max_leverage, stats, equity = result
         key = (params, risk_level)
 
         # Check if this combination of params and risk_level is already
@@ -316,7 +316,7 @@ def results_to_dataframe(results_list):
 
     rows = []
     for result in results_list:
-        params_tuple, risk_level, max_leverage, stats_dict = result
+        params_tuple, risk_level, max_leverage, stats_dict, equity = result
         row = {}
         # Add parameters to the row with column names p1, p2, ...
         for i, param in enumerate(params_tuple):
@@ -481,7 +481,8 @@ def worker(
                 params,
                 risk_level,
                 max_leverage,
-                calculate_statistics_min(equity)
+                calculate_statistics_min(equity),
+                equity[-1]
             )
         )
 

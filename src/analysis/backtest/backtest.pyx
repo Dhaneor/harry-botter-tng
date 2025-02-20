@@ -469,7 +469,6 @@ cdef class BackTestCore:
 
         return 1
         
-
     cdef inline double _calculate_leverage(self, int p, int m, int s):
         cdef double price, current_exposure, equity
         price = self.market_data.open[p, m]

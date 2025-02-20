@@ -29,7 +29,8 @@ logger = get_logger('main', level='DEBUG')
 
 # set length of test data
 length = 1000
-data = MarketData.from_random(length, 1, 0.025)
+assets = 1
+data = MarketData.from_random(length, assets, 0.025)
 sig_def = breakout
 
 
@@ -155,7 +156,11 @@ def test_execute(sig_gen: sg.SignalGenerator = None, show=False, plot=False):
     sig_gen.market_data = data  # MarketData.from_random(length=30, no_of_symbols=1)
     signals = sig_gen.execute()
 
-    logger.info("Generated signals: %s", signals)
+    assert signals.ndim == 3, \
+        f"Expected 'signals' to have 3 dimensions, but got {signals.ndim}"
+    assert signals.shape[0] == length, "got wrong length of signals"
+    assert signals.shape[1] == assets, "got signals for wrong number of assets"
+    assert signals.shape[2] == 1, "got signals for wrong number of strategies"
 
     if show:
         df = pd.DataFrame.from_dict(data)
@@ -175,14 +180,7 @@ def test_execute(sig_gen: sg.SignalGenerator = None, show=False, plot=False):
         print(df.tail(50))
 
     if plot:
-        chart = SignalChart(
-            data=df_plot,
-            subplots=sig_gen.subplots,
-            style='night',
-            title=sig_gen.name
-            )
-
-        chart.draw()
+        sig_gen.plot()
 
 
 def test_subplots(sig_gen: sg.SignalGenerator):
@@ -200,7 +198,8 @@ def test_plot(sig_gen: sg.SignalGenerator):
 if __name__ == "__main__":
     # test_factory(sig_def)
     # test_randomize()
-    # test_execute(None, False, False)
+    test_execute(None, False, True)
+    sys.exit()
 
     # test_set_parameters()
 
@@ -213,14 +212,14 @@ if __name__ == "__main__":
     # test_get_all_parameters()
     # test_get_all_operands()
 
-    # sig_gen = test_factory(linreg, False)
-    # sig_gen.market_data = data
+    sig_gen = test_factory(aroonosc, False)
+    sig_gen.market_data = data
     # sig_gen.execute()
     # test_subplots(sig_gen)
-    # test_plot(sig_gen)
+    test_plot(sig_gen)
     # test_returns(sig_gen, data, True)
 
-    # sys.exit()
+    sys.exit()
 
     logger.setLevel(logging.ERROR)
 

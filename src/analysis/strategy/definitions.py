@@ -52,10 +52,10 @@ kama_cross = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("kama", {"timeperiod": 20}),
-            operand_b=("kama", {"timeperiod": 40}),
+            operand_a=("kama", {"timeperiod": 87}),
+            operand_b=("kama", {"timeperiod": 97}),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
-            open_short=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
+            close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
     ]
 )
@@ -230,15 +230,15 @@ aroonosc = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=('aroonosc', 'high', 'low', {"timeperiod": 20}),
-            operand_b=('trigger', 1, [-5, 5, 1]),
+            operand_a=('aroonosc', 'high', 'low', {"timeperiod":47}),
+            operand_b=('trigger', -3, [-5, 5, 1]),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 14}),
-            operand_b=("trending", 0.1, [0.05, 0.55, 0.1]),
+            operand_a=("er", {"timeperiod": 65, "smoothing": 1}),
+            operand_b=("trending", 0.15, [0.05, 0.55, 0.1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),
