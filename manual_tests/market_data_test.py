@@ -78,6 +78,25 @@ def test_from_random():
     md.plot()
 
 
+def test_from_parameters():
+    exchange = "binance"
+    symbols = ["BTC/USDT", "ETH/USDT", "SOL/USDT"]
+    interval = "4h"
+    start = "2024-02-01"
+    end = "2025-01-31"
+
+    md = MarketData.from_parameters(
+        exchange=exchange, symbols=symbols, interval=interval,
+        start=start, end=end
+    )
+
+    print(len(md))
+    print(md.number_of_assets)
+
+    df = md.dataframe
+
+    print(df)
+
 
 def test_get_array():
     md = MarketData.from_random(30, 3, 0.05)
@@ -97,4 +116,4 @@ def test_get_array():
 
 
 if __name__ == '__main__':
-    test_from_random()
+    test_from_parameters()

@@ -6,6 +6,7 @@ Created on Sun Jan 06 01:28:53 2024
 @author: dhaneor
 """
 
+import asyncio
 import json
 import numpy as np
 import numpy.typing as npt
@@ -19,6 +20,7 @@ from typing import Sequence
 from .market_data_store import MarketDataStore
 from analysis.statistics.statistics import Statistics
 from analysis.chart.plot_definition import SubPlot, Candlestick, Line
+from data.hermes import Hermes
 from misc.mixins import PlottingMixin
 
 
@@ -625,6 +627,59 @@ class MarketData(PlottingMixin):
     
         return cls(mds, symbols)
 
+    @classmethod
+    def from_parameters(
+        cls, 
+        exchange: str, 
+        symbols: Sequence[str], 
+        interval: str, 
+        start: str | int, 
+        end: str | int
+    ) -> "MarketData":
+        
+        request = {
+            "exchange": exchange,
+            "interval": interval,
+            "start": start,
+            "end": end
+        }
+
+        all_data = asyncio.run(MarketData._get_ohlcv(symbols, request))
+
+        # Create a temporary DataFrame to align data
+        temp_df = pd.DataFrame()
+
+        for symbol, data in all_data.items():
+            df = pd.DataFrame(data)
+            df['symbol'] = symbol
+            df.set_index(['open time', 'symbol'], inplace=True)
+            temp_df = pd.concat([temp_df, df])
+
+        # Reindex to fill missing data
+        temp_df = temp_df.unstack(level='symbol')
+        temp_df = temp_df.reindex(columns=pd.MultiIndex.from_product([['open', 'high', 'low', 'close', 'volume'], symbols]))
+        temp_df = temp_df.ffill().bfill()
+
+        # Prepare data for MarketDataStore
+        timestamp = temp_df.index.values.astype(np.int64).reshape(-1, 1)
+        open_data = temp_df['open'].values.astype(np.float32)
+        high_data = temp_df['high'].values.astype(np.float32)
+        low_data = temp_df['low'].values.astype(np.float32)
+        close_data = temp_df['close'].values.astype(np.float32)
+        volume_data = temp_df['volume'].values.astype(np.float32)
+
+        # Create MarketDataStore
+        mds = MarketDataStore(
+            timestamp=timestamp,
+            open=open_data,
+            high=high_data,
+            low=low_data,
+            close=close_data,
+            volume=volume_data
+        )
+
+        return cls(mds, symbols)
+
     # .................................................................................
     def _build_symbol_df(self, symbol):
         """
@@ -633,7 +688,10 @@ class MarketData(PlottingMixin):
         """
         col = self.symbol_to_col[symbol]
 
-        ["open", "high", "low", "close", "volume", "atr", "ann_vol", "ann_sr", "signal_scale"]
+        [
+            "open", "high", "low", "close", "volume", "atr", 
+            "ann_vol", "ann_sr", "signal_scale"
+        ]
 
         # For convenience, define a small dictionary to map field_name -> actual array
         mds = self.mds
@@ -701,5 +759,13 @@ class MarketData(PlottingMixin):
         df.index.name = None
         return df
 
-    
-
+    @classmethod
+    async def _get_ohlcv(cls, symbols: Sequence[str], request: dict):
+        all_data = {}
+        
+        async with Hermes() as hermes:
+            for symbol in symbols:
+                request["symbol"] = symbol
+                ohlcv = await hermes.ohlcv(**request)
+                all_data[symbol] = ohlcv.to_dict()
+        return all_data

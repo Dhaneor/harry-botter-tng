@@ -1,3 +1,4 @@
+# cython: language_level=3
 cimport numpy as cnp
 import numpy as np
 from libc.stdlib cimport malloc, free, rand

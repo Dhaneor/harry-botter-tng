@@ -49,5 +49,7 @@ PORTFOLIO_DTYPE = np.dtype([
     ('quote_balance', np.float64),  # Balance of the quote asset
     ('equity', np.float64),  # sum of position values
     ('total_value', np.float64),  # equity + quote balance
+    ('max_value', np.float64),   # highest value of the portfolio/account
+    ('drawdown', np.float64),  # drawdown from max value 
     ('leverage', np.float64),  # Current leverage
 ])

@@ -1,5 +1,6 @@
+# cython: language_level=3
 cimport numpy as cnp
-from analysis.statistics.cython_statistics cimport Statistics
+from ..statistics.cython_statistics cimport Statistics
 
 
 cdef class MarketState:

@@ -7,11 +7,10 @@ import numpy as np
 cimport numpy as np
 from numpy cimport float32_t, uint16_t, int8_t
 from libc.math cimport fabs
-from libc.stdio cimport printf
 
-from src.analysis.models.market_data_store cimport MarketDataStore
-from src.analysis.models.account cimport  Account
-from src.analysis.dtypes import POSITION_DTYPE, PORTFOLIO_DTYPE
+from ..models.market_data_store cimport MarketDataStore
+from ..models.account cimport  Account
+from ..dtypes import POSITION_DTYPE, PORTFOLIO_DTYPE
 
 cdef int WARMUP_PERIODS = 200
 cdef double SENTINEL = -1.0
@@ -92,6 +91,8 @@ cdef class BackTestCore:
         double[:, :] equity_global
         double[:, :] leverage_global
         double[:, :] total_value
+        double[:, :] max_value_global
+        double[:, :] drawdown_global
 
         int8_t[:, :, :] position
         double[:, :, :] qty
@@ -170,6 +171,8 @@ cdef class BackTestCore:
         self.equity_global = self.portfolio["equity"]
         self.leverage_global = self.portfolio["leverage"]
         self.total_value = self.portfolio["total_value"]
+        self.max_value_global = self.portfolio["max_value"]
+        self.drawdown_global = self.portfolio["drawdown"]
 
         capital_per_strategy = self.config.initial_capital / self.strategies
         
@@ -200,7 +203,7 @@ cdef class BackTestCore:
     
     # ..................................................................................
     cdef inline void _update_portfolio(self, int p, int s) noexcept nogil:
-        cdef double asset_value, quote_balance, total_value, leverage
+        cdef double asset_value, quote_balance, total_value, leverage, max_value
         cdef int m
 
         # Sum the equity values for all markets for the current period and strategy
@@ -217,6 +220,16 @@ cdef class BackTestCore:
         self.leverage_global[p, s] = leverage    
         self.equity_global[p, s]= asset_value
         self.total_value[p, s] = total_value
+
+        max_value = self.max_value_global[p-1, s]
+
+        if total_value > max_value:
+            self.max_value_global[p, s] = total_value
+            max_value = total_value
+        else:
+            self.max_value_global[p, s] = max_value
+
+        self.drawdown_global[p, s] = 1 - (total_value / max_value)
 
     cdef void _process_period(self, int p, int m, int s) noexcept nogil:
         cdef double signal, prev_signal

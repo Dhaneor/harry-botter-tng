@@ -5,7 +5,7 @@ import logging
 from libcpp.unordered_map cimport unordered_map
 from libcpp.vector cimport vector
 
-from src.analysis.models.position cimport PositionData
+from analysis.models.position cimport PositionData
 
 logger = logging.getLogger(f"main.{__name__}")
 

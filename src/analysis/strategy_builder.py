@@ -32,6 +32,7 @@ Created on Thu July 12 21:44:23 2023
 """
 import abc
 import logging
+import numpy as np
 from dataclasses import dataclass
 from typing import Any, NamedTuple, Optional, Sequence
 
@@ -39,7 +40,9 @@ from .strategy import signal_generator as sg
 from .strategy import exit_order_strategies as es
 from analysis.models.market_data import MarketData
 from analysis.models.signals import SignalStore
-from analysis.backtest.backtest_nb import run_backtest, Config
+from analysis.leverage import LeverageCalculator
+from analysis.backtest.backtest import Config, BackTestCore
+from analysis.backtest.bt_result import BackTestResult
 
 logger = logging.getLogger("main.strategy_builder")
 
@@ -97,14 +100,17 @@ class IStrategy(abc.ABC):
     def __init__(self, name: str, weight: float) -> None:
         self.name: str = name
         self.weight: float = weight
+        self.risk_level: int = 1
 
-        self._market_data: MarketData = None
         self.sub_strategies: Sequence[IStrategy] = []
         self.definition: Optional[StrategyDefinition] = None
         self.is_sub_strategy: bool = True
 
         self.add_signals: bool = True
         self.normalize_signals: bool = False
+
+        self._market_data: MarketData = None
+        self._leverage_calculator = None
 
 
     def __repr__(self) -> str:
@@ -115,6 +121,8 @@ class IStrategy(abc.ABC):
 
     @property
     def market_data(self) -> MarketData:
+        if self._market_data is None:
+            raise ValueError("market_data not initialized")
         return self._market_data
     
     @market_data.setter
@@ -126,17 +134,15 @@ class IStrategy(abc.ABC):
             )
         if not self.sub_strategies:
             self.signal_generator.market_data = market_data
+            self._leverage_calculator = LeverageCalculator(market_data=market_data)
         else:
             for strategy in self.sub_strategies:
                 strategy.market_data = market_data
 
     # ----------------------------------------------------------------------------------
+    @abc.abstractmethod
     def run(self):
-        return run_backtest(
-            market_data=self.market_data,
-            signals=self.speak(),
-            config=Config(10_000)
-            )
+        ...
     
     def speak(self) -> SignalStore:
         """Calculates signals for the current market data.
@@ -185,6 +191,9 @@ class Strategy(IStrategy):
     def __init__(self, name: str, weight: float = 1) -> None:
         self.signal_generator: sg.SignalGenerator = None
         super().__init__(name, weight)
+        
+        self.config: Config = Config(10_000)
+        self.backtest = None
 
     def __repr__(self) -> str:
         return (
@@ -217,6 +226,25 @@ class Strategy(IStrategy):
             super().__setattr__(attr, value)
         
     # ----------------------------------------------------------------------------------
+    def run(self) -> None:
+        signals = self._get_raw_signals()
+
+        bt = BackTestCore(
+            market_data=self.market_data.mds,
+            leverage=self._get_leverage(),
+            signals=signals,
+            config=self.config
+        )
+
+        positions, portfolio = bt.run()
+
+        return BackTestResult(
+            positions=positions, 
+            portfolio=portfolio,
+            marke_data=self.market_data,
+            signals=signals
+        )
+
     def speak(self) -> SignalStore:
         return super().speak()
 
@@ -234,8 +262,11 @@ class Strategy(IStrategy):
         """
         raise NotImplementedError(f"optimize() not implemented for {self.name}")
 
-    def _get_raw_signals(self) -> SignalStore:
+    def _get_raw_signals(self) -> np.ndarray:
         return self.signal_generator.execute(compact=True)
+
+    def _get_leverage(self) -> np.ndarray:
+        return self._leverage_calculator.leverage(self.risk_level)
 
 
 class CompositeStrategy(IStrategy):

@@ -11,10 +11,10 @@ from libcpp.vector cimport vector
 from libcpp.unordered_map cimport unordered_map
 
 
-from src.analysis.models.market_data_store cimport MarketDataStore
-from src.analysis.models.position cimport TradeData, PositionData, StopOrder
-from src.analysis.models.account cimport  Account
-from src.analysis.dtypes import POSITION_DTYPE, PORTFOLIO_DTYPE
+from ..models.market_data_store cimport MarketDataStore
+from ..models.position cimport TradeData, PositionData, StopOrder
+from ..models.account cimport  Account
+from ..dtypes import POSITION_DTYPE
 
 cdef int WARMUP_PERIODS = 200
 cdef double SENTINEL = -1.0
@@ -92,6 +92,8 @@ cdef class BackTestCore:
         double[:, :, :] base_qty
         double[:, :] quote_qty_global
         double[:, :] equity_global
+        double[:, :] max_value_global
+        double[:, :] drawdown_global
         double[:, :] leverage_global
 
     def __cinit__(
@@ -477,7 +479,6 @@ cdef class BackTestCore:
         else:
             return change, effective_leverage
 
-
     """
     def _calculate_leverage(self, p, m, s) -> float:
         price = self.market_data.open_[p, m]
@@ -493,7 +494,6 @@ cdef class BackTestCore:
         return np.abs(fee), np.abs(slippage)
     """
 
-
     # ..................................................................................
     cdef inline void _update_portfolio(self, int p, int s) noexcept nogil:
         cdef double quote_qty = self.quote_qty_global[p, s]
@@ -505,6 +505,8 @@ cdef class BackTestCore:
 
         self.equity_global[p, s] = equity
         self.leverage_global[p, s] = fabs(equity) / (equity + quote_qty)
+
+        
 
     cdef np.ndarray _build_result_array(self):
         cdef np.ndarray[double, ndim=3] base_qty_array = np.asarray(self.base_qty)

@@ -5,6 +5,7 @@ Created on Oct 06 10:03:20 2021
 
 @author dhaneor
 """
+import os
 import sys
 import time
 import logging
@@ -25,11 +26,17 @@ from analysis.strategy.definitions import (  # noqa: F401
 )
 from util import get_logger
 
+# # --------------------------------------------------------------------------------------
+# current = os.path.dirname(os.path.realpath(__file__))
+# parent = os.path.dirname(current)
+# sys.path.append(parent)
+# # --------------------------------------------------------------------------------------
+
 logger = get_logger("main")
 
 data = MarketData.from_random(length=2000, no_of_symbols=1)
 
-# -----------------------------------------------------------------------------
+# --------------------------------------------------------------------------------------
 def __get_sl_strategy_definition():
     return es.StopLossDefinition(
         strategy="atr",
@@ -86,7 +93,7 @@ def __get_composite_strategy_definition():
     )
 
 
-# ..............................................................................
+# ......................................................................................
 def build_valid_single_strategy():
     sdef = __get_single_strategy_definition()
 

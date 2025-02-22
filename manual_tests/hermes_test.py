@@ -7,35 +7,16 @@ Created on Tue Oct 12 14:11:33 2021
 """
 
 import sys
-import os
 import pandas as pd
-import logging
+
 from pprint import pprint
 from typing import Union, Optional
 from random import choice
 
-LOG_LEVEL = "INFO"
-logger = logging.getLogger("main")
-logger.setLevel(LOG_LEVEL)
+from staff.hermes import Hermes
+from util import get_logger, unix_to_utc, execution_time
 
-ch = logging.StreamHandler()
-ch.setLevel(logging.DEBUG)
-
-formatter = logging.Formatter(
-    "%(asctime)s - %(name)s.%(funcName)s.%(lineno)d  - [%(levelname)s]: %(message)s"
-)
-ch.setFormatter(formatter)
-
-logger.addHandler(ch)
-
-
-# -----------------------------------------------------------------------------
-current = os.path.dirname(os.path.realpath(__file__))
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# -----------------------------------------------------------------------------
-from src.staff.hermes import Hermes  # noqa: E402, F401
-from src.util.timeops import unix_to_utc, execution_time  # noqa: E402
+logger = get_logger("main", level="INFO")
 
 
 # =============================================================================
@@ -275,7 +256,7 @@ class HermesTester:
 if __name__ == "__main__":
 
     symbol_name = "BTCUSDT"
-    interval = "1d"
+    interval = "4h"
     symbols = ["BTCUSDT", "ADAUSDT", "XRPUSDT", "XLMUSDT"]
     intervals = ["5m", "15m", "30m", "1h", "2h", "4h"]
 

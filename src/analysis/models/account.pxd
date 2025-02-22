@@ -4,7 +4,7 @@ from libcpp.unordered_map cimport unordered_map
 from libcpp.pair cimport pair
 from libcpp.vector cimport vector
 
-from src.analysis.models.position cimport PositionData
+from analysis.models.position cimport PositionData
 
 
 cdef struct Account:
