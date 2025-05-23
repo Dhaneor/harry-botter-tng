@@ -121,16 +121,16 @@ breakout = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 10, "smoothing": 10}),
-            operand_b=("trending", 0.05, [0.05, 0.55, 0.1]),
+            operand_a=("er", {"timeperiod": 90, "smoothing": 1}),
+            operand_b=("trending", 0.12, [0.05, 0.55, 0.1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
         ),
         cn.ConditionDefinition(
             interval="1d",
             operand_a="close",
-            operand_b=("max", {"timeperiod":57}),
-            operand_c=("min", {"timeperiod": 2}),
+            operand_b=("max", {"timeperiod":7}),
+            operand_c=("min", {"timeperiod": 3}),
             open_long=("a", cn.COMPARISON.IS_EQUAL, "b"),
             close_long=("a", cn.COMPARISON.IS_EQUAL, "c"),
         ),
@@ -230,15 +230,15 @@ aroonosc = sg.SignalsDefinition(
     conditions=[
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=('aroonosc', 'high', 'low', {"timeperiod":47}),
-            operand_b=('trigger', -3, [-5, 5, 1]),
+            operand_a=('aroonosc', 'high', 'low', {"timeperiod":4}),
+            operand_b=('trigger', 1, [-5, 5, 1]),
             open_long=("a", cn.COMPARISON.CROSSED_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.CROSSED_BELOW, "b"),
         ),
         cn.ConditionDefinition(
             interval="1d",
-            operand_a=("er", {"timeperiod": 65, "smoothing": 1}),
-            operand_b=("trending", 0.15, [0.05, 0.55, 0.1]),
+            operand_a=("er", {"timeperiod": 37, "smoothing": 1}),
+            operand_b=("trending", 0.21, [0.05, 0.55, 0.1]),
             open_long=("a", cn.COMPARISON.IS_ABOVE, "b"),
             close_long=("a", cn.COMPARISON.IS_BELOW, "b"),
             # open_short=("a", cn.COMPARISON.IS_ABOVE, "b"),

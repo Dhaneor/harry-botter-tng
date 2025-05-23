@@ -31,7 +31,7 @@ from analysis.backtest import result_stats as rs  # noqa: E402, F401
 from analysis.models import market_data, position_py as position  # noqa: E402, F401
 from util import get_logger
 
-logger = get_logger("main")
+logger = get_logger("main", level="DEBUG")
 
 symbol = "BTCUSDT"
 interval = "1d"
@@ -39,11 +39,11 @@ interval = "1d"
 start = "72 months ago UTC"  # 'December 01, 2018 00:00:00'
 end = 'now UTC'
 
-strategy = s_aroon_osc
-risk_level, max_leverage = 8, 1.5
+strategy = s_breakout
+risk_level, max_leverage = 0, 1
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.5
 
-hermes = Hermes(exchange='kucoin', mode='backtest')
+hermes = Hermes(exchange='binance', mode='backtest')
 strategy = sb.build_strategy(strategy)
 
 
@@ -66,7 +66,10 @@ def _get_ohlcv_from_db():
 def _run_backtest(data: dict):
     md = market_data.MarketData.from_dictionary(symbol, data)
     strategy.market_data = md
+    logger.debug("initializing leverage cvalculator ...")
     lc = LeverageCalculator(md, risk_level, max_leverage)
+
+    logger.debug("running backtest ...")
 
     result = bt.run(
         strategy=strategy, 

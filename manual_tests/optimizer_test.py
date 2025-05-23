@@ -38,12 +38,12 @@ symbol = "BTCUSDT"
 interval = "1d"
 
 start = "6 years ago UTC"
-end = "now UTC"
+end = "2 months ago UTC"
 
-strategy = s_kama_cross
-risk_levels = [0, 4, 5, 6, 7, 8]
-max_leverage_levels = (1, 1.25, 1.5)
-max_drawdown = 30
+strategy = s_trix
+risk_levels = 0,  # [0, 4, 5, 6, 7, 8]
+max_leverage_levels = (0.75, 1, 1.25, 1.5)
+max_drawdown = 35
 initial_capital = 10_000 if symbol.endswith('USDT') else 0.1
 
 

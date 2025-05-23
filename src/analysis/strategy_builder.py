@@ -45,6 +45,7 @@ from analysis.backtest.backtest import Config, BackTestCore
 from analysis.backtest.bt_result import BackTestResult
 
 logger = logging.getLogger("main.strategy_builder")
+logger.setLevel(logging.ERROR)
 
 
 # ======================================================================================
@@ -98,6 +99,7 @@ class IStrategy(abc.ABC):
     """Interface for all strategy classes."""
 
     def __init__(self, name: str, weight: float) -> None:
+        logger.debug("Initializing strategy base class ...")
         self.name: str = name
         self.weight: float = weight
         self.risk_level: int = 1
@@ -109,7 +111,7 @@ class IStrategy(abc.ABC):
         self.add_signals: bool = True
         self.normalize_signals: bool = False
 
-        self._market_data: MarketData = None
+        self._market_data: MarketData | None = None
         self._leverage_calculator = None
 
 
@@ -127,17 +129,21 @@ class IStrategy(abc.ABC):
     
     @market_data.setter
     def market_data(self, market_data: MarketData) -> None:
+        if not self.sub_strategies:
+            logger.debug("assigning market data to %s" % self.name)
+            self._market_data = market_data
+            self.signal_generator.market_data = market_data
+            self._leverage_calculator = LeverageCalculator(market_data=market_data)
+        else:
+            logger.debug("assigning market data to sub-strategies ...")
+            for strategy in self.sub_strategies:
+                strategy.market_data = market_data
+
         logger.info(
             "%s %s has been assigned market data",
             "Sub-Strategy" if self.is_sub_strategy else "Composite Strategy",
             self.name
             )
-        if not self.sub_strategies:
-            self.signal_generator.market_data = market_data
-            self._leverage_calculator = LeverageCalculator(market_data=market_data)
-        else:
-            for strategy in self.sub_strategies:
-                strategy.market_data = market_data
 
     # ----------------------------------------------------------------------------------
     @abc.abstractmethod
@@ -158,8 +164,8 @@ class IStrategy(abc.ABC):
 
         if self.add_signals and self.normalize_signals:
             return SignalStore(signals).summed(normalized=True)
-        elif self.add_signals and not self.normaalize_signals:
-            return SignalStore(signals).summed(normalized=False)
+        elif self.add_signals and not self.normalize_signals:
+            return SignalStore(signals).summed()
         elif not self.add_signals and not self.normalize_signals:
             return signals
         else:
@@ -203,30 +209,10 @@ class Strategy(IStrategy):
 
     def __str__(self) -> str:
         return self.__repr__()
-
-    def __getattr__(self, attr) -> Any:
-        if attr in self.__dict__:
-            return self.__dict__[attr]
-        elif self.signal_generator is not None:
-            return getattr(self.signal_generator, attr)
-        else:
-            raise AttributeError(
-                f"{self.__class__.__name__} object has no attribute '{attr}'"
-            )
-
-    def __setattr__(self, attr, value) -> None:
-        if attr in (
-            'name', 'weight', 'signal_generator', '_market_data', 
-            'sub_strategies', 'definition', 'is_sub_strategy'
-        ):
-            super().__setattr__(attr, value)
-        elif self.signal_generator is not None:
-            setattr(self.signal_generator, attr, value)
-        else:
-            super().__setattr__(attr, value)
-        
+ 
     # ----------------------------------------------------------------------------------
     def run(self) -> None:
+        logger.debug("Running strategy: %s" % self.name)
         signals = self._get_raw_signals()
 
         bt = BackTestCore(
@@ -241,7 +227,7 @@ class Strategy(IStrategy):
         return BackTestResult(
             positions=positions, 
             portfolio=portfolio,
-            marke_data=self.market_data,
+            market_data=self.market_data,
             signals=signals
         )
 
@@ -287,6 +273,9 @@ class CompositeStrategy(IStrategy):
 
     def __str__(self) -> str:
         return self.__repr__()
+
+    def run(self):
+        raise NotImplementedError()
 
     def speak(self) -> SignalStore:
         """Collects and normalizes signals from all sub-strategies.

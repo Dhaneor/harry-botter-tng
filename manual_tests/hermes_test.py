@@ -16,7 +16,7 @@ from random import choice
 from staff.hermes import Hermes
 from util import get_logger, unix_to_utc, execution_time
 
-logger = get_logger("main", level="INFO")
+logger = get_logger("main", level="DEBUG")
 
 
 # =============================================================================
@@ -241,6 +241,9 @@ class HermesTester:
     def check_table(self, symbol: str, interval: str):
         res = self.hermes.check_table(symbol, interval)
 
+        if res is None:
+            return
+
         missing = res.get("missing_periods")
         success, failed = res.get("successful"), res.get("failed")
         still_missing = res.get("still_missing")
@@ -256,7 +259,7 @@ class HermesTester:
 if __name__ == "__main__":
 
     symbol_name = "BTCUSDT"
-    interval = "4h"
+    interval = "1d"
     symbols = ["BTCUSDT", "ADAUSDT", "XRPUSDT", "XLMUSDT"]
     intervals = ["5m", "15m", "30m", "1h", "2h", "4h"]
 
@@ -295,15 +298,15 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # ht.get_ohlcv_multiple(symbols=symbols, start=dates[0], end=dates[1])
 
-    # for _ in range(3):
-    #     ht.get_ohlcv_single(symbol=symbol_name, interval=interval,
-    #                         start=dates[0], end=dates[1])
+    for _ in range(3):
+        ht.get_ohlcv_single(symbol=symbol_name, interval=interval,
+                            start=dates[0], end=dates[1])
 
     # -------------------------------------------------------------------------
-    ht.update_database_for_interval(
-        exchange=exchange, quote_asset='USDT', interval=interval
-        )
+    # ht.update_database_for_interval(
+    #     exchange=exchange, quote_asset='USDT', interval=interval
+    #     )
 
     # ht.get_listing_date(symbol_name, '15m')
 
-    # ht.check_table(symbol_name, interval)
+    ht.check_table(symbol_name, interval)

@@ -49,6 +49,7 @@ MAX_WORKERS_BINANCE = VALID_EXCHANGES["binance"]["max_workers"]
 MAX_WORKERS_KUCOIN = VALID_EXCHANGES["kucoin"]["max_workers"]
 
 logger = logging.getLogger("main.hermes")
+logger.setLevel(logging.DEBUG)
 
 
 # ==============================================================================
@@ -167,6 +168,10 @@ class HermesDataBase:
 
             if self._ohlcv_table_exists(symbol, interval):
                 self._update_ohlcv_table(symbol, interval)
+        else:
+            print("***************")
+            logger.debug("updating table ...")
+            self._update_ohlcv_table(symbol=symbol, interval=interval)
 
         status = self._get_ohlcv_table_status_for_symbol(symbol, interval)
         logger.debug(status)
@@ -363,7 +368,7 @@ class HermesDataBase:
 
             # check if we got only partial data and need to update the table
             latest_open = int(data.at[data.last_valid_index(), "open time"])
-            update_necessary = self._ohlcv_table_needs_update(latest_open, interval)
+            update_necessary = False  # self._ohlcv_table_needs_update(latest_open, interval)
 
             if not update_necessary:
                 return data

@@ -245,9 +245,6 @@ def run(
         .reshape(-1,)
     )
 
-    print(list(data["signal"]))
-    sys.exit()
-
     # add leverage
     if leverage is not None:
         data["leverage"] = leverage

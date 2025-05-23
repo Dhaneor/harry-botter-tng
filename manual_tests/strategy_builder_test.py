@@ -19,6 +19,7 @@ from cProfile import Profile  # noqa: F401
 from pstats import SortKey, Stats  # noqa: F401
 
 from analysis import strategy_builder as sb, MarketData
+from analysis.backtest.bt_result import BackTestResult
 from analysis.strategy import exit_order_strategies as es
 from analysis.strategy.definitions import (  # noqa: F401
     tema_cross, breakout, rsi,
@@ -26,13 +27,7 @@ from analysis.strategy.definitions import (  # noqa: F401
 )
 from util import get_logger
 
-# # --------------------------------------------------------------------------------------
-# current = os.path.dirname(os.path.realpath(__file__))
-# parent = os.path.dirname(current)
-# sys.path.append(parent)
-# # --------------------------------------------------------------------------------------
-
-logger = get_logger("main")
+logger = get_logger("main", level="DEBUG")
 
 data = MarketData.from_random(length=2000, no_of_symbols=1)
 
@@ -171,43 +166,64 @@ def test_strategy_builder():
     return build_valid_single_strategy()
 
 
-def test_strategy_run(s):
+def test_strategy_speak(s):
     res = s.speak()
 
-    assert isinstance(res, np.ndarray)
-    assert res.ndim == 3
+    assert isinstance(res.data, np.ndarray)
+    assert res.data.ndim == 3
 
-    print(res)
+    print(res.data)
+
+
+def test_strategy_run(s):
+    try:
+        res = s.run()
+    except Exception as e:
+        logger.error(str(e), exc_info=True)
+        return
+     
+    assert isinstance(res, BackTestResult)
+
+    symbols = res.symbols
+
+    df = res.to_dataframe(symbols[0])
+    df = df.round(2)
+    df.replace(0, ".", inplace=True)
+
+    print(df.tail(50))
 
 
 # ============================================================================ #
 #                                   MAIN                                       #
 # ============================================================================ #
 if __name__ == "__main__":
-    # close = df.close.to_numpy()[-100_000:]
-    # close = np.random.rand(1_000)
-    # print(close.shape)
-
     if s := test_strategy_builder():
         s.market_data = data
+        assert isinstance(data, MarketData)
+        try:
+            assert s._market_data is not None, "market data is still None"
+        except AssertionError as e:
+            logger.error(str(e))
+            pprint(s.__dict__)
+            print('-' * 200)
+            raise
         print('-' * 200)
         print(s)
-
-    sys.exit()
 
     # test_sl_strategy_factory()
     # sdef = __get_single_strategy_definition()
 
     # test_serialize_object(s)
 
-    test_strategy_run(s)
+    # test_strategy_run(s)
 
     # ..........................................................................
     # sys.exit()
 
     logger.setLevel(logging.ERROR)
-    runs = 100_000
+    runs = 1_000
     data = data
+    s.speak()  # force JIT compilation
     st = time.perf_counter()
 
     with Profile(timeunit=0.001) as p:

@@ -123,7 +123,7 @@ from util import log_execution_time, DotDict, proj_types as tp  # noqa: F401
 from models.enums import COMPARISON
 
 logger = logging.getLogger("main.signal_generator")
-logger.setLevel(logging.ERROR)
+logger.setLevel(logging.DEBUG)
 
 WARMUP_PERIODS = 200  # number of candles to use for warmup
 

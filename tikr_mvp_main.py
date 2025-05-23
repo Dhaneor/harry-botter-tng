@@ -31,7 +31,7 @@ from src.analysis.chart.tikr_charts import TikrChart as Chart
 from tikr_mvp_strategy import mvp_strategy
 
 # set up logging
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.DEBUG
 
 logger = logging.getLogger("main")
 logger.setLevel(LOG_LEVEL)
@@ -61,7 +61,7 @@ RETRY_AFTER_SECS = 5  # time between retries in seconds
 repo.RATE_LIMIT = False  # disable rate limit for the repository
 repo.LOG_STATUS = True  # enable logging of server status and server time
 
-DISPLAY_DF_ROWS = 10  # number of rows to display in the dataframe
+DISPLAY_DF_ROWS = 40  # number of rows to display in the dataframe
 
 
 # ================== <<<<< SET THESE ENVIRONMENT VARIABLES! >>>>> ====================
@@ -86,7 +86,7 @@ logger.info("starting: SEND_SIGNAL: %s / SEND_CHART: %s", SEND_SIGNAL, SEND_CHAR
 def format_dataframe(df: pd.DataFrame) -> None:
     # preprocess the dataframe for display on std out
     incl_cols = [
-        "open", "high", "low", "close", "volume",
+        "open", "high", "low", "close",
         "position", "leverage", "buy",
         "buy_size", "buy_at", "sell", "sell_size", "sell_at",
         "b.base", "b.quote", "b.value", "b.drawdown.max",
@@ -94,6 +94,7 @@ def format_dataframe(df: pd.DataFrame) -> None:
         ]
 
     df = df[incl_cols].copy()
+    df.round(4)
 
     # Apply rounding and formatting to numeric columns
     numeric_cols = df.select_dtypes(include=[np.number]).columns
@@ -102,7 +103,7 @@ def format_dataframe(df: pd.DataFrame) -> None:
 
     df.replace(np.nan, "", inplace=True)
     df.replace(False, ".", inplace=True)
-    df.replace(0, "", inplace=True)
+    df.replace("0.0000", "", inplace=True)
 
     df = df.astype(str)
     df.loc[df["buy_size"] != "", "buy"] = "•"

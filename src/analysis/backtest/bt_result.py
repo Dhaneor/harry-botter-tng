@@ -21,7 +21,7 @@ class BackTestResult:
     ):
         self.positions = positions
         self.portfolio = portfolio
-        self.market_Data = market_data
+        self.market_data = market_data
         self.signals = signals
 
         self.symbols: list[str] = market_data.symbols
@@ -35,11 +35,11 @@ class BackTestResult:
     def _build_df_all(self) -> pd.DataFrame:
         ...
 
-    def build_df_symbol(self, symbol: str) -> pd.DataFrame:
+    def _build_df_symbol(self, symbol: str) -> pd.DataFrame:
         df = self.market_data[symbol]
 
         symbol_idx = self._get_symbol_index(symbol)
-        df["signal"] = self.signals[symbol_idx]
+        df["signal"] = self.signals[:, symbol_idx]
         df["position"] = self.positions[:, symbol_idx]["position"]
 
         df["buy"] = self.positions[:, symbol_idx]["buy_qty"]
@@ -49,8 +49,9 @@ class BackTestResult:
 
         df["b.base"] = self.positions[:, symbol_idx]["qty"]
         df["b.quote"] = self.positions[:, symbol_idx]["quote_qty"]
-        df["b.value"] = self.positions[:, symbol_idx]["equity"] + df["b.quote"]
+        df["b.value"] = self.positions[:, symbol_idx]["equity"] # + df["b.quote"]
 
+        return df
 
     def _get_symbol_index(self, symbol: str) -> int:
         return self.symbols.index(symbol)

@@ -152,7 +152,7 @@ def test_set_parameters():
 
 
 def test_execute(sig_gen: sg.SignalGenerator = None, show=False, plot=False):
-    sig_gen = sig_gen or sg.signal_generator_factory(ema_cross)
+    sig_gen = sig_gen or sg.signal_generator_factory(sig_def)
     sig_gen.market_data = data  # MarketData.from_random(length=30, no_of_symbols=1)
     signals = sig_gen.execute()
 
