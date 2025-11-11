@@ -300,8 +300,8 @@ def start_async_loop(queue, stop_event):
         "exchange": "binance",
         "symbol": strategy.symbol,
         "interval": strategy.interval,
-        "start": -1296,
-        "end": "now UTC"
+        "start": "2019-10-07",
+        "end": "2025-10-07"
     }
 
     try:

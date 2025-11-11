@@ -50,7 +50,7 @@ import os
 import pymysql
 import warnings
 from abc import abstractmethod
-from databases import Database
+# from databases import Database
 from dotenv import load_dotenv
 from itertools import islice
 from typing import Any, Coroutine

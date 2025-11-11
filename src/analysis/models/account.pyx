@@ -2,6 +2,7 @@
 # distutils: language = c++
 
 import logging
+from typing import Optional
 from libcpp.unordered_map cimport unordered_map
 from libcpp.vector cimport vector
 
@@ -94,7 +95,7 @@ cdef PositionData deep_copy_position(const PositionData& pos):
     return new_pos
 
 # In your _get_current_position function:
-def _get_current_position(acc: Account, m: int, s: int) -> PositionData | None:
+def _get_current_position(acc: Account, m: int, s: int):  # -> Optional[PositionData]:
     result = get_current_position(acc, m, s)
     if result == NULL:
         return None
