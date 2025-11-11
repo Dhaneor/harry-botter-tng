@@ -30,6 +30,8 @@ except InvalidToken as e:
     logger.error(f"Invalid Telegram bot token: {e}")
     logger.error("Failed to initialize Telegram bot with token: %s." % BOT_TOKEN)
     raise
+finally:
+    logger.error(f"Telegram bot initialized ({BOT_TOKEN}).")
 
 
 async def send_message(
@@ -84,7 +86,7 @@ async def send_message(
             f"successfully to chat {chat_id}"
             )
     except InvalidToken as e:
-        logger.error()
+        logger.error("Invalid Telegram bot token: %s", BOT_TOKEN)
 
     except Exception as e:
         logger.error(

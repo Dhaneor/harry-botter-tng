@@ -301,7 +301,7 @@ def start_async_loop(queue, stop_event):
         "symbol": strategy.symbol,
         "interval": strategy.interval,
         "start": "2019-10-07",
-        "end": "2025-10-07"
+        "end": "now UTC"
     }
 
     try:
