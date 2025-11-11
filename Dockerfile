@@ -1,7 +1,7 @@
 # Use the base image we just created
 # FROM asia-northeast1-docker.pkg.dev/tikr-mvp/tikr-mvp-repo/tikr-mvp-base-image-20241117-amd64
 # FROM docker.io/library/tikr-mvp-baseimage:20241129-amd64
-FROM tikr-mvp-baseimage:20241129-amd64
+FROM tikr-mvp-baseimage:20251111-amd64
 
 ENV PYTHONPATH=/app:/app/src
 

@@ -24,12 +24,17 @@ RUN wget https://github.com/TA-Lib/ta-lib/releases/download/v0.4.0/ta-lib-0.4.0-
     cd .. && \
     rm -rf ta-lib-0.4.0-src.tar.gz ta-lib/
 
-# this did not work, because the packages for the fonts could not be found
-# but how can we install more interesting fonts?
-# RUN apt-get install fonts-georgian fonts-dejavu fonts-liberation
-
 # Set the working directory in the container
 WORKDIR /app
+
+# Install temporary build deps
+RUN pip install --no-cache-dir "numpy==1.26.4" Cython wheel setuptools
+
+# Install ta-lib first (built against NumPy 1.26 headers)
+RUN pip install --no-cache-dir ta-lib==0.6.8
+
+# Upgrade back to your desired runtime versions
+RUN pip install --no-cache-dir "numpy==2.0.1"
 
 # Copy the requirements file
 COPY requirements_mvp.txt .
