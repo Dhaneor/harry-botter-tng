@@ -7,7 +7,7 @@ Created on Sun Nov 16 19:40:06 2025
 """
 
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime
 from typing import Optional, Literal, Dict, Any
 
@@ -226,6 +226,96 @@ ALL_VALIDATORS = [
 ]
 
 
+# ============================================================
+# Order Correctors
+# ============================================================
+
+def correct_price_precision(order, market):
+    prec = getattr(market, "price_precision", None)
+    if prec is None or order.price is None:
+        return order, None
+
+    factor = 10 ** prec
+    new_price = round(order.price * factor) / factor
+
+    if new_price == order.price:
+        return order, None
+
+    new_order = replace(order, price=new_price)
+    msg = f"price_precision: rounded price from {order.price} to {new_price}"
+    return new_order, msg
+
+
+def correct_amount_precision(order, market):
+    prec = getattr(market, "amount_precision", None)
+    if prec is None:
+        return order, None
+
+    factor = 10 ** prec
+    new_amount = round(order.amount * factor) / factor
+
+    if new_amount == order.amount:
+        return order, None
+
+    new_order = replace(order, amount=new_amount)
+    msg = f"amount_precision: rounded amount from {order.amount} to {new_amount}"
+    return new_order, msg
+
+
+def correct_price_max(order, market):
+    max_price = getattr(market, "max_price", None)
+    if max_price is None or order.price is None:
+        return order, None
+
+    if order.price <= max_price:
+        return order, None
+
+    new_order = replace(order, price=max_price)
+    msg = f"price_max: reduced price from {order.price} to {max_price}"
+    return new_order, msg
+
+
+def correct_amount_max(order, market):
+    max_amount = getattr(market, "max_amount", None)
+    if max_amount is None:
+        return order, None
+
+    if order.amount <= max_amount:
+        return order, None
+
+    new_order = replace(order, amount=max_amount)
+    msg = f"amount_max: reduced amount from {order.amount} to {max_amount}"
+    return new_order, msg
+
+
+def correct_remove_price(order, market):
+    if order.price is None:
+        return order, None
+
+    new_order = replace(order, price=None)
+    msg = "price_not_allowed: removed price from order"
+    return new_order, msg
+
+
+def correct_remove_stop_price(order, market):
+    if order.stop_price is None:
+        return order, None
+
+    new_order = replace(order, stop_price=None)
+    msg = "stop_price_not_allowed: removed stop_price from order"
+    return new_order, msg
+
+
+CORRECTOR_MAP = {
+    ERR_PRICE_PRECISION: correct_price_precision,
+    ERR_AMOUNT_PRECISION: correct_amount_precision,
+    ERR_PRICE_TOO_HIGH: correct_price_max,
+    ERR_AMOUNT_TOO_LARGE: correct_amount_max,
+    ERR_PRICE_NOT_ALLOWED: correct_remove_price,
+    ERR_STOP_PRICE_NOT_ALLOWED: correct_remove_stop_price,
+}
+
+
 def validate_order(order, market=None):
     """
     Run all registered validators against an order.
@@ -243,6 +333,34 @@ def validate_order(order, market=None):
             errors.append(err)
 
     return errors
+
+
+def correct_order(order, errors, market=None):
+    """
+    Apply safe, non-ambiguous corrections to an order based on validation errors.
+
+    Returns:
+        (corrected_order, corrections)
+        corrected_order: Order
+        corrections: list[str] human-readable correction descriptions
+    """
+    if market is None:
+        market = order.market
+
+    current = order
+    corrections: list[str] = []
+
+    for err in errors:
+        fn = CORRECTOR_MAP.get(err)
+        if fn is None:
+            continue
+
+        new_order, msg = fn(current, market)
+        current = new_order
+        if msg:
+            corrections.append(msg)
+
+    return current, corrections
 
 
 # ============================================================
