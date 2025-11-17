@@ -173,8 +173,6 @@ class PositionHandler:
 
         div = '~-•-~' * 10
         self.logger.info(f'{div} updating position for {self.symbol.name} {div}')
-        # self.logger.debug(self.broker.get_balance(self.symbol.base_asset))
-        # self.logger.debug(self.broker.get_balance(self.symbol.quote_asset))
         self.logger.info(self.action)
 
         while self.proceed:

@@ -7,7 +7,7 @@ Created on Thu Feb 11 01:28:53 2021
 """
 import logging
 
-from typing import Dict, Iterable, List, Tuple, Union
+from typing import Iterable, List, Tuple, Union
 from datetime import datetime
 
 from ..ganesh import Ganesh

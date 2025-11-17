@@ -3,24 +3,23 @@ import os
 import time
 
 from pprint import pprint
-from typing import Union
-from random import random, randint, choice
+from random import random, choice
 import logging
 
-# ------------------------------------------------------------------------------
-# getting the name of the directory
-# where the this file is present.
-current = os.path.dirname(os.path.realpath(__file__))
+# # ------------------------------------------------------------------------------
+# # getting the name of the directory
+# # where the this file is present.
+# current = os.path.dirname(os.path.realpath(__file__))
 
-# Getting the parent directory name
-# where the current directory is present.
-parent = os.path.dirname(current)
-sys.path.append(parent)
-# ------------------------------------------------------------------------------
+# # Getting the parent directory name
+# # where the current directory is present.
+# parent = os.path.dirname(current)
+# sys.path.append(parent)
+# # ------------------------------------------------------------------------------
 
 from broker.ganesh import Ganesh
 from broker.position_handlers.position_handler import *
-from broker.models.balance import Balance, balance_factory
+from broker.models.balance import balance_factory
 from broker.models.requests import PositionChangeRequest, RequestFactory
 from models.symbol import Symbol
 from broker.util.order_factory import OrderFactory

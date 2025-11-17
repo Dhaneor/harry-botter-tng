@@ -3,7 +3,7 @@
 """
 Created on Thu Apr 08 17:45:23 2021
 
-@author_ dhaneor
+@author dhaneor
 """
 from typing import List, Dict, Tuple
 
@@ -42,25 +42,34 @@ class Jupiter:
     levels. Based on this list he autonomously decides upon all necessary 
     changes and uses Ganesh to execute them.
     """
-    def __init__(self, exchange:str, market:str, user_account:dict):
-       
+    def __init__(self, exchange:str, market:str, credentials:dict, quote_asset:str = 'USDT'):
+        """
+        Initializes Jupiter.
+
+        Args:
+            exchange (str): The exchange name.
+            market (str): The market name.
+            credentials (dict): Credentials for the broker.
+            quote_asset (str, optional): The quote asset to use. Defaults to 'USDT'.
+        """
         self.name: str = 'JUPITER'
         self.function: str = 'Senior Execution Manager'       
         self.exchange: str = exchange.lower()
         self.market: str = market
-        self._quote_asset = 'USDT'
+        self._quote_asset = quote_asset
                  
         self.broker = Ganesh(exchange=self.exchange, 
                              market=self.market,
-                             credentials=user_account)
+                             credentials=credentials)
 
-        self.account = Account(
-            broker=self.broker, quote_asset=self._quote_asset
-        )
-
-    @property
-    def quote_asset(self):
-        return self._quote_asset
+    @quote_asset.setter
+    def quote_asset(self, quote_asset:str):
+        valid_quote_assets = getattr(self.broker, "valid_quote_assets", ["USDT"])
+        if quote_asset in valid_quote_assets:
+            self._quote_asset = quote_asset
+            self.account = Account(broker=self.broker, quote_asset=quote_asset) 
+        else:
+            raise ValueError(f'{quote_asset} is not a valid quote asset')
     
     @quote_asset.setter
     def quote_asset(self, quote_asset:str):

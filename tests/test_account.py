@@ -1,7 +1,6 @@
 # cython: language_level=3
 # distutils: language = c++
-import logging
-import pytest
+
 from pprint import pprint
 from src.analysis.models.account import (
     get_account, _add_position, _get_current_position,

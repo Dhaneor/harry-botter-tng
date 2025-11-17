@@ -1,183 +1,187 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Sun Jan 31 00:57:06 2021
+Created on Sun Nov 16 18:00:06 2025
 
 @author: dhaneor
 """
 
-from pprint import pprint
-from typing import Optional
-
-from staff.hermes import Hermes
-from util.timeops import execution_time
-from util.accounting import Accounting
+from dataclasses import dataclass
+from typing import Optional, Dict, Any
 
 
-# ==============================================================================
-class Symbol:
-    """This class represents a trading symbol on the exchange and is used
-    by almost every other class to access the properties of the symbol
-    like restraints for orders sizes or the values for rounding prescision.
+# -------------------------
+# Asset Dataclass
+# -------------------------
+
+@dataclass
+class Asset:
+    id: str                     # exchange-specific id (e.g. "BTC")
+    code: str                   # unified CCXT code (e.g. "BTC")
+    name: Optional[str]         # human-readable name (e.g. "Bitcoin")
+
+    precision: Optional[int]    # number of decimal places allowed
+    active: Optional[bool]
+    withdraw: Optional[bool]
+    deposit: Optional[bool]
+
+    fee: Optional[float]        # withdrawal fee
+
+    limits_withdraw: Optional[Dict[str, Optional[float]]]   # {min, max}
+    limits_deposit: Optional[Dict[str, Optional[float]]]    # {min, max}
+
+    # Computed flags
+    is_stablecoin: bool
+    is_fiat: bool
+    is_crypto: bool
+
+    # Raw exchange payload
+    info: Dict[str, Any]
+
+
+# -------------------------
+# Market Dataclass
+# -------------------------
+
+@dataclass
+class Market:
+    symbol: str
+    id: str
+    type: Optional[str]            # "spot", "swap", etc.
+
+    base: Optional[Asset]
+    quote: Optional[Asset]
+    settle: Optional[Asset]
+
+    contract: Optional[bool]
+    linear: Optional[bool]
+    inverse: Optional[bool]
+    contract_size: Optional[float]
+
+    maker: Optional[float]
+    taker: Optional[float]
+
+    price_precision: Optional[int]
+    amount_precision: Optional[int]
+    cost_precision: Optional[int]
+
+    min_amount: Optional[float]
+    max_amount: Optional[float]
+    min_price: Optional[float]
+    max_price: Optional[float]
+    min_cost: Optional[float]
+    max_cost: Optional[float]
+
+    # Convenience flags
+    is_spot: bool
+    is_linear_future: bool
+    is_inverse_future: bool
+    is_perpetual: bool
+
+    # Raw exchange payload
+    info: Dict[str, Any]
+
+
+# -------------------------
+# Conversion Helpers
+# -------------------------
+
+_STABLECOINS = {"USDT", "USDC", "DAI", "TUSD", "FDUSD", "BUSD", "PYUSD"}
+_FIAT = {"EUR", "USD", "GBP", "JPY", "CHF", "CAD", "AUD", "NZD"}
+
+
+def make_asset(data: Dict[str, Any]) -> Asset:
+    """Convert a CCXT currency dict into an Asset instance."""
+    
+    code = data.get("code")
+    
+    is_fiat = code in _FIAT
+    is_stable = code in _STABLECOINS
+    is_crypto = not (is_fiat or is_stable)
+
+    return Asset(
+        id=data.get("id"),
+        code=code,
+        name=data.get("name"),
+
+        precision=data.get("precision"),
+        active=data.get("active"),
+        withdraw=data.get("withdraw"),
+        deposit=data.get("deposit"),
+
+        fee=data.get("fee"),
+
+        limits_withdraw=(data.get("limits", {}).get("withdraw")
+                         if isinstance(data.get("limits"), dict) else None),
+        limits_deposit=(data.get("limits", {}).get("deposit")
+                        if isinstance(data.get("limits"), dict) else None),
+
+        is_stablecoin=is_stable,
+        is_fiat=is_fiat,
+        is_crypto=is_crypto,
+
+        info=data,
+    )
+
+
+def make_market(
+    data: Dict[str, Any],
+    assets: Dict[str, Asset]
+) -> Market:
+    """Convert a CCXT market dict into a Market instance.
+       `assets` is a dict: {code -> Asset}
     """
 
-    def __init__(self, symbol_name: str, data: Optional[dict] = None):
-        if symbol_name is None:
-            raise ValueError("Symbol name cannot be <None>!")
+    precision = data.get("precision", {}) or {}
+    limits = data.get("limits", {}) or {}
 
-        self.name = symbol_name
-        self.symbol_name = symbol_name
-        self.exchange = self._determine_exchange_from_symbol_name()
-        self._initialize(data=data)
+    base = assets.get(data.get("base"))
+    quote = assets.get(data.get("quote"))
+    settle = assets.get(data.get("settle"))
 
-    def __str__(self):
-        permissions = (", ").join(self.permissions)
+    contract = data.get("contract")
+    linear = data.get("linear")
+    inverse = data.get("inverse")
 
-        return (
-            f"[{self.name}] on {self.exchange.upper()} "
-            f" ({permissions}) "
-            f"is currently: {self.status.lower()}"
-        )
+    # Convenience flags
+    type_ = data.get("type")
+    is_spot = type_ == "spot"
+    is_linear_future = bool(contract and linear)
+    is_inverse_future = bool(contract and inverse)
+    is_perpetual = bool(contract and not data.get("expiry"))
 
-    def _initialize(self, data: Optional[dict] = None):
-        """This method gets the raw symbol information from Hermes and
-        initializes all values.
+    return Market(
+        symbol=data.get("symbol"),
+        id=data.get("id"),
+        type=type_,
 
-        This is what we get from Hermes:
-        ..code:: python
-            {
-                'baseAsset': 'XRP',
-                'baseAssetPrecision': 8,
-                'baseCommissionPrecision': 8,
-                'f_icebergParts_limit': '10',
-                'f_lotSize_maxQty': '90000000.00000000',
-                'f_lotSize_minQty': '1.00000000',
-                'f_lotSize_stepSize': '1.00000000',
-                'f_marketLotSize_maxQty': '1273382.29513888',
-                'f_marketLotSize_minQty': '0.00000000',
-                'f_marketLotSize_stepSize': '0.00000000',
-                'f_maxNumAlgoOrders': '200',
-                'f_maxNumOrders': '5',
-                'f_minNotional_applyToMarket': 1,
-                'f_minNotional_avgPriceMins': '5',
-                'f_minNotional_minNotional': '0.00010000',
-                'f_percentPrice_avgPriceMins': '5',
-                'f_percentPrice_multiplierDown': '0.2',
-                'f_percentPrice_multiplierUp': '5',
-                'f_priceFilter_maxPrice': '1000.00000000',
-                'f_priceFilter_minPrice': '0.00000001',
-                'f_priceFilter_tickSize': '0.00000001',
-                'icebergAllowed': True,
-                'isMarginTradingAllowed': True,
-                'isSpotTradingAllowed': True,
-                'ocoAllowed': True,
-                'orderTypes': 'LIMIT,LIMIT_MAKER,MARKET,STOP_LOSS_LIMIT,\
-                                TAKE_PROFIT_LIMIT',
-                'permissions': 'SPOT,MARGIN',
-                'quoteAsset': 'BTC',
-                'quoteAssetPrecision': 8,
-                'quoteCommissionPrecision': 8,
-                'quoteOrderQtyMarketAllowed': True,
-                'quotePrecision': 8,
-                'status': 'TRADING',
-                'symbol': 'XRPBTC',
-                'updateTime': 1645912055
-            }
-        """
-        if data is None:
-            hermes = Hermes(exchange=self.exchange, verbose=True)
-            s = hermes.get_symbol(self.name)
-            if s is None:
-                raise ValueError(f"{self.name} is not a valid symbol")
-        else:
-            s = data
+        base=base,
+        quote=quote,
+        settle=settle,
 
-        missing_values = self._check_for_missing_values(s)
-        if missing_values:
-            raise ValueError(f"Missing Values for {missing_values}")
+        contract=contract,
+        linear=linear,
+        inverse=inverse,
+        contract_size=data.get("contractSize"),
 
-        self.exchange = "kucoin" if "-" in self.name else "binance"
+        maker=data.get("maker"),
+        taker=data.get("taker"),
 
-        self.baseAsset = s.get("baseAsset")
-        self.baseAssetPrecision = s.get("baseAssetPrecision")
-        self.baseCommissionPrecision = s.get("baseCommissionPrecision")
+        price_precision=precision.get("price"),
+        amount_precision=precision.get("amount"),
+        cost_precision=precision.get("cost"),
 
-        self.f_icebergParts_limit = s.get("f_icebergParts_limit")
+        min_amount=limits.get("amount", {}).get("min") if "amount" in limits else None,
+        max_amount=limits.get("amount", {}).get("max") if "amount" in limits else None,
+        min_price=limits.get("price", {}).get("min") if "price" in limits else None,
+        max_price=limits.get("price", {}).get("max") if "price" in limits else None,
+        min_cost=limits.get("cost", {}).get("min") if "cost" in limits else None,
+        max_cost=limits.get("cost", {}).get("max") if "cost" in limits else None,
 
-        self.f_lotSize_maxQty = s.get("f_lotSize_maxQty")
-        self.f_lotSize_minQty = s.get("f_lotSize_minQty")
-        self.f_lotSize_stepSize = s.get("f_lotSize_stepSize")
-        self.f_stepPrecision = Accounting.get_precision(self.f_lotSize_stepSize)
+        is_spot=is_spot,
+        is_linear_future=is_linear_future,
+        is_inverse_future=is_inverse_future,
+        is_perpetual=is_perpetual,
 
-        self.f_marketLotSize_maxQty = s.get("f_marketLotSize_maxQty")
-        self.f_marketLotSize_minQty = s.get("f_marketLotSize_minQty")
-        self.f_marketLotSize_stepSize = s.get("f_marketLotSize_stepSize")
-
-        self.f_maxNumAlgoOrders = s.get("f_maxNumAlgoOrders")
-        self.f_maxNumOrders = s.get("f_maxNumOrders")
-
-        self.f_minNotional_applyToMarket = s.get("f_minNotional_applyToMarket")
-        self.f_minNotional_avgPriceMins = s.get("f_minNotional_avgPriceMins")
-        self.f_minNotional_minNotional = s.get("f_minNotional_minNotional")
-
-        self.f_percentPrice_avgPriceMins = s.get("f_percentPrice_avgPriceMins")
-        self.f_percentPrice_multiplierDown = s.get("f_percentPrice_multiplierDown")
-        self.f_percentPrice_multiplierUp = s.get("f_percentPrice_multiplierUp")
-
-        self.f_priceFilter_maxPrice = s.get("f_priceFilter_maxPrice")
-        self.f_priceFilter_minPrice = s.get("f_priceFilter_minPrice")
-        self.f_priceFilter_tickSize = s.get("f_priceFilter_tickSize")
-        self.f_tickPrecision = Accounting.get_precision(self.f_priceFilter_tickSize)
-
-        self.icebergAllowed = s.get("icebergAllowed")
-        self.isMarginTradingAllowed = s.get("isMarginTradingAllowed")
-        self.isSpotTradingAllowed = s.get("isSpotTradingAllowed")
-
-        self.ocoAllowed = s.get("ocoAllowed")
-        self.orderTypes = s.get("orderTypes")
-        self.permissions = s.get("permissions")
-
-        self.quoteAsset = s.get("quoteAsset")
-        self.quoteAssetPrecision = s.get("quoteAssetPrecision")
-        self.quoteCommissionPrecision = s.get("quoteCommissionPrecision")
-        self.quoteOrderQtyMarketAllowed = s.get("quoteOrderQtyMarketAllowed")
-        self.quotePrecision = s.get("quotePrecision")
-
-        self.status = s.get("status")
-        self.symbol = s.get("symbol")
-
-    def _check_for_missing_values(self, symbol: dict) -> list:
-        missing = [k for k, v in symbol.items() if v is None]
-
-        # some fields/keys were recently added by Binance, but we
-        # don't need them and it doesn't matter if we don't have
-        # values for these keys
-        we_dont_care = [
-            "cancelReplaceAllowed",
-            "f_trailingDelta_maxTrailingAboveDelta",
-            "f_trailingDelta_maxTrailingBelowDelta",
-            "f_trailingDelta_minTrailingAboveDelta",
-            "f_trailingDelta_minTrailingBelowDelta",
-        ]
-
-        missing = [item for item in missing if item not in we_dont_care]
-
-        if missing:
-            return missing
-        return None
-
-    def _determine_exchange_from_symbol_name(self):
-        return "kucoin" if "-" in self.name else "binance"
-
-
-# ==============================================================================
-@execution_time
-def test_create_symbol(symbol_name: str):
-    s = Symbol(symbol_name)
-    pprint(s.__dict__)
-
-
-# ==============================================================================
-if __name__ == "__main__":
-    symbol_name = "XLM-USDT"
-    test_create_symbol(symbol_name)
+        info=data,
+    )
